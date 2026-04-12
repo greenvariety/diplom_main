@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Предметы{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Предметы</h2>
+    <a href="{% url 'subject-add' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>Добавить
+    </a>
+</div>
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light"><tr><th>#</th><th>Название</th><th>Действия</th></tr></thead>
+            <tbody>
+                {% for s in subjects %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ s.name }}</td>
+                    <td>
+                        <a href="{% url 'subject-edit' s.pk %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" class="text-center text-muted py-4">Нет предметов</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

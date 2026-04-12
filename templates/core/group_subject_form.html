@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Добавить предмет в группу{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Добавить предмет в группу {{ group.name }}</h2>
+    <a href="{% url 'group-detail' group.pk %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Назад
+    </a>
+</div>
+<div class="card" style="max-width: 500px;">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="mb-3">
+                <label class="form-label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<div class="text-danger small">{{ field.errors.0 }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary">Добавить</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

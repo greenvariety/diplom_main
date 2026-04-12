@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Должности{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Должности</h2>
+    <a href="{% url 'position-add' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>Добавить
+    </a>
+</div>
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr><th>#</th><th>Название</th><th>Преподавательская</th><th>Действия</th></tr>
+            </thead>
+            <tbody>
+                {% for p in positions %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ p.name }}</td>
+                    <td>
+                        {% if p.is_teacher %}
+                        <span class="badge bg-info text-dark">Да</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Нет</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'position-edit' p.pk %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-center text-muted py-4">Нет должностей</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

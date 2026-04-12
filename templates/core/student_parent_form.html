@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Добавить родителя{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Привязать родителя к {{ student.full_name }}</h2>
+    <a href="{% url 'student-detail' student.pk %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Назад
+    </a>
+</div>
+<div class="card" style="max-width: 500px;">
+    <div class="card-body">
+        <p class="text-muted mb-3">Выберите существующего родителя из списка или <a href="{% url 'parent-add' %}">добавьте нового</a>.</p>
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="mb-3">
+                <label class="form-label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<div class="text-danger small">{{ field.errors.0 }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary">Привязать</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

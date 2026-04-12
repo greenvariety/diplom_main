@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block title %}{{ student.full_name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{{ student.full_name }}</h2>
+    <div>
+        {% if user.is_admin %}
+        <a href="{% url 'student-edit' student.pk %}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-pencil me-1"></i>Редактировать
+        </a>
+        <a href="{% url 'student-delete-request' student.pk %}" class="btn btn-outline-danger me-2">
+            <i class="bi bi-trash me-1"></i>Удалить
+        </a>
+        {% endif %}
+        <a href="{% url 'student-list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Назад
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Personal info -->
+    <div class="col-md-4">
+        <div class="card mb-4 text-center">
+            <div class="card-body py-4">
+                {% if student.photo %}
+                <img src="{{ student.photo.url }}" class="rounded-circle mb-3" width="120" height="120" style="object-fit:cover;">
+                {% else %}
+                <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white mx-auto mb-3"
+                     style="width:120px;height:120px;font-size:3rem;">
+                    {{ student.first_name|first }}
+                </div>
+                {% endif %}
+                <h5>{{ student.full_name }}</h5>
+                <span class="badge badge-status-{{ student.status }} fs-6">{{ student.get_status_display }}</span>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header fw-semibold">Контактные данные</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>Дата рождения:</strong> {{ student.birth_date|default:"—" }}</li>
+                <li class="list-group-item"><strong>Телефон:</strong> {{ student.phone|default:"—" }}</li>
+                <li class="list-group-item"><strong>Email:</strong> {{ student.email|default:"—" }}</li>
+                <li class="list-group-item"><strong>Факультет:</strong> {{ student.faculty }}</li>
+                <li class="list-group-item"><strong>Группа:</strong> {% if student.group %}<a href="{% url 'group-detail' student.group.pk %}">{{ student.group }}</a>{% else %}—{% endif %}</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <!-- Parents -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Родители / Опекуны</span>
+                {% if user.is_admin %}
+                <a href="{% url 'student-add-parent' student.pk %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-lg me-1"></i>Добавить
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                <table class="table mb-0">
+                    <thead class="table-light"><tr><th>ФИО</th><th>Связь</th><th>Телефон</th><th></th></tr></thead>
+                    <tbody>
+                        {% for sp in parents %}
+                        <tr>
+                            <td><a href="{% url 'parent-detail' sp.parent.pk %}">{{ sp.parent.full_name }}</a></td>
+                            <td>{{ sp.get_relation_type_display }}</td>
+                            <td>{{ sp.parent.phone|default:"—" }}</td>
+                            <td>
+                                {% if user.is_admin %}
+                                <a href="{% url 'student-remove-parent' student.pk sp.pk %}"
+                                   class="btn btn-sm btn-outline-danger"
+                                   onclick="return confirm('Удалить связь?')">
+                                    <i class="bi bi-x"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="text-center text-muted py-3">Нет родителей</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Documents -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Документы</span>
+                {% if user.is_admin %}
+                <a href="{% url 'document-upload' 'student' student.pk %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-upload me-1"></i>Загрузить
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                <table class="table mb-0">
+                    <thead class="table-light"><tr><th>Тип</th><th>Дата загрузки</th><th></th></tr></thead>
+                    <tbody>
+                        {% for doc in documents %}
+                        <tr>
+                            <td>{{ doc.get_doc_type_display }}</td>
+                            <td>{{ doc.uploaded_at }}</td>
+                            <td>
+                                <a href="{{ doc.file.url }}" class="btn btn-sm btn-outline-primary me-1" target="_blank">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                {% if user.is_admin %}
+                                <a href="{% url 'document-delete' doc.pk %}"
+                                   class="btn btn-sm btn-outline-danger"
+                                   onclick="return confirm('Удалить документ?')">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center text-muted py-3">Нет документов</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

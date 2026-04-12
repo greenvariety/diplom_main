@@ -1,0 +1,81 @@
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    # Auth
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
+
+    # Dashboard
+    path('dashboard/', views.dashboard, name='dashboard'),
+    path('', views.dashboard, name='home'),
+
+    # Faculty
+    path('faculties/', views.faculty_list, name='faculty-list'),
+    path('faculties/add/', views.faculty_add, name='faculty-add'),
+    path('faculties/<int:pk>/edit/', views.faculty_edit, name='faculty-edit'),
+    path('faculties/<int:pk>/delete-request/', views.faculty_delete_request, name='faculty-delete-request'),
+
+    # Group
+    path('groups/', views.group_list, name='group-list'),
+    path('groups/add/', views.group_add, name='group-add'),
+    path('groups/<int:pk>/', views.group_detail, name='group-detail'),
+    path('groups/<int:pk>/edit/', views.group_edit, name='group-edit'),
+    path('groups/<int:pk>/delete-request/', views.group_delete_request, name='group-delete-request'),
+    path('groups/<int:pk>/subjects/add/', views.group_subject_add, name='group-subject-add'),
+    path('groups/<int:pk>/subjects/<int:assignment_pk>/delete/', views.group_subject_delete, name='group-subject-delete'),
+
+    # Student
+    path('students/', views.student_list, name='student-list'),
+    path('students/add/', views.student_add, name='student-add'),
+    path('students/<int:pk>/', views.student_detail, name='student-detail'),
+    path('students/<int:pk>/edit/', views.student_edit, name='student-edit'),
+    path('students/<int:pk>/delete-request/', views.student_delete_request, name='student-delete-request'),
+    path('students/<int:pk>/parents/add/', views.student_add_parent, name='student-add-parent'),
+    path('students/<int:pk>/parents/<int:sp_pk>/remove/', views.student_remove_parent, name='student-remove-parent'),
+
+    # Parent
+    path('parents/', views.parent_list, name='parent-list'),
+    path('parents/add/', views.parent_add, name='parent-add'),
+    path('parents/<int:pk>/', views.parent_detail, name='parent-detail'),
+    path('parents/<int:pk>/edit/', views.parent_edit, name='parent-edit'),
+    path('parents/<int:pk>/delete-request/', views.parent_delete_request, name='parent-delete-request'),
+
+    # Employee
+    path('employees/', views.employee_list, name='employee-list'),
+    path('employees/add/', views.employee_add, name='employee-add'),
+    path('employees/<int:pk>/', views.employee_detail, name='employee-detail'),
+    path('employees/<int:pk>/edit/', views.employee_edit, name='employee-edit'),
+    path('employees/<int:pk>/delete-request/', views.employee_delete_request, name='employee-delete-request'),
+
+    # Position
+    path('positions/', views.position_list, name='position-list'),
+    path('positions/add/', views.position_add, name='position-add'),
+    path('positions/<int:pk>/edit/', views.position_edit, name='position-edit'),
+
+    # Subject
+    path('subjects/', views.subject_list, name='subject-list'),
+    path('subjects/add/', views.subject_add, name='subject-add'),
+    path('subjects/<int:pk>/edit/', views.subject_edit, name='subject-edit'),
+
+    # Document
+    path('documents/upload/<str:owner_type>/<int:owner_id>/', views.document_upload, name='document-upload'),
+    path('documents/<int:pk>/delete/', views.document_delete, name='document-delete'),
+
+    # Users
+    path('users/', views.user_list, name='user-list'),
+    path('users/add/', views.user_add, name='user-add'),
+    path('users/<int:pk>/edit/', views.user_edit, name='user-edit'),
+    path('users/<int:pk>/password/', views.user_set_password, name='user-set-password'),
+
+    # Delete requests
+    path('delete-requests/', views.delete_request_list, name='delete-request-list'),
+    path('delete-requests/<int:pk>/approve/', views.delete_request_approve, name='delete-request-approve'),
+    path('delete-requests/<int:pk>/reject/', views.delete_request_reject, name='delete-request-reject'),
+
+    # Audit log
+    path('audit-log/', views.audit_log, name='audit-log'),
+
+    # Export
+    path('export/students/', views.export_students, name='export-students'),
+]
