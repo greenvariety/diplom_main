@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip list:*)",
+      "Bash(./venv/Scripts/pip install:*)",
+      "Bash(./venv/Scripts/python.exe --version)",
+      "Bash(./venv/Scripts/pip list:*)",
+      "Bash(git -C \"C:/Дипломная работа/Программа/Main/\" ls-files)",
+      "Bash(git -C \"C:/Дипломная работа/Программа/Main/\" status)"
+    ]
+  }
+}
