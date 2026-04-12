@@ -6,7 +6,19 @@
       "Bash(./venv/Scripts/python.exe --version)",
       "Bash(./venv/Scripts/pip list:*)",
       "Bash(git -C \"C:/Дипломная работа/Программа/Main/\" ls-files)",
-      "Bash(git -C \"C:/Дипломная работа/Программа/Main/\" status)"
+      "Bash(git -C \"C:/Дипломная работа/Программа/Main/\" status)",
+      "Bash(\"C:/Дипломная работа/Программа/Main/venv/Scripts/python.exe\" --version)",
+      "Bash(\"C:/Дипломная работа/Программа/Main/venv/Scripts/pip.exe\" list)",
+      "Bash(\"C:/Дипломная работа/Программа/Main/venv/Scripts/pip.exe\" install django==4.2 pillow django-crispy-forms crispy-bootstrap5 openpyxl)",
+      "Bash(\"C:/Дипломная работа/Программа/Main/venv/Scripts/python.exe\" -m django startproject config .)",
+      "Bash(\"C:/Дипломная работа/Программа/Main/venv/Scripts/python.exe\" manage.py startapp core)",
+      "Bash(\"C:/Дипломная работа/Программа/Main/venv/Scripts/python.exe\" manage.py makemigrations core)",
+      "Bash(\"C:/Дипломная работа/Программа/Main/venv/Scripts/python.exe\" manage.py migrate)",
+      "Bash(\"C:/Дипломная работа/Программа/Main/venv/Scripts/python.exe\" manage.py create_superadmin)",
+      "Bash(\"C:/Дипломная работа/Программа/Main/venv/Scripts/python.exe\" manage.py check)",
+      "Bash(\"C:/Дипломная работа/Программа/Main/venv/Scripts/python.exe\" manage.py runserver 8000)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:8000/login/)",
+      "Bash(taskkill /F /IM python.exe)"
     ]
   }
 }
