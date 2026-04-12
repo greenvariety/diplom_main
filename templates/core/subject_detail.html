@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}{{ subject.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="{% url 'subject-list' %}">Предметы</a></li>
+                <li class="breadcrumb-item active">{{ subject.name }}</li>
+            </ol>
+        </nav>
+        <h2 class="mb-0">{{ subject.name }}</h2>
+    </div>
+    {% if user.is_admin %}
+    <a href="{% url 'subject-edit' subject.pk %}" class="btn btn-outline-secondary">
+        <i class="bi bi-pencil me-1"></i>Редактировать
+    </a>
+    {% endif %}
+</div>
+
+<div class="row">
+    <!-- Current assignments: group + teacher -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header fw-semibold">Где преподаётся (группы)</div>
+            <div class="card-body p-0">
+                <table class="table mb-0">
+                    <thead class="table-light"><tr><th>Группа</th><th>Факультет</th><th>Преподаватель</th><th></th></tr></thead>
+                    <tbody>
+                        {% for a in assignments %}
+                        <tr>
+                            <td><a href="{% url 'group-detail' a.group.pk %}">{{ a.group.name }}</a></td>
+                            <td>{{ a.group.faculty.short_name }}</td>
+                            <td>{{ a.employee }}</td>
+                            <td>
+                                {% if user.is_admin %}
+                                <a href="{% url 'group-subject-delete' a.group.pk a.pk %}"
+                                   class="btn btn-sm btn-outline-danger"
+                                   onclick="return confirm('Убрать предмет из группы?')">
+                                    <i class="bi bi-x"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="text-center text-muted py-3">Предмет не назначен ни одной группе</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- All teachers — who teaches this subject -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header fw-semibold">
+                Преподаватели, ведущие этот предмет
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for teacher in all_teachers %}
+                    <li class="list-group-item d-flex align-items-center gap-2">
+                        {% if teacher.pk in assigned_employee_ids %}
+                        <i class="bi bi-check-circle-fill text-success"></i>
+                        {% else %}
+                        <i class="bi bi-circle text-muted"></i>
+                        {% endif %}
+                        <span {% if teacher.pk not in assigned_employee_ids %}class="text-muted"{% endif %}>
+                            {{ teacher }}
+                        </span>
+                        {% if teacher.position %}
+                        <small class="text-muted ms-auto">{{ teacher.position }}</small>
+                        {% endif %}
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-muted text-center py-3">
+                        Нет сотрудников с преподавательской должностью
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -19,9 +19,17 @@ class LoginForm(AuthenticationForm):
 class FacultyForm(forms.ModelForm):
     class Meta:
         model = Faculty
-        fields = ['name']
-        labels = {'name': 'Название факультета'}
-        widgets = {'name': forms.TextInput(attrs={'class': 'form-control'})}
+        fields = ['full_name', 'short_name', 'created_at']
+        labels = {
+            'full_name': 'Полное название',
+            'short_name': 'Сокращение (аббревиатура)',
+            'created_at': 'Дата создания',
+        }
+        widgets = {
+            'full_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'short_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'ИСИП'}),
+            'created_at': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -37,25 +45,28 @@ class PositionForm(forms.ModelForm):
 
 
 # ---------------------------------------------------------------------------
-# Group
+# Group  (name is auto-generated, user only sets faculty + year + headteacher)
 # ---------------------------------------------------------------------------
 
 class GroupForm(forms.ModelForm):
     class Meta:
         model = Group
-        fields = ['name', 'year', 'faculty', 'headteacher']
+        fields = ['faculty', 'year', 'headteacher']
         labels = {
-            'name': 'Название группы',
-            'year': 'Год набора',
             'faculty': 'Факультет',
+            'year': 'Год начала (напр. 2024)',
             'headteacher': 'Классный руководитель',
         }
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'year': forms.NumberInput(attrs={'class': 'form-control'}),
-            'faculty': forms.Select(attrs={'class': 'form-select'}),
-            'headteacher': forms.Select(attrs={'class': 'form-select'}),
+            'faculty': forms.Select(attrs={'class': 'form-select select2'}),
+            'year': forms.NumberInput(attrs={'class': 'form-control', 'min': 2000, 'max': 2100}),
+            'headteacher': forms.Select(attrs={'class': 'form-select select2'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['headteacher'].queryset = Employee.objects.select_related('position')
+        self.fields['headteacher'].empty_label = '— Не назначен —'
 
 
 # ---------------------------------------------------------------------------
@@ -71,16 +82,9 @@ class StudentForm(forms.ModelForm):
             'status', 'faculty', 'group',
         ]
         labels = {
-            'last_name': 'Фамилия',
-            'first_name': 'Имя',
-            'middle_name': 'Отчество',
-            'birth_date': 'Дата рождения',
-            'phone': 'Телефон',
-            'email': 'Email',
-            'photo': 'Фото',
-            'status': 'Статус',
-            'faculty': 'Факультет',
-            'group': 'Группа',
+            'last_name': 'Фамилия', 'first_name': 'Имя', 'middle_name': 'Отчество',
+            'birth_date': 'Дата рождения', 'phone': 'Телефон', 'email': 'Email',
+            'photo': 'Фото', 'status': 'Статус', 'faculty': 'Факультет', 'group': 'Группа',
         }
         widgets = {
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
@@ -90,9 +94,14 @@ class StudentForm(forms.ModelForm):
             'phone': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
-            'faculty': forms.Select(attrs={'class': 'form-select'}),
-            'group': forms.Select(attrs={'class': 'form-select'}),
+            'faculty': forms.Select(attrs={'class': 'form-select select2'}),
+            'group': forms.Select(attrs={'class': 'form-select select2'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['group'].queryset = Group.objects.select_related('faculty')
+        self.fields['group'].empty_label = '— Без группы (абитуриент) —'
 
 
 class StudentFilterForm(forms.Form):
@@ -103,12 +112,12 @@ class StudentFilterForm(forms.Form):
     faculty = forms.ModelChoiceField(
         queryset=Faculty.objects.all(), required=False, label='Факультет',
         empty_label='Все факультеты',
-        widget=forms.Select(attrs={'class': 'form-select'}),
+        widget=forms.Select(attrs={'class': 'form-select select2'}),
     )
     group = forms.ModelChoiceField(
-        queryset=Group.objects.all(), required=False, label='Группа',
+        queryset=Group.objects.select_related('faculty'), required=False, label='Группа',
         empty_label='Все группы',
-        widget=forms.Select(attrs={'class': 'form-select'}),
+        widget=forms.Select(attrs={'class': 'form-select select2'}),
     )
     status = forms.ChoiceField(
         choices=[('', 'Все статусы')] + Student.STATUS_CHOICES,
@@ -118,24 +127,16 @@ class StudentFilterForm(forms.Form):
 
 
 # ---------------------------------------------------------------------------
-# Parent
+# Parent / Guardian
 # ---------------------------------------------------------------------------
 
 class ParentForm(forms.ModelForm):
     class Meta:
         model = Parent
-        fields = [
-            'last_name', 'first_name', 'middle_name',
-            'birth_date', 'phone', 'email', 'photo',
-        ]
+        fields = ['last_name', 'first_name', 'middle_name', 'birth_date', 'phone', 'email', 'photo']
         labels = {
-            'last_name': 'Фамилия',
-            'first_name': 'Имя',
-            'middle_name': 'Отчество',
-            'birth_date': 'Дата рождения',
-            'phone': 'Телефон',
-            'email': 'Email',
-            'photo': 'Фото',
+            'last_name': 'Фамилия', 'first_name': 'Имя', 'middle_name': 'Отчество',
+            'birth_date': 'Дата рождения', 'phone': 'Телефон', 'email': 'Email', 'photo': 'Фото',
         }
         widgets = {
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
@@ -151,11 +152,15 @@ class StudentParentForm(forms.ModelForm):
     class Meta:
         model = StudentParent
         fields = ['parent', 'relation_type']
-        labels = {'parent': 'Родитель / Опекун', 'relation_type': 'Тип связи'}
+        labels = {'parent': 'Опекун / Родитель', 'relation_type': 'Тип связи'}
         widgets = {
-            'parent': forms.Select(attrs={'class': 'form-select'}),
+            'parent': forms.Select(attrs={'class': 'form-select select2'}),
             'relation_type': forms.Select(attrs={'class': 'form-select'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['parent'].queryset = Parent.objects.all()
 
 
 # ---------------------------------------------------------------------------
@@ -165,19 +170,11 @@ class StudentParentForm(forms.ModelForm):
 class EmployeeForm(forms.ModelForm):
     class Meta:
         model = Employee
-        fields = [
-            'last_name', 'first_name', 'middle_name',
-            'birth_date', 'phone', 'email', 'photo', 'position',
-        ]
+        fields = ['last_name', 'first_name', 'middle_name', 'birth_date', 'phone', 'email', 'photo', 'position']
         labels = {
-            'last_name': 'Фамилия',
-            'first_name': 'Имя',
-            'middle_name': 'Отчество',
-            'birth_date': 'Дата рождения',
-            'phone': 'Телефон',
-            'email': 'Email',
-            'photo': 'Фото',
-            'position': 'Должность',
+            'last_name': 'Фамилия', 'first_name': 'Имя', 'middle_name': 'Отчество',
+            'birth_date': 'Дата рождения', 'phone': 'Телефон', 'email': 'Email',
+            'photo': 'Фото', 'position': 'Должность',
         }
         widgets = {
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
@@ -186,7 +183,7 @@ class EmployeeForm(forms.ModelForm):
             'birth_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'phone': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'position': forms.Select(attrs={'class': 'form-select'}),
+            'position': forms.Select(attrs={'class': 'form-select select2'}),
         }
 
 
@@ -212,9 +209,33 @@ class GroupSubjectEmployeeForm(forms.ModelForm):
         fields = ['subject', 'employee']
         labels = {'subject': 'Предмет', 'employee': 'Преподаватель'}
         widgets = {
-            'subject': forms.Select(attrs={'class': 'form-select'}),
-            'employee': forms.Select(attrs={'class': 'form-select'}),
+            'subject': forms.Select(attrs={'class': 'form-select select2'}),
+            'employee': forms.Select(attrs={'class': 'form-select select2'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['employee'].queryset = Employee.objects.select_related('position')
+
+
+# ---------------------------------------------------------------------------
+# Subject teacher assignment (checkboxes on subject detail)
+# ---------------------------------------------------------------------------
+
+class SubjectTeacherForm(forms.Form):
+    """Assign which employees teach this subject (across groups)."""
+    employees = forms.ModelMultipleChoiceField(
+        queryset=Employee.objects.none(),
+        widget=forms.CheckboxSelectMultiple(),
+        required=False,
+        label='Преподаватели',
+    )
+
+    def __init__(self, *args, subject=None, group=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['employees'].queryset = Employee.objects.select_related('position').filter(
+            position__is_teacher=True
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -226,9 +247,7 @@ class DocumentForm(forms.ModelForm):
         model = Document
         fields = ['doc_type', 'file']
         labels = {'doc_type': 'Тип документа', 'file': 'Файл'}
-        widgets = {
-            'doc_type': forms.Select(attrs={'class': 'form-select'}),
-        }
+        widgets = {'doc_type': forms.Select(attrs={'class': 'form-select'})}
 
 
 # ---------------------------------------------------------------------------
@@ -251,7 +270,7 @@ class UserCreateForm(forms.ModelForm):
         widgets = {
             'username': forms.TextInput(attrs={'class': 'form-control'}),
             'role': forms.Select(attrs={'class': 'form-select'}),
-            'employee': forms.Select(attrs={'class': 'form-select'}),
+            'employee': forms.Select(attrs={'class': 'form-select select2'}),
         }
 
     def clean(self):
@@ -278,7 +297,7 @@ class UserEditForm(forms.ModelForm):
         widgets = {
             'username': forms.TextInput(attrs={'class': 'form-control'}),
             'role': forms.Select(attrs={'class': 'form-select'}),
-            'employee': forms.Select(attrs={'class': 'form-select'}),
+            'employee': forms.Select(attrs={'class': 'form-select select2'}),
         }
 
 

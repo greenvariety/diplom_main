@@ -7,15 +7,17 @@ from django.db import models
 # ---------------------------------------------------------------------------
 
 class Faculty(models.Model):
-    name = models.CharField(max_length=255, verbose_name='Название')
+    full_name = models.CharField(max_length=255, verbose_name='Полное название')
+    short_name = models.CharField(max_length=50, verbose_name='Сокращение (аббревиатура)')
+    created_at = models.DateField(null=True, blank=True, verbose_name='Дата создания')
 
     class Meta:
         verbose_name = 'Факультет'
         verbose_name_plural = 'Факультеты'
-        ordering = ['name']
+        ordering = ['full_name']
 
     def __str__(self):
-        return self.name
+        return f'{self.full_name} ({self.short_name})'
 
 
 # ---------------------------------------------------------------------------
@@ -69,8 +71,8 @@ class Employee(models.Model):
 # ---------------------------------------------------------------------------
 
 class Group(models.Model):
-    name = models.CharField(max_length=100, verbose_name='Название')
-    year = models.IntegerField(verbose_name='Год набора')
+    group_number = models.PositiveIntegerField(verbose_name='Номер группы', default=1)
+    year = models.IntegerField(verbose_name='Год начала')
     faculty = models.ForeignKey(
         Faculty, on_delete=models.CASCADE, related_name='groups',
         verbose_name='Факультет'
@@ -83,7 +85,19 @@ class Group(models.Model):
     class Meta:
         verbose_name = 'Группа'
         verbose_name_plural = 'Группы'
-        ordering = ['name']
+        ordering = ['faculty', 'group_number']
+
+    @property
+    def name(self):
+        year_short = str(self.year)[-2:]
+        short = self.faculty.short_name if self.faculty_id else '?'
+        return f'{short}-{self.group_number}-{year_short}'
+
+    def save(self, *args, **kwargs):
+        if not self.pk and self.faculty_id:
+            count = Group.objects.filter(faculty_id=self.faculty_id).count()
+            self.group_number = count + 1
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -135,7 +149,7 @@ class Student(models.Model):
 
 
 # ---------------------------------------------------------------------------
-# Parent
+# Parent / Guardian (Опекун)
 # ---------------------------------------------------------------------------
 
 class Parent(models.Model):
@@ -148,8 +162,8 @@ class Parent(models.Model):
     photo = models.ImageField(upload_to='parents/', null=True, blank=True, verbose_name='Фото')
 
     class Meta:
-        verbose_name = 'Родитель'
-        verbose_name_plural = 'Родители'
+        verbose_name = 'Опекун'
+        verbose_name_plural = 'Опекуны'
         ordering = ['last_name', 'first_name']
 
     def __str__(self):
@@ -176,15 +190,15 @@ class StudentParent(models.Model):
     )
     parent = models.ForeignKey(
         Parent, on_delete=models.CASCADE, related_name='student_parents',
-        verbose_name='Родитель'
+        verbose_name='Опекун'
     )
     relation_type = models.CharField(
         max_length=20, choices=RELATION_CHOICES, verbose_name='Тип связи'
     )
 
     class Meta:
-        verbose_name = 'Связь студент-родитель'
-        verbose_name_plural = 'Связи студент-родитель'
+        verbose_name = 'Связь студент-опекун'
+        verbose_name_plural = 'Связи студент-опекун'
         unique_together = [('student', 'parent')]
 
     def __str__(self):
@@ -242,7 +256,7 @@ class Document(models.Model):
     OWNER_TYPE_CHOICES = [
         ('student', 'Студент'),
         ('employee', 'Сотрудник'),
-        ('parent', 'Родитель'),
+        ('parent', 'Опекун'),
     ]
     DOC_TYPE_CHOICES = [
         ('passport', 'Паспорт'),
@@ -350,7 +364,7 @@ class DeleteRequest(models.Model):
         ('Group', 'Группа'),
         ('Student', 'Студент'),
         ('Employee', 'Сотрудник'),
-        ('Parent', 'Родитель'),
+        ('Parent', 'Опекун'),
     ]
 
     user = models.ForeignKey(

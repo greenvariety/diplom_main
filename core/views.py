@@ -1,6 +1,6 @@
 import json
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.conf import settings
@@ -52,29 +52,30 @@ def dashboard(request):
     context = {}
 
     if user.is_superadmin:
-        context['total_students'] = Student.objects.count()
-        context['total_employees'] = Employee.objects.count()
+        # Order: faculties, groups, students, pending requests
         context['total_faculties'] = Faculty.objects.count()
         context['total_groups'] = Group.objects.count()
+        context['total_students'] = Student.objects.count()
+        context['total_employees'] = Employee.objects.count()
         context['pending_requests'] = DeleteRequest.objects.filter(status='pending').count()
         context['recent_logs'] = AuditLog.objects.select_related('user')[:10]
 
     elif user.is_admin:
-        context['total_students'] = Student.objects.count()
-        context['total_employees'] = Employee.objects.count()
         context['total_faculties'] = Faculty.objects.count()
         context['total_groups'] = Group.objects.count()
+        context['total_students'] = Student.objects.count()
+        context['total_employees'] = Employee.objects.count()
 
     else:  # teacher
         if user.employee:
             my_groups = Group.objects.filter(
                 Q(headteacher=user.employee) |
                 Q(subject_assignments__employee=user.employee)
-            ).distinct()
+            ).distinct().select_related('faculty')
             context['my_groups'] = my_groups
             context['my_subjects'] = GroupSubjectEmployee.objects.filter(
                 employee=user.employee
-            ).select_related('group', 'subject')
+            ).select_related('group', 'group__faculty', 'subject')
 
     return render(request, 'core/dashboard.html', context)
 
@@ -85,8 +86,13 @@ def dashboard(request):
 
 @login_required
 def faculty_list(request):
+    q = request.GET.get('q', '')
     faculties = Faculty.objects.annotate(group_count=Count('groups'))
-    return render(request, 'core/faculty_list.html', {'faculties': faculties})
+    if q:
+        faculties = faculties.filter(
+            Q(full_name__icontains=q) | Q(short_name__icontains=q)
+        )
+    return render(request, 'core/faculty_list.html', {'faculties': faculties, 'q': q})
 
 
 @admin_required
@@ -95,7 +101,7 @@ def faculty_add(request):
     if request.method == 'POST' and form.is_valid():
         faculty = form.save()
         log_action(request.user, 'created', faculty, new_data=model_to_dict_safe(faculty))
-        messages.success(request, 'Факультет добавлен.')
+        messages.success(request, f'Факультет «{faculty.short_name}» добавлен.')
         return redirect('faculty-list')
     return render(request, 'core/faculty_form.html', {'form': form, 'title': 'Добавить факультет'})
 
@@ -110,12 +116,17 @@ def faculty_edit(request, pk):
         log_action(request.user, 'updated', faculty, old_data=old_data, new_data=model_to_dict_safe(faculty))
         messages.success(request, 'Факультет обновлён.')
         return redirect('faculty-list')
-    return render(request, 'core/faculty_form.html', {'form': form, 'title': 'Редактировать факультет', 'object': faculty})
+    return render(request, 'core/faculty_form.html', {
+        'form': form, 'title': 'Редактировать факультет', 'object': faculty,
+    })
 
 
 @admin_required
 def faculty_delete_request(request, pk):
     faculty = get_object_or_404(Faculty, pk=pk)
+    # Superadmin deletes directly
+    if request.user.is_superadmin:
+        return redirect('direct-delete', object_type='Faculty', pk=pk)
     if request.method == 'POST':
         form = DeleteRequestForm(request.POST)
         if form.is_valid():
@@ -140,6 +151,7 @@ def faculty_delete_request(request, pk):
 @login_required
 def group_list(request):
     user = request.user
+    q = request.GET.get('q', '')
     if user.is_admin:
         groups = Group.objects.select_related('faculty', 'headteacher').annotate(
             student_count=Count('students')
@@ -154,7 +166,14 @@ def group_list(request):
             )
         else:
             groups = Group.objects.none()
-    return render(request, 'core/group_list.html', {'groups': groups})
+    if q:
+        # filter by generated name parts: faculty short_name or year
+        groups = groups.filter(
+            Q(faculty__short_name__icontains=q) |
+            Q(faculty__full_name__icontains=q) |
+            Q(year__icontains=q)
+        )
+    return render(request, 'core/group_list.html', {'groups': groups, 'q': q})
 
 
 @admin_required
@@ -162,8 +181,10 @@ def group_add(request):
     form = GroupForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         group = form.save()
-        log_action(request.user, 'created', group, new_data=model_to_dict_safe(group))
-        messages.success(request, 'Группа создана.')
+        log_action(request.user, 'created', group, new_data={
+            'name': group.name, 'faculty': str(group.faculty), 'year': group.year,
+        })
+        messages.success(request, f'Группа «{group.name}» создана.')
         return redirect('group-list')
     return render(request, 'core/group_form.html', {'form': form, 'title': 'Создать группу'})
 
@@ -171,21 +192,24 @@ def group_add(request):
 @admin_required
 def group_edit(request, pk):
     group = get_object_or_404(Group, pk=pk)
-    old_data = model_to_dict_safe(group)
+    old_data = {'name': group.name, 'year': group.year, 'faculty': str(group.faculty)}
     form = GroupForm(request.POST or None, instance=group)
     if request.method == 'POST' and form.is_valid():
         group = form.save()
-        log_action(request.user, 'updated', group, old_data=old_data, new_data=model_to_dict_safe(group))
+        log_action(request.user, 'updated', group, old_data=old_data, new_data={
+            'name': group.name, 'year': group.year,
+        })
         messages.success(request, 'Группа обновлена.')
-        return redirect('group-list')
-    return render(request, 'core/group_form.html', {'form': form, 'title': 'Редактировать группу', 'object': group})
+        return redirect('group-detail', pk=pk)
+    return render(request, 'core/group_form.html', {
+        'form': form, 'title': 'Редактировать группу', 'object': group,
+    })
 
 
 @login_required
 def group_detail(request, pk):
     user = request.user
-    group = get_object_or_404(Group, pk=pk)
-    # teachers can only see their groups
+    group = get_object_or_404(Group.objects.select_related('faculty', 'headteacher'), pk=pk)
     if user.is_teacher_role and user.employee:
         allowed = Group.objects.filter(
             Q(headteacher=user.employee) | Q(subject_assignments__employee=user.employee),
@@ -193,7 +217,7 @@ def group_detail(request, pk):
         ).exists()
         if not allowed:
             return HttpResponseForbidden('Доступ запрещён')
-    students = group.students.all()
+    students = group.students.all().order_by('last_name', 'first_name')
     subjects = group.subject_assignments.select_related('subject', 'employee')
     return render(request, 'core/group_detail.html', {
         'group': group, 'students': students, 'subjects': subjects,
@@ -203,6 +227,8 @@ def group_detail(request, pk):
 @admin_required
 def group_delete_request(request, pk):
     group = get_object_or_404(Group, pk=pk)
+    if request.user.is_superadmin:
+        return redirect('direct-delete', object_type='Group', pk=pk)
     if request.method == 'POST':
         form = DeleteRequestForm(request.POST)
         if form.is_valid():
@@ -249,7 +275,7 @@ def group_subject_delete(request, pk, assignment_pk):
 def student_list(request):
     user = request.user
     form = StudentFilterForm(request.GET)
-    students = Student.objects.select_related('faculty', 'group')
+    students = Student.objects.select_related('faculty', 'group', 'group__faculty')
 
     if user.is_teacher_role and user.employee:
         allowed_groups = Group.objects.filter(
@@ -290,7 +316,7 @@ def student_add(request):
 @login_required
 def student_detail(request, pk):
     user = request.user
-    student = get_object_or_404(Student, pk=pk)
+    student = get_object_or_404(Student.objects.select_related('faculty', 'group', 'group__faculty'), pk=pk)
     if user.is_teacher_role and user.employee:
         if student.group:
             allowed = Group.objects.filter(
@@ -326,6 +352,8 @@ def student_edit(request, pk):
 @admin_required
 def student_delete_request(request, pk):
     student = get_object_or_404(Student, pk=pk)
+    if request.user.is_superadmin:
+        return redirect('direct-delete', object_type='Student', pk=pk)
     if request.method == 'POST':
         form = DeleteRequestForm(request.POST)
         if form.is_valid():
@@ -351,7 +379,7 @@ def student_add_parent(request, pk):
         sp = form.save(commit=False)
         sp.student = student
         sp.save()
-        messages.success(request, 'Родитель привязан.')
+        messages.success(request, 'Опекун привязан.')
         return redirect('student-detail', pk=pk)
     return render(request, 'core/student_parent_form.html', {'form': form, 'student': student})
 
@@ -365,13 +393,18 @@ def student_remove_parent(request, pk, sp_pk):
 
 
 # ---------------------------------------------------------------------------
-# Parent
+# Parent / Guardian
 # ---------------------------------------------------------------------------
 
 @admin_required
 def parent_list(request):
+    q = request.GET.get('q', '')
     parents = Parent.objects.all()
-    return render(request, 'core/parent_list.html', {'parents': parents})
+    if q:
+        parents = parents.filter(
+            Q(last_name__icontains=q) | Q(first_name__icontains=q) | Q(middle_name__icontains=q)
+        )
+    return render(request, 'core/parent_list.html', {'parents': parents, 'q': q})
 
 
 @admin_required
@@ -380,9 +413,9 @@ def parent_add(request):
     if request.method == 'POST' and form.is_valid():
         parent = form.save()
         log_action(request.user, 'created', parent, new_data=model_to_dict_safe(parent))
-        messages.success(request, 'Родитель добавлен.')
+        messages.success(request, 'Опекун добавлен.')
         return redirect('parent-list')
-    return render(request, 'core/parent_form.html', {'form': form, 'title': 'Добавить родителя'})
+    return render(request, 'core/parent_form.html', {'form': form, 'title': 'Добавить опекуна'})
 
 
 @admin_required
@@ -394,8 +427,10 @@ def parent_edit(request, pk):
         parent = form.save()
         log_action(request.user, 'updated', parent, old_data=old_data, new_data=model_to_dict_safe(parent))
         messages.success(request, 'Данные обновлены.')
-        return redirect('parent-list')
-    return render(request, 'core/parent_form.html', {'form': form, 'title': 'Редактировать родителя', 'object': parent})
+        return redirect('parent-detail', pk=pk)
+    return render(request, 'core/parent_form.html', {
+        'form': form, 'title': 'Редактировать опекуна', 'object': parent,
+    })
 
 
 @admin_required
@@ -411,6 +446,8 @@ def parent_detail(request, pk):
 @admin_required
 def parent_delete_request(request, pk):
     parent = get_object_or_404(Parent, pk=pk)
+    if request.user.is_superadmin:
+        return redirect('direct-delete', object_type='Parent', pk=pk)
     if request.method == 'POST':
         form = DeleteRequestForm(request.POST)
         if form.is_valid():
@@ -424,7 +461,7 @@ def parent_delete_request(request, pk):
     else:
         form = DeleteRequestForm()
     return render(request, 'core/delete_request_form.html', {
-        'form': form, 'object': parent, 'object_type': 'родителя',
+        'form': form, 'object': parent, 'object_type': 'опекуна',
     })
 
 
@@ -434,8 +471,13 @@ def parent_delete_request(request, pk):
 
 @admin_required
 def employee_list(request):
+    q = request.GET.get('q', '')
     employees = Employee.objects.select_related('position')
-    return render(request, 'core/employee_list.html', {'employees': employees})
+    if q:
+        employees = employees.filter(
+            Q(last_name__icontains=q) | Q(first_name__icontains=q) | Q(middle_name__icontains=q)
+        )
+    return render(request, 'core/employee_list.html', {'employees': employees, 'q': q})
 
 
 @admin_required
@@ -453,7 +495,7 @@ def employee_add(request):
 def employee_detail(request, pk):
     employee = get_object_or_404(Employee, pk=pk)
     groups = employee.headed_groups.select_related('faculty')
-    subjects = employee.subject_assignments.select_related('group', 'subject')
+    subjects = employee.subject_assignments.select_related('group', 'group__faculty', 'subject')
     documents = Document.objects.filter(owner_type='employee', owner_id=pk)
     return render(request, 'core/employee_detail.html', {
         'employee': employee, 'groups': groups, 'subjects': subjects, 'documents': documents,
@@ -478,6 +520,8 @@ def employee_edit(request, pk):
 @admin_required
 def employee_delete_request(request, pk):
     employee = get_object_or_404(Employee, pk=pk)
+    if request.user.is_superadmin:
+        return redirect('direct-delete', object_type='Employee', pk=pk)
     if request.method == 'POST':
         form = DeleteRequestForm(request.POST)
         if form.is_valid():
@@ -501,8 +545,11 @@ def employee_delete_request(request, pk):
 
 @superadmin_required
 def position_list(request):
+    q = request.GET.get('q', '')
     positions = Position.objects.all()
-    return render(request, 'core/position_list.html', {'positions': positions})
+    if q:
+        positions = positions.filter(name__icontains=q)
+    return render(request, 'core/position_list.html', {'positions': positions, 'q': q})
 
 
 @superadmin_required
@@ -537,8 +584,12 @@ def position_edit(request, pk):
 
 @admin_required
 def subject_list(request):
+    q = request.GET.get('q', '')
     subjects = Subject.objects.all()
-    return render(request, 'core/subject_list.html', {'subjects': subjects})
+    if q:
+        subjects = subjects.filter(name__icontains=q)
+    total = Subject.objects.count()
+    return render(request, 'core/subject_list.html', {'subjects': subjects, 'q': q, 'total': total})
 
 
 @admin_required
@@ -558,9 +609,32 @@ def subject_edit(request, pk):
     if request.method == 'POST' and form.is_valid():
         subject = form.save()
         messages.success(request, 'Предмет обновлён.')
-        return redirect('subject-list')
+        return redirect('subject-detail', pk=pk)
     return render(request, 'core/subject_form.html', {
         'form': form, 'title': 'Редактировать предмет', 'object': subject,
+    })
+
+
+@admin_required
+def subject_detail(request, pk):
+    subject = get_object_or_404(Subject, pk=pk)
+    # All current assignments for this subject
+    assignments = GroupSubjectEmployee.objects.filter(subject=subject).select_related(
+        'group', 'group__faculty', 'employee', 'employee__position'
+    )
+    # All teachers (employees with is_teacher position)
+    all_teachers = Employee.objects.filter(
+        position__is_teacher=True
+    ).select_related('position')
+
+    # IDs of employees currently teaching this subject (any group)
+    assigned_employee_ids = set(assignments.values_list('employee_id', flat=True))
+
+    return render(request, 'core/subject_detail.html', {
+        'subject': subject,
+        'assignments': assignments,
+        'all_teachers': all_teachers,
+        'assigned_employee_ids': assigned_employee_ids,
     })
 
 
@@ -610,8 +684,11 @@ def _redirect_to_owner(owner_type, owner_id):
 
 @superadmin_required
 def user_list(request):
+    q = request.GET.get('q', '')
     users = User.objects.select_related('employee').all()
-    return render(request, 'core/user_list.html', {'users': users})
+    if q:
+        users = users.filter(username__icontains=q)
+    return render(request, 'core/user_list.html', {'users': users, 'q': q})
 
 
 @superadmin_required
@@ -651,7 +728,58 @@ def user_set_password(request, pk):
 
 
 # ---------------------------------------------------------------------------
-# Delete requests
+# Direct delete (superadmin only — no DeleteRequest needed)
+# ---------------------------------------------------------------------------
+
+@superadmin_required
+def direct_delete(request, object_type, pk):
+    model_map = {
+        'Faculty': Faculty,
+        'Group': Group,
+        'Student': Student,
+        'Employee': Employee,
+        'Parent': Parent,
+    }
+    model_cls = model_map.get(object_type)
+    if not model_cls:
+        messages.error(request, 'Неизвестный тип объекта.')
+        return redirect('dashboard')
+
+    obj = get_object_or_404(model_cls, pk=pk)
+    form = DeleteConfirmForm(request.POST or None)
+
+    if request.method == 'POST' and form.is_valid():
+        entered = form.cleaned_data['confirmation_password']
+        if entered != settings.DELETE_CONFIRMATION_PASSWORD:
+            messages.error(request, 'Неверный пароль подтверждения.')
+        else:
+            old_data = model_to_dict_safe(obj)
+            log_action(request.user, 'deleted', obj, old_data=old_data)
+            obj.delete()
+            messages.success(request, f'Объект удалён.')
+            return _redirect_after_delete(object_type)
+
+    return render(request, 'core/direct_delete_confirm.html', {
+        'form': form,
+        'obj': obj,
+        'object_type': object_type,
+        'object_type_display': dict(DeleteRequest.OBJECT_TYPE_CHOICES).get(object_type, object_type),
+    })
+
+
+def _redirect_after_delete(object_type):
+    redirects = {
+        'Faculty': 'faculty-list',
+        'Group': 'group-list',
+        'Student': 'student-list',
+        'Employee': 'employee-list',
+        'Parent': 'parent-list',
+    }
+    return redirect(redirects.get(object_type, 'dashboard'))
+
+
+# ---------------------------------------------------------------------------
+# Delete requests (admin → superadmin approval flow)
 # ---------------------------------------------------------------------------
 
 @superadmin_required
@@ -673,8 +801,6 @@ def delete_request_approve(request, pk):
         if entered != settings.DELETE_CONFIRMATION_PASSWORD:
             messages.error(request, 'Неверный пароль подтверждения.')
             return render(request, 'core/delete_request_approve.html', {'form': form, 'dr': dr})
-
-        # Perform the actual delete
         _perform_delete(request.user, dr)
         dr.status = 'approved'
         dr.save()
@@ -695,11 +821,8 @@ def delete_request_reject(request, pk):
 
 def _perform_delete(user, dr):
     model_map = {
-        'Faculty': Faculty,
-        'Group': Group,
-        'Student': Student,
-        'Employee': Employee,
-        'Parent': Parent,
+        'Faculty': Faculty, 'Group': Group, 'Student': Student,
+        'Employee': Employee, 'Parent': Parent,
     }
     model_cls = model_map.get(dr.object_type)
     if not model_cls:
@@ -735,19 +858,20 @@ def export_students(request):
     group_id = request.GET.get('group')
     faculty_id = request.GET.get('faculty')
 
-    students = Student.objects.select_related('faculty', 'group')
+    students = Student.objects.select_related('faculty', 'group', 'group__faculty')
     title = 'Все студенты'
 
     if group_id:
         students = students.filter(group_id=group_id)
         try:
-            title = f'Группа {Group.objects.get(pk=group_id).name}'
+            g = Group.objects.select_related('faculty').get(pk=group_id)
+            title = f'Группа {g.name}'
         except Group.DoesNotExist:
             pass
     elif faculty_id:
         students = students.filter(faculty_id=faculty_id)
         try:
-            title = f'Факультет {Faculty.objects.get(pk=faculty_id).name}'
+            title = f'Факультет {Faculty.objects.get(pk=faculty_id).short_name}'
         except Faculty.DoesNotExist:
             pass
 
@@ -770,13 +894,13 @@ def export_students(request):
             student.phone,
             student.email,
             student.get_status_display(),
-            str(student.faculty),
-            str(student.group) if student.group else '',
+            student.faculty.short_name,
+            student.group.name if student.group else '',
         ])
 
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
-    response['Content-Disposition'] = f'attachment; filename="students.xlsx"'
+    response['Content-Disposition'] = 'attachment; filename="students.xlsx"'
     wb.save(response)
     return response

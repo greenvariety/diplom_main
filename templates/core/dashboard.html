@@ -4,63 +4,77 @@
 <h2 class="mb-4">Дашборд</h2>
 
 {% if user.is_superadmin %}
+<!-- Superadmin: Факультеты → Группы → Студенты → Заявки -->
 <div class="row g-3 mb-4">
     <div class="col-md-3">
-        <div class="card text-white bg-primary">
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <div>
-                    <div class="fs-2 fw-bold">{{ total_students }}</div>
-                    <div>Студентов</div>
+        <a href="{% url 'faculty-list' %}" class="text-decoration-none">
+            <div class="card text-white bg-primary h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fs-2 fw-bold">{{ total_faculties }}</div>
+                        <div>Факультетов</div>
+                    </div>
+                    <i class="bi bi-building fs-1 opacity-50"></i>
                 </div>
-                <i class="bi bi-person-badge fs-1 opacity-50"></i>
             </div>
-        </div>
+        </a>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-success">
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <div>
-                    <div class="fs-2 fw-bold">{{ total_employees }}</div>
-                    <div>Сотрудников</div>
+        <a href="{% url 'group-list' %}" class="text-decoration-none">
+            <div class="card text-white bg-info h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fs-2 fw-bold">{{ total_groups }}</div>
+                        <div>Групп</div>
+                    </div>
+                    <i class="bi bi-people fs-1 opacity-50"></i>
                 </div>
-                <i class="bi bi-briefcase fs-1 opacity-50"></i>
             </div>
-        </div>
+        </a>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-info">
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <div>
-                    <div class="fs-2 fw-bold">{{ total_groups }}</div>
-                    <div>Групп</div>
+        <a href="{% url 'student-list' %}" class="text-decoration-none">
+            <div class="card text-white bg-success h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fs-2 fw-bold">{{ total_students }}</div>
+                        <div>Студентов</div>
+                    </div>
+                    <i class="bi bi-person-badge fs-1 opacity-50"></i>
                 </div>
-                <i class="bi bi-people fs-1 opacity-50"></i>
             </div>
-        </div>
+        </a>
     </div>
     <div class="col-md-3">
-        <div class="card text-white {% if pending_requests > 0 %}bg-danger{% else %}bg-secondary{% endif %}">
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <div>
-                    <div class="fs-2 fw-bold">{{ pending_requests }}</div>
-                    <div>Заявок на удаление</div>
+        <a href="{% url 'delete-request-list' %}" class="text-decoration-none">
+            <div class="card text-white {% if pending_requests > 0 %}bg-danger{% else %}bg-secondary{% endif %} h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fs-2 fw-bold">{{ pending_requests }}</div>
+                        <div>Заявок на удаление</div>
+                    </div>
+                    <i class="bi bi-trash fs-1 opacity-50"></i>
                 </div>
-                <i class="bi bi-trash fs-1 opacity-50"></i>
             </div>
-        </div>
+        </a>
     </div>
 </div>
 
 {% if pending_requests > 0 %}
-<div class="alert alert-danger">
-    <i class="bi bi-exclamation-triangle me-2"></i>
-    Есть <strong>{{ pending_requests }}</strong> ожидающих заявок на удаление.
-    <a href="{% url 'delete-request-list' %}" class="alert-link">Просмотреть</a>
+<div class="alert alert-danger d-flex align-items-center">
+    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+    <div>
+        Есть <strong>{{ pending_requests }}</strong> ожидающих заявок на удаление.
+        <a href="{% url 'delete-request-list' %}" class="alert-link ms-2">Просмотреть →</a>
+    </div>
 </div>
 {% endif %}
 
 <div class="card">
-    <div class="card-header fw-semibold">Последние изменения</div>
+    <div class="card-header fw-semibold d-flex justify-content-between">
+        <span>Последние изменения</span>
+        <a href="{% url 'audit-log' %}" class="btn btn-sm btn-outline-secondary">Весь журнал</a>
+    </div>
     <div class="card-body p-0">
         <table class="table table-sm mb-0">
             <thead class="table-light">
@@ -89,48 +103,44 @@
 {% elif user.is_admin %}
 <div class="row g-3 mb-4">
     <div class="col-md-3">
-        <div class="card text-white bg-primary">
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <div>
-                    <div class="fs-2 fw-bold">{{ total_students }}</div>
-                    <div>Студентов</div>
+        <a href="{% url 'faculty-list' %}" class="text-decoration-none">
+            <div class="card text-white bg-primary h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div><div class="fs-2 fw-bold">{{ total_faculties }}</div><div>Факультетов</div></div>
+                    <i class="bi bi-building fs-1 opacity-50"></i>
                 </div>
-                <i class="bi bi-person-badge fs-1 opacity-50"></i>
             </div>
-        </div>
+        </a>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-success">
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <div>
-                    <div class="fs-2 fw-bold">{{ total_employees }}</div>
-                    <div>Сотрудников</div>
+        <a href="{% url 'group-list' %}" class="text-decoration-none">
+            <div class="card text-white bg-info h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div><div class="fs-2 fw-bold">{{ total_groups }}</div><div>Групп</div></div>
+                    <i class="bi bi-people fs-1 opacity-50"></i>
                 </div>
-                <i class="bi bi-briefcase fs-1 opacity-50"></i>
             </div>
-        </div>
+        </a>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-info">
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <div>
-                    <div class="fs-2 fw-bold">{{ total_groups }}</div>
-                    <div>Групп</div>
+        <a href="{% url 'student-list' %}" class="text-decoration-none">
+            <div class="card text-white bg-success h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div><div class="fs-2 fw-bold">{{ total_students }}</div><div>Студентов</div></div>
+                    <i class="bi bi-person-badge fs-1 opacity-50"></i>
                 </div>
-                <i class="bi bi-people fs-1 opacity-50"></i>
             </div>
-        </div>
+        </a>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-secondary">
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <div>
-                    <div class="fs-2 fw-bold">{{ total_faculties }}</div>
-                    <div>Факультетов</div>
+        <a href="{% url 'employee-list' %}" class="text-decoration-none">
+            <div class="card text-white bg-secondary h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div><div class="fs-2 fw-bold">{{ total_employees }}</div><div>Сотрудников</div></div>
+                    <i class="bi bi-briefcase fs-1 opacity-50"></i>
                 </div>
-                <i class="bi bi-building fs-1 opacity-50"></i>
             </div>
-        </div>
+        </a>
     </div>
 </div>
 <div class="row g-3">
@@ -161,21 +171,18 @@
 </div>
 
 {% else %}
-<!-- Teacher dashboard -->
+<!-- Teacher -->
 <h5 class="mb-3">Мои группы</h5>
 {% if my_groups %}
 <div class="row g-3">
     {% for group in my_groups %}
     <div class="col-md-4">
-        <div class="card">
+        <a href="{% url 'group-detail' group.pk %}" class="card text-decoration-none text-dark">
             <div class="card-body">
-                <h6 class="card-title">{{ group.name }}</h6>
-                <p class="text-muted small mb-2">{{ group.faculty }}</p>
-                <a href="{% url 'group-detail' group.pk %}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-eye me-1"></i>Открыть
-                </a>
+                <h6 class="card-title fw-bold">{{ group.name }}</h6>
+                <p class="text-muted small mb-0">{{ group.faculty.full_name }}</p>
             </div>
-        </div>
+        </a>
     </div>
     {% endfor %}
 </div>
@@ -192,7 +199,7 @@
             {% for s in my_subjects %}
             <tr>
                 <td>{{ s.subject }}</td>
-                <td><a href="{% url 'group-detail' s.group.pk %}">{{ s.group }}</a></td>
+                <td><a href="{% url 'group-detail' s.group.pk %}">{{ s.group.name }}</a></td>
             </tr>
             {% endfor %}
         </tbody>

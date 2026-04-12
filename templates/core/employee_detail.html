@@ -2,20 +2,25 @@
 {% block title %}{{ employee }}{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>{{ employee }}</h2>
     <div>
-        {% if user.is_admin %}
-        <a href="{% url 'employee-edit' employee.pk %}" class="btn btn-outline-secondary me-2">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="{% url 'employee-list' %}">Сотрудники</a></li>
+                <li class="breadcrumb-item active">{{ employee }}</li>
+            </ol>
+        </nav>
+        <h2 class="mb-0">{{ employee }}</h2>
+    </div>
+    {% if user.is_admin %}
+    <div class="d-flex gap-2">
+        <a href="{% url 'employee-edit' employee.pk %}" class="btn btn-outline-secondary">
             <i class="bi bi-pencil me-1"></i>Редактировать
         </a>
-        <a href="{% url 'employee-delete-request' employee.pk %}" class="btn btn-outline-danger me-2">
+        <a href="{% url 'employee-delete-request' employee.pk %}" class="btn btn-outline-danger">
             <i class="bi bi-trash me-1"></i>Удалить
         </a>
-        {% endif %}
-        <a href="{% url 'employee-list' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i>Назад
-        </a>
     </div>
+    {% endif %}
 </div>
 
 <div class="row">
@@ -27,24 +32,28 @@
                 {% else %}
                 <div class="rounded-circle bg-success d-flex align-items-center justify-content-center text-white mx-auto mb-3"
                      style="width:120px;height:120px;font-size:3rem;">
-                    {{ employee.first_name|first }}
+                    {{ employee.last_name|first }}
                 </div>
                 {% endif %}
                 <h5>{{ employee }}</h5>
                 {% if employee.position %}
                 <span class="badge bg-secondary">{{ employee.position }}</span>
-                {% if employee.position.is_teacher %}
-                <span class="badge bg-info text-dark ms-1">Преподаватель</span>
-                {% endif %}
+                {% if employee.position.is_teacher %}<span class="badge bg-info text-dark ms-1">Преподаватель</span>{% endif %}
                 {% endif %}
             </div>
         </div>
         <div class="card mb-4">
             <div class="card-header fw-semibold">Контактные данные</div>
             <ul class="list-group list-group-flush">
-                <li class="list-group-item"><strong>Дата рождения:</strong> {{ employee.birth_date|default:"—" }}</li>
-                <li class="list-group-item"><strong>Телефон:</strong> {{ employee.phone|default:"—" }}</li>
-                <li class="list-group-item"><strong>Email:</strong> {{ employee.email|default:"—" }}</li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Дата рождения</span><span>{{ employee.birth_date|default:"—" }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Телефон</span><span>{{ employee.phone|default:"—" }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Email</span><span>{{ employee.email|default:"—" }}</span>
+                </li>
             </ul>
         </div>
     </div>
@@ -57,7 +66,7 @@
                 {% for g in groups %}
                 <li class="list-group-item">
                     <a href="{% url 'group-detail' g.pk %}">{{ g.name }}</a>
-                    <span class="text-muted ms-2">{{ g.faculty }}</span>
+                    <span class="text-muted ms-2 small">{{ g.faculty.short_name }}</span>
                 </li>
                 {% endfor %}
             </ul>
@@ -73,7 +82,7 @@
                     {% for s in subjects %}
                     <tr>
                         <td>{{ s.subject }}</td>
-                        <td><a href="{% url 'group-detail' s.group.pk %}">{{ s.group }}</a></td>
+                        <td><a href="{% url 'group-detail' s.group.pk %}">{{ s.group.name }}</a></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -81,7 +90,6 @@
         </div>
         {% endif %}
 
-        <!-- Documents -->
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span class="fw-semibold">Документы</span>

@@ -9,34 +9,43 @@
     </a>
     {% endif %}
 </div>
+
+<!-- Search -->
+<form method="get" class="mb-3">
+    <div class="input-group" style="max-width:400px;">
+        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Поиск по названию...">
+        <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+        {% if q %}<a href="{% url 'faculty-list' %}" class="btn btn-outline-danger"><i class="bi bi-x"></i></a>{% endif %}
+    </div>
+</form>
+
 <div class="card">
     <div class="card-body p-0">
         <table class="table table-hover mb-0">
             <thead class="table-light">
-                <tr><th>#</th><th>Название</th><th>Групп</th><th>Действия</th></tr>
+                <tr>
+                    <th>#</th>
+                    <th>Полное название</th>
+                    <th>Аббревиатура</th>
+                    <th>Дата создания</th>
+                    <th>Групп</th>
+                </tr>
             </thead>
             <tbody>
                 {% for f in faculties %}
-                <tr>
+                <tr onclick="window.location='{% url 'faculty-edit' f.pk %}'" style="cursor:pointer;">
                     <td>{{ forloop.counter }}</td>
-                    <td>{{ f.name }}</td>
-                    <td>{{ f.group_count }}</td>
-                    <td>
-                        {% if user.is_admin %}
-                        <a href="{% url 'faculty-edit' f.pk %}" class="btn btn-sm btn-outline-secondary me-1">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-                        <a href="{% url 'faculty-delete-request' f.pk %}" class="btn btn-sm btn-outline-danger">
-                            <i class="bi bi-trash"></i>
-                        </a>
-                        {% endif %}
-                    </td>
+                    <td>{{ f.full_name }}</td>
+                    <td><span class="badge bg-primary fs-6">{{ f.short_name }}</span></td>
+                    <td>{{ f.created_at|default:"—" }}</td>
+                    <td><span class="badge bg-secondary">{{ f.group_count }}</span></td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="4" class="text-center text-muted py-4">Нет факультетов</td></tr>
+                <tr><td colspan="5" class="text-center text-muted py-4">Нет факультетов</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    <div class="card-footer text-muted small">Всего: {{ faculties|length }}</div>
 </div>
 {% endblock %}

@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Удаление объекта{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Удаление объекта</h2>
+    <button onclick="history.back()" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Назад
+    </button>
+</div>
+<div class="card border-danger" style="max-width:600px;">
+    <div class="card-header bg-danger text-white fw-semibold">
+        <i class="bi bi-exclamation-octagon me-2"></i>Необратимое действие
+    </div>
+    <div class="card-body">
+        <p class="mb-3">
+            Вы удаляете <strong>{{ object_type_display }}</strong>:
+            <span class="badge bg-dark fs-6 ms-1">{{ obj }}</span>
+        </p>
+        <div class="alert alert-warning small">
+            <i class="bi bi-info-circle me-1"></i>
+            {% if object_type == 'Faculty' %}При удалении факультета удалятся все его группы и студенты.
+            {% elif object_type == 'Group' %}При удалении группы удалятся все студенты группы.
+            {% else %}Данный объект будет удалён без возможности восстановления.{% endif %}
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="mb-3">
+                <label class="form-label fw-semibold">{{ field.label }}</label>
+                {{ field }}
+                <div class="form-text">Введите специальный пароль подтверждения.</div>
+                {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors.0 }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-danger">
+                <i class="bi bi-trash me-1"></i>Удалить безвозвратно
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

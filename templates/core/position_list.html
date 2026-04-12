@@ -7,32 +7,36 @@
         <i class="bi bi-plus-lg me-1"></i>Добавить
     </a>
 </div>
+
+<form method="get" class="mb-3">
+    <div class="input-group" style="max-width:400px;">
+        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Поиск...">
+        <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+        {% if q %}<a href="{% url 'position-list' %}" class="btn btn-outline-danger"><i class="bi bi-x"></i></a>{% endif %}
+    </div>
+</form>
+
 <div class="card">
     <div class="card-body p-0">
         <table class="table table-hover mb-0">
             <thead class="table-light">
-                <tr><th>#</th><th>Название</th><th>Преподавательская</th><th>Действия</th></tr>
+                <tr><th>#</th><th>Название</th><th>Тип</th></tr>
             </thead>
             <tbody>
                 {% for p in positions %}
-                <tr>
+                <tr onclick="window.location='{% url 'position-edit' p.pk %}'" style="cursor:pointer;">
                     <td>{{ forloop.counter }}</td>
                     <td>{{ p.name }}</td>
                     <td>
                         {% if p.is_teacher %}
-                        <span class="badge bg-info text-dark">Да</span>
+                        <span class="badge bg-info text-dark">Преподавательская</span>
                         {% else %}
-                        <span class="badge bg-secondary">Нет</span>
+                        <span class="badge bg-secondary">Административная</span>
                         {% endif %}
-                    </td>
-                    <td>
-                        <a href="{% url 'position-edit' p.pk %}" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-pencil"></i>
-                        </a>
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="4" class="text-center text-muted py-4">Нет должностей</td></tr>
+                <tr><td colspan="3" class="text-center text-muted py-4">Нет должностей</td></tr>
                 {% endfor %}
             </tbody>
         </table>

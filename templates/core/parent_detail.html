@@ -2,16 +2,21 @@
 {% block title %}{{ parent }}{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>{{ parent }}</h2>
     <div>
-        <a href="{% url 'parent-edit' parent.pk %}" class="btn btn-outline-secondary me-2">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="{% url 'parent-list' %}">Опекуны</a></li>
+                <li class="breadcrumb-item active">{{ parent }}</li>
+            </ol>
+        </nav>
+        <h2 class="mb-0">{{ parent }}</h2>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'parent-edit' parent.pk %}" class="btn btn-outline-secondary">
             <i class="bi bi-pencil me-1"></i>Редактировать
         </a>
-        <a href="{% url 'parent-delete-request' parent.pk %}" class="btn btn-outline-danger me-2">
+        <a href="{% url 'parent-delete-request' parent.pk %}" class="btn btn-outline-danger">
             <i class="bi bi-trash me-1"></i>Удалить
-        </a>
-        <a href="{% url 'parent-list' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i>Назад
         </a>
     </div>
 </div>
@@ -24,7 +29,7 @@
                 {% else %}
                 <div class="rounded-circle bg-info d-flex align-items-center justify-content-center text-white mx-auto mb-3"
                      style="width:120px;height:120px;font-size:3rem;">
-                    {{ parent.first_name|first }}
+                    {{ parent.last_name|first }}
                 </div>
                 {% endif %}
                 <h5>{{ parent }}</h5>
@@ -33,30 +38,35 @@
         <div class="card mb-4">
             <div class="card-header fw-semibold">Контакты</div>
             <ul class="list-group list-group-flush">
-                <li class="list-group-item"><strong>Дата рождения:</strong> {{ parent.birth_date|default:"—" }}</li>
-                <li class="list-group-item"><strong>Телефон:</strong> {{ parent.phone|default:"—" }}</li>
-                <li class="list-group-item"><strong>Email:</strong> {{ parent.email|default:"—" }}</li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Дата рождения</span><span>{{ parent.birth_date|default:"—" }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Телефон</span><span>{{ parent.phone|default:"—" }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Email</span><span>{{ parent.email|default:"—" }}</span>
+                </li>
             </ul>
         </div>
     </div>
     <div class="col-md-8">
         <div class="card mb-4">
-            <div class="card-header fw-semibold">Студенты</div>
+            <div class="card-header fw-semibold">Привязанные студенты</div>
             <table class="table mb-0">
                 <thead class="table-light"><tr><th>Студент</th><th>Связь</th></tr></thead>
                 <tbody>
                     {% for link in links %}
-                    <tr>
-                        <td><a href="{% url 'student-detail' link.student.pk %}">{{ link.student.full_name }}</a></td>
+                    <tr onclick="window.location='{% url 'student-detail' link.student.pk %}'" style="cursor:pointer;">
+                        <td>{{ link.student.full_name }}</td>
                         <td>{{ link.get_relation_type_display }}</td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="2" class="text-center text-muted py-3">Нет привязанных студентов</td></tr>
+                    <tr><td colspan="2" class="text-center text-muted py-3">Нет студентов</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span class="fw-semibold">Документы</span>

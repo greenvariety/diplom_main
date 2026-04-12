@@ -9,48 +9,49 @@
     </a>
     {% endif %}
 </div>
+
+<form method="get" class="mb-3">
+    <div class="input-group" style="max-width:400px;">
+        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Поиск по ФИО...">
+        <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+        {% if q %}<a href="{% url 'employee-list' %}" class="btn btn-outline-danger"><i class="bi bi-x"></i></a>{% endif %}
+    </div>
+</form>
+
 <div class="card">
     <div class="card-body p-0">
         <table class="table table-hover mb-0">
             <thead class="table-light">
-                <tr><th>#</th><th>Фото</th><th>ФИО</th><th>Должность</th><th>Телефон</th><th>Email</th><th>Действия</th></tr>
+                <tr><th>#</th><th>Фото</th><th>ФИО</th><th>Должность</th><th>Телефон</th></tr>
             </thead>
             <tbody>
                 {% for emp in employees %}
-                <tr>
+                <tr onclick="window.location='{% url 'employee-detail' emp.pk %}'" style="cursor:pointer;">
                     <td>{{ forloop.counter }}</td>
                     <td>
                         {% if emp.photo %}
-                        <img src="{{ emp.photo.url }}" class="rounded-circle" width="36" height="36" style="object-fit:cover;">
+                        <img src="{{ emp.photo.url }}" class="rounded-circle" width="34" height="34" style="object-fit:cover;">
                         {% else %}
-                        <div class="rounded-circle bg-success d-flex align-items-center justify-content-center text-white" style="width:36px;height:36px;font-size:14px;">
-                            {{ emp.first_name|first }}
+                        <div class="rounded-circle bg-success d-flex align-items-center justify-content-center text-white fw-bold" style="width:34px;height:34px;font-size:13px;">
+                            {{ emp.last_name|first }}
                         </div>
                         {% endif %}
                     </td>
-                    <td><a href="{% url 'employee-detail' emp.pk %}">{{ emp }}</a></td>
-                    <td>{{ emp.position|default:"—" }}</td>
-                    <td>{{ emp.phone|default:"—" }}</td>
-                    <td>{{ emp.email|default:"—" }}</td>
+                    <td class="fw-semibold">{{ emp }}</td>
                     <td>
-                        <a href="{% url 'employee-detail' emp.pk %}" class="btn btn-sm btn-outline-primary me-1">
-                            <i class="bi bi-eye"></i>
-                        </a>
-                        {% if user.is_admin %}
-                        <a href="{% url 'employee-edit' emp.pk %}" class="btn btn-sm btn-outline-secondary me-1">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-                        <a href="{% url 'employee-delete-request' emp.pk %}" class="btn btn-sm btn-outline-danger">
-                            <i class="bi bi-trash"></i>
-                        </a>
-                        {% endif %}
+                        {% if emp.position %}
+                        {{ emp.position }}
+                        {% if emp.position.is_teacher %}<span class="badge bg-info text-dark ms-1">Препод.</span>{% endif %}
+                        {% else %}—{% endif %}
                     </td>
+                    <td>{{ emp.phone|default:"—" }}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="7" class="text-center text-muted py-4">Нет сотрудников</td></tr>
+                <tr><td colspan="5" class="text-center text-muted py-4">Нет сотрудников</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    <div class="card-footer text-muted small">Найдено: {{ employees|length }}</div>
 </div>
 {% endblock %}

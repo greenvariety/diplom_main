@@ -6,29 +6,36 @@
     <title>{% block title %}Система учёта студентов{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
     <style>
         body { background-color: #f8f9fa; }
         .sidebar { min-height: calc(100vh - 56px); background-color: #212529; }
-        .sidebar .nav-link { color: #adb5bd; }
-        .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background-color: rgba(255,255,255,0.1); border-radius: 4px; }
-        .sidebar .nav-section { color: #6c757d; font-size: 0.75rem; text-transform: uppercase; padding: 0.5rem 1rem; margin-top: 0.5rem; }
+        .sidebar .nav-link { color: #adb5bd; padding: 0.45rem 1rem; border-radius: 4px; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background-color: rgba(255,255,255,0.1); }
+        .sidebar .nav-section { color: #6c757d; font-size: 0.7rem; text-transform: uppercase; letter-spacing: .05em; padding: 0.75rem 1rem 0.25rem; }
         .main-content { padding: 1.5rem; }
         .card { border: none; box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075); }
+        .table-hover tbody tr { cursor: pointer; }
         .badge-status-pending_review { background-color: #6c757d; }
         .badge-status-pending_enrollment { background-color: #0dcaf0; color: #000; }
         .badge-status-enrolled { background-color: #198754; }
         .badge-status-pending_expulsion { background-color: #fd7e14; }
         .badge-status-expelled { background-color: #dc3545; }
+        /* Floating toast alerts */
+        #toast-container { position: fixed; top: 70px; right: 1rem; z-index: 9999; width: 360px; }
+        .toast-alert { animation: slideIn .3s ease; }
+        @keyframes slideIn { from { opacity:0; transform: translateX(60px); } to { opacity:1; transform: translateX(0); } }
     </style>
 </head>
 <body>
 
-<nav class="navbar navbar-dark bg-dark px-3">
+<nav class="navbar navbar-dark bg-dark px-3" style="height:56px;">
     <a class="navbar-brand fw-bold" href="{% url 'dashboard' %}">
         <i class="bi bi-mortarboard-fill me-2"></i>Учёт студентов
     </a>
     <div class="d-flex align-items-center text-light">
-        <span class="me-3"><i class="bi bi-person-circle me-1"></i>{{ user.username }} — {{ user.get_role_display }}</span>
+        <span class="me-3 small"><i class="bi bi-person-circle me-1"></i>{{ user.username }} — {{ user.get_role_display }}</span>
         <form method="post" action="{% url 'logout' %}">
             {% csrf_token %}
             <button type="submit" class="btn btn-outline-light btn-sm">
@@ -38,15 +45,29 @@
     </div>
 </nav>
 
+<!-- Floating notification container -->
+<div id="toast-container">
+    {% if messages %}
+        {% for message in messages %}
+        <div class="toast-alert alert alert-{% if message.tags == 'error' %}danger{% elif message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible shadow-sm mb-2" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+</div>
+
 <div class="container-fluid">
     <div class="row">
-        <nav class="col-md-2 d-none d-md-block sidebar py-3">
+        <!-- Sidebar -->
+        <nav class="col-md-2 d-none d-md-block sidebar py-2">
             <ul class="nav flex-column px-2">
                 <li class="nav-item">
                     <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
                         <i class="bi bi-speedometer2 me-2"></i>Дашборд
                     </a>
                 </li>
+
                 {% if user.is_admin %}
                 <li class="nav-section">Учебная структура</li>
                 <li class="nav-item">
@@ -64,20 +85,21 @@
                         <i class="bi bi-book me-2"></i>Предметы
                     </a>
                 </li>
+
                 <li class="nav-section">Люди</li>
-                <li class="nav-item">
-                    <a class="nav-link {% if 'student' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'student-list' %}">
-                        <i class="bi bi-person-badge me-2"></i>Студенты
-                    </a>
-                </li>
                 <li class="nav-item">
                     <a class="nav-link {% if 'employee' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'employee-list' %}">
                         <i class="bi bi-briefcase me-2"></i>Сотрудники
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {% if 'student' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'student-list' %}">
+                        <i class="bi bi-person-badge me-2"></i>Студенты
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {% if 'parent' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'parent-list' %}">
-                        <i class="bi bi-person-hearts me-2"></i>Родители
+                        <i class="bi bi-person-hearts me-2"></i>Опекуны
                     </a>
                 </li>
                 {% else %}
@@ -93,6 +115,7 @@
                     </a>
                 </li>
                 {% endif %}
+
                 {% if user.is_superadmin %}
                 <li class="nav-section">Администрирование</li>
                 <li class="nav-item">
@@ -116,6 +139,7 @@
                     </a>
                 </li>
                 {% endif %}
+
                 {% if user.is_admin %}
                 <li class="nav-section">Инструменты</li>
                 <li class="nav-item">
@@ -126,20 +150,39 @@
                 {% endif %}
             </ul>
         </nav>
+
+        <!-- Main content -->
         <main class="col-md-10 ms-sm-auto main-content">
-            {% if messages %}
-                {% for message in messages %}
-                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-                {% endfor %}
-            {% endif %}
             {% block content %}{% endblock %}
         </main>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    // Auto-dismiss notifications after 4 seconds
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('#toast-container .toast-alert').forEach(function (el) {
+            setTimeout(function () {
+                el.style.transition = 'opacity 0.5s ease';
+                el.style.opacity = '0';
+                setTimeout(function () { el.remove(); }, 500);
+            }, 4000);
+        });
+
+        // Init Select2 on all .select2 elements
+        $('.select2').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            language: {
+                noResults: function () { return 'Ничего не найдено'; },
+                searching: function () { return 'Поиск...'; },
+            },
+        });
+    });
+</script>
+{% block extra_js %}{% endblock %}
 </body>
 </html>
