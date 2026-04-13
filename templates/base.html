@@ -22,6 +22,14 @@
         .badge-status-enrolled { background-color: #198754; }
         .badge-status-pending_expulsion { background-color: #fd7e14; }
         .badge-status-expelled { background-color: #dc3545; }
+        .badge-status-transferred { background-color: #6610f2; }
+        /* No blue underlines on links — use text colour instead */
+        a { color: inherit; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        /* Keep btn and nav-link styles untouched */
+        .btn, .btn:hover { text-decoration: none; }
+        .nav-link { color: #adb5bd !important; }
+        .nav-link:hover, .nav-link.active { color: #fff !important; }
         /* Floating toast alerts */
         #toast-container { position: fixed; top: 70px; right: 1rem; z-index: 9999; width: 360px; }
         .toast-alert { animation: slideIn .3s ease; }
@@ -131,11 +139,6 @@
                 <li class="nav-item">
                     <a class="nav-link {% if 'delete-request' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'delete-request-list' %}">
                         <i class="bi bi-trash me-2"></i>Заявки на удаление
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if 'audit' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'audit-log' %}">
-                        <i class="bi bi-journal-text me-2"></i>Журнал изменений
                     </a>
                 </li>
                 {% endif %}

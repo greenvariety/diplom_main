@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}{{ faculty }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="{% url 'faculty-list' %}">Факультеты</a></li>
+                <li class="breadcrumb-item active">{{ faculty.short_name }}</li>
+            </ol>
+        </nav>
+        <h2 class="mb-0">{{ faculty.full_name }}</h2>
+        <span class="text-muted small">
+            Аббревиатура: <strong>{{ faculty.short_name }}</strong>
+            {% if faculty.created_at %} &nbsp;·&nbsp; Основан: {{ faculty.created_at|date:"d.m.Y" }}{% endif %}
+        </span>
+    </div>
+    {% if user.is_admin %}
+    <div class="d-flex gap-2">
+        <a href="{% url 'faculty-edit' faculty.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil me-1"></i>Редактировать
+        </a>
+        <a href="{% url 'faculty-delete-request' faculty.pk %}" class="btn btn-outline-danger">
+            <i class="bi bi-trash me-1"></i>Удалить
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Группы факультета</span>
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-muted small">Всего: {{ groups|length }}</span>
+            {% if user.is_admin %}
+            <a href="{% url 'group-add' %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>Создать группу
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr><th>#</th><th>Группа</th><th>Год начала</th><th>Классный рук.</th><th>Студентов</th>{% if user.is_admin %}<th>Действия</th>{% endif %}</tr>
+            </thead>
+            <tbody>
+                {% for g in groups %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td onclick="window.location='{% url 'group-detail' g.pk %}'" style="cursor:pointer;" class="fw-semibold">{{ g.name }}</td>
+                    <td>{{ g.year }}</td>
+                    <td>{{ g.headteacher|default:"—" }}</td>
+                    <td><span class="badge bg-secondary">{{ g.student_count }}</span></td>
+                    {% if user.is_admin %}
+                    <td>
+                        <a href="{% url 'group-edit' g.pk %}" class="btn btn-sm btn-outline-secondary me-1">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{% url 'group-delete-request' g.pk %}" class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% empty %}
+                <tr><td colspan="{% if user.is_admin %}6{% else %}5{% endif %}" class="text-center text-muted py-4">Нет групп</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

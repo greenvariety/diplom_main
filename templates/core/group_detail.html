@@ -34,32 +34,12 @@
 </div>
 {% endif %}
 
-<!-- Big student counter -->
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card text-center border-0 bg-primary text-white">
-            <div class="card-body py-3">
-                <div class="display-4 fw-bold">{{ students.count }}</div>
-                <div class="small">Студентов в группе</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-center border-0 bg-success text-white">
-            <div class="card-body py-3">
-                <div class="display-4 fw-bold">{{ subjects.count }}</div>
-                <div class="small">Предметов</div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <div class="row">
     <!-- Students -->
     <div class="col-md-8">
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span class="fw-semibold">Студенты</span>
+                <span class="fw-semibold">Студенты <span class="badge bg-secondary ms-1">{{ students.count }}</span></span>
                 {% if user.is_admin %}
                 <a href="{% url 'student-add' %}" class="btn btn-sm btn-primary">
                     <i class="bi bi-plus-lg me-1"></i>Добавить
@@ -95,7 +75,7 @@
     <div class="col-md-4">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span class="fw-semibold">Предметы</span>
+                <span class="fw-semibold">Предметы <span class="badge bg-secondary ms-1">{{ subjects.count }}</span></span>
                 {% if user.is_admin %}
                 <a href="{% url 'group-subject-add' group.pk %}" class="btn btn-sm btn-primary">
                     <i class="bi bi-plus-lg"></i>

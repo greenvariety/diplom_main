@@ -20,6 +20,10 @@
 </form>
 
 <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Факультеты</span>
+        <span class="text-muted small">Всего: {{ faculties|length }}</span>
+    </div>
     <div class="card-body p-0">
         <table class="table table-hover mb-0">
             <thead class="table-light">
@@ -33,7 +37,7 @@
             </thead>
             <tbody>
                 {% for f in faculties %}
-                <tr onclick="window.location='{% url 'faculty-edit' f.pk %}'" style="cursor:pointer;">
+                <tr onclick="window.location='{% url 'faculty-detail' f.pk %}'" style="cursor:pointer;">
                     <td>{{ forloop.counter }}</td>
                     <td>{{ f.full_name }}</td>
                     <td><span class="badge bg-primary fs-6">{{ f.short_name }}</span></td>
@@ -46,6 +50,5 @@
             </tbody>
         </table>
     </div>
-    <div class="card-footer text-muted small">Всего: {{ faculties|length }}</div>
 </div>
 {% endblock %}

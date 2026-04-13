@@ -14,8 +14,9 @@ from .models import (
 )
 from .forms import (
     LoginForm, FacultyForm, PositionForm, GroupForm,
-    StudentForm, StudentFilterForm, ParentForm, StudentParentForm,
-    EmployeeForm, SubjectForm, GroupSubjectEmployeeForm,
+    StudentForm, StudentFilterForm, StudentTransferForm,
+    ParentForm, StudentParentForm,
+    EmployeeForm, EmployeeSubjectAssignForm, SubjectForm, GroupSubjectEmployeeForm,
     DocumentForm, UserCreateForm, UserEditForm, PasswordChangeCustomForm,
     DeleteRequestForm, DeleteConfirmForm,
 )
@@ -118,6 +119,17 @@ def faculty_edit(request, pk):
         return redirect('faculty-list')
     return render(request, 'core/faculty_form.html', {
         'form': form, 'title': 'Редактировать факультет', 'object': faculty,
+    })
+
+
+@login_required
+def faculty_detail(request, pk):
+    faculty = get_object_or_404(Faculty, pk=pk)
+    groups = Group.objects.filter(faculty=faculty).select_related('headteacher').annotate(
+        student_count=Count('students')
+    )
+    return render(request, 'core/faculty_detail.html', {
+        'faculty': faculty, 'groups': groups,
     })
 
 
@@ -329,8 +341,9 @@ def student_detail(request, pk):
             return HttpResponseForbidden('Доступ запрещён')
     parents = StudentParent.objects.filter(student=student).select_related('parent')
     documents = Document.objects.filter(owner_type='student', owner_id=pk)
+    history = AuditLog.objects.filter(object_type='Student', object_id=pk).select_related('user')
     return render(request, 'core/student_detail.html', {
-        'student': student, 'parents': parents, 'documents': documents,
+        'student': student, 'parents': parents, 'documents': documents, 'history': history,
     })
 
 
@@ -390,6 +403,27 @@ def student_remove_parent(request, pk, sp_pk):
     sp.delete()
     messages.success(request, 'Связь удалена.')
     return redirect('student-detail', pk=pk)
+
+
+@admin_required
+def student_transfer(request, pk):
+    student = get_object_or_404(Student, pk=pk)
+    old_data = model_to_dict_safe(student)
+    form = StudentTransferForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        new_faculty = form.cleaned_data['new_faculty']
+        new_group = form.cleaned_data.get('new_group')
+        reason = form.cleaned_data['reason']
+        student.faculty = new_faculty
+        student.group = new_group
+        student.status = 'transferred'
+        student.save()
+        log_action(request.user, 'updated', student,
+                   old_data=old_data,
+                   new_data={**model_to_dict_safe(student), 'transfer_reason': reason})
+        messages.success(request, f'Студент переведён.')
+        return redirect('student-detail', pk=pk)
+    return render(request, 'core/student_transfer.html', {'form': form, 'student': student})
 
 
 # ---------------------------------------------------------------------------
@@ -488,7 +522,10 @@ def employee_add(request):
         log_action(request.user, 'created', employee, new_data=model_to_dict_safe(employee))
         messages.success(request, 'Сотрудник добавлен.')
         return redirect('employee-detail', pk=employee.pk)
-    return render(request, 'core/employee_form.html', {'form': form, 'title': 'Добавить сотрудника'})
+    no_positions = not Position.objects.exists()
+    return render(request, 'core/employee_form.html', {
+        'form': form, 'title': 'Добавить сотрудника', 'no_positions': no_positions,
+    })
 
 
 @admin_required
@@ -515,6 +552,25 @@ def employee_edit(request, pk):
     return render(request, 'core/employee_form.html', {
         'form': form, 'title': 'Редактировать сотрудника', 'object': employee,
     })
+
+
+@admin_required
+def employee_subject_assign(request, pk):
+    employee = get_object_or_404(Employee, pk=pk)
+    form = EmployeeSubjectAssignForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        group = form.cleaned_data['group']
+        subject = form.cleaned_data['subject']
+        assignment, created = GroupSubjectEmployee.objects.get_or_create(
+            group=group, subject=subject,
+            defaults={'employee': employee},
+        )
+        if not created:
+            assignment.employee = employee
+            assignment.save()
+        messages.success(request, f'Предмет «{subject}» назначен в группу {group.name}.')
+        return redirect('employee-detail', pk=pk)
+    return render(request, 'core/employee_subject_assign.html', {'form': form, 'employee': employee})
 
 
 @admin_required
@@ -716,6 +772,12 @@ def user_edit(request, pk):
 
 
 @superadmin_required
+def user_detail(request, pk):
+    user_obj = get_object_or_404(User.objects.select_related('employee'), pk=pk)
+    return render(request, 'core/user_detail.html', {'user_obj': user_obj})
+
+
+@superadmin_required
 def user_set_password(request, pk):
     user_obj = get_object_or_404(User, pk=pk)
     form = PasswordChangeCustomForm(request.POST or None)
@@ -750,8 +812,8 @@ def direct_delete(request, object_type, pk):
 
     if request.method == 'POST' and form.is_valid():
         entered = form.cleaned_data['confirmation_password']
-        if entered != settings.DELETE_CONFIRMATION_PASSWORD:
-            messages.error(request, 'Неверный пароль подтверждения.')
+        if not request.user.check_password(entered):
+            messages.error(request, 'Неверный пароль.')
         else:
             old_data = model_to_dict_safe(obj)
             log_action(request.user, 'deleted', obj, old_data=old_data)
@@ -798,8 +860,8 @@ def delete_request_approve(request, pk):
     form = DeleteConfirmForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         entered = form.cleaned_data['confirmation_password']
-        if entered != settings.DELETE_CONFIRMATION_PASSWORD:
-            messages.error(request, 'Неверный пароль подтверждения.')
+        if not request.user.check_password(entered):
+            messages.error(request, 'Неверный пароль.')
             return render(request, 'core/delete_request_approve.html', {'form': form, 'dr': dr})
         _perform_delete(request.user, dr)
         dr.status = 'approved'

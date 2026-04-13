@@ -114,6 +114,7 @@ class Student(models.Model):
         ('enrolled', 'Зачислен'),
         ('pending_expulsion', 'На отчисление'),
         ('expelled', 'Отчислен'),
+        ('transferred', 'Переведён'),
     ]
 
     last_name = models.CharField(max_length=100, verbose_name='Фамилия')

@@ -7,6 +7,16 @@
         <i class="bi bi-arrow-left me-1"></i>Назад
     </a>
 </div>
+{% if no_positions %}
+<div class="alert alert-warning d-flex align-items-center mb-3" style="max-width:700px;">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <div>
+        Должности не созданы. Пожалуйста,
+        <a href="{% url 'position-add' %}" class="fw-semibold">добавьте должность</a>
+        перед созданием сотрудника.
+    </div>
+</div>
+{% endif %}
 <div class="card" style="max-width: 700px;">
     <div class="card-body">
         <form method="post" enctype="multipart/form-data">

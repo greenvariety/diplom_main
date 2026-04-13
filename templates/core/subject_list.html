@@ -2,10 +2,7 @@
 {% block title %}Предметы{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2 class="mb-0">Предметы</h2>
-        <span class="text-muted small">Всего: {{ total }}</span>
-    </div>
+    <h2>Предметы</h2>
     <a href="{% url 'subject-add' %}" class="btn btn-primary">
         <i class="bi bi-plus-lg me-1"></i>Добавить
     </a>
@@ -20,6 +17,10 @@
 </form>
 
 <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Предметы</span>
+        <span class="text-muted small">Всего: {{ total }}</span>
+    </div>
     <div class="card-body p-0">
         <table class="table table-hover mb-0">
             <thead class="table-light"><tr><th>#</th><th>Название предмета</th></tr></thead>
@@ -35,6 +36,5 @@
             </tbody>
         </table>
     </div>
-    <div class="card-footer text-muted small">Найдено: {{ subjects|length }} из {{ total }}</div>
 </div>
 {% endblock %}

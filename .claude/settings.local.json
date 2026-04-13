@@ -21,7 +21,10 @@
       "Bash(taskkill /F /IM python.exe)",
       "Bash(del db.sqlite3)",
       "Bash(rm -f core/migrations/0001_initial.py)",
-      "Bash(\"C:/Дипломная работа/Программа/Main/venv/Scripts/python.exe\" manage.py migrate --run-syncdb)"
+      "Bash(\"C:/Дипломная работа/Программа/Main/venv/Scripts/python.exe\" manage.py migrate --run-syncdb)",
+      "Bash(python manage.py check)",
+      "Bash(python -c \"from core import views; print\\('OK'\\)\")",
+      "Bash(python manage.py check --deploy)"
     ]
   }
 }

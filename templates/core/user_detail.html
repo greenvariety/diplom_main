@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}{{ user_obj.username }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="{% url 'user-list' %}">Пользователи</a></li>
+                <li class="breadcrumb-item active">{{ user_obj.username }}</li>
+            </ol>
+        </nav>
+        <h2 class="mb-0">{{ user_obj.username }}</h2>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'user-edit' user_obj.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil me-1"></i>Редактировать
+        </a>
+        <a href="{% url 'user-set-password' user_obj.pk %}" class="btn btn-outline-warning">
+            <i class="bi bi-key me-1"></i>Сменить пароль
+        </a>
+    </div>
+</div>
+
+<div class="card" style="max-width:500px;">
+    <div class="card-header fw-semibold">Учётная запись</div>
+    <ul class="list-group list-group-flush">
+        <li class="list-group-item d-flex justify-content-between">
+            <span class="text-muted">Логин</span>
+            <span class="fw-semibold">{{ user_obj.username }}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between">
+            <span class="text-muted">Роль</span>
+            <span>
+                {% if user_obj.role == 'superadmin' %}<span class="badge bg-danger">Суперадмин</span>
+                {% elif user_obj.role == 'admin' %}<span class="badge bg-warning text-dark">Администратор</span>
+                {% else %}<span class="badge bg-secondary">Преподаватель</span>{% endif %}
+            </span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between">
+            <span class="text-muted">Сотрудник</span>
+            <span>
+                {% if user_obj.employee %}
+                <a href="{% url 'employee-detail' user_obj.employee.pk %}">{{ user_obj.employee }}</a>
+                {% else %}—{% endif %}
+            </span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between">
+            <span class="text-muted">Активен</span>
+            <span>
+                {% if user_obj.is_active %}<span class="badge bg-success">Да</span>
+                {% else %}<span class="badge bg-secondary">Нет</span>{% endif %}
+            </span>
+        </li>
+    </ul>
+</div>
+{% endblock %}

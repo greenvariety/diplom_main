@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Назначить предмет{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="{% url 'employee-list' %}">Сотрудники</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'employee-detail' employee.pk %}">{{ employee }}</a></li>
+                <li class="breadcrumb-item active">Назначить предмет</li>
+            </ol>
+        </nav>
+        <h2 class="mb-0">Назначить предмет</h2>
+    </div>
+    <a href="{% url 'employee-detail' employee.pk %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Назад
+    </a>
+</div>
+<div class="card" style="max-width:500px;">
+    <div class="card-header fw-semibold">{{ employee }}</div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="mb-3">
+                <label class="form-label fw-semibold">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors.0 }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary">Назначить</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

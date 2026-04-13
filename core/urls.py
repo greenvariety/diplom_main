@@ -13,6 +13,7 @@ urlpatterns = [
     # Faculty
     path('faculties/', views.faculty_list, name='faculty-list'),
     path('faculties/add/', views.faculty_add, name='faculty-add'),
+    path('faculties/<int:pk>/', views.faculty_detail, name='faculty-detail'),
     path('faculties/<int:pk>/edit/', views.faculty_edit, name='faculty-edit'),
     path('faculties/<int:pk>/delete/', views.faculty_delete_request, name='faculty-delete-request'),
 
@@ -33,6 +34,7 @@ urlpatterns = [
     path('students/<int:pk>/delete/', views.student_delete_request, name='student-delete-request'),
     path('students/<int:pk>/parents/add/', views.student_add_parent, name='student-add-parent'),
     path('students/<int:pk>/parents/<int:sp_pk>/remove/', views.student_remove_parent, name='student-remove-parent'),
+    path('students/<int:pk>/transfer/', views.student_transfer, name='student-transfer'),
 
     # Parent / Guardian
     path('guardians/', views.parent_list, name='parent-list'),
@@ -47,6 +49,7 @@ urlpatterns = [
     path('employees/<int:pk>/', views.employee_detail, name='employee-detail'),
     path('employees/<int:pk>/edit/', views.employee_edit, name='employee-edit'),
     path('employees/<int:pk>/delete/', views.employee_delete_request, name='employee-delete-request'),
+    path('employees/<int:pk>/assign-subject/', views.employee_subject_assign, name='employee-subject-assign'),
 
     # Position
     path('positions/', views.position_list, name='position-list'),
@@ -66,6 +69,7 @@ urlpatterns = [
     # Users
     path('users/', views.user_list, name='user-list'),
     path('users/add/', views.user_add, name='user-add'),
+    path('users/<int:pk>/', views.user_detail, name='user-detail'),
     path('users/<int:pk>/edit/', views.user_edit, name='user-edit'),
     path('users/<int:pk>/password/', views.user_set_password, name='user-set-password'),
 

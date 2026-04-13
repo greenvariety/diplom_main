@@ -22,12 +22,12 @@ class FacultyForm(forms.ModelForm):
         fields = ['full_name', 'short_name', 'created_at']
         labels = {
             'full_name': 'Полное название',
-            'short_name': 'Сокращение (аббревиатура)',
+            'short_name': 'Аббревиатура',
             'created_at': 'Дата создания',
         }
         widgets = {
             'full_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'short_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'ИСИП'}),
+            'short_name': forms.TextInput(attrs={'class': 'form-control'}),
             'created_at': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
 
@@ -45,7 +45,7 @@ class PositionForm(forms.ModelForm):
 
 
 # ---------------------------------------------------------------------------
-# Group  (name is auto-generated, user only sets faculty + year + headteacher)
+# Group
 # ---------------------------------------------------------------------------
 
 class GroupForm(forms.ModelForm):
@@ -54,7 +54,7 @@ class GroupForm(forms.ModelForm):
         fields = ['faculty', 'year', 'headteacher']
         labels = {
             'faculty': 'Факультет',
-            'year': 'Год начала (напр. 2024)',
+            'year': 'Год начала',
             'headteacher': 'Классный руководитель',
         }
         widgets = {
@@ -65,8 +65,21 @@ class GroupForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['faculty'].empty_label = 'Выберите факультет'
         self.fields['headteacher'].queryset = Employee.objects.select_related('position')
-        self.fields['headteacher'].empty_label = '— Не назначен —'
+        self.fields['headteacher'].empty_label = 'Не назначен'
+
+    def clean(self):
+        cleaned = super().clean()
+        faculty = cleaned.get('faculty')
+        year = cleaned.get('year')
+        if faculty and year and faculty.created_at:
+            if year < faculty.created_at.year:
+                raise forms.ValidationError(
+                    f'Год начала группы ({year}) не может быть раньше года создания факультета '
+                    f'({faculty.created_at.year}).'
+                )
+        return cleaned
 
 
 # ---------------------------------------------------------------------------
@@ -100,8 +113,9 @@ class StudentForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['faculty'].empty_label = 'Выберите факультет'
         self.fields['group'].queryset = Group.objects.select_related('faculty')
-        self.fields['group'].empty_label = '— Без группы (абитуриент) —'
+        self.fields['group'].empty_label = 'Без группы (абитуриент)'
 
 
 class StudentFilterForm(forms.Form):
@@ -123,6 +137,25 @@ class StudentFilterForm(forms.Form):
         choices=[('', 'Все статусы')] + Student.STATUS_CHOICES,
         required=False, label='Статус',
         widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+
+
+class StudentTransferForm(forms.Form):
+    """Transfer student to another faculty/group."""
+    new_faculty = forms.ModelChoiceField(
+        queryset=Faculty.objects.all(), label='Новый факультет',
+        empty_label='Выберите факультет',
+        widget=forms.Select(attrs={'class': 'form-select select2'}),
+    )
+    new_group = forms.ModelChoiceField(
+        queryset=Group.objects.select_related('faculty'), required=False,
+        label='Новая группа',
+        empty_label='Без группы',
+        widget=forms.Select(attrs={'class': 'form-select select2'}),
+    )
+    reason = forms.CharField(
+        label='Причина перевода',
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
     )
 
 
@@ -161,6 +194,7 @@ class StudentParentForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['parent'].queryset = Parent.objects.all()
+        self.fields['parent'].empty_label = 'Выберите опекуна'
 
 
 # ---------------------------------------------------------------------------
@@ -185,6 +219,10 @@ class EmployeeForm(forms.ModelForm):
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'position': forms.Select(attrs={'class': 'form-select select2'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['position'].empty_label = 'Выберите должность'
 
 
 # ---------------------------------------------------------------------------
@@ -215,27 +253,30 @@ class GroupSubjectEmployeeForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['subject'].empty_label = 'Выберите предмет'
         self.fields['employee'].queryset = Employee.objects.select_related('position')
+        self.fields['employee'].empty_label = 'Выберите преподавателя'
 
 
 # ---------------------------------------------------------------------------
-# Subject teacher assignment (checkboxes on subject detail)
+# Employee subject assignment (quick assign from employee detail)
 # ---------------------------------------------------------------------------
 
-class SubjectTeacherForm(forms.Form):
-    """Assign which employees teach this subject (across groups)."""
-    employees = forms.ModelMultipleChoiceField(
-        queryset=Employee.objects.none(),
-        widget=forms.CheckboxSelectMultiple(),
-        required=False,
-        label='Преподаватели',
-    )
+class EmployeeSubjectAssignForm(forms.ModelForm):
+    class Meta:
+        model = GroupSubjectEmployee
+        fields = ['group', 'subject']
+        labels = {'group': 'Группа', 'subject': 'Предмет'}
+        widgets = {
+            'group': forms.Select(attrs={'class': 'form-select select2'}),
+            'subject': forms.Select(attrs={'class': 'form-select select2'}),
+        }
 
-    def __init__(self, *args, subject=None, group=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['employees'].queryset = Employee.objects.select_related('position').filter(
-            position__is_teacher=True
-        )
+        self.fields['group'].queryset = Group.objects.select_related('faculty')
+        self.fields['group'].empty_label = 'Выберите группу'
+        self.fields['subject'].empty_label = 'Выберите предмет'
 
 
 # ---------------------------------------------------------------------------
@@ -273,6 +314,10 @@ class UserCreateForm(forms.ModelForm):
             'employee': forms.Select(attrs={'class': 'form-select select2'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['employee'].empty_label = 'Не привязан'
+
     def clean(self):
         cleaned = super().clean()
         p1 = cleaned.get('password')
@@ -299,6 +344,10 @@ class UserEditForm(forms.ModelForm):
             'role': forms.Select(attrs={'class': 'form-select'}),
             'employee': forms.Select(attrs={'class': 'form-select select2'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['employee'].empty_label = 'Не привязан'
 
 
 class PasswordChangeCustomForm(forms.Form):
@@ -332,6 +381,6 @@ class DeleteRequestForm(forms.ModelForm):
 
 class DeleteConfirmForm(forms.Form):
     confirmation_password = forms.CharField(
-        label='Пароль подтверждения',
+        label='Введите ваш пароль для подтверждения',
         widget=forms.PasswordInput(attrs={'class': 'form-control'}),
     )
