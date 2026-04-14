@@ -24,7 +24,11 @@
       "Bash(\"C:/Дипломная работа/Программа/Main/venv/Scripts/python.exe\" manage.py migrate --run-syncdb)",
       "Bash(python manage.py check)",
       "Bash(python -c \"from core import views; print\\('OK'\\)\")",
-      "Bash(python manage.py check --deploy)"
+      "Bash(python manage.py check --deploy)",
+      "Bash(rm -f db.sqlite3)",
+      "Bash(python manage.py migrate)",
+      "Bash(powershell:*)",
+      "Bash(python manage.py runserver)"
     ]
   }
 }
