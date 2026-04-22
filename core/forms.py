@@ -22,7 +22,7 @@ class FacultyForm(forms.ModelForm):
         fields = ['full_name', 'short_name', 'created_at']
         labels = {
             'full_name': 'Полное название',
-            'short_name': 'Аббревиатура',
+            'short_name': 'Код факультета',
             'created_at': 'Дата создания',
         }
         widgets = {

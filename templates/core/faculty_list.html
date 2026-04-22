@@ -19,13 +19,13 @@
 </form>
 
 <div class="card">
-    <div class="card-header text-end text-muted small py-1">всего {{ faculties|length }}</div>
+    <div class="card-header text-end text-muted small py-1">Всего: {{ faculties|length }}</div>
     <div class="card-body p-0">
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
-                    <th>Полное название</th>
-                    <th>Аббревиатура</th>
+                    <th>Название</th>
+                    <th>Код факультета</th>
                     <th>Дата создания</th>
                     <th>Групп</th>
                 </tr>
@@ -34,9 +34,9 @@
                 {% for f in faculties %}
                 <tr onclick="window.location='{% url 'faculty-detail' f.pk %}'" style="cursor:pointer;">
                     <td>{{ f.full_name }}</td>
-                    <td><span class="badge bg-primary fs-6">{{ f.short_name }}</span></td>
+                    <td class="fw-semibold">{{ f.short_name }}</td>
                     <td>{{ f.created_at|default:"—" }}</td>
-                    <td><span class="badge bg-secondary">{{ f.group_count }}</span></td>
+                    <td>{{ f.group_count }}</td>
                 </tr>
                 {% empty %}
                 <tr class="no-hover"><td colspan="4" class="text-center text-muted py-4">Нет факультетов</td></tr>

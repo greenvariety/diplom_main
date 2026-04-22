@@ -393,6 +393,26 @@ class DeleteRequest(models.Model):
 
 
 # ---------------------------------------------------------------------------
+# FeedbackComment
+# ---------------------------------------------------------------------------
+
+class FeedbackComment(models.Model):
+    page_url = models.CharField(max_length=500, verbose_name='Страница')
+    selector = models.TextField(verbose_name='CSS-селектор')
+    element_preview = models.CharField(max_length=200, blank=True, verbose_name='Превью элемента')
+    comment = models.TextField(verbose_name='Комментарий')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата')
+
+    class Meta:
+        verbose_name = 'Комментарий к интерфейсу'
+        verbose_name_plural = 'Комментарии к интерфейсу'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.page_url} — {self.comment[:50]}'
+
+
+# ---------------------------------------------------------------------------
 # AuditLog
 # ---------------------------------------------------------------------------
 

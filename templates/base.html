@@ -27,7 +27,7 @@
         .table-hover tbody tr.no-hover:hover td { background-color: transparent !important; cursor: default; }
         /* No blue underlines on links — use text colour instead */
         a { color: inherit; text-decoration: none; }
-        a:hover { text-decoration: underline; }
+        a:hover { text-decoration: none; }
         /* Keep btn and nav-link styles untouched */
         .btn, .btn:hover { text-decoration: none; }
         .nav-link { color: #adb5bd !important; }
@@ -44,8 +44,11 @@
     <a class="navbar-brand fw-bold" href="{% url 'dashboard' %}">
         <i class="bi bi-mortarboard-fill me-2"></i>Учёт студентов
     </a>
-    <div class="d-flex align-items-center text-light">
-        <span class="me-3 small"><i class="bi bi-person-circle me-1"></i>{{ user.username }} — {{ user.get_role_display }}</span>
+    <div class="d-flex align-items-center text-light gap-2">
+        <span class="me-1 small"><i class="bi bi-person-circle me-1"></i>{{ user.username }} — {{ user.get_role_display }}</span>
+        <button id="fb-toggle" class="btn btn-outline-warning btn-sm" title="Режим правки: кликни на элемент и оставь комментарий">
+            <i class="bi bi-pencil-square me-1"></i>Режим правки
+        </button>
         <form method="post" action="{% url 'logout' %}">
             {% csrf_token %}
             <button type="submit" class="btn btn-outline-light btn-sm">
@@ -152,6 +155,11 @@
                         <i class="bi bi-file-earmark-excel me-2"></i>Экспорт в Excel
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if 'feedback' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'feedback-list' %}">
+                        <i class="bi bi-chat-square-text me-2"></i>Комментарии
+                    </a>
+                </li>
                 {% endif %}
             </ul>
         </nav>
@@ -189,5 +197,138 @@
     });
 </script>
 {% block extra_js %}{% endblock %}
+
+<!-- Feedback modal -->
+<div class="modal fade" id="fb-modal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Комментарий к элементу</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2 text-muted small" id="fb-selector-preview"></div>
+                <div class="mb-2 p-2 bg-light rounded border small text-truncate" id="fb-element-preview" style="font-family:monospace"></div>
+                <textarea id="fb-comment" class="form-control" rows="4" placeholder="Что нужно исправить?"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-warning" id="fb-save">
+                    <i class="bi bi-check2 me-1"></i>Сохранить
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    body.fb-active { cursor: crosshair !important; }
+    body.fb-active *:not(#fb-modal):not(#fb-modal *):not(.navbar):not(.navbar *) { pointer-events: auto; }
+    .fb-highlight { outline: 2px dashed #ffc107 !important; outline-offset: 2px !important; background-color: rgba(255,193,7,0.08) !important; }
+    #fb-toggle.active { background-color: #ffc107; color: #000; border-color: #ffc107; }
+</style>
+
+<script>
+(function () {
+    const SAVE_URL = '{% url "feedback-save" %}';
+    const CSRF = '{{ csrf_token }}';
+    let fbActive = false;
+    let currentEl = null;
+    let currentSelector = '';
+    const modal = new bootstrap.Modal(document.getElementById('fb-modal'));
+
+    function getCssSelector(el) {
+        if (!el || el === document.body) return 'body';
+        if (el.id) return '#' + el.id;
+        const parts = [];
+        while (el && el.nodeType === 1 && el !== document.body) {
+            let selector = el.nodeName.toLowerCase();
+            if (el.id) { parts.unshift('#' + el.id); break; }
+            let sib = el, nth = 1;
+            while ((sib = sib.previousElementSibling)) {
+                if (sib.nodeName === el.nodeName) nth++;
+            }
+            if (nth > 1) selector += ':nth-of-type(' + nth + ')';
+            if (el.className && typeof el.className === 'string') {
+                const cls = el.className.trim().split(/\s+/).filter(c => !c.startsWith('fb-')).slice(0, 2).join('.');
+                if (cls) selector += '.' + cls;
+            }
+            parts.unshift(selector);
+            el = el.parentElement;
+        }
+        return parts.join(' > ');
+    }
+
+    function onMouseOver(e) {
+        if (!fbActive) return;
+        if (e.target.closest('#fb-modal') || e.target.closest('.navbar')) return;
+        if (currentEl) currentEl.classList.remove('fb-highlight');
+        currentEl = e.target;
+        currentEl.classList.add('fb-highlight');
+    }
+
+    function onMouseOut(e) {
+        if (!fbActive || !currentEl) return;
+        if (e.target.closest('#fb-modal') || e.target.closest('.navbar')) return;
+        currentEl.classList.remove('fb-highlight');
+    }
+
+    function onClick(e) {
+        if (!fbActive) return;
+        if (e.target.closest('#fb-modal') || e.target.closest('.navbar') || e.target.id === 'fb-toggle') return;
+        e.preventDefault();
+        e.stopPropagation();
+        currentSelector = getCssSelector(e.target);
+        const preview = (e.target.innerText || e.target.outerHTML).slice(0, 150).trim();
+        document.getElementById('fb-selector-preview').textContent = currentSelector;
+        document.getElementById('fb-element-preview').textContent = preview || '(нет текста)';
+        document.getElementById('fb-comment').value = '';
+        modal.show();
+        setTimeout(() => document.getElementById('fb-comment').focus(), 300);
+    }
+
+    document.getElementById('fb-toggle').addEventListener('click', function () {
+        fbActive = !fbActive;
+        document.body.classList.toggle('fb-active', fbActive);
+        this.classList.toggle('active', fbActive);
+        this.innerHTML = fbActive
+            ? '<i class="bi bi-x-circle me-1"></i>Выйти из режима правки'
+            : '<i class="bi bi-pencil-square me-1"></i>Режим правки';
+        if (!fbActive && currentEl) { currentEl.classList.remove('fb-highlight'); currentEl = null; }
+    });
+
+    document.addEventListener('mouseover', onMouseOver, true);
+    document.addEventListener('mouseout', onMouseOut, true);
+    document.addEventListener('click', onClick, true);
+
+    document.getElementById('fb-save').addEventListener('click', function () {
+        const comment = document.getElementById('fb-comment').value.trim();
+        if (!comment) { document.getElementById('fb-comment').focus(); return; }
+        fetch(SAVE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+            body: JSON.stringify({
+                page_url: window.location.pathname,
+                selector: currentSelector,
+                element_preview: document.getElementById('fb-element-preview').textContent,
+                comment: comment,
+            })
+        }).then(r => r.json()).then(d => {
+            if (d.ok) {
+                modal.hide();
+                const toast = document.createElement('div');
+                toast.className = 'toast-alert alert alert-success alert-dismissible shadow-sm mb-2';
+                toast.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Комментарий сохранён <button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                document.getElementById('toast-container').prepend(toast);
+                setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 3000);
+            }
+        });
+    });
+
+    document.getElementById('fb-modal').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && e.ctrlKey) document.getElementById('fb-save').click();
+    });
+})();
+</script>
 </body>
 </html>

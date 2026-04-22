@@ -11,7 +11,7 @@
         </nav>
         <h2 class="mb-0">{{ faculty.full_name }}</h2>
         <span class="text-muted small">
-            Аббревиатура: <strong>{{ faculty.short_name }}</strong>
+            Код факультета: <strong>{{ faculty.short_name }}</strong>
             {% if faculty.created_at %} &nbsp;·&nbsp; Основан: {{ faculty.created_at|date:"d.m.Y" }}{% endif %}
         </span>
     </div>

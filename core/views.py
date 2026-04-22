@@ -10,7 +10,7 @@ from django.db.models import Q, Count
 from .models import (
     Faculty, Group, Student, Parent, StudentParent,
     Employee, Position, Subject, GroupSubjectEmployee,
-    Document, User, DeleteRequest, AuditLog,
+    Document, User, DeleteRequest, AuditLog, FeedbackComment,
 )
 from .forms import (
     LoginForm, FacultyForm, PositionForm, GroupForm,
@@ -113,7 +113,10 @@ def faculty_edit(request, pk):
     old_data = model_to_dict_safe(faculty)
     form = FacultyForm(request.POST or None, instance=faculty)
     if request.method == 'POST' and form.is_valid():
-        faculty = form.save()
+        updated = form.save(commit=False)
+        updated.created_at = faculty.created_at
+        updated.save()
+        faculty = updated
         log_action(request.user, 'updated', faculty, old_data=old_data, new_data=model_to_dict_safe(faculty))
         messages.success(request, 'Факультет обновлён.')
         return redirect('faculty-list')
@@ -966,3 +969,37 @@ def export_students(request):
     response['Content-Disposition'] = 'attachment; filename="students.xlsx"'
     wb.save(response)
     return response
+
+
+# ---------------------------------------------------------------------------
+# Feedback (dev tool)
+# ---------------------------------------------------------------------------
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
+@login_required
+def feedback_save(request):
+    if request.method != 'POST':
+        return JsonResponse({'ok': False}, status=405)
+    data = json.loads(request.body)
+    FeedbackComment.objects.create(
+        page_url=data.get('page_url', '')[:500],
+        selector=data.get('selector', ''),
+        element_preview=data.get('element_preview', '')[:200],
+        comment=data.get('comment', ''),
+    )
+    return JsonResponse({'ok': True})
+
+
+@login_required
+def feedback_delete(request, pk):
+    if request.method == 'POST':
+        FeedbackComment.objects.filter(pk=pk).delete()
+    return redirect('feedback-list')
+
+
+@login_required
+def feedback_list(request):
+    comments = FeedbackComment.objects.all()
+    return render(request, 'core/feedback_list.html', {'comments': comments})

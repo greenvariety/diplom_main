@@ -28,7 +28,14 @@
       "Bash(rm -f db.sqlite3)",
       "Bash(python manage.py migrate)",
       "Bash(powershell:*)",
-      "Bash(python manage.py runserver)"
+      "Bash(python manage.py runserver)",
+      "Bash(venv/Scripts/python manage.py runserver)",
+      "Bash(venv/Scripts/python manage.py makemigrations)",
+      "Bash(venv/Scripts/python manage.py migrate)",
+      "Bash(venv/Scripts/python manage.py shell -c \"from core.models import FeedbackComment; [print\\(f'[{c.pk}] {c.page_url} | {c.selector} | {c.element_preview[:50]} | {c.comment}'\\) for c in FeedbackComment.objects.all\\(\\)]\")",
+      "Bash(venv/Scripts/python -c ' *)",
+      "Read(//tmp/**)",
+      "Bash(git push *)"
     ]
   }
 }

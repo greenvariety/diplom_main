@@ -86,4 +86,9 @@ urlpatterns = [
 
     # Export
     path('export/students/', views.export_students, name='export-students'),
+
+    # Feedback (dev tool)
+    path('feedback/', views.feedback_list, name='feedback-list'),
+    path('feedback/save/', views.feedback_save, name='feedback-save'),
+    path('feedback/<int:pk>/delete/', views.feedback_delete, name='feedback-delete'),
 ]

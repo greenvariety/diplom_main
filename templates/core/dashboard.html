@@ -86,7 +86,7 @@
                     <td>{{ log.user|default:"—" }}</td>
                     <td>
                         {% if log.action == 'created' %}<span class="badge bg-success">Создал</span>
-                        {% elif log.action == 'updated' %}<span class="badge bg-warning text-dark">Изменил {% if log.old_data and log.new_data %}<i class="bi bi-chevron-down small"></i>{% endif %}</span>
+                        {% elif log.action == 'updated' %}<span class="badge bg-warning text-dark">Изменил</span>
                         {% else %}<span class="badge bg-danger">Удалил</span>{% endif %}
                     </td>
                     <td>
@@ -108,16 +108,18 @@
                     </td>
                 </tr>
                 {% if log.action == 'updated' and log.old_data and log.new_data %}
-                <tr id="log-{{ log.pk }}" style="display:none;">
+                <script type="application/json" id="log-old-{{ log.pk }}">{{ log.old_data|safe }}</script>
+                <script type="application/json" id="log-new-{{ log.pk }}">{{ log.new_data|safe }}</script>
+                <tr id="log-{{ log.pk }}" style="display:none;" data-id="{{ log.pk }}">
                     <td colspan="4" class="bg-light py-2 px-3">
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="text-muted small fw-semibold mb-1">До изменения:</div>
-                                <pre class="small mb-0" style="white-space:pre-wrap;">{{ log.old_data }}</pre>
+                                <pre class="log-pre-old small mb-0" style="white-space:pre-wrap;"></pre>
                             </div>
                             <div class="col-md-6">
                                 <div class="text-muted small fw-semibold mb-1">После изменения:</div>
-                                <pre class="small mb-0" style="white-space:pre-wrap;">{{ log.new_data }}</pre>
+                                <pre class="log-pre-new small mb-0" style="white-space:pre-wrap;"></pre>
                             </div>
                         </div>
                     </td>
@@ -130,24 +132,61 @@
         </table>
     </div>
 </div>
-{% block extra_js %}
 <script>
-document.querySelectorAll('.log-toggle').forEach(function(row) {
-    row.addEventListener('click', function() {
-        var detailRow = document.getElementById(this.dataset.detail);
-        if (!detailRow) return;
-        var icon = this.querySelector('.bi-chevron-down, .bi-chevron-up');
-        if (detailRow.style.display === 'none') {
-            detailRow.style.display = '';
-            if (icon) { icon.classList.replace('bi-chevron-down', 'bi-chevron-up'); }
-        } else {
-            detailRow.style.display = 'none';
-            if (icon) { icon.classList.replace('bi-chevron-up', 'bi-chevron-down'); }
+document.addEventListener('DOMContentLoaded', function() {
+    function renderDiff(detailRow) {
+        var preOld = detailRow.querySelector('.log-pre-old');
+        if (preOld.innerHTML !== '') return;
+        var preNew = detailRow.querySelector('.log-pre-new');
+        var id = detailRow.dataset.id;
+        var rawOld = document.getElementById('log-old-' + id).textContent;
+        var rawNew = document.getElementById('log-new-' + id).textContent;
+        try {
+            var oldData = JSON.parse(rawOld);
+            var newData = JSON.parse(rawNew);
+        } catch(e) {
+            preOld.textContent = rawOld;
+            preNew.textContent = rawNew;
+            return;
         }
+
+        var changedKeys = new Set();
+        Object.keys(newData).forEach(function(k) {
+            if (JSON.stringify(oldData[k]) !== JSON.stringify(newData[k])) changedKeys.add(k);
+        });
+
+        function renderPre(el, data, color) {
+            el.innerHTML = '';
+            JSON.stringify(data, null, 2).split('\n').forEach(function(line) {
+                var key = (line.match(/"(\w+)"\s*:/) || [])[1];
+                var span = document.createElement('span');
+                span.textContent = line + '\n';
+                if (key && changedKeys.has(key)) {
+                    span.style.color = color;
+                    span.style.fontWeight = 'bold';
+                }
+                el.appendChild(span);
+            });
+        }
+
+        renderPre(preOld, oldData, '#198754');
+        renderPre(preNew, newData, '#dc3545');
+    }
+
+    document.querySelectorAll('.log-toggle').forEach(function(row) {
+        row.addEventListener('click', function() {
+            var detailRow = document.getElementById(this.dataset.detail);
+            if (!detailRow) return;
+            if (detailRow.style.display === 'none') {
+                detailRow.style.display = '';
+                renderDiff(detailRow);
+            } else {
+                detailRow.style.display = 'none';
+            }
+        });
     });
 });
 </script>
-{% endblock %}
 
 {% elif user.is_admin %}
 <div class="row g-3 mb-4">
