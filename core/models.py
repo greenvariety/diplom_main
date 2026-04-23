@@ -272,8 +272,10 @@ class Document(models.Model):
         max_length=20, choices=OWNER_TYPE_CHOICES, verbose_name='Тип владельца'
     )
     owner_id = models.IntegerField(verbose_name='ID владельца')
+    name = models.CharField(max_length=255, default='', verbose_name='Название')
+    description = models.TextField(blank=True, default='', verbose_name='Описание')
     doc_type = models.CharField(
-        max_length=20, choices=DOC_TYPE_CHOICES, verbose_name='Тип документа'
+        max_length=20, choices=DOC_TYPE_CHOICES, blank=True, default='', verbose_name='Тип документа'
     )
     file = models.FileField(upload_to='documents/', verbose_name='Файл')
     uploaded_at = models.DateField(auto_now_add=True, verbose_name='Дата загрузки')
@@ -284,7 +286,11 @@ class Document(models.Model):
         ordering = ['-uploaded_at']
 
     def __str__(self):
-        return f'{self.get_doc_type_display()} — {self.owner_type} #{self.owner_id}'
+        return self.name or self.get_doc_type_display() or f'Документ #{self.pk}'
+
+    @property
+    def is_image(self):
+        return self.file.name.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))
 
 
 # ---------------------------------------------------------------------------

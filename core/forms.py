@@ -28,8 +28,12 @@ class FacultyForm(forms.ModelForm):
         widgets = {
             'full_name': forms.TextInput(attrs={'class': 'form-control'}),
             'short_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'created_at': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'created_at': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'required': False}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['created_at'].required = False
 
 
 # ---------------------------------------------------------------------------
@@ -39,8 +43,8 @@ class FacultyForm(forms.ModelForm):
 class PositionForm(forms.ModelForm):
     class Meta:
         model = Position
-        fields = ['name', 'is_teacher']
-        labels = {'name': 'Название должности', 'is_teacher': 'Преподавательская'}
+        fields = ['name']
+        labels = {'name': 'Название должности'}
         widgets = {'name': forms.TextInput(attrs={'class': 'form-control'})}
 
 
@@ -100,15 +104,15 @@ class StudentForm(forms.ModelForm):
             'photo': 'Фото', 'status': 'Статус', 'faculty': 'Факультет', 'group': 'Группа',
         }
         widgets = {
-            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'middle_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'birth_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'status': forms.Select(attrs={'class': 'form-select'}),
-            'faculty': forms.Select(attrs={'class': 'form-select select2'}),
-            'group': forms.Select(attrs={'class': 'form-select select2'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'tabindex': '1'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'tabindex': '2'}),
+            'middle_name': forms.TextInput(attrs={'class': 'form-control', 'tabindex': '3'}),
+            'birth_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'tabindex': '4'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'tabindex': '5'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'tabindex': '6'}),
+            'status': forms.Select(attrs={'class': 'form-select', 'tabindex': '7'}),
+            'faculty': forms.Select(attrs={'class': 'form-select select2', 'tabindex': '8'}),
+            'group': forms.Select(attrs={'class': 'form-select select2', 'tabindex': '9'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -283,12 +287,19 @@ class EmployeeSubjectAssignForm(forms.ModelForm):
 # Document
 # ---------------------------------------------------------------------------
 
-class DocumentForm(forms.ModelForm):
-    class Meta:
-        model = Document
-        fields = ['doc_type', 'file']
-        labels = {'doc_type': 'Тип документа', 'file': 'Файл'}
-        widgets = {'doc_type': forms.Select(attrs={'class': 'form-select'})}
+class DocumentForm(forms.Form):
+    name = forms.CharField(
+        label='Название документа',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Например: Паспорт, Справка об обучении...'})
+    )
+    description = forms.CharField(
+        label='Описание', required=False,
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Необязательно'})
+    )
+    files = forms.FileField(
+        label='Файлы',
+        widget=forms.ClearableFileInput(attrs={'class': 'form-control', 'multiple': True}),
+    )
 
 
 # ---------------------------------------------------------------------------

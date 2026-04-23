@@ -475,9 +475,29 @@ def parent_detail(request, pk):
     parent = get_object_or_404(Parent, pk=pk)
     links = StudentParent.objects.filter(parent=parent).select_related('student')
     documents = Document.objects.filter(owner_type='parent', owner_id=pk)
+    # For linking a student
+    linked_ids = links.values_list('student_id', flat=True)
+    available_students = Student.objects.exclude(pk__in=linked_ids)
     return render(request, 'core/parent_detail.html', {
         'parent': parent, 'links': links, 'documents': documents,
+        'available_students': available_students,
     })
+
+
+@admin_required
+def guardian_add_student(request, pk):
+    parent = get_object_or_404(Parent, pk=pk)
+    if request.method == 'POST':
+        student_id = request.POST.get('student')
+        relation_type = request.POST.get('relation_type')
+        if student_id and relation_type:
+            student = get_object_or_404(Student, pk=student_id)
+            StudentParent.objects.get_or_create(
+                student=student, parent=parent,
+                defaults={'relation_type': relation_type}
+            )
+            messages.success(request, 'Студент привязан.')
+    return redirect('parent-detail', pk=pk)
 
 
 @admin_required
@@ -705,15 +725,28 @@ def subject_detail(request, pk):
 def document_upload(request, owner_type, owner_id):
     form = DocumentForm(request.POST or None, request.FILES or None)
     if request.method == 'POST' and form.is_valid():
-        doc = form.save(commit=False)
-        doc.owner_type = owner_type
-        doc.owner_id = owner_id
-        doc.save()
-        messages.success(request, 'Документ загружен.')
+        name = form.cleaned_data['name']
+        description = form.cleaned_data.get('description', '')
+        uploaded = request.FILES.getlist('files')
+        for f in uploaded:
+            Document.objects.create(
+                owner_type=owner_type,
+                owner_id=owner_id,
+                name=name,
+                description=description,
+                file=f,
+            )
+        messages.success(request, f'Загружено файлов: {len(uploaded)}.')
         return _redirect_to_owner(owner_type, owner_id)
     return render(request, 'core/document_form.html', {
         'form': form, 'owner_type': owner_type, 'owner_id': owner_id,
     })
+
+
+@login_required
+def document_detail(request, pk):
+    doc = get_object_or_404(Document, pk=pk)
+    return render(request, 'core/document_detail.html', {'doc': doc})
 
 
 @admin_required
@@ -1003,3 +1036,29 @@ def feedback_delete(request, pk):
 def feedback_list(request):
     comments = FeedbackComment.objects.all()
     return render(request, 'core/feedback_list.html', {'comments': comments})
+
+
+# ---------------------------------------------------------------------------
+# Dev: reset database (superadmin only)
+# ---------------------------------------------------------------------------
+
+@login_required
+def dev_reset_db(request):
+    if request.method != 'POST' or not request.user.is_superadmin:
+        return HttpResponseForbidden()
+    current_user_pk = request.user.pk
+    AuditLog.objects.all().delete()
+    DeleteRequest.objects.all().delete()
+    Document.objects.all().delete()
+    StudentParent.objects.all().delete()
+    GroupSubjectEmployee.objects.all().delete()
+    Student.objects.all().delete()
+    Parent.objects.all().delete()
+    Employee.objects.all().delete()
+    Group.objects.all().delete()
+    Faculty.objects.all().delete()
+    Position.objects.all().delete()
+    Subject.objects.all().delete()
+    User.objects.exclude(pk=current_user_pk).delete()
+    messages.success(request, 'База данных очищена.')
+    return redirect('dashboard')

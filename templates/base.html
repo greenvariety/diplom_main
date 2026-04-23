@@ -17,14 +17,20 @@
         .main-content { padding: 1.5rem; }
         .card { border: none; box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075); }
         .table-hover tbody tr { cursor: pointer; }
+        /* No hover darkening on any table row */
+        .table-hover > tbody > tr:hover > * { --bs-table-bg-state: transparent !important; background-color: transparent !important; }
+        .table-hover tbody tr.no-hover { cursor: default; }
         .badge-status-pending_review { background-color: #6c757d; }
         .badge-status-pending_enrollment { background-color: #0dcaf0; color: #000; }
         .badge-status-enrolled { background-color: #198754; }
         .badge-status-pending_expulsion { background-color: #fd7e14; }
         .badge-status-expelled { background-color: #dc3545; }
         .badge-status-transferred { background-color: #6610f2; }
-        /* Empty table rows — no hover darkening */
-        .table-hover tbody tr.no-hover:hover td { background-color: transparent !important; cursor: default; }
+        /* Gray empty/none option in selects */
+        select option[value=""], select option:first-child:not([value]) { color: #adb5bd; }
+        /* Press effect on stat cards */
+        a .card.text-white { transition: transform 0.1s ease, box-shadow 0.1s ease; }
+        a:active .card.text-white { transform: scale(0.96); box-shadow: none !important; }
         /* No blue underlines on links — use text colour instead */
         a { color: inherit; text-decoration: none; }
         a:hover { text-decoration: none; }
@@ -111,7 +117,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {% if 'parent' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'parent-list' %}">
+                    <a class="nav-link {% if request.resolver_match.url_name.startswith('parent') %}active{% endif %}" href="{% url 'parent-list' %}">
                         <i class="bi bi-person-hearts me-2"></i>Опекуны
                     </a>
                 </li>

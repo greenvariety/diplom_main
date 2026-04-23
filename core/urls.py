@@ -42,6 +42,7 @@ urlpatterns = [
     path('guardians/<int:pk>/', views.parent_detail, name='parent-detail'),
     path('guardians/<int:pk>/edit/', views.parent_edit, name='parent-edit'),
     path('guardians/<int:pk>/delete/', views.parent_delete_request, name='parent-delete-request'),
+    path('guardians/<int:pk>/add-student/', views.guardian_add_student, name='guardian-add-student'),
 
     # Employee
     path('employees/', views.employee_list, name='employee-list'),
@@ -64,6 +65,7 @@ urlpatterns = [
 
     # Document
     path('documents/upload/<str:owner_type>/<int:owner_id>/', views.document_upload, name='document-upload'),
+    path('documents/<int:pk>/', views.document_detail, name='document-detail'),
     path('documents/<int:pk>/delete/', views.document_delete, name='document-delete'),
 
     # Users
@@ -91,4 +93,7 @@ urlpatterns = [
     path('feedback/', views.feedback_list, name='feedback-list'),
     path('feedback/save/', views.feedback_save, name='feedback-save'),
     path('feedback/<int:pk>/delete/', views.feedback_delete, name='feedback-delete'),
+
+    # Dev tools
+    path('dev/reset-db/', views.dev_reset_db, name='dev-reset-db'),
 ]

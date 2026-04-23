@@ -52,7 +52,43 @@
     </div>
     <div class="col-md-8">
         <div class="card mb-4">
-            <div class="card-header fw-semibold">Привязанные студенты</div>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Привязанные студенты</span>
+                {% if user.is_admin and available_students %}
+                <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#addStudentForm">
+                    <i class="bi bi-plus-lg me-1"></i>Привязать студента
+                </button>
+                {% endif %}
+            </div>
+            {% if user.is_admin and available_students %}
+            <div class="collapse" id="addStudentForm">
+                <div class="card-body border-bottom">
+                    <form method="post" action="{% url 'guardian-add-student' parent.pk %}" class="row g-2 align-items-end">
+                        {% csrf_token %}
+                        <div class="col-md-6">
+                            <label class="form-label small mb-1">Студент</label>
+                            <select name="student" class="form-select form-select-sm select2">
+                                <option value="">Выберите студента</option>
+                                {% for s in available_students %}
+                                <option value="{{ s.pk }}">{{ s.full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small mb-1">Тип связи</label>
+                            <select name="relation_type" class="form-select form-select-sm">
+                                <option value="mother">Мать</option>
+                                <option value="father">Отец</option>
+                                <option value="guardian">Опекун</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-sm btn-success w-100">Привязать</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
             <table class="table mb-0">
                 <thead class="table-light"><tr><th>Студент</th><th>Связь</th></tr></thead>
                 <tbody>
@@ -75,29 +111,27 @@
                 </a>
             </div>
             <div class="card-body p-0">
-                <table class="table mb-0">
-                    <thead class="table-light"><tr><th>Тип</th><th>Дата</th><th></th></tr></thead>
-                    <tbody>
-                        {% for doc in documents %}
-                        <tr>
-                            <td>{{ doc.get_doc_type_display }}</td>
-                            <td>{{ doc.uploaded_at }}</td>
-                            <td>
-                                <a href="{{ doc.file.url }}" class="btn btn-sm btn-outline-primary me-1" target="_blank">
-                                    <i class="bi bi-download"></i>
-                                </a>
-                                <a href="{% url 'document-delete' doc.pk %}"
-                                   class="btn btn-sm btn-outline-danger"
-                                   onclick="return confirm('Удалить?')">
-                                    <i class="bi bi-trash"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr><td colspan="3" class="text-center text-muted py-3">Нет документов</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                {% if documents %}
+                <div class="row g-2 p-3">
+                    {% for doc in documents %}
+                    <div class="col-6 col-md-4">
+                        <a href="{% url 'document-detail' doc.pk %}" class="text-decoration-none">
+                            <div class="border rounded p-2 text-center" style="cursor:pointer;">
+                                {% if doc.is_image %}
+                                <img src="{{ doc.file.url }}" class="img-fluid rounded mb-1" style="max-height:80px;object-fit:cover;width:100%;">
+                                {% else %}
+                                <i class="bi bi-file-earmark-text display-6 text-secondary d-block mb-1"></i>
+                                {% endif %}
+                                <div class="small text-dark text-truncate" title="{{ doc.name }}">{{ doc.name }}</div>
+                                <div class="text-muted" style="font-size:0.7rem;">{{ doc.uploaded_at }}</div>
+                            </div>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-3">Нет документов</div>
+                {% endif %}
             </div>
         </div>
     </div>

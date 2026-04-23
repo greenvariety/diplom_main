@@ -35,7 +35,19 @@
       "Bash(venv/Scripts/python manage.py shell -c \"from core.models import FeedbackComment; [print\\(f'[{c.pk}] {c.page_url} | {c.selector} | {c.element_preview[:50]} | {c.comment}'\\) for c in FeedbackComment.objects.all\\(\\)]\")",
       "Bash(venv/Scripts/python -c ' *)",
       "Read(//tmp/**)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(cp \"C:\\\\Дипломная работа\\\\Программа\\\\Main\\\\core\\\\models.py\" \"C:\\\\Дипломная работа\\\\Программа\\\\core\\\\models.py\")",
+      "Bash(cp \"C:\\\\Дипломная работа\\\\Программа\\\\Main\\\\core\\\\views.py\" \"C:\\\\Дипломная работа\\\\Программа\\\\core\\\\views.py\")",
+      "Bash(cp \"C:\\\\Дипломная работа\\\\Программа\\\\Main\\\\core\\\\urls.py\" \"C:\\\\Дипломная работа\\\\Программа\\\\core\\\\urls.py\")",
+      "Bash(cp \"C:\\\\Дипломная работа\\\\Программа\\\\Main\\\\core\\\\migrations\\\\0002_feedbackcomment_alter_student_status.py\" \"C:\\\\Дипломная работа\\\\Программа\\\\core\\\\migrations\\\\0002_feedbackcomment_alter_student_status.py\")",
+      "Bash(cp \"C:\\\\Дипломная работа\\\\Программа\\\\Main\\\\templates\\\\base.html\" \"C:\\\\Дипломная работа\\\\Программа\\\\templates\\\\base.html\")",
+      "Bash(venv\\\\Scripts\\\\python.exe manage.py shell -c \"from core.models import FeedbackComment; [print\\(f'[{c.pk}] {c.page_url} | {c.selector} | {c.comment}'\\) for c in FeedbackComment.objects.all\\(\\)]\")",
+      "Bash(\"venv/Scripts/python.exe\" manage.py shell -c \"from core.models import FeedbackComment; [print\\(f'[{c.pk}] {c.page_url} | {c.selector} | {c.comment}'\\) for c in FeedbackComment.objects.all\\(\\)]\")",
+      "Bash(venv/Scripts/python.exe -c ' *)",
+      "Bash(\"venv/Scripts/python.exe\" manage.py migrate)",
+      "Bash(\"venv/Scripts/python.exe\" manage.py check)",
+      "Bash(git add *)",
+      "Bash(git rebase *)"
     ]
   }
 }

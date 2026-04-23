@@ -9,7 +9,12 @@
 </div>
 <div class="card" style="max-width: 500px;">
     <div class="card-body">
-        <p class="text-muted mb-3">Выберите существующего родителя из списка или <a href="{% url 'parent-add' %}">добавьте нового</a>.</p>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-muted small">Выберите опекуна из списка</span>
+            <a href="{% url 'parent-add' %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-person-plus me-1"></i>Создать нового опекуна
+            </a>
+        </div>
         <form method="post">
             {% csrf_token %}
             {% for field in form %}
