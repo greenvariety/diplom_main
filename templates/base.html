@@ -52,6 +52,11 @@
     </a>
     <div class="d-flex align-items-center text-light gap-2">
         <span class="me-1 small"><i class="bi bi-person-circle me-1"></i>{{ user.username }} — {{ user.get_role_display }}</span>
+        {% if user.is_platform_owner %}
+        <a href="{% url 'institution-exit' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-grid me-1"></i>К заведениям
+        </a>
+        {% endif %}
         <button id="fb-toggle" class="btn btn-outline-warning btn-sm" title="Режим правки: кликни на элемент и оставь комментарий">
             <i class="bi bi-pencil-square me-1"></i>Режим правки
         </button>

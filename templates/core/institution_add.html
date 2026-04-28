@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Добавить учебное заведение</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            min-height: 100vh;
+            background: #0f172a;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+
+        .top-bar {
+            height: 56px;
+            background: #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .top-bar-brand {
+            font-size: 0.9375rem;
+            font-weight: 700;
+            color: #f1f5f9;
+        }
+
+        .back-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.875rem;
+            color: #94a3b8;
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+
+        .back-link:hover { color: #e2e8f0; }
+        .back-link svg { width: 16px; height: 16px; fill: currentColor; }
+
+        .page-wrap {
+            max-width: 540px;
+            margin: 0 auto;
+            padding: 48px 24px;
+        }
+
+        .page-header { margin-bottom: 32px; }
+
+        .page-badge {
+            display: inline-block;
+            background: rgba(124, 58, 237, 0.15);
+            border: 1px solid rgba(124, 58, 237, 0.3);
+            border-radius: 20px;
+            padding: 3px 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #a78bfa;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            letter-spacing: -0.5px;
+        }
+
+        .form-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 14px;
+            padding: 28px 28px 24px;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #7c3aed;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .field-group { margin-bottom: 18px; }
+
+        .field-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: #94a3b8;
+            margin-bottom: 7px;
+        }
+
+        .field-input, .field-textarea {
+            width: 100%;
+            padding: 10px 13px;
+            font-size: 0.9375rem;
+            color: #f1f5f9;
+            background: #0f172a;
+            border: 1.5px solid #334155;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            font-family: inherit;
+        }
+
+        .field-textarea { resize: vertical; min-height: 80px; }
+
+        .field-input:focus, .field-textarea:focus {
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+        }
+
+        .field-input.is-error { border-color: #ef4444; }
+        .field-error { font-size: 12px; color: #ef4444; margin-top: 5px; }
+
+        .field-hint {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 5px;
+        }
+
+        .divider {
+            height: 1px;
+            background: #334155;
+            margin: 24px 0;
+        }
+
+        .error-banner {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 20px;
+            font-size: 0.875rem;
+            color: #fca5a5;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .btn-submit {
+            flex: 1;
+            padding: 11px;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: #ffffff;
+            background: #7c3aed;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .btn-submit:hover { background: #6d28d9; }
+
+        .btn-cancel {
+            padding: 11px 20px;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: #94a3b8;
+            background: transparent;
+            border: 1.5px solid #334155;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+        }
+
+        .btn-cancel:hover { color: #e2e8f0; border-color: #64748b; }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <div class="top-bar-brand">АИС — Управление платформой</div>
+    <a href="{% url 'institution-list' %}" class="back-link">
+        <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        К заведениям
+    </a>
+</div>
+
+<div class="page-wrap">
+    <div class="page-header">
+        <div class="page-badge">Новое заведение</div>
+        <h1 class="page-title">Добавить учебное заведение</h1>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="form-card">
+            <div class="section-title">Информация о заведении</div>
+
+            {% if form.non_field_errors %}
+            <div class="error-banner">
+                {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="field-group">
+                <label class="field-label" for="id_code">Код заведения</label>
+                <input class="field-input{% if form.code.errors %} is-error{% endif %}"
+                    type="text" id="id_code" name="code"
+                    value="{{ form.code.value|default:'' }}"
+                    placeholder="МКАГ" style="text-transform: uppercase;" autofocus>
+                <div class="field-hint">Короткая аббревиатура, например: МКАГ, СПбГУ, КФУ</div>
+                {% for error in form.code.errors %}
+                <div class="field-error">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="field-group">
+                <label class="field-label" for="id_name">Полное название</label>
+                <input class="field-input{% if form.name.errors %} is-error{% endif %}"
+                    type="text" id="id_name" name="name"
+                    value="{{ form.name.value|default:'' }}"
+                    placeholder="Московский колледж архитектуры и градостроительства">
+                {% for error in form.name.errors %}
+                <div class="field-error">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="field-group">
+                <label class="field-label" for="id_notes">Заметки <span style="color:#475569;font-weight:400;">(необязательно)</span></label>
+                <textarea class="field-textarea" id="id_notes" name="notes"
+                    placeholder="Любые дополнительные сведения...">{{ form.notes.value|default:'' }}</textarea>
+            </div>
+        </div>
+
+        <div class="form-card">
+            <div class="section-title">Суперадминистратор заведения</div>
+
+            <div class="field-group">
+                <label class="field-label" for="id_admin_display_name">Имя суперадмина</label>
+                <input class="field-input{% if form.admin_display_name.errors %} is-error{% endif %}"
+                    type="text" id="id_admin_display_name" name="admin_display_name"
+                    value="{{ form.admin_display_name.value|default:'' }}"
+                    placeholder="Иванов Иван Иванович">
+                {% for error in form.admin_display_name.errors %}
+                <div class="field-error">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="field-group">
+                <label class="field-label" for="id_admin_username">Логин суперадмина</label>
+                <input class="field-input{% if form.admin_username.errors %} is-error{% endif %}"
+                    type="text" id="id_admin_username" name="admin_username"
+                    value="{{ form.admin_username.value|default:'' }}"
+                    placeholder="director">
+                {% for error in form.admin_username.errors %}
+                <div class="field-error">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="field-group">
+                <label class="field-label" for="id_admin_password">Пароль суперадмина</label>
+                <input class="field-input{% if form.admin_password.errors %} is-error{% endif %}"
+                    type="password" id="id_admin_password" name="admin_password">
+                <div class="field-hint">Мин. 8 символов, латиница + цифры, обязательны цифра и _ или -</div>
+                {% for error in form.admin_password.errors %}
+                <div class="field-error">{{ error }}</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="btn-row">
+            <a href="{% url 'institution-list' %}" class="btn-cancel">Отмена</a>
+            <button type="submit" class="btn-submit">Создать заведение</button>
+        </div>
+    </form>
+</div>
+
+</body>
+</html>

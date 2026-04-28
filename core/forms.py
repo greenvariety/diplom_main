@@ -1,15 +1,150 @@
+import re
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from .models import (
-    Faculty, Group, Student, Parent, StudentParent,
+    Institution, Faculty, Group, Student, Parent, StudentParent,
     Employee, Position, Subject, GroupSubjectEmployee,
     Document, User, DeleteRequest,
 )
 
 
+def validate_password_strength(value):
+    """Мин. 8 символов, только A-Z a-z 0-9 _ -, обязательно ≥1 цифра и ≥1 спецсимвол (_ или -)."""
+    if len(value) < 8:
+        raise forms.ValidationError('Пароль должен содержать не менее 8 символов.')
+    if not re.fullmatch(r'[A-Za-z0-9_\-]+', value):
+        raise forms.ValidationError('Пароль может содержать только латинские буквы, цифры, _ и -.')
+    if not re.search(r'[0-9]', value):
+        raise forms.ValidationError('Пароль должен содержать хотя бы одну цифру.')
+    if not re.search(r'[_\-]', value):
+        raise forms.ValidationError('Пароль должен содержать хотя бы один спецсимвол (_ или -).')
+
+
 class LoginForm(AuthenticationForm):
     username = forms.CharField(label='Логин', widget=forms.TextInput(attrs={'class': 'form-control', 'autofocus': True}))
     password = forms.CharField(label='Пароль', widget=forms.PasswordInput(attrs={'class': 'form-control'}))
+
+
+# ---------------------------------------------------------------------------
+# Platform setup
+# ---------------------------------------------------------------------------
+
+class PlatformSetupForm(forms.Form):
+    display_name = forms.CharField(
+        label='Ваше имя',
+        max_length=150,
+        widget=forms.TextInput(attrs={'class': 'field-input', 'autofocus': True, 'placeholder': 'Иванов Иван Иванович'}),
+    )
+    username = forms.CharField(
+        label='Логин',
+        max_length=150,
+        widget=forms.TextInput(attrs={'class': 'field-input', 'placeholder': 'Используется для входа'}),
+    )
+    password = forms.CharField(
+        label='Пароль',
+        widget=forms.PasswordInput(attrs={'class': 'field-input'}),
+        validators=[validate_password_strength],
+    )
+    password2 = forms.CharField(
+        label='Повторите пароль',
+        widget=forms.PasswordInput(attrs={'class': 'field-input'}),
+    )
+
+    def clean_username(self):
+        username = self.cleaned_data['username']
+        if User.objects.filter(username=username).exists():
+            raise forms.ValidationError('Этот логин уже занят.')
+        return username
+
+    def clean(self):
+        cleaned = super().clean()
+        p1 = cleaned.get('password')
+        p2 = cleaned.get('password2')
+        if p1 and p2 and p1 != p2:
+            raise forms.ValidationError('Пароли не совпадают.')
+        return cleaned
+
+
+class ForgotPasswordForm(forms.Form):
+    username = forms.CharField(
+        label='Логин',
+        widget=forms.TextInput(attrs={'class': 'field-input', 'autofocus': True}),
+    )
+    seed_phrase = forms.CharField(
+        label='Сид-фраза (12 слов через пробел)',
+        widget=forms.TextInput(attrs={'class': 'field-input', 'placeholder': 'слово слово слово … (12 слов)'}),
+    )
+
+
+class ResetPasswordForm(forms.Form):
+    new_password = forms.CharField(
+        label='Новый пароль',
+        widget=forms.PasswordInput(attrs={'class': 'field-input'}),
+        validators=[validate_password_strength],
+    )
+    new_password2 = forms.CharField(
+        label='Повторите пароль',
+        widget=forms.PasswordInput(attrs={'class': 'field-input'}),
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        p1 = cleaned.get('new_password')
+        p2 = cleaned.get('new_password2')
+        if p1 and p2 and p1 != p2:
+            raise forms.ValidationError('Пароли не совпадают.')
+        return cleaned
+
+
+# ---------------------------------------------------------------------------
+# Institution
+# ---------------------------------------------------------------------------
+
+class InstitutionForm(forms.ModelForm):
+    admin_display_name = forms.CharField(
+        label='Имя суперадмина заведения',
+        max_length=150,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Иванов Иван Иванович'}),
+    )
+    admin_username = forms.CharField(
+        label='Логин суперадмина',
+        max_length=150,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'director'}),
+    )
+    admin_password = forms.CharField(
+        label='Пароль суперадмина',
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        validators=[validate_password_strength],
+    )
+
+    class Meta:
+        model = Institution
+        fields = ['code', 'name', 'notes']
+        labels = {
+            'code': 'Код заведения',
+            'name': 'Полное название',
+            'notes': 'Заметки',
+        }
+        widgets = {
+            'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'МКАГ'}),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Московский колледж...'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def clean_admin_username(self):
+        username = self.cleaned_data['admin_username']
+        if User.objects.filter(username=username).exists():
+            raise forms.ValidationError('Этот логин уже занят.')
+        return username
+
+    def clean_code(self):
+        code = self.cleaned_data['code'].upper()
+        qs = Institution.objects.filter(code=code)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError('Заведение с таким кодом уже существует.')
+        return code
 
 
 # ---------------------------------------------------------------------------
@@ -67,11 +202,15 @@ class GroupForm(forms.ModelForm):
             'headteacher': forms.Select(attrs={'class': 'form-select select2'}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, institution=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['faculty'].empty_label = 'Выберите факультет'
-        self.fields['headteacher'].queryset = Employee.objects.select_related('position')
         self.fields['headteacher'].empty_label = 'Не назначен'
+        if institution:
+            self.fields['faculty'].queryset = Faculty.objects.filter(institution=institution)
+            self.fields['headteacher'].queryset = Employee.objects.filter(institution=institution).select_related('position')
+        else:
+            self.fields['headteacher'].queryset = Employee.objects.select_related('position')
 
     def clean(self):
         cleaned = super().clean()
@@ -115,11 +254,17 @@ class StudentForm(forms.ModelForm):
             'group': forms.Select(attrs={'class': 'form-select select2', 'tabindex': '9'}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, institution=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['faculty'].empty_label = 'Выберите факультет'
-        self.fields['group'].queryset = Group.objects.select_related('faculty')
         self.fields['group'].empty_label = 'Без группы (абитуриент)'
+        if institution:
+            self.fields['faculty'].queryset = Faculty.objects.filter(institution=institution)
+            self.fields['group'].queryset = Group.objects.filter(
+                faculty__institution=institution
+            ).select_related('faculty')
+        else:
+            self.fields['group'].queryset = Group.objects.select_related('faculty')
 
 
 class StudentFilterForm(forms.Form):
@@ -128,12 +273,12 @@ class StudentFilterForm(forms.Form):
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Поиск по ФИО...'}),
     )
     faculty = forms.ModelChoiceField(
-        queryset=Faculty.objects.all(), required=False, label='Факультет',
+        queryset=Faculty.objects.none(), required=False, label='Факультет',
         empty_label='Все факультеты',
         widget=forms.Select(attrs={'class': 'form-select select2'}),
     )
     group = forms.ModelChoiceField(
-        queryset=Group.objects.select_related('faculty'), required=False, label='Группа',
+        queryset=Group.objects.none(), required=False, label='Группа',
         empty_label='Все группы',
         widget=forms.Select(attrs={'class': 'form-select select2'}),
     )
@@ -143,16 +288,26 @@ class StudentFilterForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-select'}),
     )
 
+    def __init__(self, *args, institution=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if institution:
+            self.fields['faculty'].queryset = Faculty.objects.filter(institution=institution)
+            self.fields['group'].queryset = Group.objects.filter(
+                faculty__institution=institution
+            ).select_related('faculty')
+        else:
+            self.fields['faculty'].queryset = Faculty.objects.all()
+            self.fields['group'].queryset = Group.objects.select_related('faculty')
+
 
 class StudentTransferForm(forms.Form):
-    """Transfer student to another faculty/group."""
     new_faculty = forms.ModelChoiceField(
-        queryset=Faculty.objects.all(), label='Новый факультет',
+        queryset=Faculty.objects.none(), label='Новый факультет',
         empty_label='Выберите факультет',
         widget=forms.Select(attrs={'class': 'form-select select2'}),
     )
     new_group = forms.ModelChoiceField(
-        queryset=Group.objects.select_related('faculty'), required=False,
+        queryset=Group.objects.none(), required=False,
         label='Новая группа',
         empty_label='Без группы',
         widget=forms.Select(attrs={'class': 'form-select select2'}),
@@ -161,6 +316,17 @@ class StudentTransferForm(forms.Form):
         label='Причина перевода',
         widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
     )
+
+    def __init__(self, *args, institution=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if institution:
+            self.fields['new_faculty'].queryset = Faculty.objects.filter(institution=institution)
+            self.fields['new_group'].queryset = Group.objects.filter(
+                faculty__institution=institution
+            ).select_related('faculty')
+        else:
+            self.fields['new_faculty'].queryset = Faculty.objects.all()
+            self.fields['new_group'].queryset = Group.objects.select_related('faculty')
 
 
 # ---------------------------------------------------------------------------
@@ -195,10 +361,13 @@ class StudentParentForm(forms.ModelForm):
             'relation_type': forms.Select(attrs={'class': 'form-select'}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, institution=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['parent'].queryset = Parent.objects.all()
         self.fields['parent'].empty_label = 'Выберите опекуна'
+        if institution:
+            self.fields['parent'].queryset = Parent.objects.filter(institution=institution)
+        else:
+            self.fields['parent'].queryset = Parent.objects.all()
 
 
 # ---------------------------------------------------------------------------
@@ -224,9 +393,13 @@ class EmployeeForm(forms.ModelForm):
             'position': forms.Select(attrs={'class': 'form-select select2'}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, institution=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['position'].empty_label = 'Выберите должность'
+        if institution:
+            self.fields['position'].queryset = Position.objects.filter(institution=institution)
+        else:
+            self.fields['position'].queryset = Position.objects.all()
 
 
 # ---------------------------------------------------------------------------
@@ -255,15 +428,19 @@ class GroupSubjectEmployeeForm(forms.ModelForm):
             'employee': forms.Select(attrs={'class': 'form-select select2'}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, institution=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['subject'].empty_label = 'Выберите предмет'
-        self.fields['employee'].queryset = Employee.objects.select_related('position')
         self.fields['employee'].empty_label = 'Выберите преподавателя'
+        if institution:
+            self.fields['subject'].queryset = Subject.objects.filter(institution=institution)
+            self.fields['employee'].queryset = Employee.objects.filter(institution=institution).select_related('position')
+        else:
+            self.fields['employee'].queryset = Employee.objects.select_related('position')
 
 
 # ---------------------------------------------------------------------------
-# Employee subject assignment (quick assign from employee detail)
+# Employee subject assignment
 # ---------------------------------------------------------------------------
 
 class EmployeeSubjectAssignForm(forms.ModelForm):
@@ -276,11 +453,18 @@ class EmployeeSubjectAssignForm(forms.ModelForm):
             'subject': forms.Select(attrs={'class': 'form-select select2'}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, institution=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['group'].queryset = Group.objects.select_related('faculty')
         self.fields['group'].empty_label = 'Выберите группу'
         self.fields['subject'].empty_label = 'Выберите предмет'
+        if institution:
+            self.fields['group'].queryset = Group.objects.filter(
+                faculty__institution=institution
+            ).select_related('faculty')
+            self.fields['subject'].queryset = Subject.objects.filter(institution=institution)
+        else:
+            self.fields['group'].queryset = Group.objects.select_related('faculty')
+            self.fields['subject'].queryset = Subject.objects.all()
 
 
 # ---------------------------------------------------------------------------
@@ -306,9 +490,18 @@ class DocumentForm(forms.Form):
 # User management
 # ---------------------------------------------------------------------------
 
+INSTITUTION_ROLE_CHOICES = [
+    ('superadmin', 'Суперадминистратор'),
+    ('admin', 'Администратор'),
+    ('teacher', 'Преподаватель'),
+]
+
+
 class UserCreateForm(forms.ModelForm):
     password = forms.CharField(
-        label='Пароль', widget=forms.PasswordInput(attrs={'class': 'form-control'})
+        label='Пароль',
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        validators=[validate_password_strength],
     )
     password_confirm = forms.CharField(
         label='Подтверждение пароля',
@@ -317,17 +510,23 @@ class UserCreateForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ['username', 'role', 'employee']
-        labels = {'username': 'Логин', 'role': 'Роль', 'employee': 'Сотрудник'}
+        fields = ['username', 'display_name', 'role', 'employee']
+        labels = {'username': 'Логин', 'display_name': 'Имя', 'role': 'Роль', 'employee': 'Сотрудник'}
         widgets = {
             'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'display_name': forms.TextInput(attrs={'class': 'form-control'}),
             'role': forms.Select(attrs={'class': 'form-select'}),
             'employee': forms.Select(attrs={'class': 'form-select select2'}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, institution=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['role'].choices = INSTITUTION_ROLE_CHOICES
         self.fields['employee'].empty_label = 'Не привязан'
+        if institution:
+            self.fields['employee'].queryset = Employee.objects.filter(institution=institution)
+        else:
+            self.fields['employee'].queryset = Employee.objects.all()
 
     def clean(self):
         cleaned = super().clean()
@@ -348,22 +547,30 @@ class UserCreateForm(forms.ModelForm):
 class UserEditForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['username', 'role', 'employee']
-        labels = {'username': 'Логин', 'role': 'Роль', 'employee': 'Сотрудник'}
+        fields = ['username', 'display_name', 'role', 'employee']
+        labels = {'username': 'Логин', 'display_name': 'Имя', 'role': 'Роль', 'employee': 'Сотрудник'}
         widgets = {
             'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'display_name': forms.TextInput(attrs={'class': 'form-control'}),
             'role': forms.Select(attrs={'class': 'form-select'}),
             'employee': forms.Select(attrs={'class': 'form-select select2'}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, institution=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['role'].choices = INSTITUTION_ROLE_CHOICES
         self.fields['employee'].empty_label = 'Не привязан'
+        if institution:
+            self.fields['employee'].queryset = Employee.objects.filter(institution=institution)
+        else:
+            self.fields['employee'].queryset = Employee.objects.all()
 
 
 class PasswordChangeCustomForm(forms.Form):
     new_password = forms.CharField(
-        label='Новый пароль', widget=forms.PasswordInput(attrs={'class': 'form-control'})
+        label='Новый пароль',
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        validators=[validate_password_strength],
     )
     confirm_password = forms.CharField(
         label='Подтверждение пароля', widget=forms.PasswordInput(attrs={'class': 'form-control'})

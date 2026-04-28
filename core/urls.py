@@ -2,9 +2,21 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # Platform setup (first launch)
+    path('setup/', views.setup_view, name='setup'),
+    path('setup/complete/', views.setup_complete_view, name='setup-complete'),
+    path('forgot-password/', views.forgot_password_view, name='forgot-password'),
+    path('reset-password/', views.reset_password_view, name='reset-password'),
+
     # Auth
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
+
+    # Institution management (platform_owner)
+    path('institutions/', views.institution_list, name='institution-list'),
+    path('institutions/add/', views.institution_add, name='institution-add'),
+    path('institutions/<int:pk>/enter/', views.institution_enter, name='institution-enter'),
+    path('institutions/exit/', views.institution_exit, name='institution-exit'),
 
     # Dashboard
     path('dashboard/', views.dashboard, name='dashboard'),
@@ -78,7 +90,7 @@ urlpatterns = [
     # Direct delete (superadmin only)
     path('delete/<str:object_type>/<int:pk>/', views.direct_delete, name='direct-delete'),
 
-    # Delete requests (admin → superadmin approval)
+    # Delete requests
     path('delete-requests/', views.delete_request_list, name='delete-request-list'),
     path('delete-requests/<int:pk>/approve/', views.delete_request_approve, name='delete-request-approve'),
     path('delete-requests/<int:pk>/reject/', views.delete_request_reject, name='delete-request-reject'),

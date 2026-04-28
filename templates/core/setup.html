@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Первоначальная настройка</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            min-height: 100vh;
+            background: #0f172a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 14px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.12);
+            width: 440px;
+            padding: 40px 36px 36px;
+        }
+
+        .card-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .icon-wrap {
+            width: 54px;
+            height: 54px;
+            background: #7c3aed;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 18px;
+        }
+
+        .icon-wrap svg {
+            width: 28px;
+            height: 28px;
+            fill: #ffffff;
+        }
+
+        .card-title {
+            font-size: 1.075rem;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: -0.3px;
+            text-align: center;
+        }
+
+        .card-subtitle {
+            font-size: 0.875rem;
+            color: #94a3b8;
+            margin-top: 5px;
+            text-align: center;
+        }
+
+        .field-group { margin-bottom: 18px; }
+
+        .field-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: #475569;
+            margin-bottom: 7px;
+        }
+
+        .field-input {
+            width: 100%;
+            padding: 10px 13px;
+            font-size: 0.9375rem;
+            color: #1e293b;
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+        }
+
+        .field-input:focus {
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+            background: #ffffff;
+        }
+
+        .field-input.is-error {
+            border-color: #fca5a5;
+            background: #fff5f5;
+        }
+
+        .field-error {
+            font-size: 12px;
+            color: #ef4444;
+            margin-top: 5px;
+        }
+
+        .error-banner {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 12px;
+            color: #ef4444;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 16px;
+        }
+
+        .btn-submit {
+            display: block;
+            width: 100%;
+            padding: 11px;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: #ffffff;
+            background: #7c3aed;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 26px;
+            transition: background 0.15s;
+            letter-spacing: 0.01em;
+        }
+
+        .btn-submit:hover { background: #6d28d9; }
+        .btn-submit:active { background: #5b21b6; }
+
+        .info-note {
+            margin-top: 20px;
+            font-size: 0.8125rem;
+            color: #94a3b8;
+            text-align: center;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="card-header">
+            <div class="icon-wrap">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+                </svg>
+            </div>
+            <h1 class="card-title">Первоначальная настройка</h1>
+            <p class="card-subtitle">Создайте аккаунт владельца платформы</p>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="error-banner">
+                {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="field-group">
+                <label class="field-label" for="id_display_name">Ваше имя</label>
+                <input class="field-input{% if form.display_name.errors %} is-error{% endif %}"
+                    type="text" id="id_display_name" name="display_name"
+                    value="{{ form.display_name.value|default:'' }}"
+                    placeholder="Иванов Иван Иванович" autofocus>
+                {% for error in form.display_name.errors %}
+                <div class="field-error">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="field-group">
+                <label class="field-label" for="id_username">Логин</label>
+                <input class="field-input{% if form.username.errors %} is-error{% endif %}"
+                    type="text" id="id_username" name="username"
+                    value="{{ form.username.value|default:'' }}"
+                    placeholder="Используется для входа">
+                {% for error in form.username.errors %}
+                <div class="field-error">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="field-group">
+                <label class="field-label" for="id_password">Пароль</label>
+                <input class="field-input{% if form.password.errors %} is-error{% endif %}"
+                    type="password" id="id_password" name="password">
+                <div style="font-size:11px;color:#94a3b8;margin-top:5px;">Мин. 8 символов, латиница + цифры, обязательны цифра и _ или -</div>
+                {% for error in form.password.errors %}
+                <div class="field-error">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="field-group">
+                <label class="field-label" for="id_password2">Повторите пароль</label>
+                <input class="field-input{% if form.password2.errors %} is-error{% endif %}"
+                    type="password" id="id_password2" name="password2">
+                {% for error in form.password2.errors %}
+                <div class="field-error">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <button type="submit" class="btn-submit">Создать аккаунт и войти</button>
+        </form>
+
+        <p class="info-note">
+            После создания вы получите сид-фразу для восстановления пароля.<br>
+            Сохраните её в надёжном месте.
+        </p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Учебные заведения</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            min-height: 100vh;
+            background: #0f172a;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+
+        .top-bar {
+            height: 56px;
+            background: #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .top-bar-brand {
+            font-size: 0.9375rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .top-bar-brand svg { width: 20px; height: 20px; fill: #7c3aed; }
+
+        .top-bar-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-pill {
+            font-size: 0.8125rem;
+            color: #94a3b8;
+        }
+
+        .user-pill strong { color: #e2e8f0; }
+
+        .btn-logout {
+            padding: 6px 14px;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: #94a3b8;
+            background: transparent;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-logout:hover { color: #e2e8f0; border-color: #64748b; }
+
+        .page-wrap {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 48px 24px;
+        }
+
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        .page-badge {
+            display: inline-block;
+            background: rgba(124, 58, 237, 0.15);
+            border: 1px solid rgba(124, 58, 237, 0.3);
+            border-radius: 20px;
+            padding: 3px 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #a78bfa;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+
+        .page-sub {
+            font-size: 0.9375rem;
+            color: #64748b;
+        }
+
+        .actions-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+
+        .btn-add {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #ffffff;
+            background: #7c3aed;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.15s;
+        }
+
+        .btn-add:hover { background: #6d28d9; color: #fff; }
+        .btn-add svg { width: 16px; height: 16px; fill: #fff; }
+
+        .inst-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .inst-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px 22px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            transition: border-color 0.15s;
+        }
+
+        .inst-card:hover { border-color: #7c3aed; }
+
+        .inst-card.is-current {
+            border-color: #7c3aed;
+            background: rgba(124, 58, 237, 0.08);
+        }
+
+        .inst-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            background: #7c3aed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #ffffff;
+            flex-shrink: 0;
+            letter-spacing: -0.5px;
+        }
+
+        .inst-info { flex: 1; min-width: 0; }
+
+        .inst-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #f1f5f9;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .inst-meta {
+            font-size: 0.8125rem;
+            color: #64748b;
+        }
+
+        .inst-meta span { margin-right: 14px; }
+
+        .inst-badge-current {
+            display: inline-block;
+            background: rgba(124, 58, 237, 0.2);
+            border: 1px solid rgba(124, 58, 237, 0.4);
+            border-radius: 10px;
+            padding: 2px 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #a78bfa;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        .btn-enter {
+            padding: 8px 18px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #f1f5f9;
+            background: #334155;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.15s;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .btn-enter:hover { background: #475569; color: #fff; }
+
+        .btn-enter.is-current {
+            background: #7c3aed;
+        }
+
+        .btn-enter.is-current:hover { background: #6d28d9; }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 0;
+            color: #475569;
+        }
+
+        .empty-state svg { width: 48px; height: 48px; fill: #334155; margin-bottom: 16px; }
+        .empty-state h3 { font-size: 1.1rem; color: #64748b; font-weight: 600; margin-bottom: 8px; }
+        .empty-state p { font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <div class="top-bar-brand">
+        <svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>
+        АИС — Управление платформой
+    </div>
+    <div class="top-bar-user">
+        <span class="user-pill">Владелец: <strong>{{ user.display_name|default:user.username }}</strong></span>
+        <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn-logout">Выйти</button>
+        </form>
+    </div>
+</div>
+
+<div class="page-wrap">
+    <div class="page-header">
+        <div class="page-badge">Платформа</div>
+        <h1 class="page-title">Учебные заведения</h1>
+        <p class="page-sub">Выберите заведение для управления или добавьте новое</p>
+    </div>
+
+    <div class="actions-row">
+        <a href="{% url 'institution-add' %}" class="btn-add">
+            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            Добавить заведение
+        </a>
+    </div>
+
+    {% if institutions %}
+    <div class="inst-grid">
+        {% for inst in institutions %}
+        <div class="inst-card{% if inst.pk == current_id %} is-current{% endif %}">
+            <div class="inst-avatar">{{ inst.code|slice:":2" }}</div>
+            <div class="inst-info">
+                <div class="inst-name">
+                    [{{ inst.code }}] {{ inst.name }}
+                    {% if inst.pk == current_id %}
+                    <span class="inst-badge-current">активное</span>
+                    {% endif %}
+                </div>
+                <div class="inst-meta">
+                    <span>{{ inst.faculty_count }} факульт.</span>
+                    <span>{{ inst.user_count }} пользоват.</span>
+                    {% if inst.notes %}
+                    <span>{{ inst.notes|truncatechars:50 }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <a href="{% url 'institution-enter' inst.pk %}" class="btn-enter{% if inst.pk == current_id %} is-current{% endif %}">
+                {% if inst.pk == current_id %}Войти снова{% else %}Войти{% endif %}
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>
+        <h3>Нет учебных заведений</h3>
+        <p>Добавьте первое заведение, чтобы начать работу</p>
+    </div>
+    {% endif %}
+</div>
+
+</body>
+</html>

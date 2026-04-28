@@ -3,10 +3,33 @@ from django.db import models
 
 
 # ---------------------------------------------------------------------------
+# Institution (Учебное заведение)
+# ---------------------------------------------------------------------------
+
+class Institution(models.Model):
+    code = models.CharField(max_length=20, unique=True, verbose_name='Код')
+    name = models.CharField(max_length=255, verbose_name='Полное название')
+    notes = models.TextField(blank=True, verbose_name='Заметки')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+
+    class Meta:
+        verbose_name = 'Учебное заведение'
+        verbose_name_plural = 'Учебные заведения'
+        ordering = ['name']
+
+    def __str__(self):
+        return f'{self.code} — {self.name}'
+
+
+# ---------------------------------------------------------------------------
 # Faculty
 # ---------------------------------------------------------------------------
 
 class Faculty(models.Model):
+    institution = models.ForeignKey(
+        Institution, on_delete=models.CASCADE, null=True, blank=True,
+        related_name='faculties', verbose_name='Учебное заведение'
+    )
     full_name = models.CharField(max_length=255, verbose_name='Полное название')
     short_name = models.CharField(max_length=50, verbose_name='Сокращение (аббревиатура)')
     created_at = models.DateField(null=True, blank=True, verbose_name='Дата создания')
@@ -25,6 +48,10 @@ class Faculty(models.Model):
 # ---------------------------------------------------------------------------
 
 class Position(models.Model):
+    institution = models.ForeignKey(
+        Institution, on_delete=models.CASCADE, null=True, blank=True,
+        related_name='positions', verbose_name='Учебное заведение'
+    )
     name = models.CharField(max_length=255, verbose_name='Название')
     is_teacher = models.BooleanField(default=False, verbose_name='Преподавательская')
 
@@ -42,6 +69,10 @@ class Position(models.Model):
 # ---------------------------------------------------------------------------
 
 class Employee(models.Model):
+    institution = models.ForeignKey(
+        Institution, on_delete=models.CASCADE, null=True, blank=True,
+        related_name='employees', verbose_name='Учебное заведение'
+    )
     last_name = models.CharField(max_length=100, verbose_name='Фамилия')
     first_name = models.CharField(max_length=100, verbose_name='Имя')
     middle_name = models.CharField(max_length=100, blank=True, verbose_name='Отчество')
@@ -154,6 +185,10 @@ class Student(models.Model):
 # ---------------------------------------------------------------------------
 
 class Parent(models.Model):
+    institution = models.ForeignKey(
+        Institution, on_delete=models.CASCADE, null=True, blank=True,
+        related_name='parents', verbose_name='Учебное заведение'
+    )
     last_name = models.CharField(max_length=100, verbose_name='Фамилия')
     first_name = models.CharField(max_length=100, verbose_name='Имя')
     middle_name = models.CharField(max_length=100, blank=True, verbose_name='Отчество')
@@ -211,6 +246,10 @@ class StudentParent(models.Model):
 # ---------------------------------------------------------------------------
 
 class Subject(models.Model):
+    institution = models.ForeignKey(
+        Institution, on_delete=models.CASCADE, null=True, blank=True,
+        related_name='subjects', verbose_name='Учебное заведение'
+    )
     name = models.CharField(max_length=255, verbose_name='Название')
 
     class Meta:
@@ -315,19 +354,26 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = [
+        ('platform_owner', 'Владелец платформы'),
         ('superadmin', 'Суперадминистратор'),
         ('admin', 'Администратор'),
         ('teacher', 'Преподаватель'),
     ]
 
     username = models.CharField(max_length=150, unique=True, verbose_name='Логин')
+    display_name = models.CharField(max_length=150, blank=True, verbose_name='Имя')
     role = models.CharField(
         max_length=20, choices=ROLE_CHOICES, default='teacher', verbose_name='Роль'
+    )
+    institution = models.ForeignKey(
+        Institution, on_delete=models.CASCADE, null=True, blank=True,
+        related_name='users', verbose_name='Учебное заведение'
     )
     employee = models.OneToOneField(
         Employee, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='user_account', verbose_name='Сотрудник'
     )
+    seed_phrase_hash = models.CharField(max_length=256, blank=True, verbose_name='Хэш сид-фразы')
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
@@ -344,12 +390,16 @@ class User(AbstractBaseUser, PermissionsMixin):
         return f'{self.username} ({self.get_role_display()})'
 
     @property
+    def is_platform_owner(self):
+        return self.role == 'platform_owner'
+
+    @property
     def is_superadmin(self):
-        return self.role == 'superadmin'
+        return self.role in ('superadmin', 'platform_owner')
 
     @property
     def is_admin(self):
-        return self.role in ('superadmin', 'admin')
+        return self.role in ('superadmin', 'admin', 'platform_owner')
 
     @property
     def is_teacher_role(self):
