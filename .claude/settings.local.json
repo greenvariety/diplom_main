@@ -47,7 +47,9 @@
       "Bash(\"venv/Scripts/python.exe\" manage.py migrate)",
       "Bash(\"venv/Scripts/python.exe\" manage.py check)",
       "Bash(git add *)",
-      "Bash(git rebase *)"
+      "Bash(git rebase *)",
+      "Bash(python -m venv venv)",
+      "Bash(venv/Scripts/pip install *)"
     ]
   }
 }
