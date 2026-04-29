@@ -4,37 +4,6 @@
 <h2 class="mb-4">Дашборд</h2>
 
 {% if user.is_superadmin %}
-<!-- Superadmin: Факультеты → Группы → Студенты → Заявки -->
-<div class="d-flex justify-content-end mb-3">
-    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#resetDbModal">
-        <i class="bi bi-trash3 me-1"></i>Сбросить базу данных (тест)
-    </button>
-</div>
-
-<div class="modal fade" id="resetDbModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i>Сброс базы данных</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Будут удалены <strong>все</strong> данные: студенты, группы, факультеты, сотрудники, пользователи (кроме текущего), документы, журнал изменений.</p>
-                <p class="text-danger fw-semibold mb-0">Это действие необратимо!</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <form method="post" action="{% url 'dev-reset-db' %}">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-trash3 me-1"></i>Да, удалить всё
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
 <div class="row g-3 mb-4">
     <div class="col-md-3">
         <a href="{% url 'faculty-list' %}" class="text-decoration-none">

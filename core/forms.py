@@ -33,12 +33,12 @@ class PlatformSetupForm(forms.Form):
     display_name = forms.CharField(
         label='Ваше имя',
         max_length=150,
-        widget=forms.TextInput(attrs={'class': 'field-input', 'autofocus': True, 'placeholder': 'Иванов Иван Иванович'}),
+        widget=forms.TextInput(attrs={'class': 'field-input', 'autofocus': True}),
     )
     username = forms.CharField(
         label='Логин',
         max_length=150,
-        widget=forms.TextInput(attrs={'class': 'field-input', 'placeholder': 'Используется для входа'}),
+        widget=forms.TextInput(attrs={'class': 'field-input'}),
     )
     password = forms.CharField(
         label='Пароль',
@@ -104,12 +104,12 @@ class InstitutionForm(forms.ModelForm):
     admin_display_name = forms.CharField(
         label='Имя суперадмина заведения',
         max_length=150,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Иванов Иван Иванович'}),
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
     )
     admin_username = forms.CharField(
         label='Логин суперадмина',
         max_length=150,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'director'}),
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
     )
     admin_password = forms.CharField(
         label='Пароль суперадмина',
@@ -126,8 +126,8 @@ class InstitutionForm(forms.ModelForm):
             'notes': 'Заметки',
         }
         widgets = {
-            'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'МКАГ'}),
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Московский колледж...'}),
+            'code': forms.TextInput(attrs={'class': 'form-control'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
@@ -474,11 +474,11 @@ class EmployeeSubjectAssignForm(forms.ModelForm):
 class DocumentForm(forms.Form):
     name = forms.CharField(
         label='Название документа',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Например: Паспорт, Справка об обучении...'})
+        widget=forms.TextInput(attrs={'class': 'form-control'})
     )
     description = forms.CharField(
         label='Описание', required=False,
-        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Необязательно'})
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2})
     )
     files = forms.FileField(
         label='Файлы',

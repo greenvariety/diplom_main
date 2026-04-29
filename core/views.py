@@ -1258,7 +1258,6 @@ def export_students(request):
 # Feedback (dev tool)
 # ---------------------------------------------------------------------------
 
-@login_required
 def feedback_save(request):
     if request.method != 'POST':
         return JsonResponse({'ok': False}, status=405)
