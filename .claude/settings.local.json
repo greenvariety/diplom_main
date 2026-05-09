@@ -59,7 +59,9 @@
       "PowerShell(Get-ChildItem \"C:\\\\Диплом\\\\Программа\" -Recurse -Depth 2 | Where-Object { !$_.PSIsContainer -and $_.FullName -notmatch 'venv|\\\\.git|migrations|__pycache__' } | Select-Object FullName | Sort-Object FullName)",
       "PowerShell(Get-ChildItem \"C:\\\\Диплом\\\\Программа\" -Depth 1 | Where-Object { !$_.PSIsContainer -or $_.Name -notin @\\('venv', '.git', '__pycache__'\\) } | Select-Object Name, @{N='Type';E={if\\($_.PSIsContainer\\){'DIR'}else{'FILE'}}})",
       "PowerShell($items = Get-ChildItem \"C:\\\\Диплом\\\\Программа\" -Force; foreach\\($i in $items\\) { Write-Output $i.FullName })",
-      "PowerShell($items = Get-ChildItem \"C:\\\\Диплом\\\\Программа\\\\дизайн сайт\" -Force -Recurse; foreach\\($i in $items\\) { Write-Output $i.FullName })"
+      "PowerShell($items = Get-ChildItem \"C:\\\\Диплом\\\\Программа\\\\дизайн сайт\" -Force -Recurse; foreach\\($i in $items\\) { Write-Output $i.FullName })",
+      "Bash(python -c \"import os; print\\(os.path.exists\\('templates/includes/feedback_widget.html'\\)\\)\")",
+      "Bash(venv\\\\Scripts\\\\python.exe manage.py makemigrations --name remove_position_is_teacher)"
     ]
   }
 }

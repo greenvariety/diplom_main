@@ -21,7 +21,6 @@
                 <tr>
                     <th style="width:40px">#</th>
                     <th>Название</th>
-                    <th>Тип</th>
                 </tr>
             </thead>
             <tbody>
@@ -29,17 +28,10 @@
                 <tr class="row-link" onclick="window.location='{% url 'position-edit' p.pk %}'">
                     <td class="muted">{{ forloop.counter }}</td>
                     <td class="fwm">{{ p.name }}</td>
-                    <td>
-                        {% if p.is_teacher %}
-                        <span class="badge badge-info"><span class="dot"></span>Преподавательская</span>
-                        {% else %}
-                        <span class="badge badge-neutral"><span class="dot"></span>Административная</span>
-                        {% endif %}
-                    </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="3"><div class="empty"><i class="bi bi-diagram-3"></i>Нет должностей</div></td>
+                    <td colspan="2"><div class="empty"><i class="bi bi-diagram-3"></i>Нет должностей</div></td>
                 </tr>
                 {% endfor %}
             </tbody>

@@ -53,7 +53,6 @@ class Position(models.Model):
         related_name='positions', verbose_name='Учебное заведение'
     )
     name = models.CharField(max_length=255, verbose_name='Название')
-    is_teacher = models.BooleanField(default=False, verbose_name='Преподавательская')
 
     class Meta:
         verbose_name = 'Должность'

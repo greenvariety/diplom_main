@@ -805,7 +805,7 @@ def subject_detail(request, pk):
         'group', 'group__faculty', 'employee', 'employee__position'
     )
     all_teachers = Employee.objects.filter(
-        institution=institution, position__is_teacher=True
+        institution=institution
     ).select_related('position')
     assigned_employee_ids = set(assignments.values_list('employee_id', flat=True))
     return render(request, 'core/subject_detail.html', {

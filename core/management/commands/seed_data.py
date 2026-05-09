@@ -28,10 +28,10 @@ class Command(BaseCommand):
             self.stdout.write('  Создано учреждение: ОУ')
 
         # --- Должности ---
-        pos_director = Position.objects.create(name='Директор', is_teacher=False, institution=inst)
-        pos_admin    = Position.objects.create(name='Завуч', is_teacher=False, institution=inst)
-        pos_teacher  = Position.objects.create(name='Преподаватель', is_teacher=True, institution=inst)
-        pos_master   = Position.objects.create(name='Мастер производственного обучения', is_teacher=True, institution=inst)
+        pos_director = Position.objects.create(name='Директор', institution=inst)
+        pos_admin    = Position.objects.create(name='Завуч', institution=inst)
+        pos_teacher  = Position.objects.create(name='Преподаватель', institution=inst)
+        pos_master   = Position.objects.create(name='Мастер производственного обучения', institution=inst)
         self.stdout.write('  Должности: 4')
 
         # --- Факультеты ---

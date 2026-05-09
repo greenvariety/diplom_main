@@ -11,7 +11,7 @@
         </div>
         <h1>{{ employee }}</h1>
         <div class="sub">
-            {% if employee.position %}{{ employee.position }}{% if employee.position.is_teacher %} · преподаватель{% endif %}{% endif %}
+            {% if employee.position %}{{ employee.position }}{% endif %}
         </div>
     </div>
     {% if user.is_admin %}
@@ -42,9 +42,6 @@
                 <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
                     {% if employee.position %}
                     <span class="badge badge-neutral">{{ employee.position }}</span>
-                    {% if employee.position.is_teacher %}
-                    <span class="badge badge-ok"><span class="dot"></span>Преподаватель</span>
-                    {% endif %}
                     {% endif %}
                 </div>
             </div>
@@ -79,11 +76,11 @@
         </div>
         {% endif %}
 
-        {% if employee.position.is_teacher or subjects %}
+        {% if subjects %}
         <div class="card">
             <div class="card-head">
                 <div class="title">Ведёт предметы</div>
-                {% if user.is_admin and employee.position.is_teacher %}
+                {% if user.is_admin %}
                 <a href="{% url 'employee-subject-assign' employee.pk %}" class="btn btn-secondary btn-sm">
                     <i class="bi bi-plus-lg"></i>Назначить
                 </a>

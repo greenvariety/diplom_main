@@ -55,12 +55,7 @@
                     </td>
                     <td class="fwm">{{ emp }}</td>
                     <td>
-                        {% if emp.position %}
-                        {{ emp.position }}
-                        {% if emp.position.is_teacher %}
-                        <span class="badge badge-info" style="margin-left:6px;"><span class="dot"></span>Преподаватель</span>
-                        {% endif %}
-                        {% else %}—{% endif %}
+                        {% if emp.position %}{{ emp.position }}{% else %}—{% endif %}
                     </td>
                     <td class="muted">{{ emp.phone|default:"—" }}</td>
                 </tr>
