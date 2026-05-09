@@ -1,56 +1,59 @@
 {% extends 'base.html' %}
 {% block title %}{{ user_obj.username }}{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+
+<div class="page-head">
     <div>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-1">
-                <li class="breadcrumb-item"><a href="{% url 'user-list' %}">Пользователи</a></li>
-                <li class="breadcrumb-item active">{{ user_obj.username }}</li>
-            </ol>
-        </nav>
-        <h2 class="mb-0">{{ user_obj.username }}</h2>
+        <div class="crumbs">
+            <a href="{% url 'user-list' %}">Пользователи</a>
+            <span class="sep">/</span>
+            <span>{{ user_obj.username }}</span>
+        </div>
+        <h1>{{ user_obj.username }}</h1>
+        <div class="sub">{{ user_obj.display_name|default:"" }}</div>
     </div>
-    <div class="d-flex gap-2">
-        <a href="{% url 'user-edit' user_obj.pk %}" class="btn btn-outline-secondary">
-            <i class="bi bi-pencil me-1"></i>Редактировать
+    <div class="page-actions">
+        <a href="{% url 'user-edit' user_obj.pk %}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-pencil"></i>Редактировать
         </a>
-        <a href="{% url 'user-set-password' user_obj.pk %}" class="btn btn-outline-warning">
-            <i class="bi bi-key me-1"></i>Сменить пароль
+        <a href="{% url 'user-set-password' user_obj.pk %}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-key"></i>Сменить пароль
         </a>
     </div>
 </div>
 
-<div class="card" style="max-width:500px;">
-    <div class="card-header fw-semibold">Учётная запись</div>
-    <ul class="list-group list-group-flush">
-        <li class="list-group-item d-flex justify-content-between">
-            <span class="text-muted">Логин</span>
-            <span class="fw-semibold">{{ user_obj.username }}</span>
-        </li>
-        <li class="list-group-item d-flex justify-content-between">
-            <span class="text-muted">Роль</span>
-            <span>
-                {% if user_obj.role == 'superadmin' %}<span class="badge bg-danger">Суперадмин</span>
-                {% elif user_obj.role == 'admin' %}<span class="badge bg-warning text-dark">Администратор</span>
-                {% else %}<span class="badge bg-secondary">Преподаватель</span>{% endif %}
-            </span>
-        </li>
-        <li class="list-group-item d-flex justify-content-between">
-            <span class="text-muted">Сотрудник</span>
-            <span>
-                {% if user_obj.employee %}
-                <a href="{% url 'employee-detail' user_obj.employee.pk %}">{{ user_obj.employee }}</a>
-                {% else %}—{% endif %}
-            </span>
-        </li>
-        <li class="list-group-item d-flex justify-content-between">
-            <span class="text-muted">Активен</span>
-            <span>
-                {% if user_obj.is_active %}<span class="badge bg-success">Да</span>
-                {% else %}<span class="badge bg-secondary">Нет</span>{% endif %}
-            </span>
-        </li>
-    </ul>
+<div class="card" style="max-width:480px;">
+    <div class="card-head"><div class="title">Учётная запись</div></div>
+    <dl class="kv">
+        <dt>Логин</dt>
+        <dd class="mono fwm">{{ user_obj.username }}</dd>
+        <dt>Имя</dt>
+        <dd>{{ user_obj.display_name|default:"—" }}</dd>
+        <dt>Роль</dt>
+        <dd>
+            {% if user_obj.role == 'superadmin' %}
+            <span class="badge badge-violet"><span class="dot"></span>Суперадминистратор</span>
+            {% elif user_obj.role == 'admin' %}
+            <span class="badge badge-info"><span class="dot"></span>Администратор</span>
+            {% else %}
+            <span class="badge badge-ok"><span class="dot"></span>Преподаватель</span>
+            {% endif %}
+        </dd>
+        <dt>Сотрудник</dt>
+        <dd>
+            {% if user_obj.employee %}
+            <a href="{% url 'employee-detail' user_obj.employee.pk %}">{{ user_obj.employee }}</a>
+            {% else %}—{% endif %}
+        </dd>
+        <dt>Активен</dt>
+        <dd>
+            {% if user_obj.is_active %}
+            <span class="badge badge-ok"><span class="dot"></span>Да</span>
+            {% else %}
+            <span class="badge badge-neutral"><span class="dot"></span>Нет</span>
+            {% endif %}
+        </dd>
+    </dl>
 </div>
+
 {% endblock %}

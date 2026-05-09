@@ -1,88 +1,96 @@
 {% extends 'base.html' %}
 {% block title %}Студенты{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Студенты</h2>
+
+<div class="page-head">
+    <div>
+        <div class="crumbs"><a href="{% url 'dashboard' %}">Главная</a><span class="sep">/</span><span>Студенты</span></div>
+        <h1>Студенты</h1>
+        {% if students %}<div class="sub">Найдено: {{ students|length }}</div>{% endif %}
+    </div>
     {% if user.is_admin %}
-    <div class="d-flex gap-2">
-        <a href="{% url 'export-students' %}" class="btn btn-outline-success">
-            <i class="bi bi-file-earmark-excel me-1"></i>Excel
+    <div class="page-actions">
+        <a href="{% url 'export-students' %}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-file-earmark-excel"></i>Excel
         </a>
-        <a href="{% url 'student-add' %}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i>Добавить
+        <a href="{% url 'student-add' %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-lg"></i>Добавить
         </a>
     </div>
     {% endif %}
 </div>
 
-<div class="card mb-4">
-    <div class="card-body">
-        <form method="get" class="row g-2 align-items-end">
-            <div class="col-md-4">
-                {{ form.search.label_tag }}
-                {{ form.search }}
-            </div>
-            <div class="col-md-2">
-                {{ form.faculty.label_tag }}
-                {{ form.faculty }}
-            </div>
-            <div class="col-md-2">
-                {{ form.group.label_tag }}
-                {{ form.group }}
-            </div>
-            <div class="col-md-2">
-                {{ form.status.label_tag }}
-                {{ form.status }}
-            </div>
-            <div class="col-md-2 d-flex gap-1">
-                <button type="submit" class="btn btn-outline-primary flex-fill">
-                    <i class="bi bi-search"></i>
-                </button>
-                <a href="{% url 'student-list' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-x"></i>
-                </a>
-            </div>
-        </form>
-    </div>
+<div class="filters">
+    <form method="get" style="display:contents;">
+        <div class="field grow-2">
+            <label class="field-label">Поиск по ФИО</label>
+            {{ form.search }}
+        </div>
+        <div class="field">
+            <label class="field-label">Факультет</label>
+            {{ form.faculty }}
+        </div>
+        <div class="field">
+            <label class="field-label">Группа</label>
+            {{ form.group }}
+        </div>
+        <div class="field">
+            <label class="field-label">Статус</label>
+            {{ form.status }}
+        </div>
+        <div style="display:flex;gap:6px;align-self:flex-end;">
+            <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button>
+            <a href="{% url 'student-list' %}" class="btn btn-ghost btn-sm">Сбросить</a>
+        </div>
+    </form>
 </div>
 
 <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <span class="fw-semibold">Студенты</span>
-        <span class="text-muted small">Найдено: {{ students|length }}</span>
-    </div>
-    <div class="card-body p-0">
-        <table class="table table-hover mb-0">
-            <thead class="table-light">
-                <tr><th>#</th><th>Фото</th><th>ФИО</th><th>Статус</th><th>Факультет</th><th>Группа</th></tr>
+    <div class="card-body flush">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th style="width:40px">#</th>
+                    <th style="width:44px"></th>
+                    <th>ФИО</th>
+                    <th>Статус</th>
+                    <th>Факультет</th>
+                    <th>Группа</th>
+                </tr>
             </thead>
             <tbody>
                 {% for student in students %}
-                <tr onclick="window.location='{% url 'student-detail' student.pk %}'" style="cursor:pointer;">
-                    <td>{{ forloop.counter }}</td>
+                <tr class="row-link" onclick="window.location='{% url 'student-detail' student.pk %}'">
+                    <td class="muted">{{ forloop.counter }}</td>
                     <td>
                         {% if student.photo %}
-                        <img src="{{ student.photo.url }}" class="rounded-circle" width="34" height="34" style="object-fit:cover;">
+                        <img src="{{ student.photo.url }}" class="avatar avatar-sm rounded-circle" style="object-fit:cover;">
                         {% else %}
-                        <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold" style="width:34px;height:34px;font-size:13px;">
-                            {{ student.last_name|first }}
-                        </div>
+                        <div class="avatar avatar-sm">{{ student.last_name|first }}</div>
                         {% endif %}
                     </td>
-                    <td class="fw-semibold">{{ student.full_name }}</td>
+                    <td class="fwm">{{ student.full_name }}</td>
                     <td>
                         <span class="badge badge-status-{{ student.status }}">
-                            {{ student.get_status_display }}
+                            <span class="dot"></span>{{ student.get_status_display }}
                         </span>
                     </td>
                     <td>{{ student.faculty.short_name }}</td>
                     <td>{{ student.group.name|default:"—" }}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="6" class="text-center text-muted py-4">Студенты не найдены</td></tr>
+                <tr>
+                    <td colspan="6">
+                        <div class="empty">
+                            <i class="bi bi-person-x"></i>
+                            Студенты не найдены
+                        </div>
+                    </td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
 {% endblock %}

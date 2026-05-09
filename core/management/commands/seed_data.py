@@ -1,8 +1,7 @@
 from django.core.management.base import BaseCommand
-from django.utils import timezone
 from datetime import date
 from core.models import (
-    Faculty, Position, Employee, Group, Student, Parent,
+    Institution, Faculty, Position, Employee, Group, Student, Parent,
     StudentParent, Subject, GroupSubjectEmployee, User,
 )
 
@@ -23,44 +22,43 @@ class Command(BaseCommand):
         Subject.objects.all().delete()
         User.objects.filter(role__in=['admin', 'teacher']).delete()
 
+        inst = Institution.objects.first()
+        if not inst:
+            inst = Institution.objects.create(code='ОУ', name='Образовательное учреждение')
+            self.stdout.write('  Создано учреждение: ОУ')
+
         # --- Должности ---
-        pos_director = Position.objects.create(name='Директор', is_teacher=False)
-        pos_admin = Position.objects.create(name='Завуч', is_teacher=False)
-        pos_teacher = Position.objects.create(name='Преподаватель', is_teacher=True)
-        pos_master = Position.objects.create(name='Мастер производственного обучения', is_teacher=True)
+        pos_director = Position.objects.create(name='Директор', is_teacher=False, institution=inst)
+        pos_admin    = Position.objects.create(name='Завуч', is_teacher=False, institution=inst)
+        pos_teacher  = Position.objects.create(name='Преподаватель', is_teacher=True, institution=inst)
+        pos_master   = Position.objects.create(name='Мастер производственного обучения', is_teacher=True, institution=inst)
         self.stdout.write('  Должности: 4')
 
         # --- Факультеты ---
-        f1 = Faculty.objects.create(
+        f1 = Faculty.objects.create(institution=inst,
             full_name='Информационные системы и программирование',
             short_name='ИСП', created_at=date(2010, 9, 1))
-        f2 = Faculty.objects.create(
+        f2 = Faculty.objects.create(institution=inst,
             full_name='Экономика и бухгалтерский учёт',
             short_name='ЭБУ', created_at=date(2008, 9, 1))
-        f3 = Faculty.objects.create(
+        f3 = Faculty.objects.create(institution=inst,
             full_name='Техническое обслуживание и ремонт автомобилей',
             short_name='ТОРА', created_at=date(2005, 9, 1))
         self.stdout.write('  Факультеты: 3')
 
         # --- Сотрудники ---
-        e1 = Employee.objects.create(last_name='Смирнова', first_name='Ольга', middle_name='Викторовна',
-            birth_date=date(1975, 3, 12), phone='+7 900 111-22-33', email='smirnova@college.ru',
-            position=pos_director)
-        e2 = Employee.objects.create(last_name='Козлов', first_name='Андрей', middle_name='Петрович',
-            birth_date=date(1980, 7, 5), phone='+7 900 222-33-44', email='kozlov@college.ru',
-            position=pos_teacher)
-        e3 = Employee.objects.create(last_name='Петрова', first_name='Наталья', middle_name='Сергеевна',
-            birth_date=date(1983, 11, 20), phone='+7 900 333-44-55', email='petrova@college.ru',
-            position=pos_teacher)
-        e4 = Employee.objects.create(last_name='Фёдоров', first_name='Иван', middle_name='Александрович',
-            birth_date=date(1978, 4, 18), phone='+7 900 444-55-66', email='fedorov@college.ru',
-            position=pos_teacher)
-        e5 = Employee.objects.create(last_name='Морозова', first_name='Елена', middle_name='Николаевна',
-            birth_date=date(1990, 6, 30), phone='+7 900 555-66-77', email='morozova@college.ru',
-            position=pos_master)
-        e6 = Employee.objects.create(last_name='Тихонов', first_name='Сергей', middle_name='Юрьевич',
-            birth_date=date(1985, 2, 14), phone='+7 900 666-77-88', email='tikhonov@college.ru',
-            position=pos_teacher)
+        e1 = Employee.objects.create(institution=inst, last_name='Смирнова', first_name='Ольга', middle_name='Викторовна',
+            birth_date=date(1975, 3, 12), phone='+7 900 111-22-33', email='smirnova@college.ru', position=pos_director)
+        e2 = Employee.objects.create(institution=inst, last_name='Козлов', first_name='Андрей', middle_name='Петрович',
+            birth_date=date(1980, 7, 5), phone='+7 900 222-33-44', email='kozlov@college.ru', position=pos_teacher)
+        e3 = Employee.objects.create(institution=inst, last_name='Петрова', first_name='Наталья', middle_name='Сергеевна',
+            birth_date=date(1983, 11, 20), phone='+7 900 333-44-55', email='petrova@college.ru', position=pos_teacher)
+        e4 = Employee.objects.create(institution=inst, last_name='Фёдоров', first_name='Иван', middle_name='Александрович',
+            birth_date=date(1978, 4, 18), phone='+7 900 444-55-66', email='fedorov@college.ru', position=pos_teacher)
+        e5 = Employee.objects.create(institution=inst, last_name='Морозова', first_name='Елена', middle_name='Николаевна',
+            birth_date=date(1990, 6, 30), phone='+7 900 555-66-77', email='morozova@college.ru', position=pos_master)
+        e6 = Employee.objects.create(institution=inst, last_name='Тихонов', first_name='Сергей', middle_name='Юрьевич',
+            birth_date=date(1985, 2, 14), phone='+7 900 666-77-88', email='tikhonov@college.ru', position=pos_teacher)
         self.stdout.write('  Сотрудники: 6')
 
         # --- Группы ---
@@ -109,17 +107,16 @@ class Command(BaseCommand):
         self.stdout.write(f'  Студентов: {len(created_students)}')
 
         # --- Опекуны ---
-        p1 = Parent.objects.create(last_name='Иванов', first_name='Дмитрий', middle_name='Сергеевич',
+        p1 = Parent.objects.create(institution=inst, last_name='Иванов', first_name='Дмитрий', middle_name='Сергеевич',
             birth_date=date(1978, 3, 10), phone='+7 902 100-00-01', email='ivanov_d@mail.ru')
-        p2 = Parent.objects.create(last_name='Сидорова', first_name='Татьяна', middle_name='Петровна',
+        p2 = Parent.objects.create(institution=inst, last_name='Сидорова', first_name='Татьяна', middle_name='Петровна',
             birth_date=date(1980, 6, 14), phone='+7 902 100-00-02', email='sidorova_t@mail.ru')
-        p3 = Parent.objects.create(last_name='Новикова', first_name='Светлана', middle_name='Владимировна',
+        p3 = Parent.objects.create(institution=inst, last_name='Новикова', first_name='Светлана', middle_name='Владимировна',
             birth_date=date(1975, 11, 5), phone='+7 902 200-00-01', email='novikova_s@mail.ru')
-        p4 = Parent.objects.create(last_name='Васильев', first_name='Роман', middle_name='Игоревич',
+        p4 = Parent.objects.create(institution=inst, last_name='Васильев', first_name='Роман', middle_name='Игоревич',
             birth_date=date(1982, 2, 20), phone='+7 902 300-00-01', email='vasiliev_r@mail.ru')
         self.stdout.write('  Опекуны: 4')
 
-        # Привязки опекунов
         StudentParent.objects.create(student=created_students[0], parent=p1, relation_type='father')
         StudentParent.objects.create(student=created_students[0], parent=p2, relation_type='mother')
         StudentParent.objects.create(student=created_students[1], parent=p2, relation_type='mother')
@@ -135,43 +132,32 @@ class Command(BaseCommand):
             'Техническое обслуживание', 'Устройство автомобиля',
             'Физкультура', 'Русский язык',
         ]
-        subjects = {name: Subject.objects.create(name=name) for name in subj_names}
+        subjects = {name: Subject.objects.create(name=name, institution=inst) for name in subj_names}
         self.stdout.write(f'  Предметов: {len(subjects)}')
 
         # --- Назначения предмет-группа-преподаватель ---
         assignments = [
-            (g1, 'Математика', e2),
-            (g1, 'Информатика', e2),
-            (g1, 'Программирование', e3),
-            (g1, 'Базы данных', e3),
-            (g1, 'Веб-разработка', e6),
-            (g1, 'Физкультура', e4),
-            (g2, 'Математика', e2),
-            (g2, 'Программирование', e3),
-            (g2, 'Базы данных', e6),
-            (g2, 'Веб-разработка', e6),
-            (g3, 'Бухгалтерский учёт', e4),
-            (g3, 'Экономика', e4),
-            (g3, 'Финансы', e6),
-            (g3, 'Математика', e2),
-            (g4, 'Бухгалтерский учёт', e4),
-            (g4, 'Экономика', e4),
-            (g5, 'Техническое обслуживание', e5),
-            (g5, 'Устройство автомобиля', e5),
-            (g5, 'Физкультура', e4),
+            (g1, 'Математика', e2), (g1, 'Информатика', e2), (g1, 'Программирование', e3),
+            (g1, 'Базы данных', e3), (g1, 'Веб-разработка', e6), (g1, 'Физкультура', e4),
+            (g2, 'Математика', e2), (g2, 'Программирование', e3),
+            (g2, 'Базы данных', e6), (g2, 'Веб-разработка', e6),
+            (g3, 'Бухгалтерский учёт', e4), (g3, 'Экономика', e4),
+            (g3, 'Финансы', e6), (g3, 'Математика', e2),
+            (g4, 'Бухгалтерский учёт', e4), (g4, 'Экономика', e4),
+            (g5, 'Техническое обслуживание', e5), (g5, 'Устройство автомобиля', e5), (g5, 'Физкультура', e4),
         ]
         for grp, subj_name, emp in assignments:
             GroupSubjectEmployee.objects.create(group=grp, subject=subjects[subj_name], employee=emp)
         self.stdout.write(f'  Назначений предметов: {len(assignments)}')
 
         # --- Пользователи ---
-        admin_user = User.objects.create_user(username='admin_user', password='admin123', role='admin', employee=e1)
-        teacher1 = User.objects.create_user(username='kozlov', password='teacher123', role='teacher', employee=e2)
-        teacher2 = User.objects.create_user(username='petrova', password='teacher123', role='teacher', employee=e3)
-        self.stdout.write('  Пользователи: admin_user / kozlov / petrova (+ superadmin)')
+        User.objects.create_user(username='admin_user', password='admin_-1', role='admin', institution=inst, employee=e1)
+        User.objects.create_user(username='kozlov', password='teacher-1', role='teacher', institution=inst, employee=e2)
+        User.objects.create_user(username='petrova', password='teacher-1', role='teacher', institution=inst, employee=e3)
+        self.stdout.write('  Пользователи: admin_user / kozlov / petrova')
 
         self.stdout.write(self.style.SUCCESS('\nБаза заполнена успешно!'))
-        self.stdout.write('  Суперадмин:  admin / admin123')
-        self.stdout.write('  Администратор: admin_user / admin123')
-        self.stdout.write('  Преподаватель: kozlov / teacher123')
-        self.stdout.write('  Преподаватель: petrova / teacher123')
+        self.stdout.write('  Суперадмин:    admin      / admin_-1')
+        self.stdout.write('  Администратор: admin_user / admin_-1')
+        self.stdout.write('  Преподаватель: kozlov     / teacher-1')
+        self.stdout.write('  Преподаватель: petrova    / teacher-1')

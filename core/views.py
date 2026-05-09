@@ -2,7 +2,6 @@ import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.hashers import make_password, check_password as hash_check
 from django.contrib import messages
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
@@ -14,18 +13,17 @@ from .models import (
     Document, User, DeleteRequest, AuditLog, FeedbackComment,
 )
 from .forms import (
-    LoginForm, PlatformSetupForm, ForgotPasswordForm, ResetPasswordForm,
-    InstitutionForm,
+    LoginForm, PlatformSetupForm,
     FacultyForm, PositionForm, GroupForm,
     StudentForm, StudentFilterForm, StudentTransferForm,
     ParentForm, StudentParentForm,
     EmployeeForm, EmployeeSubjectAssignForm, SubjectForm, GroupSubjectEmployeeForm,
     DocumentForm, UserCreateForm, UserEditForm, PasswordChangeCustomForm,
-    DeleteRequestForm, DeleteConfirmForm,
+    DeleteRequestForm,
 )
 from .utils import (
     log_action, model_to_dict_safe, superadmin_required, admin_required,
-    platform_owner_required, get_current_institution, generate_seed_phrase,
+    get_current_institution,
 )
 
 
@@ -34,69 +32,28 @@ from .utils import (
 # ---------------------------------------------------------------------------
 
 def setup_view(request):
-    if User.objects.filter(role='platform_owner').exists():
+    if Institution.objects.exists():
         return redirect('login')
 
     form = PlatformSetupForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        seed = generate_seed_phrase()
+        institution = Institution.objects.create(
+            code=form.cleaned_data['inst_code'].upper(),
+            name=form.cleaned_data['inst_name'],
+        )
         user = User.objects.create_user(
             username=form.cleaned_data['username'],
             password=form.cleaned_data['password'],
-            role='platform_owner',
+            role='superadmin',
             display_name=form.cleaned_data['display_name'],
-            seed_phrase_hash=make_password(seed),
+            institution=institution,
             is_staff=True,
             is_superuser=True,
         )
         login(request, user)
-        request.session['setup_seed'] = seed
-        return redirect('setup-complete')
+        return redirect('dashboard')
 
     return render(request, 'core/setup.html', {'form': form})
-
-
-def setup_complete_view(request):
-    seed = request.session.pop('setup_seed', None)
-    if not seed:
-        return redirect('institution-list')
-    return render(request, 'core/setup_complete.html', {'seed': seed})
-
-
-# ---------------------------------------------------------------------------
-# Forgot / reset password
-# ---------------------------------------------------------------------------
-
-def forgot_password_view(request):
-    form = ForgotPasswordForm(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        username = form.cleaned_data['username']
-        seed_phrase = form.cleaned_data['seed_phrase'].strip()
-        try:
-            user = User.objects.get(username=username)
-            if user.seed_phrase_hash and hash_check(seed_phrase, user.seed_phrase_hash):
-                request.session['reset_user_id'] = user.pk
-                return redirect('reset-password')
-            else:
-                form.add_error(None, 'Неверная сид-фраза или логин.')
-        except User.DoesNotExist:
-            form.add_error(None, 'Неверная сид-фраза или логин.')
-    return render(request, 'core/forgot_password.html', {'form': form})
-
-
-def reset_password_view(request):
-    user_id = request.session.get('reset_user_id')
-    if not user_id:
-        return redirect('forgot-password')
-    user = get_object_or_404(User, pk=user_id)
-    form = ResetPasswordForm(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        user.set_password(form.cleaned_data['new_password'])
-        user.save()
-        del request.session['reset_user_id']
-        messages.success(request, 'Пароль успешно изменён. Войдите с новым паролем.')
-        return redirect('login')
-    return render(request, 'core/reset_password.html', {'form': form, 'user_obj': user})
 
 
 # ---------------------------------------------------------------------------
@@ -105,16 +62,12 @@ def reset_password_view(request):
 
 def login_view(request):
     if request.user.is_authenticated:
-        if request.user.is_platform_owner:
-            return redirect('institution-list')
         return redirect('dashboard')
 
     form = LoginForm(request, data=request.POST or None)
     if request.method == 'POST' and form.is_valid():
         user = form.get_user()
         login(request, user)
-        if user.is_platform_owner:
-            return redirect('institution-list')
         return redirect('dashboard')
     return render(request, 'core/login.html', {'form': form})
 
@@ -126,68 +79,12 @@ def logout_view(request):
 
 
 # ---------------------------------------------------------------------------
-# Institution management (platform_owner only)
-# ---------------------------------------------------------------------------
-
-@platform_owner_required
-def institution_list(request):
-    institutions = Institution.objects.annotate(
-        user_count=Count('users', distinct=True),
-        faculty_count=Count('faculties', distinct=True),
-    )
-    current_id = request.session.get('institution_id')
-    return render(request, 'core/institution_list.html', {
-        'institutions': institutions,
-        'current_id': current_id,
-    })
-
-
-@platform_owner_required
-def institution_add(request):
-    form = InstitutionForm(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        institution = form.save(commit=False)
-        institution.code = institution.code.upper()
-        institution.save()
-        admin_user = User.objects.create_user(
-            username=form.cleaned_data['admin_username'],
-            password=form.cleaned_data['admin_password'],
-            role='superadmin',
-            display_name=form.cleaned_data['admin_display_name'],
-            institution=institution,
-        )
-        messages.success(
-            request,
-            f'Заведение «{institution.name}» создано. '
-            f'Суперадмин: {admin_user.username}'
-        )
-        return redirect('institution-list')
-    return render(request, 'core/institution_add.html', {'form': form})
-
-
-@platform_owner_required
-def institution_enter(request, pk):
-    institution = get_object_or_404(Institution, pk=pk)
-    request.session['institution_id'] = institution.pk
-    return redirect('dashboard')
-
-
-@platform_owner_required
-def institution_exit(request):
-    request.session.pop('institution_id', None)
-    return redirect('institution-list')
-
-
-# ---------------------------------------------------------------------------
 # Dashboard
 # ---------------------------------------------------------------------------
 
 @login_required
 def dashboard(request):
     institution = get_current_institution(request)
-    if institution is None:
-        return redirect('institution-list')
-
     user = request.user
     context = {'institution': institution}
 
@@ -231,8 +128,6 @@ def dashboard(request):
 @login_required
 def faculty_list(request):
     institution = get_current_institution(request)
-    if institution is None:
-        return redirect('institution-list')
     q = request.GET.get('q', '')
     faculties = Faculty.objects.filter(institution=institution).annotate(group_count=Count('groups'))
     if q:
@@ -245,8 +140,6 @@ def faculty_list(request):
 @admin_required
 def faculty_add(request):
     institution = get_current_institution(request)
-    if institution is None:
-        return redirect('institution-list')
     form = FacultyForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         faculty = form.save(commit=False)
@@ -320,8 +213,6 @@ def faculty_delete_request(request, pk):
 @login_required
 def group_list(request):
     institution = get_current_institution(request)
-    if institution is None:
-        return redirect('institution-list')
     user = request.user
     q = request.GET.get('q', '')
     base_qs = Group.objects.filter(faculty__institution=institution)
@@ -351,8 +242,6 @@ def group_list(request):
 @admin_required
 def group_add(request):
     institution = get_current_institution(request)
-    if institution is None:
-        return redirect('institution-list')
     form = GroupForm(request.POST or None, institution=institution)
     if request.method == 'POST' and form.is_valid():
         group = form.save()
@@ -458,8 +347,6 @@ def group_subject_delete(request, pk, assignment_pk):
 @login_required
 def student_list(request):
     institution = get_current_institution(request)
-    if institution is None:
-        return redirect('institution-list')
     user = request.user
     form = StudentFilterForm(request.GET, institution=institution)
     students = Student.objects.filter(
@@ -495,8 +382,6 @@ def student_list(request):
 @admin_required
 def student_add(request):
     institution = get_current_institution(request)
-    if institution is None:
-        return redirect('institution-list')
     form = StudentForm(request.POST or None, request.FILES or None, institution=institution)
     if request.method == 'POST' and form.is_valid():
         student = form.save()
@@ -624,8 +509,6 @@ def student_transfer(request, pk):
 @admin_required
 def parent_list(request):
     institution = get_current_institution(request)
-    if institution is None:
-        return redirect('institution-list')
     q = request.GET.get('q', '')
     parents = Parent.objects.filter(institution=institution)
     if q:
@@ -638,8 +521,6 @@ def parent_list(request):
 @admin_required
 def parent_add(request):
     institution = get_current_institution(request)
-    if institution is None:
-        return redirect('institution-list')
     form = ParentForm(request.POST or None, request.FILES or None)
     if request.method == 'POST' and form.is_valid():
         parent = form.save(commit=False)
@@ -730,8 +611,6 @@ def parent_delete_request(request, pk):
 @admin_required
 def employee_list(request):
     institution = get_current_institution(request)
-    if institution is None:
-        return redirect('institution-list')
     q = request.GET.get('q', '')
     employees = Employee.objects.filter(institution=institution).select_related('position')
     if q:
@@ -744,8 +623,6 @@ def employee_list(request):
 @admin_required
 def employee_add(request):
     institution = get_current_institution(request)
-    if institution is None:
-        return redirect('institution-list')
     form = EmployeeForm(request.POST or None, request.FILES or None, institution=institution)
     if request.method == 'POST' and form.is_valid():
         employee = form.save(commit=False)
@@ -838,8 +715,6 @@ def employee_delete_request(request, pk):
 @superadmin_required
 def position_list(request):
     institution = get_current_institution(request)
-    if institution is None:
-        return redirect('institution-list')
     q = request.GET.get('q', '')
     positions = Position.objects.filter(institution=institution)
     if q:
@@ -850,8 +725,6 @@ def position_list(request):
 @superadmin_required
 def position_add(request):
     institution = get_current_institution(request)
-    if institution is None:
-        return redirect('institution-list')
     form = PositionForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         position = form.save(commit=False)
@@ -886,8 +759,6 @@ def position_edit(request, pk):
 @admin_required
 def subject_list(request):
     institution = get_current_institution(request)
-    if institution is None:
-        return redirect('institution-list')
     q = request.GET.get('q', '')
     subjects = Subject.objects.filter(institution=institution)
     if q:
@@ -899,13 +770,12 @@ def subject_list(request):
 @admin_required
 def subject_add(request):
     institution = get_current_institution(request)
-    if institution is None:
-        return redirect('institution-list')
     form = SubjectForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         subject = form.save(commit=False)
         subject.institution = institution
         subject.save()
+        log_action(request.user, 'created', subject, new_data=model_to_dict_safe(subject))
         messages.success(request, 'Предмет добавлен.')
         return redirect('subject-list')
     return render(request, 'core/subject_form.html', {'form': form, 'title': 'Добавить предмет'})
@@ -915,9 +785,11 @@ def subject_add(request):
 def subject_edit(request, pk):
     institution = get_current_institution(request)
     subject = get_object_or_404(Subject, pk=pk, institution=institution)
+    old_data = model_to_dict_safe(subject)
     form = SubjectForm(request.POST or None, instance=subject)
     if request.method == 'POST' and form.is_valid():
         subject = form.save()
+        log_action(request.user, 'updated', subject, old_data=old_data, new_data=model_to_dict_safe(subject))
         messages.success(request, 'Предмет обновлён.')
         return redirect('subject-detail', pk=pk)
     return render(request, 'core/subject_form.html', {
@@ -1004,8 +876,6 @@ def _redirect_to_owner(owner_type, owner_id):
 @superadmin_required
 def user_list(request):
     institution = get_current_institution(request)
-    if institution is None:
-        return redirect('institution-list')
     q = request.GET.get('q', '')
     users = User.objects.filter(institution=institution).select_related('employee')
     if q:
@@ -1016,8 +886,6 @@ def user_list(request):
 @superadmin_required
 def user_add(request):
     institution = get_current_institution(request)
-    if institution is None:
-        return redirect('institution-list')
     form = UserCreateForm(request.POST or None, institution=institution)
     if request.method == 'POST' and form.is_valid():
         user = form.save(commit=False)
@@ -1069,7 +937,6 @@ def user_set_password(request, pk):
 
 @superadmin_required
 def direct_delete(request, object_type, pk):
-    institution = get_current_institution(request)
     model_map = {
         'Faculty': Faculty,
         'Group': Group,
@@ -1083,21 +950,16 @@ def direct_delete(request, object_type, pk):
         return redirect('dashboard')
 
     obj = get_object_or_404(model_cls, pk=pk)
-    form = DeleteConfirmForm(request.POST or None)
 
-    if request.method == 'POST' and form.is_valid():
-        entered = form.cleaned_data['confirmation_password']
-        if not request.user.check_password(entered):
-            messages.error(request, 'Неверный пароль.')
-        else:
-            old_data = model_to_dict_safe(obj)
-            log_action(request.user, 'deleted', obj, old_data=old_data)
-            obj.delete()
-            messages.success(request, 'Объект удалён.')
-            return _redirect_after_delete(object_type)
+    if request.method == 'POST':
+        old_data = model_to_dict_safe(obj)
+        Document.objects.filter(owner_type=object_type.lower(), owner_id=obj.pk).delete()
+        log_action(request.user, 'deleted', obj, old_data=old_data)
+        obj.delete()
+        messages.success(request, 'Объект удалён.')
+        return _redirect_after_delete(object_type)
 
     return render(request, 'core/direct_delete_confirm.html', {
-        'form': form,
         'obj': obj,
         'object_type': object_type,
         'object_type_display': dict(DeleteRequest.OBJECT_TYPE_CHOICES).get(object_type, object_type),
@@ -1136,19 +998,14 @@ def delete_request_approve(request, pk):
         messages.error(request, 'Заявка уже обработана.')
         return redirect('delete-request-list')
 
-    form = DeleteConfirmForm(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        entered = form.cleaned_data['confirmation_password']
-        if not request.user.check_password(entered):
-            messages.error(request, 'Неверный пароль.')
-            return render(request, 'core/delete_request_approve.html', {'form': form, 'dr': dr})
+    if request.method == 'POST':
         _perform_delete(request.user, dr)
         dr.status = 'approved'
         dr.save()
         messages.success(request, 'Объект удалён.')
         return redirect('delete-request-list')
 
-    return render(request, 'core/delete_request_approve.html', {'form': form, 'dr': dr})
+    return render(request, 'core/delete_request_approve.html', {'dr': dr})
 
 
 @superadmin_required
@@ -1172,6 +1029,7 @@ def _perform_delete(user, dr):
     try:
         obj = model_cls.objects.get(pk=dr.object_id)
         old_data = model_to_dict_safe(obj)
+        Document.objects.filter(owner_type=dr.object_type.lower(), owner_id=obj.pk).delete()
         log_action(user, 'deleted', obj, old_data=old_data)
         obj.delete()
     except model_cls.DoesNotExist:

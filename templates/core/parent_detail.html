@@ -1,139 +1,144 @@
 {% extends 'base.html' %}
 {% block title %}{{ parent }}{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+
+<div class="page-head">
     <div>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-1">
-                <li class="breadcrumb-item"><a href="{% url 'parent-list' %}">Опекуны</a></li>
-                <li class="breadcrumb-item active">{{ parent }}</li>
-            </ol>
-        </nav>
-        <h2 class="mb-0">{{ parent }}</h2>
+        <div class="crumbs">
+            <a href="{% url 'parent-list' %}">Опекуны</a>
+            <span class="sep">/</span>
+            <span>{{ parent }}</span>
+        </div>
+        <h1>{{ parent }}</h1>
     </div>
-    <div class="d-flex gap-2">
-        <a href="{% url 'parent-edit' parent.pk %}" class="btn btn-outline-secondary">
-            <i class="bi bi-pencil me-1"></i>Редактировать
+    {% if user.is_admin %}
+    <div class="page-actions">
+        <a href="{% url 'parent-edit' parent.pk %}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-pencil"></i>Редактировать
         </a>
-        <a href="{% url 'parent-delete-request' parent.pk %}" class="btn btn-outline-danger">
-            <i class="bi bi-trash me-1"></i>Удалить
+        <a href="{% url 'parent-delete-request' parent.pk %}" class="btn btn-danger btn-sm">
+            <i class="bi bi-trash"></i>Удалить
         </a>
     </div>
+    {% endif %}
 </div>
-<div class="row">
-    <div class="col-md-4">
-        <div class="card mb-4 text-center">
-            <div class="card-body py-4">
+
+<div style="display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start;">
+
+    <!-- Профиль -->
+    <div>
+        <div class="card">
+            <div class="card-body" style="text-align:center;padding:24px;">
                 {% if parent.photo %}
-                <img src="{{ parent.photo.url }}" class="rounded-circle mb-3" width="120" height="120" style="object-fit:cover;">
+                <img src="{{ parent.photo.url }}" class="avatar avatar-lg"
+                     style="border-radius:50%;object-fit:cover;border:1px solid var(--border);">
                 {% else %}
-                <div class="rounded-circle bg-info d-flex align-items-center justify-content-center text-white mx-auto mb-3"
-                     style="width:120px;height:120px;font-size:3rem;">
-                    {{ parent.last_name|first }}
-                </div>
+                <div class="avatar avatar-lg av-3" style="margin:0 auto;">{{ parent.last_name|first }}</div>
                 {% endif %}
-                <h5>{{ parent }}</h5>
+                <h3 style="margin-top:14px;">{{ parent }}</h3>
+            </div>
+            <div style="border-top:1px solid var(--border);">
+                <dl class="kv">
+                    <dt>Дата рождения</dt><dd>{{ parent.birth_date|default:"—" }}</dd>
+                    <dt>Телефон</dt><dd>{{ parent.phone|default:"—" }}</dd>
+                    <dt>Email</dt><dd>{{ parent.email|default:"—" }}</dd>
+                </dl>
             </div>
         </div>
-        <div class="card mb-4">
-            <div class="card-header fw-semibold">Контакты</div>
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Дата рождения</span><span>{{ parent.birth_date|default:"—" }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Телефон</span><span>{{ parent.phone|default:"—" }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Email</span><span>{{ parent.email|default:"—" }}</span>
-                </li>
-            </ul>
-        </div>
     </div>
-    <div class="col-md-8">
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span class="fw-semibold">Привязанные студенты</span>
+
+    <!-- Данные -->
+    <div>
+
+        <!-- Привязанные студенты -->
+        <div class="card">
+            <div class="card-head">
+                <div class="title">Привязанные студенты</div>
                 {% if user.is_admin and available_students %}
-                <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#addStudentForm">
-                    <i class="bi bi-plus-lg me-1"></i>Привязать студента
+                <button class="btn btn-secondary btn-sm" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#addStudentForm">
+                    <i class="bi bi-plus-lg"></i>Привязать студента
                 </button>
                 {% endif %}
             </div>
             {% if user.is_admin and available_students %}
             <div class="collapse" id="addStudentForm">
-                <div class="card-body border-bottom">
-                    <form method="post" action="{% url 'guardian-add-student' parent.pk %}" class="row g-2 align-items-end">
+                <div class="card-body" style="border-bottom:1px solid var(--border);">
+                    <form method="post" action="{% url 'guardian-add-student' parent.pk %}"
+                          style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:flex-end;">
                         {% csrf_token %}
-                        <div class="col-md-6">
-                            <label class="form-label small mb-1">Студент</label>
-                            <select name="student" class="form-select form-select-sm select2">
+                        <div class="field">
+                            <label class="field-label">Студент</label>
+                            <select name="student" class="form-control select2">
                                 <option value="">Выберите студента</option>
                                 {% for s in available_students %}
                                 <option value="{{ s.pk }}">{{ s.full_name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label small mb-1">Тип связи</label>
-                            <select name="relation_type" class="form-select form-select-sm">
+                        <div class="field">
+                            <label class="field-label">Тип связи</label>
+                            <select name="relation_type" class="form-control">
                                 <option value="mother">Мать</option>
                                 <option value="father">Отец</option>
                                 <option value="guardian">Опекун</option>
                             </select>
                         </div>
-                        <div class="col-md-2">
-                            <button type="submit" class="btn btn-sm btn-success w-100">Привязать</button>
-                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm">Привязать</button>
                     </form>
                 </div>
             </div>
             {% endif %}
-            <table class="table mb-0">
-                <thead class="table-light"><tr><th>Студент</th><th>Связь</th></tr></thead>
-                <tbody>
-                    {% for link in links %}
-                    <tr onclick="window.location='{% url 'student-detail' link.student.pk %}'" style="cursor:pointer;">
-                        <td>{{ link.student.full_name }}</td>
-                        <td>{{ link.get_relation_type_display }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="2" class="text-center text-muted py-3">Нет студентов</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span class="fw-semibold">Документы</span>
-                <a href="{% url 'document-upload' 'parent' parent.pk %}" class="btn btn-sm btn-primary">
-                    <i class="bi bi-upload me-1"></i>Загрузить
-                </a>
+            <div class="card-body flush">
+                <table class="tbl">
+                    <thead><tr><th>Студент</th><th>Связь</th></tr></thead>
+                    <tbody>
+                        {% for link in links %}
+                        <tr class="row-link" onclick="window.location='{% url 'student-detail' link.student.pk %}'">
+                            <td class="fwm"><a href="{% url 'student-detail' link.student.pk %}">{{ link.student.full_name }}</a></td>
+                            <td>{{ link.get_relation_type_display }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="2"><div class="empty" style="padding:16px;">Нет студентов</div></td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            <div class="card-body p-0">
+        </div>
+
+        <!-- Документы -->
+        <div class="card">
+            <div class="card-head">
+                <div class="title">Документы</div>
+                {% if user.is_admin %}
+                <a href="{% url 'document-upload' 'parent' parent.pk %}" class="btn btn-secondary btn-sm">
+                    <i class="bi bi-upload"></i>Загрузить
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body">
                 {% if documents %}
-                <div class="row g-2 p-3">
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
                     {% for doc in documents %}
-                    <div class="col-6 col-md-4">
-                        <a href="{% url 'document-detail' doc.pk %}" class="text-decoration-none">
-                            <div class="border rounded p-2 text-center" style="cursor:pointer;">
-                                {% if doc.is_image %}
-                                <img src="{{ doc.file.url }}" class="img-fluid rounded mb-1" style="max-height:80px;object-fit:cover;width:100%;">
-                                {% else %}
-                                <i class="bi bi-file-earmark-text display-6 text-secondary d-block mb-1"></i>
-                                {% endif %}
-                                <div class="small text-dark text-truncate" title="{{ doc.name }}">{{ doc.name }}</div>
-                                <div class="text-muted" style="font-size:0.7rem;">{{ doc.uploaded_at }}</div>
-                            </div>
-                        </a>
-                    </div>
+                    <a href="{% url 'document-detail' doc.pk %}" class="doc-tile" style="text-decoration:none;">
+                        <div class="doc-icon">
+                            {% if doc.is_image %}<i class="bi bi-image"></i>
+                            {% else %}<i class="bi bi-file-earmark-text"></i>{% endif %}
+                        </div>
+                        <div style="flex:1;min-width:0;">
+                            <div class="doc-name text-truncate">{{ doc.name }}</div>
+                            <div class="doc-meta">{{ doc.uploaded_at|date:"d.m.Y" }}</div>
+                        </div>
+                    </a>
                     {% endfor %}
                 </div>
                 {% else %}
-                <div class="text-center text-muted py-3">Нет документов</div>
+                <div class="empty" style="padding:16px 0;"><i class="bi bi-file-earmark"></i>Нет документов</div>
                 {% endif %}
             </div>
         </div>
+
     </div>
 </div>
+
 {% endblock %}

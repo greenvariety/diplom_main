@@ -1,156 +1,140 @@
 {% extends 'base.html' %}
 {% block title %}{{ employee }}{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+
+<div class="page-head">
     <div>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-1">
-                <li class="breadcrumb-item"><a href="{% url 'employee-list' %}">Сотрудники</a></li>
-                <li class="breadcrumb-item active">{{ employee }}</li>
-            </ol>
-        </nav>
-        <h2 class="mb-0">{{ employee }}</h2>
+        <div class="crumbs">
+            <a href="{% url 'employee-list' %}">Сотрудники</a>
+            <span class="sep">/</span>
+            <span>{{ employee }}</span>
+        </div>
+        <h1>{{ employee }}</h1>
+        <div class="sub">
+            {% if employee.position %}{{ employee.position }}{% if employee.position.is_teacher %} · преподаватель{% endif %}{% endif %}
+        </div>
     </div>
     {% if user.is_admin %}
-    <div class="d-flex gap-2">
-        <a href="{% url 'employee-edit' employee.pk %}" class="btn btn-outline-secondary">
-            <i class="bi bi-pencil me-1"></i>Редактировать
+    <div class="page-actions">
+        <a href="{% url 'employee-edit' employee.pk %}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-pencil"></i>Редактировать
         </a>
-        <a href="{% url 'employee-delete-request' employee.pk %}" class="btn btn-outline-danger">
-            <i class="bi bi-trash me-1"></i>Удалить
+        <a href="{% url 'employee-delete-request' employee.pk %}" class="btn btn-danger btn-sm">
+            <i class="bi bi-trash"></i>Удалить
         </a>
     </div>
     {% endif %}
 </div>
 
-<div class="row">
-    <div class="col-md-4">
-        <div class="card mb-4 text-center">
-            <div class="card-body py-4">
+<div style="display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start;">
+
+    <!-- Профиль -->
+    <div>
+        <div class="card">
+            <div class="card-body" style="text-align:center;padding:24px;">
                 {% if employee.photo %}
-                <img src="{{ employee.photo.url }}" class="rounded-circle mb-3" width="120" height="120" style="object-fit:cover;">
+                <img src="{{ employee.photo.url }}" class="avatar avatar-lg"
+                     style="border-radius:50%;object-fit:cover;border:1px solid var(--border);">
                 {% else %}
-                <div class="rounded-circle bg-success d-flex align-items-center justify-content-center text-white mx-auto mb-3"
-                     style="width:120px;height:120px;font-size:3rem;">
-                    {{ employee.last_name|first }}
+                <div class="avatar avatar-lg av-2" style="margin:0 auto;">{{ employee.last_name|first }}</div>
+                {% endif %}
+                <h3 style="margin-top:14px;margin-bottom:8px;">{{ employee }}</h3>
+                <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
+                    {% if employee.position %}
+                    <span class="badge badge-neutral">{{ employee.position }}</span>
+                    {% if employee.position.is_teacher %}
+                    <span class="badge badge-ok"><span class="dot"></span>Преподаватель</span>
+                    {% endif %}
+                    {% endif %}
                 </div>
-                {% endif %}
-                <h5>{{ employee }}</h5>
-                {% if employee.position %}
-                <span class="badge bg-secondary">{{ employee.position }}</span>
-                {% if employee.position.is_teacher %}<span class="badge bg-info text-dark ms-1">Преподаватель</span>{% endif %}
-                {% endif %}
             </div>
-        </div>
-        <div class="card mb-4">
-            <div class="card-header fw-semibold">Контактные данные</div>
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Дата рождения</span><span>{{ employee.birth_date|default:"—" }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Телефон</span><span>{{ employee.phone|default:"—" }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Email</span><span>{{ employee.email|default:"—" }}</span>
-                </li>
-            </ul>
+            <div style="border-top:1px solid var(--border);">
+                <dl class="kv">
+                    <dt>Дата рождения</dt><dd>{{ employee.birth_date|default:"—" }}</dd>
+                    <dt>Телефон</dt><dd>{{ employee.phone|default:"—" }}</dd>
+                    <dt>Email</dt><dd>{{ employee.email|default:"—" }}</dd>
+                </dl>
+            </div>
         </div>
     </div>
 
-    <div class="col-md-8">
+    <!-- Данные -->
+    <div>
         {% if groups %}
-        <div class="card mb-4">
-            <div class="card-header fw-semibold">Классный руководитель в группах</div>
-            <ul class="list-group list-group-flush">
-                {% for g in groups %}
-                <li class="list-group-item">
-                    <a href="{% url 'group-detail' g.pk %}">{{ g.name }}</a>
-                    <span class="text-muted ms-2 small">{{ g.faculty.short_name }}</span>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endif %}
-
-        {% if employee.position.is_teacher %}
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span class="fw-semibold">Ведёт предметы</span>
-                {% if user.is_admin %}
-                <a href="{% url 'employee-subject-assign' employee.pk %}" class="btn btn-sm btn-primary">
-                    <i class="bi bi-plus-lg me-1"></i>Назначить
-                </a>
-                {% endif %}
-            </div>
-            <table class="table mb-0">
-                <thead class="table-light"><tr><th>Предмет</th><th>Группа</th></tr></thead>
-                <tbody>
-                    {% for s in subjects %}
-                    <tr>
-                        <td>{{ s.subject }}</td>
-                        <td><a href="{% url 'group-detail' s.group.pk %}">{{ s.group.name }}</a></td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="2" class="text-center text-muted py-3">Нет назначений</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% elif subjects %}
-        <div class="card mb-4">
-            <div class="card-header fw-semibold">Ведёт предметы</div>
-            <table class="table mb-0">
-                <thead class="table-light"><tr><th>Предмет</th><th>Группа</th></tr></thead>
-                <tbody>
-                    {% for s in subjects %}
-                    <tr>
-                        <td>{{ s.subject }}</td>
-                        <td><a href="{% url 'group-detail' s.group.pk %}">{{ s.group.name }}</a></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% endif %}
-
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span class="fw-semibold">Документы</span>
-                {% if user.is_admin %}
-                <a href="{% url 'document-upload' 'employee' employee.pk %}" class="btn btn-sm btn-primary">
-                    <i class="bi bi-upload me-1"></i>Загрузить
-                </a>
-                {% endif %}
-            </div>
-            <div class="card-body p-0">
-                <table class="table mb-0">
-                    <thead class="table-light"><tr><th>Тип</th><th>Дата</th><th></th></tr></thead>
+            <div class="card-head"><div class="title">Классный руководитель в группах</div></div>
+            <div class="card-body flush">
+                <table class="tbl">
+                    <thead><tr><th>Группа</th><th>Факультет</th></tr></thead>
                     <tbody>
-                        {% for doc in documents %}
-                        <tr>
-                            <td>{{ doc.get_doc_type_display }}</td>
-                            <td>{{ doc.uploaded_at }}</td>
-                            <td>
-                                <a href="{{ doc.file.url }}" class="btn btn-sm btn-outline-primary me-1" target="_blank">
-                                    <i class="bi bi-download"></i>
-                                </a>
-                                {% if user.is_admin %}
-                                <a href="{% url 'document-delete' doc.pk %}"
-                                   class="btn btn-sm btn-outline-danger"
-                                   onclick="return confirm('Удалить?')">
-                                    <i class="bi bi-trash"></i>
-                                </a>
-                                {% endif %}
-                            </td>
+                        {% for g in groups %}
+                        <tr class="row-link" onclick="window.location='{% url 'group-detail' g.pk %}'">
+                            <td class="fwm"><a href="{% url 'group-detail' g.pk %}">{{ g.name }}</a></td>
+                            <td class="muted">{{ g.faculty.short_name }}</td>
                         </tr>
-                        {% empty %}
-                        <tr><td colspan="3" class="text-center text-muted py-3">Нет документов</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
         </div>
+        {% endif %}
+
+        {% if employee.position.is_teacher or subjects %}
+        <div class="card">
+            <div class="card-head">
+                <div class="title">Ведёт предметы</div>
+                {% if user.is_admin and employee.position.is_teacher %}
+                <a href="{% url 'employee-subject-assign' employee.pk %}" class="btn btn-secondary btn-sm">
+                    <i class="bi bi-plus-lg"></i>Назначить
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body flush">
+                <table class="tbl">
+                    <thead><tr><th>Предмет</th><th>Группа</th></tr></thead>
+                    <tbody>
+                        {% for s in subjects %}
+                        <tr>
+                            <td class="fwm">{{ s.subject }}</td>
+                            <td><a href="{% url 'group-detail' s.group.pk %}">{{ s.group.name }}</a></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="2"><div class="empty" style="padding:16px;">Нет назначений</div></td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card">
+            <div class="card-head">
+                <div class="title">Документы</div>
+                {% if user.is_admin %}
+                <a href="{% url 'document-upload' 'employee' employee.pk %}" class="btn btn-secondary btn-sm">
+                    <i class="bi bi-upload"></i>Загрузить
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if documents %}
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+                    {% for doc in documents %}
+                    <a href="{% url 'document-detail' doc.pk %}" class="doc-tile" style="text-decoration:none;">
+                        <div class="doc-icon"><i class="bi bi-file-earmark-text"></i></div>
+                        <div style="flex:1;min-width:0;">
+                            <div class="doc-name text-truncate">{{ doc.name }}</div>
+                            <div class="doc-meta">{{ doc.uploaded_at|date:"d.m.Y" }}</div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty" style="padding:16px 0;"><i class="bi bi-file-earmark"></i>Нет документов</div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
+
 {% endblock %}

@@ -1,12 +1,23 @@
 {% extends 'base.html' %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>{{ title }}</h2>
-    <a href="{% url 'position-list' %}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i>Назад
-    </a>
+
+<div class="page-head">
+    <div>
+        <div class="crumbs">
+            <a href="{% url 'position-list' %}">Должности</a>
+            <span class="sep">/</span>
+            <span>{{ title }}</span>
+        </div>
+        <h1>{{ title }}</h1>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'position-list' %}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i>Назад
+        </a>
+    </div>
 </div>
+
 <div class="card" style="max-width:500px;">
     <div class="card-body">
         <form method="post">
@@ -14,21 +25,22 @@
             {% for field in form %}
             <div class="mb-3">
                 {% if field.field.widget.input_type == 'checkbox' %}
-                <div class="form-check">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
                     {{ field }}
-                    <label class="form-check-label">{{ field.label }}</label>
-                </div>
+                    <span class="field-label" style="margin-bottom:0;">{{ field.label }}</span>
+                </label>
                 {% else %}
-                <label class="form-label fw-semibold">{{ field.label }}</label>
+                <label class="field-label">{{ field.label }}</label>
                 {{ field }}
                 {% endif %}
-                {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors.0 }}</div>{% endif %}
+                {% if field.errors %}<div class="invalid-feedback" style="display:block;">{{ field.errors.0 }}</div>{% endif %}
             </div>
             {% endfor %}
-            <button type="submit" class="btn btn-primary">
-                <i class="bi bi-check-lg me-1"></i>Сохранить
+            <button type="submit" class="btn btn-primary" style="margin-top:8px;">
+                <i class="bi bi-check-lg"></i>Сохранить
             </button>
         </form>
     </div>
 </div>
+
 {% endblock %}

@@ -1,32 +1,7 @@
 import json
-import random
 from django.http import HttpResponseForbidden
 from django.shortcuts import redirect
 from functools import wraps
-
-
-# ---------------------------------------------------------------------------
-# Seed phrase
-# ---------------------------------------------------------------------------
-
-_SEED_WORDS = [
-    'яблоко', 'гора', 'река', 'лист', 'звезда', 'книга', 'дерево', 'море',
-    'солнце', 'луна', 'ветер', 'огонь', 'вода', 'земля', 'небо', 'камень',
-    'цветок', 'птица', 'рыба', 'снег', 'лес', 'поле', 'город', 'дом',
-    'кот', 'пёс', 'конь', 'заяц', 'медведь', 'волк', 'орёл', 'лиса',
-    'мост', 'путь', 'свет', 'тень', 'корень', 'ветка', 'плод', 'зерно',
-    'осень', 'весна', 'лето', 'зима', 'утро', 'вечер', 'ночь', 'день',
-    'слово', 'мысль', 'сон', 'голос', 'след', 'шаг', 'дверь', 'окно',
-    'стол', 'стул', 'нож', 'хлеб', 'соль', 'чай', 'мёд', 'сад',
-    'облако', 'гром', 'молния', 'туман', 'роса', 'мороз', 'дождь', 'снег',
-    'корабль', 'волна', 'берег', 'якорь', 'парус', 'маяк', 'остров', 'залив',
-    'гвоздь', 'ключ', 'замок', 'цепь', 'кольцо', 'монета', 'свеча', 'лампа',
-    'нить', 'ткань', 'узор', 'краска', 'линия', 'точка', 'круг', 'угол',
-]
-
-
-def generate_seed_phrase():
-    return ' '.join(random.sample(_SEED_WORDS, 12))
 
 
 # ---------------------------------------------------------------------------
@@ -34,16 +9,8 @@ def generate_seed_phrase():
 # ---------------------------------------------------------------------------
 
 def get_current_institution(request):
-    """Возвращает текущее учебное заведение для запроса."""
     from core.models import Institution
-    if not request.user.is_authenticated:
-        return None
-    if request.user.role == 'platform_owner':
-        institution_id = request.session.get('institution_id')
-        if institution_id:
-            return Institution.objects.filter(pk=institution_id).first()
-        return None
-    return request.user.institution
+    return Institution.objects.first()
 
 
 # ---------------------------------------------------------------------------
@@ -96,12 +63,3 @@ def admin_required(view_func):
     return wrapper
 
 
-def platform_owner_required(view_func):
-    @wraps(view_func)
-    def wrapper(request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return redirect('login')
-        if not request.user.is_platform_owner:
-            return HttpResponseForbidden('Доступ запрещён')
-        return view_func(request, *args, **kwargs)
-    return wrapper

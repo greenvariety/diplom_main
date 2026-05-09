@@ -1,60 +1,79 @@
 {% extends 'base.html' %}
 {% block title %}Сотрудники{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Сотрудники</h2>
+
+<div class="page-head">
+    <div>
+        <div class="crumbs"><a href="{% url 'dashboard' %}">Главная</a><span class="sep">/</span><span>Сотрудники</span></div>
+        <h1>Сотрудники</h1>
+        {% if employees %}<div class="sub">Найдено: {{ employees|length }}</div>{% endif %}
+    </div>
     {% if user.is_admin %}
-    <a href="{% url 'employee-add' %}" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i>Добавить
-    </a>
+    <div class="page-actions">
+        <a href="{% url 'employee-add' %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-lg"></i>Добавить
+        </a>
+    </div>
     {% endif %}
 </div>
 
-<form method="get" class="mb-3">
-    <div class="input-group" style="max-width:400px;">
-        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Поиск по ФИО...">
-        <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
-        {% if q %}<a href="{% url 'employee-list' %}" class="btn btn-outline-danger"><i class="bi bi-x"></i></a>{% endif %}
-    </div>
-</form>
+<div class="filters">
+    <form method="get" style="display:contents;">
+        <div class="field grow-2">
+            <label class="field-label">Поиск по ФИО</label>
+            <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Иванов Иван…">
+        </div>
+        <div style="display:flex;gap:6px;align-self:flex-end;">
+            <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button>
+            {% if q %}<a href="{% url 'employee-list' %}" class="btn btn-ghost btn-sm">Сбросить</a>{% endif %}
+        </div>
+    </form>
+</div>
 
 <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <span class="fw-semibold">Сотрудники</span>
-        <span class="text-muted small">Найдено: {{ employees|length }}</span>
-    </div>
-    <div class="card-body p-0">
-        <table class="table table-hover mb-0">
-            <thead class="table-light">
-                <tr><th>#</th><th>Фото</th><th>ФИО</th><th>Должность</th><th>Телефон</th></tr>
+    <div class="card-body flush">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th style="width:40px">#</th>
+                    <th style="width:44px"></th>
+                    <th>ФИО</th>
+                    <th>Должность</th>
+                    <th>Телефон</th>
+                </tr>
             </thead>
             <tbody>
                 {% for emp in employees %}
-                <tr onclick="window.location='{% url 'employee-detail' emp.pk %}'" style="cursor:pointer;">
-                    <td>{{ forloop.counter }}</td>
+                <tr class="row-link" onclick="window.location='{% url 'employee-detail' emp.pk %}'">
+                    <td class="muted">{{ forloop.counter }}</td>
                     <td>
                         {% if emp.photo %}
-                        <img src="{{ emp.photo.url }}" class="rounded-circle" width="34" height="34" style="object-fit:cover;">
+                        <img src="{{ emp.photo.url }}" class="avatar avatar-sm" style="border-radius:50%;object-fit:cover;">
                         {% else %}
-                        <div class="rounded-circle bg-success d-flex align-items-center justify-content-center text-white fw-bold" style="width:34px;height:34px;font-size:13px;">
-                            {{ emp.last_name|first }}
-                        </div>
+                        <div class="avatar avatar-sm av-2">{{ emp.last_name|first }}</div>
                         {% endif %}
                     </td>
-                    <td class="fw-semibold">{{ emp }}</td>
+                    <td class="fwm">{{ emp }}</td>
                     <td>
                         {% if emp.position %}
                         {{ emp.position }}
-                        {% if emp.position.is_teacher %}<span class="badge bg-info text-dark ms-1">Препод.</span>{% endif %}
+                        {% if emp.position.is_teacher %}
+                        <span class="badge badge-info" style="margin-left:6px;"><span class="dot"></span>Преподаватель</span>
+                        {% endif %}
                         {% else %}—{% endif %}
                     </td>
-                    <td>{{ emp.phone|default:"—" }}</td>
+                    <td class="muted">{{ emp.phone|default:"—" }}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="5" class="text-center text-muted py-4">Нет сотрудников</td></tr>
+                <tr>
+                    <td colspan="5">
+                        <div class="empty"><i class="bi bi-briefcase"></i>Нет сотрудников</div>
+                    </td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
 {% endblock %}

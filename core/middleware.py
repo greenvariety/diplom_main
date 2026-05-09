@@ -7,12 +7,12 @@ class InitializationMiddleware:
     Редирект на /institutions/ если владелец платформы не выбрал заведение.
     """
 
-    EXEMPT_PREFIXES = ('/static/', '/media/', '/institutions/')
+    EXEMPT_PREFIXES = ('/static/', '/media/')
     EXEMPT_PATHS = frozenset([
-        '/setup/', '/setup/complete/',
+        '/setup/',
         '/login/', '/logout/',
-        '/forgot-password/', '/reset-password/',
     ])
+
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -26,8 +26,8 @@ class InitializationMiddleware:
             return self.get_response(request)
 
         try:
-            from core.models import User
-            initialized = User.objects.filter(role='platform_owner').exists()
+            from core.models import Institution
+            initialized = Institution.objects.exists()
         except Exception:
             return self.get_response(request)
 

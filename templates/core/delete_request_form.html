@@ -1,31 +1,45 @@
 {% extends 'base.html' %}
 {% block title %}Заявка на удаление{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Заявка на удаление</h2>
+
+<div class="page-head">
+    <div>
+        <h1>Заявка на удаление</h1>
+    </div>
+    <div class="page-actions">
+        <button onclick="history.back()" class="btn btn-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i>Назад
+        </button>
+    </div>
 </div>
-<div class="card" style="max-width: 600px;">
+
+<div class="card" style="max-width:580px;">
     <div class="card-body">
-        <div class="alert alert-warning">
-            <i class="bi bi-exclamation-triangle me-2"></i>
-            Вы собираетесь подать заявку на удаление <strong>{{ object_type }}</strong>:
-            <strong>{{ object }}</strong>.
-            <br>Заявка будет отправлена суперадминистратору на рассмотрение.
+        <div class="banner banner-warn" style="margin-bottom:20px;">
+            <i class="bi bi-exclamation-triangle"></i>
+            <div class="banner-body">
+                Вы собираетесь подать заявку на удаление <strong>{{ object_type }}</strong>:
+                <strong>{{ object }}</strong>.
+                Заявка будет отправлена суперадминистратору на рассмотрение.
+            </div>
         </div>
         <form method="post">
             {% csrf_token %}
             {% for field in form %}
             <div class="mb-3">
-                <label class="form-label">{{ field.label }}</label>
+                <label class="field-label">{{ field.label }}</label>
                 {{ field }}
-                {% if field.errors %}<div class="text-danger small">{{ field.errors.0 }}</div>{% endif %}
+                {% if field.errors %}<div class="invalid-feedback" style="display:block;">{{ field.errors.0 }}</div>{% endif %}
             </div>
             {% endfor %}
-            <button type="submit" class="btn btn-danger">
-                <i class="bi bi-send me-1"></i>Отправить заявку
-            </button>
-            <a href="javascript:history.back()" class="btn btn-outline-secondary ms-2">Отмена</a>
+            <div style="display:flex;gap:8px;margin-top:16px;">
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-send"></i>Отправить заявку
+                </button>
+                <button type="button" onclick="history.back()" class="btn btn-secondary">Отмена</button>
+            </div>
         </form>
     </div>
 </div>
+
 {% endblock %}

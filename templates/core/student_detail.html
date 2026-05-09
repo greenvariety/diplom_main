@@ -1,179 +1,173 @@
 {% extends 'base.html' %}
 {% block title %}{{ student.full_name }}{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+
+<div class="page-head">
     <div>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-1">
-                <li class="breadcrumb-item"><a href="{% url 'student-list' %}">Студенты</a></li>
-                <li class="breadcrumb-item active">{{ student.full_name }}</li>
-            </ol>
-        </nav>
-        <h2 class="mb-0">{{ student.full_name }}</h2>
+        <div class="crumbs">
+            <a href="{% url 'student-list' %}">Студенты</a>
+            <span class="sep">/</span>
+            <span>{{ student.full_name }}</span>
+        </div>
+        <h1>{{ student.full_name }}</h1>
+        <div class="sub">
+            #{{ student.pk }}
+            {% if student.faculty %} · {{ student.faculty.short_name }}{% endif %}
+            {% if student.group %} · {{ student.group.name }}{% endif %}
+        </div>
     </div>
     {% if user.is_admin %}
-    <div class="d-flex gap-2">
-        <a href="{% url 'student-edit' student.pk %}" class="btn btn-outline-secondary">
-            <i class="bi bi-pencil me-1"></i>Редактировать
+    <div class="page-actions">
+        <a href="{% url 'student-edit' student.pk %}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-pencil"></i>Редактировать
         </a>
-        <a href="{% url 'student-transfer' student.pk %}" class="btn btn-outline-info">
-            <i class="bi bi-arrow-left-right me-1"></i>Перевести
+        <a href="{% url 'student-transfer' student.pk %}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-arrow-left-right"></i>Перевести
         </a>
-        <a href="{% url 'student-delete-request' student.pk %}" class="btn btn-outline-danger">
-            <i class="bi bi-trash me-1"></i>Удалить
+        <a href="{% url 'student-delete-request' student.pk %}" class="btn btn-danger btn-sm">
+            <i class="bi bi-trash"></i>Удалить
         </a>
     </div>
     {% endif %}
 </div>
 
-<div class="row">
-    <div class="col-md-4">
-        <div class="card mb-4 text-center">
-            <div class="card-body py-4">
+<div style="display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start;">
+
+    <!-- Левая колонка: профиль -->
+    <div>
+        <div class="card">
+            <div class="card-body" style="text-align:center;padding:24px;">
                 {% if student.photo %}
-                <img src="{{ student.photo.url }}" class="rounded-circle mb-3" width="120" height="120" style="object-fit:cover;">
+                <img src="{{ student.photo.url }}" class="avatar avatar-lg rounded-circle"
+                     style="object-fit:cover;border:1px solid var(--border);">
                 {% else %}
-                <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white mx-auto mb-3"
-                     style="width:120px;height:120px;font-size:3rem;">
+                <div class="avatar avatar-lg" style="margin:0 auto;">
                     {{ student.last_name|first }}
                 </div>
                 {% endif %}
-                <h5>{{ student.full_name }}</h5>
-                <span class="badge badge-status-{{ student.status }} fs-6">{{ student.get_status_display }}</span>
+                <h3 style="margin-top:14px;margin-bottom:4px;">{{ student.last_name }} {{ student.first_name }}</h3>
+                <div class="muted" style="font-size:13px;margin-bottom:12px;">{{ student.patronymic|default:"" }}</div>
+                <span class="badge badge-status-{{ student.status }}">
+                    <span class="dot"></span>{{ student.get_status_display }}
+                </span>
             </div>
-        </div>
-        <div class="card mb-4">
-            <div class="card-header fw-semibold">Личные данные</div>
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Дата рождения</span>
-                    <span>{{ student.birth_date|default:"—" }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Телефон</span>
-                    <span>{{ student.phone|default:"—" }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Email</span>
-                    <span>{{ student.email|default:"—" }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Факультет</span>
-                    <span>{{ student.faculty.short_name }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Группа</span>
-                    <span>
+            <div style="border-top:1px solid var(--border);">
+                <dl class="kv">
+                    <dt>Дата рождения</dt><dd>{{ student.birth_date|default:"—" }}</dd>
+                    <dt>Телефон</dt><dd>{{ student.phone|default:"—" }}</dd>
+                    <dt>Email</dt><dd>{{ student.email|default:"—" }}</dd>
+                    <dt>Факультет</dt><dd>{{ student.faculty.short_name|default:"—" }}</dd>
+                    <dt>Группа</dt>
+                    <dd>
                         {% if student.group %}
                         <a href="{% url 'group-detail' student.group.pk %}">{{ student.group.name }}</a>
                         {% else %}—{% endif %}
-                    </span>
-                </li>
-            </ul>
+                    </dd>
+                </dl>
+            </div>
         </div>
     </div>
 
-    <div class="col-md-8">
-        <!-- Parents -->
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span class="fw-semibold">Опекуны / Родители</span>
+    <!-- Правая колонка: данные -->
+    <div>
+        <!-- Опекуны -->
+        <div class="card">
+            <div class="card-head">
+                <div class="title">Опекуны и родители</div>
                 {% if user.is_admin %}
-                <a href="{% url 'student-add-parent' student.pk %}" class="btn btn-sm btn-primary">
-                    <i class="bi bi-plus-lg me-1"></i>Добавить
+                <a href="{% url 'student-add-parent' student.pk %}" class="btn btn-secondary btn-sm">
+                    <i class="bi bi-plus-lg"></i>Добавить
                 </a>
                 {% endif %}
             </div>
-            <div class="card-body p-0">
-                <table class="table mb-0">
-                    <thead class="table-light"><tr><th>ФИО</th><th>Связь</th><th>Телефон</th><th></th></tr></thead>
+            <div class="card-body flush">
+                <table class="tbl">
+                    <thead><tr><th>ФИО</th><th>Связь</th><th>Телефон</th><th style="width:40px"></th></tr></thead>
                     <tbody>
                         {% for sp in parents %}
                         <tr>
-                            <td><a href="{% url 'parent-detail' sp.parent.pk %}">{{ sp.parent.full_name }}</a></td>
+                            <td class="fwm"><a href="{% url 'parent-detail' sp.parent.pk %}">{{ sp.parent.full_name }}</a></td>
                             <td>{{ sp.get_relation_type_display }}</td>
-                            <td>{{ sp.parent.phone|default:"—" }}</td>
+                            <td class="muted">{{ sp.parent.phone|default:"—" }}</td>
                             <td>
                                 {% if user.is_admin %}
                                 <a href="{% url 'student-remove-parent' student.pk sp.pk %}"
-                                   class="btn btn-sm btn-outline-danger"
+                                   class="btn btn-ghost btn-icon btn-sm"
                                    onclick="return confirm('Удалить связь?')">
-                                    <i class="bi bi-x"></i>
+                                    <i class="bi bi-x-lg"></i>
                                 </a>
                                 {% endif %}
                             </td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="4" class="text-center text-muted py-3">Нет опекунов</td></tr>
+                        <tr><td colspan="4"><div class="empty" style="padding:16px;">Нет опекунов</div></td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- Documents -->
+        <!-- Документы -->
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span class="fw-semibold">Документы</span>
+            <div class="card-head">
+                <div class="title">Документы</div>
                 {% if user.is_admin %}
-                <a href="{% url 'document-upload' 'student' student.pk %}" class="btn btn-sm btn-primary">
-                    <i class="bi bi-upload me-1"></i>Загрузить
+                <a href="{% url 'document-upload' 'student' student.pk %}" class="btn btn-secondary btn-sm">
+                    <i class="bi bi-upload"></i>Загрузить
                 </a>
                 {% endif %}
             </div>
-            <div class="card-body p-0">
+            <div class="card-body">
                 {% if documents %}
-                <div class="row g-2 p-3">
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
                     {% for doc in documents %}
-                    <div class="col-6 col-md-4">
-                        <a href="{% url 'document-detail' doc.pk %}" class="text-decoration-none">
-                            <div class="border rounded p-2 text-center" style="cursor:pointer;">
-                                {% if doc.is_image %}
-                                <img src="{{ doc.file.url }}" class="img-fluid rounded mb-1" style="max-height:80px;object-fit:cover;width:100%;">
-                                {% else %}
-                                <i class="bi bi-file-earmark-text display-6 text-secondary d-block mb-1"></i>
-                                {% endif %}
-                                <div class="small text-dark text-truncate" title="{{ doc.name }}">{{ doc.name }}</div>
-                                <div class="text-muted" style="font-size:0.7rem;">{{ doc.uploaded_at }}</div>
-                            </div>
-                        </a>
-                    </div>
+                    <a href="{% url 'document-detail' doc.pk %}" class="doc-tile" style="text-decoration:none;">
+                        <div class="doc-icon">
+                            {% if doc.is_image %}<i class="bi bi-image"></i>
+                            {% else %}<i class="bi bi-file-earmark-text"></i>{% endif %}
+                        </div>
+                        <div style="flex:1;min-width:0;">
+                            <div class="doc-name text-truncate">{{ doc.name }}</div>
+                            <div class="doc-meta">{{ doc.uploaded_at|date:"d.m.Y" }}</div>
+                        </div>
+                    </a>
                     {% endfor %}
                 </div>
                 {% else %}
-                <div class="text-center text-muted py-3">Нет документов</div>
+                <div class="empty" style="padding:16px 0;">
+                    <i class="bi bi-file-earmark"></i>Нет документов
+                </div>
                 {% endif %}
             </div>
         </div>
-    </div>
-</div>
 
-<!-- History -->
-<div class="card mt-4">
-    <div class="card-header fw-semibold">
-        <i class="bi bi-clock-history me-2"></i>История изменений
+        <!-- История -->
+        <div class="card">
+            <div class="card-head">
+                <div class="title"><i class="bi bi-clock-history"></i>История изменений</div>
+            </div>
+            <div class="card-body flush">
+                <table class="tbl">
+                    <thead><tr><th>Дата и время</th><th>Пользователь</th><th>Действие</th></tr></thead>
+                    <tbody>
+                        {% for log in history %}
+                        <tr>
+                            <td class="mono muted">{{ log.created_at|date:"d.m.Y H:i" }}</td>
+                            <td>{{ log.user|default:"—" }}</td>
+                            <td>
+                                {% if log.action == 'created' %}<span class="badge badge-ok"><span class="dot"></span>Создал</span>
+                                {% elif log.action == 'updated' %}<span class="badge badge-warn"><span class="dot"></span>Изменил</span>
+                                {% else %}<span class="badge badge-bad"><span class="dot"></span>Удалил</span>{% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3"><div class="empty" style="padding:16px;">Нет записей</div></td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-    <div class="card-body p-0">
-        <table class="table table-sm mb-0">
-            <thead class="table-light">
-                <tr><th>Дата и время</th><th>Пользователь</th><th>Действие</th></tr>
-            </thead>
-            <tbody>
-                {% for log in history %}
-                <tr>
-                    <td class="text-muted small">{{ log.created_at|date:"d.m.Y H:i" }}</td>
-                    <td>{{ log.user }}</td>
-                    <td>
-                        {% if log.action == 'created' %}<span class="badge bg-success">Создал</span>
-                        {% elif log.action == 'updated' %}<span class="badge bg-warning text-dark">Изменил</span>
-                        {% else %}<span class="badge bg-danger">Удалил</span>{% endif %}
-                    </td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="3" class="text-center text-muted py-3">Нет записей</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+
 </div>
 {% endblock %}

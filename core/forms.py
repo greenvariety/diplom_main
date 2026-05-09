@@ -2,7 +2,7 @@ import re
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from .models import (
-    Institution, Faculty, Group, Student, Parent, StudentParent,
+    Faculty, Group, Student, Parent, StudentParent,
     Employee, Position, Subject, GroupSubjectEmployee,
     Document, User, DeleteRequest,
 )
@@ -30,10 +30,20 @@ class LoginForm(AuthenticationForm):
 # ---------------------------------------------------------------------------
 
 class PlatformSetupForm(forms.Form):
+    inst_code = forms.CharField(
+        label='Код учреждения',
+        max_length=20,
+        widget=forms.TextInput(attrs={'class': 'field-input', 'placeholder': 'Например: КГУ', 'autofocus': True}),
+    )
+    inst_name = forms.CharField(
+        label='Полное название учреждения',
+        max_length=255,
+        widget=forms.TextInput(attrs={'class': 'field-input', 'placeholder': 'Краснодарский государственный университет'}),
+    )
     display_name = forms.CharField(
         label='Ваше имя',
         max_length=150,
-        widget=forms.TextInput(attrs={'class': 'field-input', 'autofocus': True}),
+        widget=forms.TextInput(attrs={'class': 'field-input'}),
     )
     username = forms.CharField(
         label='Логин',
@@ -63,88 +73,6 @@ class PlatformSetupForm(forms.Form):
         if p1 and p2 and p1 != p2:
             raise forms.ValidationError('Пароли не совпадают.')
         return cleaned
-
-
-class ForgotPasswordForm(forms.Form):
-    username = forms.CharField(
-        label='Логин',
-        widget=forms.TextInput(attrs={'class': 'field-input', 'autofocus': True}),
-    )
-    seed_phrase = forms.CharField(
-        label='Сид-фраза (12 слов через пробел)',
-        widget=forms.TextInput(attrs={'class': 'field-input', 'placeholder': 'слово слово слово … (12 слов)'}),
-    )
-
-
-class ResetPasswordForm(forms.Form):
-    new_password = forms.CharField(
-        label='Новый пароль',
-        widget=forms.PasswordInput(attrs={'class': 'field-input'}),
-        validators=[validate_password_strength],
-    )
-    new_password2 = forms.CharField(
-        label='Повторите пароль',
-        widget=forms.PasswordInput(attrs={'class': 'field-input'}),
-    )
-
-    def clean(self):
-        cleaned = super().clean()
-        p1 = cleaned.get('new_password')
-        p2 = cleaned.get('new_password2')
-        if p1 and p2 and p1 != p2:
-            raise forms.ValidationError('Пароли не совпадают.')
-        return cleaned
-
-
-# ---------------------------------------------------------------------------
-# Institution
-# ---------------------------------------------------------------------------
-
-class InstitutionForm(forms.ModelForm):
-    admin_display_name = forms.CharField(
-        label='Имя суперадмина заведения',
-        max_length=150,
-        widget=forms.TextInput(attrs={'class': 'form-control'}),
-    )
-    admin_username = forms.CharField(
-        label='Логин суперадмина',
-        max_length=150,
-        widget=forms.TextInput(attrs={'class': 'form-control'}),
-    )
-    admin_password = forms.CharField(
-        label='Пароль суперадмина',
-        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
-        validators=[validate_password_strength],
-    )
-
-    class Meta:
-        model = Institution
-        fields = ['code', 'name', 'notes']
-        labels = {
-            'code': 'Код заведения',
-            'name': 'Полное название',
-            'notes': 'Заметки',
-        }
-        widgets = {
-            'code': forms.TextInput(attrs={'class': 'form-control'}),
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-        }
-
-    def clean_admin_username(self):
-        username = self.cleaned_data['admin_username']
-        if User.objects.filter(username=username).exists():
-            raise forms.ValidationError('Этот логин уже занят.')
-        return username
-
-    def clean_code(self):
-        code = self.cleaned_data['code'].upper()
-        qs = Institution.objects.filter(code=code)
-        if self.instance.pk:
-            qs = qs.exclude(pk=self.instance.pk)
-        if qs.exists():
-            raise forms.ValidationError('Заведение с таким кодом уже существует.')
-        return code
 
 
 # ---------------------------------------------------------------------------
@@ -565,6 +493,15 @@ class UserEditForm(forms.ModelForm):
         else:
             self.fields['employee'].queryset = Employee.objects.all()
 
+    def clean_username(self):
+        username = self.cleaned_data['username']
+        qs = User.objects.filter(username=username)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError('Этот логин уже занят.')
+        return username
+
 
 class PasswordChangeCustomForm(forms.Form):
     new_password = forms.CharField(
@@ -597,8 +534,3 @@ class DeleteRequestForm(forms.ModelForm):
         widgets = {'reason': forms.Textarea(attrs={'class': 'form-control', 'rows': 3})}
 
 
-class DeleteConfirmForm(forms.Form):
-    confirmation_password = forms.CharField(
-        label='Введите ваш пароль для подтверждения',
-        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
-    )

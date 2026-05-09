@@ -1,31 +1,46 @@
 {% extends 'base.html' %}
 {% block title %}Журнал изменений{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Журнал изменений</h2>
-    <span class="text-muted">Последние 200 записей</span>
+
+<div class="page-head">
+    <div>
+        <h1>Журнал изменений</h1>
+        <div class="sub">Кто, что и когда менял в системе · последние 200 записей</div>
+    </div>
 </div>
+
 <div class="card">
-    <div class="card-body p-0">
-        <table class="table table-sm table-hover mb-0">
-            <thead class="table-light">
-                <tr><th>Дата и время</th><th>Пользователь</th><th>Действие</th><th>Тип объекта</th><th>ID</th><th>Детали</th></tr>
+    <div class="card-body flush">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th>Дата и время</th>
+                    <th>Пользователь</th>
+                    <th>Действие</th>
+                    <th>Тип объекта</th>
+                    <th>ID</th>
+                    <th style="width:80px">Детали</th>
+                </tr>
             </thead>
             <tbody>
                 {% for log in logs %}
                 <tr>
-                    <td class="text-muted small">{{ log.created_at|date:"d.m.Y H:i:s" }}</td>
-                    <td>{{ log.user|default:"—" }}</td>
+                    <td class="mono muted">{{ log.created_at|date:"d.m.Y H:i:s" }}</td>
+                    <td class="mono">{{ log.user|default:"—" }}</td>
                     <td>
-                        {% if log.action == 'created' %}<span class="badge bg-success">Создал</span>
-                        {% elif log.action == 'updated' %}<span class="badge bg-warning text-dark">Изменил</span>
-                        {% else %}<span class="badge bg-danger">Удалил</span>{% endif %}
+                        {% if log.action == 'created' %}
+                        <span class="badge badge-ok"><span class="dot"></span>Создал</span>
+                        {% elif log.action == 'updated' %}
+                        <span class="badge badge-warn"><span class="dot"></span>Изменил</span>
+                        {% else %}
+                        <span class="badge badge-bad"><span class="dot"></span>Удалил</span>
+                        {% endif %}
                     </td>
                     <td>{{ log.object_type }}</td>
-                    <td>#{{ log.object_id }}</td>
+                    <td class="mono muted">#{{ log.object_id }}</td>
                     <td>
                         {% if log.old_data or log.new_data %}
-                        <button class="btn btn-sm btn-outline-secondary" type="button"
+                        <button class="btn btn-ghost btn-sm" type="button"
                                 data-bs-toggle="collapse" data-bs-target="#log-{{ log.pk }}">
                             <i class="bi bi-eye"></i>
                         </button>
@@ -34,18 +49,18 @@
                 </tr>
                 {% if log.old_data or log.new_data %}
                 <tr class="collapse" id="log-{{ log.pk }}">
-                    <td colspan="6" class="bg-light">
-                        <div class="row p-2">
+                    <td colspan="6" style="background:var(--surface-alt);padding:12px 16px;">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
                             {% if log.old_data %}
-                            <div class="col-md-6">
-                                <strong>До:</strong>
-                                <pre class="small mt-1">{{ log.old_data }}</pre>
+                            <div>
+                                <div class="muted" style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">До</div>
+                                <pre>{{ log.old_data }}</pre>
                             </div>
                             {% endif %}
                             {% if log.new_data %}
-                            <div class="col-md-6">
-                                <strong>После:</strong>
-                                <pre class="small mt-1">{{ log.new_data }}</pre>
+                            <div>
+                                <div class="muted" style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">После</div>
+                                <pre>{{ log.new_data }}</pre>
                             </div>
                             {% endif %}
                         </div>
@@ -53,10 +68,13 @@
                 </tr>
                 {% endif %}
                 {% empty %}
-                <tr><td colspan="6" class="text-center text-muted py-4">Нет записей</td></tr>
+                <tr>
+                    <td colspan="6"><div class="empty"><i class="bi bi-clock-history"></i>Нет записей</div></td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
 {% endblock %}

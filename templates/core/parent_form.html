@@ -1,31 +1,41 @@
 {% extends 'base.html' %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>{{ title }}</h2>
-    <a href="{% url 'parent-list' %}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i>Назад
-    </a>
+
+<div class="page-head">
+    <div>
+        <div class="crumbs">
+            <a href="{% url 'parent-list' %}">Опекуны</a>
+            <span class="sep">/</span>
+            <span>{{ title }}</span>
+        </div>
+        <h1>{{ title }}</h1>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'parent-list' %}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i>Назад
+        </a>
+    </div>
 </div>
-<div class="card" style="max-width: 700px;">
+
+<div class="card" style="max-width:700px;">
     <div class="card-body">
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
-            <div class="row">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">
                 {% for field in form %}
-                <div class="col-md-6 mb-3">
-                    <label class="form-label fw-semibold">{{ field.label }}</label>
+                <div class="mb-3">
+                    <label class="field-label">{{ field.label }}</label>
                     {{ field }}
-                    {% if field.errors %}<div class="text-danger small">{{ field.errors.0 }}</div>{% endif %}
+                    {% if field.errors %}<div class="invalid-feedback" style="display:block;">{{ field.errors.0 }}</div>{% endif %}
                 </div>
                 {% endfor %}
             </div>
-            <div class="d-flex gap-2 mt-3">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-check-lg me-1"></i>Сохранить
-                </button>
-            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top:8px;">
+                <i class="bi bi-check-lg"></i>Сохранить
+            </button>
         </form>
     </div>
 </div>
+
 {% endblock %}

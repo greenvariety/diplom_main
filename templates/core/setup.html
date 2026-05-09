@@ -3,218 +3,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Первоначальная настройка</title>
+    <title>Первоначальная настройка — АИС Учёт студентов</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --accent: #0f766e; --accent-soft: #ccfbf1; --accent-ink: #134e4a; --accent-hover: #115e59;
+      --bg: #fafaf9; --surface: #ffffff; --surface-alt: #f5f5f4;
+      --border: #e7e5e4; --border-strong: #d6d3d1;
+      --text: #1c1917; --text-muted: #57534e; --text-faint: #a8a29e;
+      --bad-bg: #fef2f2; --bad-fg: #991b1b; --bad-bd: #fecaca;
+      --radius: 8px; --radius-sm: 6px;
+      --font: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%; font-family: var(--font); font-size: 14px;
+      color: var(--text); background: var(--bg); -webkit-font-smoothing: antialiased;
+    }
+    body { display: flex; align-items: flex-start; justify-content: center; padding: 40px 24px; }
 
-        body {
-            min-height: 100vh;
-            background: #0f172a;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-        }
+    .setup-wrap { width: 100%; max-width: 520px; }
 
-        .card {
-            background: #ffffff;
-            border-radius: 14px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.12);
-            width: 440px;
-            padding: 40px 36px 36px;
-        }
+    .setup-brand {
+      display: flex; align-items: center; gap: 10px;
+      justify-content: center; margin-bottom: 24px;
+    }
+    .setup-brand .logo {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: var(--accent); color: #fff;
+      display: grid; place-items: center; font-weight: 700; font-size: 16px;
+    }
+    .setup-brand .name { font-weight: 600; font-size: 15px; }
 
-        .card-header {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 30px;
-        }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .card-body { padding: 28px; }
+    .card-foot {
+      display: flex; justify-content: flex-end; gap: 8px;
+      padding: 14px 20px; border-top: 1px solid var(--border);
+      background: var(--surface-alt);
+    }
 
-        .icon-wrap {
-            width: 54px;
-            height: 54px;
-            background: #7c3aed;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 18px;
-        }
+    .section-title {
+      font-size: 11px; font-weight: 500;
+      text-transform: uppercase; letter-spacing: .06em;
+      color: var(--text-faint);
+      padding-bottom: 10px; margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      margin-top: 24px;
+    }
+    .section-title:first-child { margin-top: 0; }
 
-        .icon-wrap svg {
-            width: 28px;
-            height: 28px;
-            fill: #ffffff;
-        }
+    .field { margin-bottom: 14px; }
+    .field-label { display: block; font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 6px; }
+    .field-input {
+      width: 100%; height: 36px; padding: 0 10px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text);
+      outline: none; font-size: 14px; font-family: var(--font);
+      transition: border-color .12s, box-shadow .12s;
+    }
+    .field-input:hover { border-color: var(--border-strong); }
+    .field-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .field-input.is-error { border-color: var(--bad-bd); }
+    .field-error { font-size: 12px; color: var(--bad-fg); margin-top: 4px; }
+    .field-hint { font-size: 11px; color: var(--text-faint); margin-top: 4px; }
 
-        .card-title {
-            font-size: 1.075rem;
-            font-weight: 700;
-            color: #0f172a;
-            letter-spacing: -0.3px;
-            text-align: center;
-        }
+    .error-banner {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 10px 12px; border-radius: var(--radius-sm);
+      background: var(--bad-bg); color: var(--bad-fg); border: 1px solid var(--bad-bd);
+      font-size: 13px; margin-bottom: 16px;
+    }
 
-        .card-subtitle {
-            font-size: 0.875rem;
-            color: #94a3b8;
-            margin-top: 5px;
-            text-align: center;
-        }
-
-        .field-group { margin-bottom: 18px; }
-
-        .field-label {
-            display: block;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.07em;
-            color: #475569;
-            margin-bottom: 7px;
-        }
-
-        .field-input {
-            width: 100%;
-            padding: 10px 13px;
-            font-size: 0.9375rem;
-            color: #1e293b;
-            background: #f8fafc;
-            border: 1.5px solid #e2e8f0;
-            border-radius: 8px;
-            outline: none;
-            transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
-        }
-
-        .field-input:focus {
-            border-color: #7c3aed;
-            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
-            background: #ffffff;
-        }
-
-        .field-input.is-error {
-            border-color: #fca5a5;
-            background: #fff5f5;
-        }
-
-        .field-error {
-            font-size: 12px;
-            color: #ef4444;
-            margin-top: 5px;
-        }
-
-        .error-banner {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            font-size: 12px;
-            color: #ef4444;
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            border-radius: 8px;
-            padding: 10px 12px;
-            margin-bottom: 16px;
-        }
-
-        .btn-submit {
-            display: block;
-            width: 100%;
-            padding: 11px;
-            font-size: 0.9375rem;
-            font-weight: 600;
-            color: #ffffff;
-            background: #7c3aed;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-top: 26px;
-            transition: background 0.15s;
-            letter-spacing: 0.01em;
-        }
-
-        .btn-submit:hover { background: #6d28d9; }
-        .btn-submit:active { background: #5b21b6; }
-
-        .info-note {
-            margin-top: 20px;
-            font-size: 0.8125rem;
-            color: #94a3b8;
-            text-align: center;
-            line-height: 1.5;
-        }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      height: 32px; padding: 0 12px;
+      font-size: 13px; font-weight: 500;
+      border-radius: var(--radius-sm); border: 1px solid transparent;
+      background: transparent; color: var(--text);
+      cursor: pointer; font-family: var(--font);
+      transition: background .12s, border-color .12s;
+    }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary { background: var(--surface); border-color: var(--border); }
+    .btn-secondary:hover { background: var(--surface-alt); }
+    .btn-submit {
+      display: block; width: 100%; height: 40px;
+      background: var(--accent); color: #fff;
+      border: none; border-radius: var(--radius-sm);
+      font-family: var(--font); font-size: 14px; font-weight: 500;
+      cursor: pointer; margin-top: 8px; transition: background .12s;
+    }
+    .btn-submit:hover { background: var(--accent-hover); }
     </style>
 </head>
 <body>
-    <div class="card">
-        <div class="card-header">
-            <div class="icon-wrap">
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
-                </svg>
-            </div>
-            <h1 class="card-title">Первоначальная настройка</h1>
-            <p class="card-subtitle">Создайте аккаунт владельца платформы</p>
-        </div>
+<div class="setup-wrap">
 
-        <form method="post">
-            {% csrf_token %}
-
-            {% if form.non_field_errors %}
-            <div class="error-banner">
-                {% for error in form.non_field_errors %}{{ error }}{% endfor %}
-            </div>
-            {% endif %}
-
-            <div class="field-group">
-                <label class="field-label" for="id_display_name">Ваше имя</label>
-                <input class="field-input{% if form.display_name.errors %} is-error{% endif %}"
-                    type="text" id="id_display_name" name="display_name"
-                    value="{{ form.display_name.value|default:'' }}"
-                    placeholder="Иванов Иван Иванович" autofocus>
-                {% for error in form.display_name.errors %}
-                <div class="field-error">{{ error }}</div>
-                {% endfor %}
-            </div>
-
-            <div class="field-group">
-                <label class="field-label" for="id_username">Логин</label>
-                <input class="field-input{% if form.username.errors %} is-error{% endif %}"
-                    type="text" id="id_username" name="username"
-                    value="{{ form.username.value|default:'' }}"
-                    placeholder="Используется для входа">
-                {% for error in form.username.errors %}
-                <div class="field-error">{{ error }}</div>
-                {% endfor %}
-            </div>
-
-            <div class="field-group">
-                <label class="field-label" for="id_password">Пароль</label>
-                <input class="field-input{% if form.password.errors %} is-error{% endif %}"
-                    type="password" id="id_password" name="password">
-                <div style="font-size:11px;color:#94a3b8;margin-top:5px;">Мин. 8 символов, латиница + цифры, обязательны цифра и _ или -</div>
-                {% for error in form.password.errors %}
-                <div class="field-error">{{ error }}</div>
-                {% endfor %}
-            </div>
-
-            <div class="field-group">
-                <label class="field-label" for="id_password2">Повторите пароль</label>
-                <input class="field-input{% if form.password2.errors %} is-error{% endif %}"
-                    type="password" id="id_password2" name="password2">
-                {% for error in form.password2.errors %}
-                <div class="field-error">{{ error }}</div>
-                {% endfor %}
-            </div>
-
-            <button type="submit" class="btn-submit">Создать аккаунт и войти</button>
-        </form>
-
-        <p class="info-note">
-            После создания вы получите сид-фразу для восстановления пароля.<br>
-            Сохраните её в надёжном месте.
-        </p>
+    <div class="setup-brand">
+        <div class="logo">У</div>
+        <div class="name">Учёт студентов</div>
     </div>
-{% include 'includes/feedback_widget.html' %}
+
+    <div class="card">
+        <div class="card-body">
+            <h2 style="margin-bottom:6px;">Первоначальная настройка</h2>
+            <p style="color:var(--text-muted);font-size:13px;margin-bottom:24px;">Настройте систему один раз — после этого можно войти и начать работу.</p>
+
+            <form method="post">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="error-banner">
+                    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="section-title">Учебное заведение</div>
+
+                <div class="field">
+                    <label class="field-label" for="id_inst_code">Код (аббревиатура)</label>
+                    <input class="field-input{% if form.inst_code.errors %} is-error{% endif %}"
+                        type="text" id="id_inst_code" name="inst_code"
+                        value="{{ form.inst_code.value|default:'' }}"
+                        placeholder="Например: КГУ" autofocus>
+                    {% for error in form.inst_code.errors %}
+                    <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="field">
+                    <label class="field-label" for="id_inst_name">Полное название</label>
+                    <input class="field-input{% if form.inst_name.errors %} is-error{% endif %}"
+                        type="text" id="id_inst_name" name="inst_name"
+                        value="{{ form.inst_name.value|default:'' }}"
+                        placeholder="Краснодарский государственный университет">
+                    {% for error in form.inst_name.errors %}
+                    <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="section-title">Учётная запись суперадминистратора</div>
+
+                <div class="field">
+                    <label class="field-label" for="id_display_name">Ваше имя</label>
+                    <input class="field-input{% if form.display_name.errors %} is-error{% endif %}"
+                        type="text" id="id_display_name" name="display_name"
+                        value="{{ form.display_name.value|default:'' }}"
+                        placeholder="Иванов Иван Иванович">
+                    {% for error in form.display_name.errors %}
+                    <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="field">
+                    <label class="field-label" for="id_username">Логин</label>
+                    <input class="field-input{% if form.username.errors %} is-error{% endif %}"
+                        type="text" id="id_username" name="username"
+                        value="{{ form.username.value|default:'' }}"
+                        placeholder="Используется для входа">
+                    {% for error in form.username.errors %}
+                    <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="field">
+                    <label class="field-label" for="id_password">Пароль</label>
+                    <input class="field-input{% if form.password.errors %} is-error{% endif %}"
+                        type="password" id="id_password" name="password">
+                    <div class="field-hint">Мин. 8 символов, латиница + цифры, обязательны цифра и _ или —</div>
+                    {% for error in form.password.errors %}
+                    <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="field">
+                    <label class="field-label" for="id_password2">Повторите пароль</label>
+                    <input class="field-input{% if form.password2.errors %} is-error{% endif %}"
+                        type="password" id="id_password2" name="password2">
+                    {% for error in form.password2.errors %}
+                    <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <button type="submit" class="btn-submit">Создать и войти в систему</button>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% include 'includes/feedback_widget.html' ignore missing %}
 </body>
 </html>

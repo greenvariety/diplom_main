@@ -1,46 +1,59 @@
 {% extends 'base.html' %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>{{ title }}</h2>
-    <a href="{% url 'employee-list' %}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i>Назад
-    </a>
-</div>
-{% if no_positions %}
-<div class="alert alert-warning d-flex align-items-center mb-3" style="max-width:700px;">
-    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+
+<div class="page-head">
     <div>
+        <div class="crumbs">
+            <a href="{% url 'employee-list' %}">Сотрудники</a>
+            <span class="sep">/</span>
+            <span>{{ title }}</span>
+        </div>
+        <h1>{{ title }}</h1>
+    </div>
+    <div class="page-actions">
+        <a href="{% if object %}{% url 'employee-detail' object.pk %}{% else %}{% url 'employee-list' %}{% endif %}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i>Назад
+        </a>
+    </div>
+</div>
+
+{% if no_positions %}
+<div class="banner banner-warn" style="max-width:700px;margin-bottom:16px;">
+    <i class="bi bi-exclamation-triangle"></i>
+    <div class="banner-body">
         Должности не созданы. Пожалуйста,
-        <a href="{% url 'position-add' %}" class="fw-semibold">добавьте должность</a>
+        <a href="{% url 'position-add' %}" style="font-weight:600;">добавьте должность</a>
         перед созданием сотрудника.
     </div>
 </div>
 {% endif %}
-<div class="card" style="max-width: 700px;">
+
+<div class="card" style="max-width:700px;">
     <div class="card-body">
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
-            <div class="row">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">
                 {% for field in form %}
-                <div class="col-md-6 mb-3">
-                    <label class="form-label fw-semibold">{{ field.label }}</label>
+                <div class="mb-3">
+                    <label class="field-label">{{ field.label }}</label>
                     {{ field }}
-                    {% if field.errors %}<div class="text-danger small">{{ field.errors.0 }}</div>{% endif %}
+                    {% if field.errors %}<div class="invalid-feedback" style="display:block;">{{ field.errors.0 }}</div>{% endif %}
                 </div>
                 {% endfor %}
             </div>
-            <div class="d-flex gap-2 mt-3">
+            <div style="display:flex;gap:8px;margin-top:8px;">
                 <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-check-lg me-1"></i>Сохранить
+                    <i class="bi bi-check-lg"></i>Сохранить
                 </button>
                 {% if object %}
-                <a href="{% url 'employee-detail' object.pk %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left me-1"></i>Отмена
+                <a href="{% url 'employee-detail' object.pk %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i>Отмена
                 </a>
                 {% endif %}
             </div>
         </form>
     </div>
 </div>
+
 {% endblock %}

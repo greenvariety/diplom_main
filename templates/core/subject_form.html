@@ -1,27 +1,39 @@
 {% extends 'base.html' %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>{{ title }}</h2>
-    <a href="{% url 'subject-list' %}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i>Назад
-    </a>
+
+<div class="page-head">
+    <div>
+        <div class="crumbs">
+            <a href="{% url 'subject-list' %}">Предметы</a>
+            <span class="sep">/</span>
+            <span>{{ title }}</span>
+        </div>
+        <h1>{{ title }}</h1>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'subject-list' %}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i>Назад
+        </a>
+    </div>
 </div>
-<div class="card" style="max-width: 500px;">
+
+<div class="card" style="max-width:500px;">
     <div class="card-body">
         <form method="post">
             {% csrf_token %}
             {% for field in form %}
             <div class="mb-3">
-                <label class="form-label fw-semibold">{{ field.label }}</label>
+                <label class="field-label">{{ field.label }}</label>
                 {{ field }}
-                {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors.0 }}</div>{% endif %}
+                {% if field.errors %}<div class="invalid-feedback" style="display:block;">{{ field.errors.0 }}</div>{% endif %}
             </div>
             {% endfor %}
-            <button type="submit" class="btn btn-primary">
-                <i class="bi bi-check-lg me-1"></i>Сохранить
+            <button type="submit" class="btn btn-primary" style="margin-top:8px;">
+                <i class="bi bi-check-lg"></i>Сохранить
             </button>
         </form>
     </div>
 </div>
+
 {% endblock %}

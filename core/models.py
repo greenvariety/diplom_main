@@ -354,7 +354,6 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = [
-        ('platform_owner', 'Владелец платформы'),
         ('superadmin', 'Суперадминистратор'),
         ('admin', 'Администратор'),
         ('teacher', 'Преподаватель'),
@@ -373,7 +372,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         Employee, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='user_account', verbose_name='Сотрудник'
     )
-    seed_phrase_hash = models.CharField(max_length=256, blank=True, verbose_name='Хэш сид-фразы')
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
@@ -390,16 +388,12 @@ class User(AbstractBaseUser, PermissionsMixin):
         return f'{self.username} ({self.get_role_display()})'
 
     @property
-    def is_platform_owner(self):
-        return self.role == 'platform_owner'
-
-    @property
     def is_superadmin(self):
-        return self.role in ('superadmin', 'platform_owner')
+        return self.role == 'superadmin'
 
     @property
     def is_admin(self):
-        return self.role in ('superadmin', 'admin', 'platform_owner')
+        return self.role in ('superadmin', 'admin')
 
     @property
     def is_teacher_role(self):
