@@ -3,3 +3,6 @@ pillow
 django-crispy-forms
 crispy-bootstrap5
 openpyxl
+djangorestframework
+djangorestframework-simplejwt
+django-cors-headers
