@@ -4,6 +4,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
+from django.core.paginator import Paginator
 from django.db.models import Q, Count
 
 from .models import (
@@ -257,7 +258,10 @@ def faculty_list(request):
     if redir:
         return redir
     q = request.GET.get('q', '')
-    faculties = Faculty.objects.filter(institution=institution).annotate(group_count=Count('groups'))
+    faculties = Faculty.objects.filter(institution=institution).annotate(
+        group_count=Count('groups', distinct=True),
+        student_count=Count('groups__students', distinct=True),
+    )
     if q:
         faculties = faculties.filter(
             Q(full_name__icontains=q) | Q(short_name__icontains=q)
@@ -368,13 +372,21 @@ def group_list(request):
             )
         else:
             groups = Group.objects.none()
+    faculty_filter = request.GET.get('faculty', '')
+    year_filter = request.GET.get('year', '')
     if q:
-        groups = groups.filter(
-            Q(faculty__short_name__icontains=q) |
-            Q(faculty__full_name__icontains=q) |
-            Q(year__icontains=q)
-        )
-    return render(request, 'core/group_list.html', {'groups': groups, 'q': q})
+        groups = groups.filter(Q(name__icontains=q))
+    if faculty_filter:
+        groups = groups.filter(faculty_id=faculty_filter)
+    if year_filter:
+        groups = groups.filter(year=year_filter)
+    faculties = Faculty.objects.filter(institution=institution).order_by('short_name')
+    years = Group.objects.filter(faculty__institution=institution).values_list('year', flat=True).distinct().order_by('-year')
+    return render(request, 'core/group_list.html', {
+        'groups': groups, 'q': q,
+        'faculties': faculties, 'years': years,
+        'faculty_val': faculty_filter, 'year_val': year_filter,
+    })
 
 
 @admin_required
@@ -528,7 +540,19 @@ def student_list(request):
         if status:
             students = students.filter(status=status)
 
-    return render(request, 'core/student_list.html', {'students': students, 'form': form})
+    total_count = students.count()
+    paginator = Paginator(students, 25)
+    page_obj = paginator.get_page(request.GET.get('page', 1))
+    return render(request, 'core/student_list.html', {
+        'students': page_obj,
+        'page_obj': page_obj,
+        'total_count': total_count,
+        'form': form,
+        'search_val': request.GET.get('search', ''),
+        'faculty_val': request.GET.get('faculty', ''),
+        'group_val': request.GET.get('group', ''),
+        'status_val': request.GET.get('status', ''),
+    })
 
 
 @admin_required
@@ -793,12 +817,26 @@ def employee_list(request):
     if redir:
         return redir
     q = request.GET.get('q', '')
+    position_filter = request.GET.get('position', '')
     employees = Employee.objects.filter(institution=institution).select_related('position')
     if q:
         employees = employees.filter(
             Q(last_name__icontains=q) | Q(first_name__icontains=q) | Q(middle_name__icontains=q)
         )
-    return render(request, 'core/employee_list.html', {'employees': employees, 'q': q})
+    if position_filter:
+        employees = employees.filter(position_id=position_filter)
+    positions = Position.objects.filter(institution=institution)
+    total_count = employees.count()
+    paginator = Paginator(employees, 25)
+    page_obj = paginator.get_page(request.GET.get('page', 1))
+    return render(request, 'core/employee_list.html', {
+        'employees': page_obj,
+        'page_obj': page_obj,
+        'total_count': total_count,
+        'positions': positions,
+        'q': q,
+        'position_val': position_filter,
+    })
 
 
 @admin_required

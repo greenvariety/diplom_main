@@ -24,21 +24,26 @@
     <div class="card-head">
         <div class="title">{{ employee }}</div>
     </div>
-    <div class="card-body">
-        <form method="post">
-            {% csrf_token %}
+    <form method="post">
+        {% csrf_token %}
+        <div class="card-body">
             {% for field in form %}
-            <div class="mb-3">
+            <div class="field">
                 <label class="field-label">{{ field.label }}</label>
                 {{ field }}
-                {% if field.errors %}<div class="invalid-feedback" style="display:block;">{{ field.errors.0 }}</div>{% endif %}
+                {% if field.errors %}<div class="field-error">{{ field.errors.0 }}</div>{% endif %}
             </div>
             {% endfor %}
-            <button type="submit" class="btn btn-primary" style="margin-top:8px;">
+        </div>
+        <div class="card-foot">
+            <a href="{% url 'employee-detail' employee.pk %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i>Отмена
+            </a>
+            <button type="submit" class="btn btn-primary">
                 <i class="bi bi-check-lg"></i>Назначить
             </button>
-        </form>
-    </div>
+        </div>
+    </form>
 </div>
 
 {% endblock %}

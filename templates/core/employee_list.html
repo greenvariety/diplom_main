@@ -6,7 +6,7 @@
     <div>
         <div class="crumbs"><a href="{% url 'dashboard' %}">Главная</a><span class="sep">/</span><span>Сотрудники</span></div>
         <h1>Сотрудники</h1>
-        {% if employees %}<div class="sub">Найдено: {{ employees|length }}</div>{% endif %}
+        {% if total_count %}<div class="sub">Найдено: {{ total_count }}</div>{% endif %}
     </div>
     {% if user.is_admin %}
     <div class="page-actions">
@@ -23,12 +23,32 @@
             <label class="field-label">Поиск по ФИО</label>
             <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Иванов Иван…">
         </div>
+        <div class="field">
+            <label class="field-label">Должность</label>
+            <select name="position" class="form-select">
+                <option value="">Все должности</option>
+                {% for pos in positions %}
+                <option value="{{ pos.pk }}" {% if position_val == pos.pk|stringformat:"s" %}selected{% endif %}>{{ pos.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
         <div style="display:flex;gap:6px;align-self:flex-end;">
             <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button>
-            {% if q %}<a href="{% url 'employee-list' %}" class="btn btn-ghost btn-sm">Сбросить</a>{% endif %}
+            <a href="{% url 'employee-list' %}" class="btn btn-ghost btn-sm">Сбросить</a>
         </div>
     </form>
 </div>
+
+{% if position_val %}
+<div class="filter-chips">
+    {% for pos in positions %}{% if pos.pk|stringformat:"s" == position_val %}
+    <span class="filter-chip">
+        Должность: {{ pos.name }}
+        <a href="?{% if q %}q={{ q }}{% endif %}"><button type="button">×</button></a>
+    </span>
+    {% endif %}{% endfor %}
+</div>
+{% endif %}
 
 <div class="card">
     <div class="card-body flush">
@@ -45,7 +65,7 @@
             <tbody>
                 {% for emp in employees %}
                 <tr class="row-link" onclick="window.location='{% url 'employee-detail' emp.pk %}'">
-                    <td class="muted">{{ forloop.counter }}</td>
+                    <td class="muted">{{ forloop.counter0|add:page_obj.start_index }}</td>
                     <td>
                         {% if emp.photo %}
                         <img src="{{ emp.photo.url }}" class="avatar avatar-sm" style="border-radius:50%;object-fit:cover;">
@@ -54,9 +74,7 @@
                         {% endif %}
                     </td>
                     <td class="fwm">{{ emp }}</td>
-                    <td>
-                        {% if emp.position %}{{ emp.position }}{% else %}—{% endif %}
-                    </td>
+                    <td>{{ emp.position|default:"—" }}</td>
                     <td class="muted">{{ emp.phone|default:"—" }}</td>
                 </tr>
                 {% empty %}
@@ -69,6 +87,30 @@
             </tbody>
         </table>
     </div>
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="pager">
+        <div class="pager-left">
+            Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }} · записей {{ total_count }}
+        </div>
+        <div class="pager-right">
+            {% if page_obj.has_previous %}
+            <a href="?{% if q %}q={{ q }}&{% endif %}{% if position_val %}position={{ position_val }}&{% endif %}page={{ page_obj.previous_page_number }}" class="btn-ghost">‹</a>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if num == page_obj.number %}
+                <button class="page-btn btn-primary" disabled>{{ num }}</button>
+                {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+                <a href="?{% if q %}q={{ q }}&{% endif %}{% if position_val %}position={{ position_val }}&{% endif %}page={{ num }}" class="page-btn">{{ num }}</a>
+                {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
+                <span class="pager-ellipsis">…</span>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <a href="?{% if q %}q={{ q }}&{% endif %}{% if position_val %}position={{ position_val }}&{% endif %}page={{ page_obj.next_page_number }}" class="btn-ghost">›</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 {% endblock %}

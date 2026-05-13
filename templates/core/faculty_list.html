@@ -24,7 +24,8 @@
                 <tr>
                     <th>Код</th>
                     <th>Название</th>
-                    <th>Групп</th>
+                    <th style="width:80px">Групп</th>
+                    <th style="width:90px">Студентов</th>
                     <th style="width:30px"></th>
                 </tr>
             </thead>
@@ -34,11 +35,12 @@
                     <td><span class="badge badge-neutral mono">{{ f.short_name }}</span></td>
                     <td class="fwm">{{ f.full_name }}</td>
                     <td class="mono">{{ f.group_count }}</td>
+                    <td class="mono">{{ f.student_count }}</td>
                     <td><i class="bi bi-chevron-right faint"></i></td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="4">
+                    <td colspan="5">
                         <div class="empty"><i class="bi bi-building"></i>Нет факультетов</div>
                     </td>
                 </tr>

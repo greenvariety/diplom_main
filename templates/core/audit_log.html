@@ -111,37 +111,33 @@
             </tbody>
         </table>
     </div>
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="pager">
+        <div class="pager-left">
+            Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }} · записей {{ total_count }}
+        </div>
+        <div class="pager-right">
+            {% if page_obj.has_previous %}
+            <a href="?{% if q %}q={{ q }}&{% endif %}{% if action_filter %}action={{ action_filter }}&{% endif %}{% if user_filter %}user={{ user_filter }}&{% endif %}page={{ page_obj.previous_page_number }}" class="btn-ghost">‹</a>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if num == page_obj.number %}
+                <button class="page-btn btn-primary" disabled>{{ num }}</button>
+                {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+                <a href="?{% if q %}q={{ q }}&{% endif %}{% if action_filter %}action={{ action_filter }}&{% endif %}{% if user_filter %}user={{ user_filter }}&{% endif %}page={{ num }}" class="page-btn">{{ num }}</a>
+                {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
+                <span class="pager-ellipsis">…</span>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <a href="?{% if q %}q={{ q }}&{% endif %}{% if action_filter %}action={{ action_filter }}&{% endif %}{% if user_filter %}user={{ user_filter }}&{% endif %}page={{ page_obj.next_page_number }}" class="btn-ghost">›</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 </div>
 
-<!-- Pagination -->
-{% if page_obj.paginator.num_pages > 1 %}
-<div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;flex-wrap:wrap;gap:8px;">
-    <div class="muted" style="font-size:13px;">
-        Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
-        · записей {{ total_count }}
-    </div>
-    <div style="display:flex;gap:4px;">
-        {% if page_obj.has_previous %}
-        <a href="?{% if q %}q={{ q }}&{% endif %}{% if action_filter %}action={{ action_filter }}&{% endif %}{% if user_filter %}user={{ user_filter }}&{% endif %}page={{ page_obj.previous_page_number }}"
-           class="btn btn-ghost btn-sm"><i class="bi bi-chevron-left"></i></a>
-        {% endif %}
-        {% for num in page_obj.paginator.page_range %}
-            {% if num == page_obj.number %}
-            <button class="btn btn-primary btn-sm" disabled>{{ num }}</button>
-            {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
-            <a href="?{% if q %}q={{ q }}&{% endif %}{% if action_filter %}action={{ action_filter }}&{% endif %}{% if user_filter %}user={{ user_filter }}&{% endif %}page={{ num }}"
-               class="btn btn-ghost btn-sm">{{ num }}</a>
-            {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
-            <span class="btn btn-ghost btn-sm" style="pointer-events:none;">…</span>
-            {% endif %}
-        {% endfor %}
-        {% if page_obj.has_next %}
-        <a href="?{% if q %}q={{ q }}&{% endif %}{% if action_filter %}action={{ action_filter }}&{% endif %}{% if user_filter %}user={{ user_filter }}&{% endif %}page={{ page_obj.next_page_number }}"
-           class="btn btn-ghost btn-sm"><i class="bi bi-chevron-right"></i></a>
-        {% endif %}
-    </div>
-</div>
-{% endif %}
+
 
 <!-- Diff modal -->
 <div id="diffModal" style="display:none;position:fixed;inset:0;z-index:1080;background:rgba(0,0,0,.45);"

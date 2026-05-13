@@ -31,20 +31,27 @@
                 После перевода статус студента будет изменён на <strong>«Переведён»</strong>.
             </div>
         </div>
-        <form method="post">
-            {% csrf_token %}
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <div class="card-body" style="border-top:1px solid var(--border);">
             {% for field in form %}
-            <div class="mb-3">
+            <div class="field">
                 <label class="field-label">{{ field.label }}</label>
                 {{ field }}
-                {% if field.errors %}<div class="invalid-feedback" style="display:block;">{{ field.errors.0 }}</div>{% endif %}
+                {% if field.errors %}<div class="field-error">{{ field.errors.0 }}</div>{% endif %}
             </div>
             {% endfor %}
-            <button type="submit" class="btn btn-primary" style="margin-top:8px;">
+        </div>
+        <div class="card-foot">
+            <a href="{% url 'student-detail' student.pk %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i>Отмена
+            </a>
+            <button type="submit" class="btn btn-primary">
                 <i class="bi bi-arrow-left-right"></i>Перевести
             </button>
-        </form>
-    </div>
+        </div>
+    </form>
 </div>
 
 {% endblock %}

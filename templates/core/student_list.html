@@ -6,7 +6,7 @@
     <div>
         <div class="crumbs"><a href="{% url 'dashboard' %}">Главная</a><span class="sep">/</span><span>Студенты</span></div>
         <h1>Студенты</h1>
-        {% if students %}<div class="sub">Найдено: {{ students|length }}</div>{% endif %}
+        {% if total_count %}<div class="sub">Найдено: {{ total_count }}</div>{% endif %}
     </div>
     {% if user.is_admin %}
     <div class="page-actions">
@@ -45,6 +45,29 @@
     </form>
 </div>
 
+{% if faculty_val or group_val or status_val %}
+<div class="filter-chips">
+    {% if faculty_val %}
+    <span class="filter-chip">
+        Факультет
+        <a href="?{% if search_val %}search={{ search_val }}&{% endif %}{% if group_val %}group={{ group_val }}&{% endif %}{% if status_val %}status={{ status_val }}{% endif %}"><button type="button">×</button></a>
+    </span>
+    {% endif %}
+    {% if group_val %}
+    <span class="filter-chip">
+        Группа
+        <a href="?{% if search_val %}search={{ search_val }}&{% endif %}{% if faculty_val %}faculty={{ faculty_val }}&{% endif %}{% if status_val %}status={{ status_val }}{% endif %}"><button type="button">×</button></a>
+    </span>
+    {% endif %}
+    {% if status_val %}
+    <span class="filter-chip">
+        Статус: {{ form.status.value }}
+        <a href="?{% if search_val %}search={{ search_val }}&{% endif %}{% if faculty_val %}faculty={{ faculty_val }}&{% endif %}{% if group_val %}group={{ group_val }}{% endif %}"><button type="button">×</button></a>
+    </span>
+    {% endif %}
+</div>
+{% endif %}
+
 <div class="card">
     <div class="card-body flush">
         <table class="tbl">
@@ -61,7 +84,7 @@
             <tbody>
                 {% for student in students %}
                 <tr class="row-link" onclick="window.location='{% url 'student-detail' student.pk %}'">
-                    <td class="muted">{{ forloop.counter }}</td>
+                    <td class="muted">{{ forloop.counter0|add:page_obj.start_index }}</td>
                     <td>
                         {% if student.photo %}
                         <img src="{{ student.photo.url }}" class="avatar avatar-sm rounded-circle" style="object-fit:cover;">
@@ -91,6 +114,30 @@
             </tbody>
         </table>
     </div>
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="pager">
+        <div class="pager-left">
+            Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }} · записей {{ total_count }}
+        </div>
+        <div class="pager-right">
+            {% if page_obj.has_previous %}
+            <a href="?{% if search_val %}search={{ search_val }}&{% endif %}{% if faculty_val %}faculty={{ faculty_val }}&{% endif %}{% if group_val %}group={{ group_val }}&{% endif %}{% if status_val %}status={{ status_val }}&{% endif %}page={{ page_obj.previous_page_number }}" class="btn-ghost">‹</a>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if num == page_obj.number %}
+                <button class="page-btn btn-primary" disabled>{{ num }}</button>
+                {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+                <a href="?{% if search_val %}search={{ search_val }}&{% endif %}{% if faculty_val %}faculty={{ faculty_val }}&{% endif %}{% if group_val %}group={{ group_val }}&{% endif %}{% if status_val %}status={{ status_val }}&{% endif %}page={{ num }}" class="page-btn">{{ num }}</a>
+                {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
+                <span class="pager-ellipsis">…</span>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <a href="?{% if search_val %}search={{ search_val }}&{% endif %}{% if faculty_val %}faculty={{ faculty_val }}&{% endif %}{% if group_val %}group={{ group_val }}&{% endif %}{% if status_val %}status={{ status_val }}&{% endif %}page={{ page_obj.next_page_number }}" class="btn-ghost">›</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 {% endblock %}

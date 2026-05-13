@@ -15,7 +15,7 @@
 
 <div class="card" style="max-width:580px;">
     <div class="card-body">
-        <div class="banner banner-warn" style="margin-bottom:20px;">
+        <div class="banner banner-warn">
             <i class="bi bi-exclamation-triangle"></i>
             <div class="banner-body">
                 Вы собираетесь подать заявку на удаление <strong>{{ object_type }}</strong>:
@@ -23,23 +23,25 @@
                 Заявка будет отправлена суперадминистратору на рассмотрение.
             </div>
         </div>
-        <form method="post">
-            {% csrf_token %}
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <div class="card-body" style="border-top:1px solid var(--border);">
             {% for field in form %}
-            <div class="mb-3">
+            <div class="field">
                 <label class="field-label">{{ field.label }}</label>
                 {{ field }}
-                {% if field.errors %}<div class="invalid-feedback" style="display:block;">{{ field.errors.0 }}</div>{% endif %}
+                {% if field.errors %}<div class="field-error">{{ field.errors.0 }}</div>{% endif %}
             </div>
             {% endfor %}
-            <div style="display:flex;gap:8px;margin-top:16px;">
-                <button type="submit" class="btn btn-danger">
-                    <i class="bi bi-send"></i>Отправить заявку
-                </button>
-                <button type="button" onclick="history.back()" class="btn btn-secondary">Отмена</button>
-            </div>
-        </form>
-    </div>
+        </div>
+        <div class="card-foot">
+            <button type="button" onclick="history.back()" class="btn btn-secondary">Отмена</button>
+            <button type="submit" class="btn btn-danger">
+                <i class="bi bi-send"></i>Отправить заявку
+            </button>
+        </div>
+    </form>
 </div>
 
 {% endblock %}

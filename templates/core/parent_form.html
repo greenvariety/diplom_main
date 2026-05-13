@@ -18,24 +18,29 @@
     </div>
 </div>
 
-<div class="card" style="max-width:700px;">
-    <div class="card-body">
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">
+<div class="card" style="max-width:720px;">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="card-body">
+            <div class="form-grid">
                 {% for field in form %}
-                <div class="mb-3">
+                <div class="field">
                     <label class="field-label">{{ field.label }}</label>
                     {{ field }}
-                    {% if field.errors %}<div class="invalid-feedback" style="display:block;">{{ field.errors.0 }}</div>{% endif %}
+                    {% if field.errors %}<div class="field-error">{{ field.errors.0 }}</div>{% endif %}
                 </div>
                 {% endfor %}
             </div>
-            <button type="submit" class="btn btn-primary" style="margin-top:8px;">
+        </div>
+        <div class="card-foot">
+            <a href="{% url 'parent-list' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i>Отмена
+            </a>
+            <button type="submit" class="btn btn-primary">
                 <i class="bi bi-check-lg"></i>Сохранить
             </button>
-        </form>
-    </div>
+        </div>
+    </form>
 </div>
 
 {% endblock %}

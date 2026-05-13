@@ -32,12 +32,16 @@
         </div>
         <form method="post">
             {% csrf_token %}
-            <div style="display:flex;gap:8px;">
-                <button type="submit" class="btn btn-danger-solid">
-                    <i class="bi bi-trash"></i>Удалить безвозвратно
-                </button>
-                <button type="button" onclick="history.back()" class="btn btn-secondary">Отмена</button>
-            </div>
+            <input type="hidden" name="confirmed" value="1">
+        </form>
+    </div>
+    <div class="card-foot">
+        <button type="button" onclick="history.back()" class="btn btn-secondary">Отмена</button>
+        <form method="post" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger-solid">
+                <i class="bi bi-trash"></i>Удалить безвозвратно
+            </button>
         </form>
     </div>
 </div>

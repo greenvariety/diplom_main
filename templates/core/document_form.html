@@ -14,23 +14,28 @@
 </div>
 
 <div class="card" style="max-width:560px;">
-    <div class="card-body">
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="card-body">
             {% for field in form %}
-            <div class="mb-3">
+            <div class="field">
                 <label class="field-label">{{ field.label }}</label>
                 {{ field }}
                 {% if field.name == 'files' %}
-                <div class="form-text">Можно выбрать несколько файлов сразу</div>
+                <div class="muted" style="font-size:11px;margin-top:3px;">Можно выбрать несколько файлов сразу</div>
                 {% endif %}
-                {% if field.errors %}<div class="invalid-feedback" style="display:block;">{{ field.errors.0 }}</div>{% endif %}
+                {% if field.errors %}<div class="field-error">{{ field.errors.0 }}</div>{% endif %}
             </div>
             {% endfor %}
+        </div>
+        <div class="card-foot">
+            <button type="button" onclick="history.back()" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i>Отмена
+            </button>
             <button type="submit" class="btn btn-primary">
                 <i class="bi bi-upload"></i>Загрузить
             </button>
-        </form>
-    </div>
+        </div>
+    </form>
 </div>
 {% endblock %}
