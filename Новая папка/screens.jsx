@@ -491,20 +491,19 @@ function StudentList({ openModal }) {
           <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} placeholder="Иванов Иван…" /></div>
         </div>
         <div className="field"><label className="field-label">Факультет</label>
-          <select className="select" value={fac} onChange={e => setFac(e.target.value)}>
-            <option value="">— Все —</option><option>ФИТ</option><option>ФЭ</option><option>ФМН</option>
-          </select>
+          <Combobox value={fac} onChange={setFac}
+            options={[{value:'ФИТ',label:'ФИТ'},{value:'ФЭ',label:'ФЭ'},{value:'ФМН',label:'ФМН'}]}
+            placeholder="Все факультеты" />
         </div>
         <div className="field"><label className="field-label">Группа</label>
-          <select className="select" value={grp} onChange={e => setGrp(e.target.value)}>
-            <option value="">— Все —</option><option>ПИ-301</option><option>ПИ-302</option><option>ЭК-201</option><option>ЭК-202</option>
-          </select>
+          <Combobox value={grp} onChange={setGrp}
+            options={GROUPS.filter(g => !fac || g.fac === fac).map(g => ({value: g.name, label: g.name, sub: g.fac}))}
+            placeholder="Все группы" />
         </div>
         <div className="field"><label className="field-label">Статус</label>
-          <select className="select" value={stat} onChange={e => setStat(e.target.value)}>
-            <option value="">— Все —</option>
-            {Object.entries(STATUSES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-          </select>
+          <Combobox value={stat} onChange={setStat}
+            options={Object.entries(STATUSES).map(([k,v]) => ({value: k, label: v.label}))}
+            placeholder="Все статусы" />
         </div>
         <button className="btn btn-ghost btn-sm" onClick={reset} disabled={!q && !fac && !grp && !stat}>Сбросить</button>
       </div>
@@ -688,8 +687,12 @@ function EmployeeList({ openModal }) {
           <label className="field-label">Поиск</label>
           <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} placeholder="ФИО или должность…" /></div>
         </div>
-        <div className="field"><label className="field-label">Должность</label><select className="select"><option>— Все —</option><option>Преподаватель</option><option>Декан</option></select></div>
-        <div className="field"><label className="field-label">Тип</label><select className="select"><option>— Все —</option><option>Преподаватели</option><option>Только админ. персонал</option></select></div>
+        <div className="field"><label className="field-label">Должность</label>
+          <Combobox options={['Преподаватель','Ст. преподаватель','Декан','Зав. кафедрой','Методист','Лаборант'].map(p=>({value:p,label:p}))} placeholder="Все должности" />
+        </div>
+        <div className="field"><label className="field-label">Тип</label>
+          <Combobox options={[{value:'teacher',label:'Преподаватели'},{value:'staff',label:'Адм. персонал'}]} placeholder="Все типы" />
+        </div>
       </div>
       <div className="card">
         <div className="card-body flush">
@@ -791,8 +794,12 @@ function GroupList({ openModal }) {
       />
       <div className="filters">
         <div className="field grow-2"><label className="field-label">Поиск</label><div className="input-with-icon">{I.search}<input className="input" placeholder="Название группы…" /></div></div>
-        <div className="field"><label className="field-label">Факультет</label><select className="select"><option>— Все —</option><option>ФИТ</option><option>ФЭ</option></select></div>
-        <div className="field"><label className="field-label">Год начала</label><select className="select"><option>— Все —</option><option>2024</option><option>2023</option></select></div>
+        <div className="field"><label className="field-label">Факультет</label>
+          <Combobox options={[{value:'ФИТ',label:'ФИТ'},{value:'ФЭ',label:'ФЭ'},{value:'ФМН',label:'ФМН'}]} placeholder="Все факультеты" />
+        </div>
+        <div className="field"><label className="field-label">Год начала</label>
+          <Combobox options={[{value:'2025',label:'2025'},{value:'2024',label:'2024'},{value:'2023',label:'2023'},{value:'2022',label:'2022'}]} placeholder="Любой год" />
+        </div>
       </div>
       <div className="card">
         <div className="card-body flush">
