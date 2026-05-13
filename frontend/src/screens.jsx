@@ -1,8 +1,8 @@
-/* global React, AIS_DATA, AIS_UI, AIS_UTILS */
-const { STATUSES, STUDENTS, EMPLOYEES, GROUPS, FACULTIES, AUDIT, ORGS, I } = window.AIS_DATA;
-const { Shell, PageHead, Badge, Avatar } = window.AIS_UI;
-const { StatNumber, useToast, useDropdown, Field, EmptyState, SkeletonRows, LoadButton, Combobox, Pager, usePager, useSortable, SortHeader } = window.AIS_UTILS;
-const { useState, useMemo, useEffect } = React;
+import { useState, useMemo, useEffect } from 'react';
+import { STATUSES, STUDENTS, EMPLOYEES, GROUPS, FACULTIES, AUDIT, ORGS, I } from './data.jsx';
+import { Shell, PageHead, Badge, Avatar } from './shell.jsx';
+import { StatNumber, useToast, useDropdown, Field, EmptyState, SkeletonRows, LoadButton, Combobox, Pager, usePager, useSortable, SortHeader } from './utils.jsx';
+import api from './api.js';
 
 /* ============================================================
    Dashboards
@@ -18,29 +18,19 @@ function Stat({ label, value, icon, trend }) {
   );
 }
 
-function DashboardOwner({ openModal }) {
-  // Extended audit data for pagination demo
-  const ALL_AUDIT = useMemo(() => [
-    { ts: '09.05.2026 14:32:11', user: 'admin1',     userName: 'Дмитриева О. П.', role: 'Администратор', action: 'create', label: 'Создал',  obj: 'Студент #612 — Иванов И. И.',     cls: 'badge-ok' },
-    { ts: '09.05.2026 13:55:04', user: 'admin1',     userName: 'Дмитриева О. П.', role: 'Администратор', action: 'update', label: 'Изменил', obj: 'Студент #610 — Петрова М. С.',    cls: 'badge-warn' },
-    { ts: '09.05.2026 12:10:48', user: 'teacher1',   userName: 'Кузнецова Н. А.', role: 'Преподаватель', action: 'update', label: 'Изменил', obj: 'Группа ПИ-301',                   cls: 'badge-warn' },
-    { ts: '08.05.2026 18:04:22', user: 'admin1',     userName: 'Дмитриева О. П.', role: 'Администратор', action: 'delete', label: 'Удалил',  obj: 'Опекун #45',                       cls: 'badge-bad' },
-    { ts: '08.05.2026 17:30:00', user: 'owner1',     userName: 'Иванов И. И.',    role: 'Владелец',      action: 'create', label: 'Создал',  obj: 'Пользователь #8 — teacher2',       cls: 'badge-ok' },
-    { ts: '08.05.2026 16:48:15', user: 'admin1',     userName: 'Дмитриева О. П.', role: 'Администратор', action: 'update', label: 'Изменил', obj: 'Сотрудник #4 — Лебедева И. Ю.',    cls: 'badge-warn' },
-    { ts: '07.05.2026 09:11:02', user: 'admin2',     userName: 'Романов С. И.',   role: 'Администратор', action: 'create', label: 'Создал',  obj: 'Группа МН-101',                   cls: 'badge-ok' },
-    { ts: '06.05.2026 22:14:55', user: 'admin1',     userName: 'Дмитриева О. П.', role: 'Администратор', action: 'update', label: 'Изменил', obj: 'Факультет ФИТ',                    cls: 'badge-warn' },
-    { ts: '06.05.2026 19:02:11', user: 'teacher2',   userName: 'Морозов В. Г.',   role: 'Преподаватель', action: 'update', label: 'Изменил', obj: 'Студент #609 — Захарова О. Н.',   cls: 'badge-warn' },
-    { ts: '06.05.2026 11:48:30', user: 'admin2',     userName: 'Романов С. И.',   role: 'Администратор', action: 'create', label: 'Создал',  obj: 'Студент #608 — Морозов А. И.',    cls: 'badge-ok' },
-    { ts: '05.05.2026 20:01:09', user: 'admin1',     userName: 'Дмитриева О. П.', role: 'Администратор', action: 'delete', label: 'Удалил',  obj: 'Опекун #42',                       cls: 'badge-bad' },
-    { ts: '05.05.2026 15:44:21', user: 'teacher1',   userName: 'Кузнецова Н. А.', role: 'Преподаватель', action: 'update', label: 'Изменил', obj: 'Группа ПИ-302',                   cls: 'badge-warn' },
-    { ts: '05.05.2026 10:18:50', user: 'owner1',     userName: 'Иванов И. И.',    role: 'Владелец',      action: 'create', label: 'Создал',  obj: 'Факультет ФМН',                    cls: 'badge-ok' },
-    { ts: '04.05.2026 14:23:00', user: 'admin1',     userName: 'Дмитриева О. П.', role: 'Администратор', action: 'update', label: 'Изменил', obj: 'Студент #605 — Новиков Д. О.',    cls: 'badge-warn' },
-  ], []);
-
+function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
+  const [dashData, setDashData] = useState(null);
   const [q, setQ] = useState('');
   const [userFilter, setUserFilter] = useState('');
   const [actionFilter, setActionFilter] = useState('');
   const sort = useSortable({ key: 'ts', dir: 'desc' }, 'owner-dash-audit');
+
+  useEffect(() => {
+    api.get('/dashboard/').then(r => setDashData(r.data)).catch(() => {});
+  }, []);
+
+  const stats = dashData?.stats || {};
+  const ALL_AUDIT = dashData?.recent_audit || [];
 
   const filtered = useMemo(() => {
     return ALL_AUDIT.filter(a => {
@@ -63,32 +53,34 @@ function DashboardOwner({ openModal }) {
 
   const userOpts = useMemo(() => {
     const map = new Map();
-    ALL_AUDIT.forEach(a => map.set(a.user, { value: a.user, label: `${a.user}`, sub: a.role }));
+    ALL_AUDIT.forEach(a => map.set(a.user, { value: a.user, label: a.user, sub: a.role }));
     return Array.from(map.values());
   }, [ALL_AUDIT]);
 
   return (
-    <Shell role="owner" active="dashboard" openModal={openModal}>
+    <Shell currentUser={currentUser} active="dashboard" onNavigate={onNavigate} onLogout={onLogout} openModal={openModal}>
       <PageHead
         title="Дашборд"
-        sub="Сводка по системе на 09 мая 2026"
+        sub="Сводка по системе"
         actions={<>
           <button className="btn btn-secondary btn-sm">{I.excel}Экспорт в Excel</button>
-          <button className="btn btn-primary btn-sm" onClick={() => openModal('studentForm')}>{I.plus}Добавить</button>
+          <button className="btn btn-primary btn-sm" onClick={() => openModal && openModal('studentForm')}>{I.plus}Добавить</button>
         </>}
       />
-      <div className="banner banner-bad">
-        {I.alert}
-        <div className="banner-body" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--bad-fg)', animation: 'pulse-dot 2s infinite', display: 'inline-block', flexShrink: 0 }}></span>
-          <span><strong>3 заявки на удаление</strong> ожидают вашего решения. <a href="#" onClick={e => { e.preventDefault(); openModal('delreq'); }} style={{ color: 'inherit', textDecoration: 'underline' }}>Просмотреть заявки →</a></span>
+      {stats.pending_delreq > 0 && (
+        <div className="banner banner-bad">
+          {I.alert}
+          <div className="banner-body" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--bad-fg)', animation: 'pulse-dot 2s infinite', display: 'inline-block', flexShrink: 0 }}></span>
+            <span><strong>{stats.pending_delreq} заявки на удаление</strong> ожидают вашего решения. <a href="#" onClick={e => { e.preventDefault(); onNavigate && onNavigate('delreq'); }} style={{ color: 'inherit', textDecoration: 'underline' }}>Просмотреть →</a></span>
+          </div>
         </div>
-      </div>
+      )}
       <div className="stats">
-        <Stat label="Факультетов"  value="5"   icon={I.building} />
-        <Stat label="Групп"        value="24"  icon={I.users}     trend={{ up: true,  text: '+2 за месяц' }} />
-        <Stat label="Студентов"    value="612" icon={I.badge}     trend={{ up: true,  text: '+18 за месяц' }} />
-        <Stat label="Сотрудников"  value="38"  icon={I.briefcase} trend={{ up: true,  text: '+1 за месяц' }} />
+        <Stat label="Факультетов"  value={stats.faculties  ?? '…'} icon={I.building} />
+        <Stat label="Групп"        value={stats.groups     ?? '…'} icon={I.users} />
+        <Stat label="Студентов"    value={stats.students   ?? '…'} icon={I.badge} />
+        <Stat label="Сотрудников"  value={stats.employees  ?? '…'} icon={I.briefcase} />
       </div>
       <div className="card">
         <div className="card-head" style={{ flexWrap: 'wrap', gap: 8 }}>
@@ -102,35 +94,37 @@ function DashboardOwner({ openModal }) {
             </div>
             <div style={{ width: 140 }}>
               <Combobox value={actionFilter} onChange={setActionFilter}
-                options={[{ value: 'create', label: 'Создание' }, { value: 'update', label: 'Изменение' }, { value: 'delete', label: 'Удаление' }]}
+                options={[{ value: 'created', label: 'Создание' }, { value: 'updated', label: 'Изменение' }, { value: 'deleted', label: 'Удаление' }]}
                 placeholder="Все действия" />
             </div>
           </div>
         </div>
         <div className="card-body flush">
-          {sorted.length === 0
-            ? <EmptyState icon={I.history} title="Записи не найдены" sub="Измените условия поиска" />
-            : <table className="tbl">
-                <thead><tr>
-                  <SortHeader k="ts"     sort={sort}>Дата и время</SortHeader>
-                  <SortHeader k="user"   sort={sort}>Пользователь</SortHeader>
-                  <SortHeader k="action" sort={sort}>Действие</SortHeader>
-                  <SortHeader k="obj"    sort={sort}>Объект</SortHeader>
-                </tr></thead>
-                <tbody>
-                  {rows.map((a, i) => (
-                    <tr key={pager.start + i} className="row-link" onClick={() => openModal('auditDiff', a)}>
-                      <td className="mono muted">{a.ts}</td>
-                      <td>
-                        <span className="fwm mono">{a.user}</span>
-                        <div className="muted" style={{ fontSize: 11 }}>{a.userName} · {a.role}</div>
-                      </td>
-                      <td><span className={`badge ${a.cls}`}><span className="dot"></span>{a.label}</span></td>
-                      <td>{a.obj}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {!dashData
+            ? <SkeletonRows n={5} cols={4} />
+            : sorted.length === 0
+              ? <EmptyState icon={I.history} title="Записи не найдены" sub="Измените условия поиска" />
+              : <table className="tbl">
+                  <thead><tr>
+                    <SortHeader k="ts"     sort={sort}>Дата и время</SortHeader>
+                    <SortHeader k="user"   sort={sort}>Пользователь</SortHeader>
+                    <SortHeader k="action" sort={sort}>Действие</SortHeader>
+                    <SortHeader k="obj"    sort={sort}>Объект</SortHeader>
+                  </tr></thead>
+                  <tbody>
+                    {rows.map((a, i) => (
+                      <tr key={pager.start + i} className="row-link">
+                        <td className="mono muted">{a.ts}</td>
+                        <td>
+                          <span className="fwm mono">{a.user}</span>
+                          <div className="muted" style={{ fontSize: 11 }}>{a.userName} · {a.role}</div>
+                        </td>
+                        <td><span className={`badge ${a.cls}`}><span className="dot"></span>{a.label}</span></td>
+                        <td>{a.obj}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
           }
         </div>
         {sorted.length > 0 && <Pager pager={pager} total={sorted.length} />}
@@ -273,26 +267,23 @@ function EmptyOrgOnboarding({ org, openModal, onBack }) {
   );
 }
 
-function DashboardSuper({ openModal }) { return <DashboardOwner openModal={openModal} />; }
+function DashboardSuper({ currentUser, onNavigate, onLogout, openModal }) {
+  return <DashboardOwner currentUser={currentUser} onNavigate={onNavigate} onLogout={onLogout} openModal={openModal} />;
+}
 
-function DashboardAdmin({ openModal }) {
-  const ALL = useMemo(() => [
-    { ts: '09.05.2026 14:32:11', user: 'admin1', userName: 'Дмитриева О. П.', role: 'Администратор', action: 'create', label: 'Создал',  obj: 'Студент #612', cls: 'badge-ok' },
-    { ts: '09.05.2026 13:55:04', user: 'admin1', userName: 'Дмитриева О. П.', role: 'Администратор', action: 'update', label: 'Изменил', obj: 'Студент #610', cls: 'badge-warn' },
-    { ts: '09.05.2026 12:10:48', user: 'teacher1', userName: 'Кузнецова Н. А.', role: 'Преподаватель', action: 'update', label: 'Изменил', obj: 'Группа ПИ-301', cls: 'badge-warn' },
-    { ts: '08.05.2026 18:04:22', user: 'admin1', userName: 'Дмитриева О. П.', role: 'Администратор', action: 'delete', label: 'Удалил',  obj: 'Опекун #45', cls: 'badge-bad' },
-    { ts: '08.05.2026 17:30:00', user: 'admin2', userName: 'Романов С. И.',   role: 'Администратор', action: 'create', label: 'Создал',  obj: 'Сотрудник #14', cls: 'badge-ok' },
-    { ts: '08.05.2026 16:48:15', user: 'admin1', userName: 'Дмитриева О. П.', role: 'Администратор', action: 'update', label: 'Изменил', obj: 'Сотрудник #4', cls: 'badge-warn' },
-    { ts: '07.05.2026 09:11:02', user: 'admin2', userName: 'Романов С. И.',   role: 'Администратор', action: 'create', label: 'Создал',  obj: 'Группа МН-101', cls: 'badge-ok' },
-    { ts: '06.05.2026 22:14:55', user: 'admin1', userName: 'Дмитриева О. П.', role: 'Администратор', action: 'update', label: 'Изменил', obj: 'Факультет ФИТ', cls: 'badge-warn' },
-    { ts: '06.05.2026 11:48:30', user: 'admin2', userName: 'Романов С. И.',   role: 'Администратор', action: 'create', label: 'Создал',  obj: 'Студент #608', cls: 'badge-ok' },
-    { ts: '05.05.2026 20:01:09', user: 'admin1', userName: 'Дмитриева О. П.', role: 'Администратор', action: 'delete', label: 'Удалил',  obj: 'Опекун #42', cls: 'badge-bad' },
-    { ts: '05.05.2026 15:44:21', user: 'teacher1', userName: 'Кузнецова Н. А.', role: 'Преподаватель', action: 'update', label: 'Изменил', obj: 'Группа ПИ-302', cls: 'badge-warn' },
-  ], []);
-
+function DashboardAdmin({ currentUser, onNavigate, onLogout, openModal }) {
+  const [dashData, setDashData] = useState(null);
   const [q, setQ] = useState('');
   const [userFilter, setUserFilter] = useState('');
   const sort = useSortable({ key: 'ts', dir: 'desc' }, 'admin-dash-audit');
+
+  useEffect(() => {
+    api.get('/dashboard/').then(r => setDashData(r.data)).catch(() => {});
+  }, []);
+
+  const stats = dashData?.stats || {};
+  const ALL = dashData?.recent_audit || [];
+
   const filtered = useMemo(() => ALL.filter(a => {
     if (q && !`${a.obj} ${a.user} ${a.userName}`.toLowerCase().includes(q.toLowerCase())) return false;
     if (userFilter && a.user !== userFilter) return false;
@@ -309,28 +300,28 @@ function DashboardAdmin({ openModal }) {
   }, [ALL]);
 
   return (
-    <Shell role="admin" active="dashboard" openModal={openModal}>
+    <Shell currentUser={currentUser} active="dashboard" onNavigate={onNavigate} onLogout={onLogout} openModal={openModal}>
       <PageHead
         title="Дашборд"
-        sub="Сводка по системе на 09 мая 2026"
+        sub="Сводка по системе"
         actions={<>
           <button className="btn btn-secondary btn-sm">{I.excel}Экспорт</button>
-          <button className="btn btn-primary btn-sm" onClick={() => openModal('studentForm')}>{I.plus}Добавить студента</button>
+          <button className="btn btn-primary btn-sm" onClick={() => openModal && openModal('studentForm')}>{I.plus}Добавить студента</button>
         </>}
       />
       <div className="stats">
-        <Stat label="Факультетов" value="5"   icon={I.building} />
-        <Stat label="Групп"       value="24"  icon={I.users}     trend={{ up: true, text: '+2 за месяц' }} />
-        <Stat label="Студентов"   value="612" icon={I.badge}     trend={{ up: true, text: '+18 за месяц' }} />
-        <Stat label="Сотрудников" value="38"  icon={I.briefcase} />
+        <Stat label="Факультетов" value={stats.faculties  ?? '…'} icon={I.building} />
+        <Stat label="Групп"       value={stats.groups     ?? '…'} icon={I.users} />
+        <Stat label="Студентов"   value={stats.students   ?? '…'} icon={I.badge} />
+        <Stat label="Сотрудников" value={stats.employees  ?? '…'} icon={I.briefcase} />
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
         <div className="card">
           <div className="card-head"><div className="title">Быстрые действия</div></div>
           <div className="card-body" style={{ display: 'grid', gap: 8 }}>
-            <button className="btn btn-secondary" style={{ height: 44, justifyContent: 'flex-start' }} onClick={() => openModal('studentForm')}>{I.plus}Добавить студента</button>
-            <button className="btn btn-secondary" style={{ height: 44, justifyContent: 'flex-start' }} onClick={() => openModal('employeeForm')}>{I.plus}Добавить сотрудника</button>
-            <button className="btn btn-secondary" style={{ height: 44, justifyContent: 'flex-start' }} onClick={() => openModal('groupForm')}>{I.plus}Создать группу</button>
+            <button className="btn btn-secondary" style={{ height: 44, justifyContent: 'flex-start' }} onClick={() => openModal && openModal('studentForm')}>{I.plus}Добавить студента</button>
+            <button className="btn btn-secondary" style={{ height: 44, justifyContent: 'flex-start' }} onClick={() => openModal && openModal('employeeForm')}>{I.plus}Добавить сотрудника</button>
+            <button className="btn btn-secondary" style={{ height: 44, justifyContent: 'flex-start' }} onClick={() => openModal && openModal('groupForm')}>{I.plus}Создать группу</button>
             <button className="btn btn-secondary" style={{ height: 44, justifyContent: 'flex-start' }}>{I.excel}Экспорт списка студентов</button>
           </div>
         </div>
@@ -347,26 +338,28 @@ function DashboardAdmin({ openModal }) {
             </div>
           </div>
           <div className="card-body flush">
-            {sorted.length === 0
-              ? <EmptyState icon={I.history} title="Ничего не найдено" sub="Измените условия поиска" />
-              : <table className="tbl">
-                  <thead><tr>
-                    <SortHeader k="ts"     sort={sort}>Время</SortHeader>
-                    <SortHeader k="user"   sort={sort}>Кто</SortHeader>
-                    <SortHeader k="action" sort={sort}>Действие</SortHeader>
-                    <SortHeader k="obj"    sort={sort}>Объект</SortHeader>
-                  </tr></thead>
-                  <tbody>
-                    {rows.map((a, i) => (
-                      <tr key={pager.start + i} className="row-link" onClick={() => openModal('auditDiff', a)}>
-                        <td className="mono muted">{a.ts.slice(11)}<div style={{ fontSize: 10, color: 'var(--text-faint)' }}>{a.ts.slice(0, 10)}</div></td>
-                        <td><span className="fwm mono">{a.user}</span><div className="muted" style={{ fontSize: 11 }}>{a.userName}</div></td>
-                        <td><span className={`badge ${a.cls}`}><span className="dot"></span>{a.label}</span></td>
-                        <td>{a.obj}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {!dashData
+              ? <SkeletonRows n={5} cols={4} />
+              : sorted.length === 0
+                ? <EmptyState icon={I.history} title="Ничего не найдено" sub="Измените условия поиска" />
+                : <table className="tbl">
+                    <thead><tr>
+                      <SortHeader k="ts"     sort={sort}>Время</SortHeader>
+                      <SortHeader k="user"   sort={sort}>Кто</SortHeader>
+                      <SortHeader k="action" sort={sort}>Действие</SortHeader>
+                      <SortHeader k="obj"    sort={sort}>Объект</SortHeader>
+                    </tr></thead>
+                    <tbody>
+                      {rows.map((a, i) => (
+                        <tr key={pager.start + i} className="row-link">
+                          <td className="mono muted">{a.ts.slice(11)}<div style={{ fontSize: 10, color: 'var(--text-faint)' }}>{a.ts.slice(0, 10)}</div></td>
+                          <td><span className="fwm mono">{a.user}</span><div className="muted" style={{ fontSize: 11 }}>{a.userName}</div></td>
+                          <td><span className={`badge ${a.cls}`}><span className="dot"></span>{a.label}</span></td>
+                          <td>{a.obj}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
             }
           </div>
           {sorted.length > 0 && <Pager pager={pager} total={sorted.length} sizes={[10, 25, 50, 100]} />}
@@ -376,10 +369,11 @@ function DashboardAdmin({ openModal }) {
   );
 }
 
-function DashboardTeacher({ openModal }) {
+function DashboardTeacher({ currentUser, onNavigate, onLogout, openModal }) {
+  const name = currentUser?.display_name || currentUser?.username || 'Преподаватель';
   return (
-    <Shell role="teacher" active="dashboard" openModal={openModal}>
-      <PageHead title="Здравствуйте, Наталья Андреевна" sub="Ваши группы и предметы на текущий семестр" />
+    <Shell currentUser={currentUser} active="dashboard" onNavigate={onNavigate} onLogout={onLogout} openModal={openModal}>
+      <PageHead title={`Здравствуйте, ${name}`} sub="Ваши группы и предметы на текущий семестр" />
       <div className="stats" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
         <Stat label="Моих групп"     value="2"  icon={I.users} />
         <Stat label="Моих студентов" value="53" icon={I.badge} />
@@ -1208,7 +1202,7 @@ function PositionList({ openModal }) {
   );
 }
 
-window.AIS_SCREENS = {
+export {
   DashboardOwner, DashboardSuper, DashboardAdmin, DashboardTeacher,
   OrganizationList,
   StudentList, StudentDetail,

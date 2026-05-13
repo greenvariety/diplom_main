@@ -1,7 +1,6 @@
-/* global React, AIS_DATA, AIS_UTILS */
-const { STATUSES, STUDENTS, EMPLOYEES, GROUPS, FACULTIES, AUDIT, I } = window.AIS_DATA;
-const { useDropdown, useToast } = window.AIS_UTILS;
-const { useState, useEffect } = React;
+import { useState } from 'react';
+import { I, STATUSES } from './data.jsx';
+import { useDropdown, useToast } from './utils.jsx';
 
 /* ============================================================
    Reusable bits
@@ -25,10 +24,10 @@ function Crumbs({ items }) {
   return (
     <div className="crumbs">
       {items.map((it, i) => (
-        <React.Fragment key={i}>
+        <span key={i} style={{ display: 'contents' }}>
           {i > 0 && <span className="sep">/</span>}
           {it.href ? <a href="#" onClick={e => { e.preventDefault(); it.onClick && it.onClick(); }}>{it.label}</a> : <span>{it.label}</span>}
-        </React.Fragment>
+        </span>
       ))}
     </div>
   );
@@ -50,25 +49,28 @@ function PageHead({ crumbs, title, sub, actions }) {
 /* ============================================================
    User chip with dropdown
    ============================================================ */
-function UserChip({ role, av, openModal }) {
+const ROLE_LABEL = { owner: 'Владелец', superadmin: 'Суперадминистратор', admin: 'Администратор', teacher: 'Преподаватель' };
+
+function UserChip({ currentUser, onLogout, openModal }) {
   const { open, setOpen, wrapRef } = useDropdown();
   const toast = useToast();
-  const login = ROLE_LOGIN[role] || role;
+  const name = currentUser?.display_name || currentUser?.username || '—';
+  const role = currentUser?.role || 'admin';
   return (
     <div ref={wrapRef} className="dd-wrap">
       <button className="user-chip" onClick={() => setOpen(o => !o)} aria-haspopup="true" aria-expanded={open}>
-        <Avatar name={login} size="sm" av={av} />
+        <Avatar name={name} size="sm" av={1} />
         <div>
-          <div className="name">{login}</div>
-          <div className="role">{ROLE_LABEL[role]}</div>
+          <div className="name">{name}</div>
+          <div className="role">{ROLE_LABEL[role] || role}</div>
         </div>
         <svg className="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 2, opacity: 0.6, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       {open && (
         <div className="dd-menu" role="menu">
           <div style={{ padding: '8px 10px 10px', borderBottom: '1px solid var(--border)', marginBottom: 4 }}>
-            <div style={{ fontWeight: 600, fontSize: 13 }}>{login}</div>
-            <div className="muted" style={{ fontSize: 11 }}>{ROLE_LABEL[role]}</div>
+            <div style={{ fontWeight: 600, fontSize: 13 }}>{name}</div>
+            <div className="muted" style={{ fontSize: 11 }}>{ROLE_LABEL[role] || role}</div>
           </div>
           <div className="dd-item" onClick={() => { setOpen(false); toast.push('Открыт профиль', { kind: 'info' }); }}>
             {I.user}<span>Профиль</span>
@@ -77,7 +79,7 @@ function UserChip({ role, av, openModal }) {
             {I.shield}<span>Сменить пароль</span>
           </div>
           <div className="dd-sep" />
-          <div className="dd-item danger" onClick={() => { setOpen(false); openModal && openModal('logout'); }}>
+          <div className="dd-item danger" onClick={() => { setOpen(false); onLogout && onLogout(); }}>
             {I.logout}<span>Выйти</span>
           </div>
         </div>
@@ -94,72 +96,54 @@ const NAV_BY_ROLE = {
   owner: [
     { section: 'Главное', items: [{ key: 'dashboard', label: 'Дашборд', icon: I.dashboard }] },
     { section: 'Организации', items: [
-      { key: 'org-list', label: 'Мои организации', icon: I.building, count: 2 },
+      { key: 'org-list', label: 'Мои организации', icon: I.building },
     ]},
     { section: 'Учебная структура', items: [
-      { key: 'faculties', label: 'Факультеты', icon: I.building, count: 5 },
-      { key: 'groups',    label: 'Группы',     icon: I.users,    count: 24 },
-      { key: 'subjects',  label: 'Предметы',   icon: I.book,     count: 32 },
+      { key: 'faculties', label: 'Факультеты', icon: I.building },
+      { key: 'groups',    label: 'Группы',     icon: I.users },
+      { key: 'subjects',  label: 'Предметы',   icon: I.book },
     ]},
     { section: 'Люди', items: [
-      { key: 'employees', label: 'Сотрудники', icon: I.briefcase, count: 38 },
-      { key: 'students',  label: 'Студенты',   icon: I.badge,     count: 612 },
-      { key: 'parents',   label: 'Опекуны',    icon: I.heart,     count: 421 },
+      { key: 'employees', label: 'Сотрудники', icon: I.briefcase },
+      { key: 'students',  label: 'Студенты',   icon: I.badge },
+      { key: 'parents',   label: 'Опекуны',    icon: I.heart },
     ]},
     { section: 'Администрирование', items: [
-      { key: 'users',     label: 'Пользователи',      icon: I.shield,   count: 4 },
-      { key: 'positions', label: 'Должности',          icon: I.settings, count: 7 },
-      { key: 'delreq',    label: 'Заявки на удаление', icon: I.trash,    count: 3, badge: 'bad' },
+      { key: 'users',     label: 'Пользователи',      icon: I.shield },
+      { key: 'positions', label: 'Должности',          icon: I.settings },
+      { key: 'delreq',    label: 'Заявки на удаление', icon: I.trash, badge: 'bad' },
       { key: 'audit',     label: 'Журнал изменений',   icon: I.history },
-    ]},
-  ],
-  superadmin: [
-    { section: 'Главное', items: [{ key: 'dashboard', label: 'Дашборд', icon: I.dashboard }] },
-    { section: 'Учебная структура', items: [
-      { key: 'faculties', label: 'Факультеты', icon: I.building, count: 5 },
-      { key: 'groups',    label: 'Группы',     icon: I.users,    count: 24 },
-      { key: 'subjects',  label: 'Предметы',   icon: I.book,     count: 32 },
-    ]},
-    { section: 'Люди', items: [
-      { key: 'employees', label: 'Сотрудники', icon: I.briefcase, count: 38 },
-      { key: 'students',  label: 'Студенты',   icon: I.badge,     count: 612 },
-      { key: 'parents',   label: 'Опекуны',    icon: I.heart,     count: 421 },
-    ]},
-    { section: 'Администрирование', items: [
-      { key: 'users',     label: 'Пользователи',     icon: I.shield,   count: 12 },
-      { key: 'positions', label: 'Должности',         icon: I.settings, count: 7 },
-      { key: 'delreq',    label: 'Заявки на удаление', icon: I.trash,    count: 3, badge: 'bad' },
-      { key: 'audit',     label: 'Журнал изменений',  icon: I.history },
     ]},
   ],
   admin: [
     { section: 'Главное', items: [{ key: 'dashboard', label: 'Дашборд', icon: I.dashboard }] },
     { section: 'Учебная структура', items: [
-      { key: 'faculties', label: 'Факультеты', icon: I.building, count: 5 },
-      { key: 'groups',    label: 'Группы',     icon: I.users,    count: 24 },
-      { key: 'subjects',  label: 'Предметы',   icon: I.book,     count: 32 },
+      { key: 'faculties', label: 'Факультеты', icon: I.building },
+      { key: 'groups',    label: 'Группы',     icon: I.users },
+      { key: 'subjects',  label: 'Предметы',   icon: I.book },
     ]},
     { section: 'Люди', items: [
-      { key: 'employees', label: 'Сотрудники', icon: I.briefcase, count: 38 },
-      { key: 'students',  label: 'Студенты',   icon: I.badge,     count: 612 },
-      { key: 'parents',   label: 'Опекуны',    icon: I.heart,     count: 421 },
+      { key: 'employees', label: 'Сотрудники', icon: I.briefcase },
+      { key: 'students',  label: 'Студенты',   icon: I.badge },
+      { key: 'parents',   label: 'Опекуны',    icon: I.heart },
     ]},
   ],
   teacher: [
     { section: 'Главное', items: [{ key: 'dashboard', label: 'Дашборд', icon: I.dashboard }] },
     { section: 'Мои данные', items: [
-      { key: 'groups',   label: 'Мои группы',   icon: I.users,    count: 2 },
-      { key: 'students', label: 'Мои студенты', icon: I.badge,    count: 53 },
+      { key: 'groups',   label: 'Мои группы',   icon: I.users },
+      { key: 'students', label: 'Мои студенты', icon: I.badge },
     ]},
   ],
 };
+NAV_BY_ROLE.superadmin = NAV_BY_ROLE.owner;
 
-const ROLE_LABEL = { owner: 'Владелец', superadmin: 'Суперадминистратор', admin: 'Администратор', teacher: 'Преподаватель' };
-const ROLE_LOGIN = { owner: 'owner1', superadmin: 'superadmin', admin: 'admin1', teacher: 'teacher1' };
-const ROLE_ORG = { owner: 'Колледж №1' };
-
-function Shell({ role, active, children, openModal }) {
+function Shell({ currentUser, role: roleProp, active, onNavigate, onLogout, openModal, children }) {
+  const role = currentUser?.role || roleProp || 'admin';
   const nav = NAV_BY_ROLE[role] || NAV_BY_ROLE.admin;
+  const institutionName = currentUser?.institution?.name || '';
+  const mockUser = currentUser || { role, username: role, display_name: role };
+
   return (
     <div className="app-shell">
       <div className="brand-cell">
@@ -171,15 +155,11 @@ function Shell({ role, active, children, openModal }) {
       </div>
       <div className="topbar">
         <div className="topbar-left">
-          {role === 'owner' ? (
+          {role === 'owner' || role === 'superadmin' ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-muted)' }}>
               {I.building}
               <span>Организация:</span>
-              <strong style={{ color: 'var(--text)' }}>{ROLE_ORG[role] || 'Колледж №1'}</strong>
-              <button className="btn btn-ghost btn-sm" style={{ marginLeft: 2 }} title="Сменить организацию">
-                {I.swap}
-                Сменить
-              </button>
+              <strong style={{ color: 'var(--text)' }}>{institutionName || 'Не выбрана'}</strong>
             </div>
           ) : (
             <div className="topbar-search">
@@ -189,25 +169,26 @@ function Shell({ role, active, children, openModal }) {
           )}
         </div>
         <div className="topbar-right">
-          <button className="btn btn-ghost btn-icon has-notif" title="Уведомления">{I.bell}</button>
-          <UserChip role={role} av={role === 'owner' ? 3 : role === 'admin' ? 1 : 2} openModal={openModal} />
+          <button className="btn btn-ghost btn-icon" title="Уведомления">{I.bell}</button>
+          <UserChip currentUser={mockUser} onLogout={onLogout} openModal={openModal} />
         </div>
       </div>
       <nav className="sidebar">
         {nav.map((sec, i) => (
-          <React.Fragment key={i}>
+          <span key={i} style={{ display: 'contents' }}>
             <div className="sidebar-section">{sec.section}</div>
             {sec.items.map(it => (
-              <a className={`nav-item ${it.key === active ? 'active' : ''}`} key={it.key} href="#" onClick={e => e.preventDefault()}>
+              <a
+                className={`nav-item ${it.key === active ? 'active' : ''}`}
+                key={it.key}
+                href="#"
+                onClick={e => { e.preventDefault(); onNavigate && onNavigate(it.key); }}
+              >
                 {it.icon}
                 <span>{it.label}</span>
-                {it.badge === 'bad' && typeof it.count === 'number'
-                  ? <span className="badge-mini with-pulse">{it.count}</span>
-                  : (typeof it.count === 'number' && <span className="count">{it.count}</span>)
-                }
               </a>
             ))}
-          </React.Fragment>
+          </span>
         ))}
         <div style={{ flex: 1 }}></div>
       </nav>
@@ -218,4 +199,4 @@ function Shell({ role, active, children, openModal }) {
   );
 }
 
-window.AIS_UI = { Shell, PageHead, Crumbs, Badge, Avatar, ROLE_LABEL, ROLE_LOGIN };
+export { Shell, PageHead, Crumbs, Badge, Avatar, ROLE_LABEL };
