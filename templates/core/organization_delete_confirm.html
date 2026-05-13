@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}Удалить организацию — АИС{% endblock %}
+
+{% block content %}
+<div style="max-width:520px">
+    <div class="card" style="padding:32px;border:1px solid var(--border);border-radius:8px;background:var(--surface)">
+        <h2 style="margin-bottom:12px;color:var(--bad-fg)">Удалить организацию?</h2>
+        <p style="color:var(--text-muted);margin-bottom:20px;line-height:1.6">
+            Вы собираетесь удалить организацию <strong>{{ org.name }}</strong> ({{ org.code }}).
+            Это действие удалит все связанные данные: факультеты, группы, студентов, сотрудников, документы и пользователей.
+            <br><br>
+            <strong>Действие необратимо.</strong>
+        </p>
+        <div style="display:flex;gap:10px">
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Удалить навсегда</button>
+            </form>
+            <a href="{% url 'organization-list' %}" class="btn btn-secondary">Отмена</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

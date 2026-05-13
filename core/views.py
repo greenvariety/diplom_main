@@ -3,17 +3,16 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.conf import settings
 from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.db.models import Q, Count
 
 from .models import (
     Institution, Faculty, Group, Student, Parent, StudentParent,
     Employee, Position, Subject, GroupSubjectEmployee,
-    Document, User, DeleteRequest, AuditLog, FeedbackComment,
+    Document, User, DeleteRequest, AuditLog, FeedbackComment, SeedPhrase,
 )
 from .forms import (
-    LoginForm, PlatformSetupForm,
+    LoginForm, OwnerRegisterForm, RecoverPasswordForm, OrganizationForm,
     FacultyForm, PositionForm, GroupForm,
     StudentForm, StudentFilterForm, StudentTransferForm,
     ParentForm, StudentParentForm,
@@ -22,38 +21,18 @@ from .forms import (
     DeleteRequestForm,
 )
 from .utils import (
-    log_action, model_to_dict_safe, superadmin_required, admin_required,
-    get_current_institution,
+    log_action, model_to_dict_safe, owner_required, admin_required,
+    superadmin_required, get_institution_from_session,
+    generate_seed_phrase, hash_seed_phrase, verify_seed_phrase,
 )
 
 
-# ---------------------------------------------------------------------------
-# Platform setup (first launch)
-# ---------------------------------------------------------------------------
-
-def setup_view(request):
-    if Institution.objects.exists():
-        return redirect('login')
-
-    form = PlatformSetupForm(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        institution = Institution.objects.create(
-            code=form.cleaned_data['inst_code'].upper(),
-            name=form.cleaned_data['inst_name'],
-        )
-        user = User.objects.create_user(
-            username=form.cleaned_data['username'],
-            password=form.cleaned_data['password'],
-            role='superadmin',
-            display_name=form.cleaned_data['display_name'],
-            institution=institution,
-            is_staff=True,
-            is_superuser=True,
-        )
-        login(request, user)
-        return redirect('dashboard')
-
-    return render(request, 'core/setup.html', {'form': form})
+def _get_institution_or_redirect(request):
+    """Returns institution, or a redirect response if owner has no org selected."""
+    institution = get_institution_from_session(request)
+    if institution is None and request.user.is_owner:
+        return None
+    return institution
 
 
 # ---------------------------------------------------------------------------
@@ -62,20 +41,151 @@ def setup_view(request):
 
 def login_view(request):
     if request.user.is_authenticated:
+        if request.user.is_owner:
+            return redirect('organization-list')
         return redirect('dashboard')
 
     form = LoginForm(request, data=request.POST or None)
     if request.method == 'POST' and form.is_valid():
         user = form.get_user()
         login(request, user)
+        if user.is_owner:
+            orgs = Institution.objects.filter(owner=user)
+            if orgs.count() == 1:
+                request.session['institution_id'] = orgs.first().pk
+                return redirect('dashboard')
+            return redirect('organization-list')
         return redirect('dashboard')
     return render(request, 'core/login.html', {'form': form})
 
 
 @login_required
 def logout_view(request):
+    request.session.flush()
     logout(request)
     return redirect('login')
+
+
+def register_view(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+
+    form = OwnerRegisterForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        user = User.objects.create_user(
+            username=form.cleaned_data['username'],
+            password=form.cleaned_data['password'],
+            role='owner',
+            display_name=form.cleaned_data['display_name'],
+        )
+        phrase = generate_seed_phrase()
+        SeedPhrase.objects.create(user=user, phrase_hash=hash_seed_phrase(phrase))
+        request.session['pending_phrase'] = phrase
+        request.session['pending_user_id'] = user.pk
+        return redirect('seed-phrase-show')
+
+    return render(request, 'core/register.html', {'form': form})
+
+
+def seed_phrase_show(request):
+    phrase = request.session.get('pending_phrase')
+    user_id = request.session.get('pending_user_id')
+    if not phrase or not user_id:
+        return redirect('login')
+
+    if request.method == 'POST':
+        del request.session['pending_phrase']
+        del request.session['pending_user_id']
+        user = get_object_or_404(User, pk=user_id)
+        login(request, user)
+        return redirect('organization-list')
+
+    words = phrase.split()
+    return render(request, 'core/seed_phrase_show.html', {'phrase': phrase, 'words': words})
+
+
+def recover_password_view(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+
+    form = RecoverPasswordForm(request.POST or None)
+    error = None
+    if request.method == 'POST' and form.is_valid():
+        username = form.cleaned_data['username']
+        try:
+            user = User.objects.get(username=username, role='owner')
+            phrase = form.get_phrase()
+            if verify_seed_phrase(phrase, user.seed_phrase.phrase_hash):
+                user.set_password(form.cleaned_data['new_password'])
+                user.save()
+                messages.success(request, 'Пароль успешно изменён. Войдите с новым паролем.')
+                return redirect('login')
+            else:
+                error = 'Сид-фраза не совпадает.'
+        except User.DoesNotExist:
+            error = 'Пользователь с таким логином не найден.'
+        except SeedPhrase.DoesNotExist:
+            error = 'У этого пользователя нет сид-фразы.'
+
+    return render(request, 'core/recover_password.html', {'form': form, 'error': error})
+
+
+# ---------------------------------------------------------------------------
+# Organization management (owner only)
+# ---------------------------------------------------------------------------
+
+@owner_required
+def organization_list(request):
+    orgs = Institution.objects.filter(owner=request.user)
+    current_id = request.session.get('institution_id')
+    return render(request, 'core/organization_list.html', {
+        'orgs': orgs, 'current_id': current_id,
+    })
+
+
+@owner_required
+def organization_add(request):
+    form = OrganizationForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        org = form.save(commit=False)
+        org.owner = request.user
+        try:
+            org.save()
+            messages.success(request, f'Организация «{org.name}» создана.')
+            return redirect('organization-list')
+        except Exception:
+            form.add_error('code', 'Организация с таким кодом уже существует.')
+    return render(request, 'core/organization_form.html', {'form': form, 'title': 'Добавить организацию'})
+
+
+@owner_required
+def organization_switch(request, pk):
+    org = get_object_or_404(Institution, pk=pk, owner=request.user)
+    request.session['institution_id'] = org.pk
+    return redirect('dashboard')
+
+
+@owner_required
+def organization_edit(request, pk):
+    org = get_object_or_404(Institution, pk=pk, owner=request.user)
+    form = OrganizationForm(request.POST or None, instance=org)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Организация обновлена.')
+        return redirect('organization-list')
+    return render(request, 'core/organization_form.html', {'form': form, 'title': 'Редактировать организацию', 'object': org})
+
+
+@owner_required
+def organization_delete(request, pk):
+    org = get_object_or_404(Institution, pk=pk, owner=request.user)
+    if request.method == 'POST':
+        if request.session.get('institution_id') == org.pk:
+            del request.session['institution_id']
+        org.delete()
+        messages.success(request, 'Организация удалена.')
+        return redirect('organization-list')
+    return render(request, 'core/organization_delete_confirm.html', {'org': org})
 
 
 # ---------------------------------------------------------------------------
@@ -84,28 +194,31 @@ def logout_view(request):
 
 @login_required
 def dashboard(request):
-    institution = get_current_institution(request)
     user = request.user
+
+    if user.is_owner:
+        institution = get_institution_from_session(request)
+        if institution is None:
+            return redirect('organization-list')
+    else:
+        institution = user.institution
+        if institution is None:
+            return HttpResponseForbidden('Организация не назначена')
+
     context = {'institution': institution}
 
-    if user.is_superadmin:
+    if user.is_owner or user.role == 'admin':
         context['total_faculties'] = Faculty.objects.filter(institution=institution).count()
         context['total_groups'] = Group.objects.filter(faculty__institution=institution).count()
         context['total_students'] = Student.objects.filter(faculty__institution=institution).count()
         context['total_employees'] = Employee.objects.filter(institution=institution).count()
-        context['pending_requests'] = DeleteRequest.objects.filter(
-            user__institution=institution, status='pending'
-        ).count()
-        context['recent_logs'] = AuditLog.objects.filter(
-            user__institution=institution
-        ).select_related('user')[:10]
-
-    elif user.is_admin:
-        context['total_faculties'] = Faculty.objects.filter(institution=institution).count()
-        context['total_groups'] = Group.objects.filter(faculty__institution=institution).count()
-        context['total_students'] = Student.objects.filter(faculty__institution=institution).count()
-        context['total_employees'] = Employee.objects.filter(institution=institution).count()
-
+        if user.is_owner:
+            context['pending_requests'] = DeleteRequest.objects.filter(
+                user__institution=institution, status='pending'
+            ).count()
+            context['recent_logs'] = AuditLog.objects.filter(
+                Q(institution=institution) | Q(user__institution=institution)
+            ).select_related('user').distinct()[:10]
     else:  # teacher
         if user.employee:
             my_groups = Group.objects.filter(
@@ -121,13 +234,28 @@ def dashboard(request):
     return render(request, 'core/dashboard.html', context)
 
 
+def _institution_required(request):
+    """Returns (institution, redirect_response). If redirect needed, institution is None."""
+    if request.user.is_owner:
+        institution = get_institution_from_session(request)
+        if institution is None:
+            return None, redirect('organization-list')
+        return institution, None
+    institution = request.user.institution
+    if institution is None:
+        return None, HttpResponseForbidden('Организация не назначена')
+    return institution, None
+
+
 # ---------------------------------------------------------------------------
 # Faculty
 # ---------------------------------------------------------------------------
 
 @login_required
 def faculty_list(request):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     q = request.GET.get('q', '')
     faculties = Faculty.objects.filter(institution=institution).annotate(group_count=Count('groups'))
     if q:
@@ -139,13 +267,15 @@ def faculty_list(request):
 
 @admin_required
 def faculty_add(request):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     form = FacultyForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         faculty = form.save(commit=False)
         faculty.institution = institution
         faculty.save()
-        log_action(request.user, 'created', faculty, new_data=model_to_dict_safe(faculty))
+        log_action(request.user, 'created', faculty, new_data=model_to_dict_safe(faculty), institution=institution)
         messages.success(request, f'Факультет «{faculty.short_name}» добавлен.')
         return redirect('faculty-list')
     return render(request, 'core/faculty_form.html', {'form': form, 'title': 'Добавить факультет'})
@@ -153,7 +283,9 @@ def faculty_add(request):
 
 @admin_required
 def faculty_edit(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     faculty = get_object_or_404(Faculty, pk=pk, institution=institution)
     old_data = model_to_dict_safe(faculty)
     form = FacultyForm(request.POST or None, instance=faculty)
@@ -163,7 +295,7 @@ def faculty_edit(request, pk):
         updated.institution = institution
         updated.save()
         faculty = updated
-        log_action(request.user, 'updated', faculty, old_data=old_data, new_data=model_to_dict_safe(faculty))
+        log_action(request.user, 'updated', faculty, old_data=old_data, new_data=model_to_dict_safe(faculty), institution=institution)
         messages.success(request, 'Факультет обновлён.')
         return redirect('faculty-list')
     return render(request, 'core/faculty_form.html', {
@@ -173,7 +305,9 @@ def faculty_edit(request, pk):
 
 @login_required
 def faculty_detail(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     faculty = get_object_or_404(Faculty, pk=pk, institution=institution)
     groups = Group.objects.filter(faculty=faculty).select_related('headteacher').annotate(
         student_count=Count('students')
@@ -185,9 +319,11 @@ def faculty_detail(request, pk):
 
 @admin_required
 def faculty_delete_request(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     faculty = get_object_or_404(Faculty, pk=pk, institution=institution)
-    if request.user.is_superadmin:
+    if request.user.is_owner:
         return redirect('direct-delete', object_type='Faculty', pk=pk)
     if request.method == 'POST':
         form = DeleteRequestForm(request.POST)
@@ -197,7 +333,7 @@ def faculty_delete_request(request, pk):
             dr.object_type = 'Faculty'
             dr.object_id = faculty.pk
             dr.save()
-            messages.success(request, 'Заявка на удаление отправлена суперадминистратору.')
+            messages.success(request, 'Заявка на удаление отправлена владельцу.')
             return redirect('faculty-list')
     else:
         form = DeleteRequestForm()
@@ -212,7 +348,9 @@ def faculty_delete_request(request, pk):
 
 @login_required
 def group_list(request):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     user = request.user
     q = request.GET.get('q', '')
     base_qs = Group.objects.filter(faculty__institution=institution)
@@ -241,13 +379,15 @@ def group_list(request):
 
 @admin_required
 def group_add(request):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     form = GroupForm(request.POST or None, institution=institution)
     if request.method == 'POST' and form.is_valid():
         group = form.save()
         log_action(request.user, 'created', group, new_data={
             'name': group.name, 'faculty': str(group.faculty), 'year': group.year,
-        })
+        }, institution=institution)
         messages.success(request, f'Группа «{group.name}» создана.')
         return redirect('group-list')
     return render(request, 'core/group_form.html', {'form': form, 'title': 'Создать группу'})
@@ -255,7 +395,9 @@ def group_add(request):
 
 @admin_required
 def group_edit(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     group = get_object_or_404(Group, pk=pk, faculty__institution=institution)
     old_data = {'name': group.name, 'year': group.year, 'faculty': str(group.faculty)}
     form = GroupForm(request.POST or None, instance=group, institution=institution)
@@ -263,7 +405,7 @@ def group_edit(request, pk):
         group = form.save()
         log_action(request.user, 'updated', group, old_data=old_data, new_data={
             'name': group.name, 'year': group.year,
-        })
+        }, institution=institution)
         messages.success(request, 'Группа обновлена.')
         return redirect('group-detail', pk=pk)
     return render(request, 'core/group_form.html', {
@@ -273,7 +415,9 @@ def group_edit(request, pk):
 
 @login_required
 def group_detail(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     user = request.user
     group = get_object_or_404(
         Group.objects.select_related('faculty', 'headteacher'),
@@ -295,9 +439,11 @@ def group_detail(request, pk):
 
 @admin_required
 def group_delete_request(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     group = get_object_or_404(Group, pk=pk, faculty__institution=institution)
-    if request.user.is_superadmin:
+    if request.user.is_owner:
         return redirect('direct-delete', object_type='Group', pk=pk)
     if request.method == 'POST':
         form = DeleteRequestForm(request.POST)
@@ -318,7 +464,9 @@ def group_delete_request(request, pk):
 
 @admin_required
 def group_subject_add(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     group = get_object_or_404(Group, pk=pk, faculty__institution=institution)
     form = GroupSubjectEmployeeForm(request.POST or None, institution=institution)
     if request.method == 'POST' and form.is_valid():
@@ -332,7 +480,9 @@ def group_subject_add(request, pk):
 
 @admin_required
 def group_subject_delete(request, pk, assignment_pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     group = get_object_or_404(Group, pk=pk, faculty__institution=institution)
     assignment = get_object_or_404(GroupSubjectEmployee, pk=assignment_pk, group=group)
     assignment.delete()
@@ -346,7 +496,9 @@ def group_subject_delete(request, pk, assignment_pk):
 
 @login_required
 def student_list(request):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     user = request.user
     form = StudentFilterForm(request.GET, institution=institution)
     students = Student.objects.filter(
@@ -381,11 +533,13 @@ def student_list(request):
 
 @admin_required
 def student_add(request):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     form = StudentForm(request.POST or None, request.FILES or None, institution=institution)
     if request.method == 'POST' and form.is_valid():
         student = form.save()
-        log_action(request.user, 'created', student, new_data=model_to_dict_safe(student))
+        log_action(request.user, 'created', student, new_data=model_to_dict_safe(student), institution=institution)
         messages.success(request, 'Студент добавлен.')
         return redirect('student-detail', pk=student.pk)
     return render(request, 'core/student_form.html', {'form': form, 'title': 'Добавить студента'})
@@ -393,7 +547,9 @@ def student_add(request):
 
 @login_required
 def student_detail(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     user = request.user
     student = get_object_or_404(
         Student.objects.select_related('faculty', 'group', 'group__faculty'),
@@ -419,13 +575,15 @@ def student_detail(request, pk):
 
 @admin_required
 def student_edit(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     student = get_object_or_404(Student, pk=pk, faculty__institution=institution)
     old_data = model_to_dict_safe(student)
     form = StudentForm(request.POST or None, request.FILES or None, instance=student, institution=institution)
     if request.method == 'POST' and form.is_valid():
         student = form.save()
-        log_action(request.user, 'updated', student, old_data=old_data, new_data=model_to_dict_safe(student))
+        log_action(request.user, 'updated', student, old_data=old_data, new_data=model_to_dict_safe(student), institution=institution)
         messages.success(request, 'Данные студента обновлены.')
         return redirect('student-detail', pk=student.pk)
     return render(request, 'core/student_form.html', {
@@ -435,9 +593,11 @@ def student_edit(request, pk):
 
 @admin_required
 def student_delete_request(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     student = get_object_or_404(Student, pk=pk, faculty__institution=institution)
-    if request.user.is_superadmin:
+    if request.user.is_owner:
         return redirect('direct-delete', object_type='Student', pk=pk)
     if request.method == 'POST':
         form = DeleteRequestForm(request.POST)
@@ -458,7 +618,9 @@ def student_delete_request(request, pk):
 
 @admin_required
 def student_add_parent(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     student = get_object_or_404(Student, pk=pk, faculty__institution=institution)
     form = StudentParentForm(request.POST or None, institution=institution)
     if request.method == 'POST' and form.is_valid():
@@ -472,7 +634,9 @@ def student_add_parent(request, pk):
 
 @admin_required
 def student_remove_parent(request, pk, sp_pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     student = get_object_or_404(Student, pk=pk, faculty__institution=institution)
     sp = get_object_or_404(StudentParent, pk=sp_pk, student=student)
     sp.delete()
@@ -482,7 +646,9 @@ def student_remove_parent(request, pk, sp_pk):
 
 @admin_required
 def student_transfer(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     student = get_object_or_404(Student, pk=pk, faculty__institution=institution)
     old_data = model_to_dict_safe(student)
     form = StudentTransferForm(request.POST or None, institution=institution)
@@ -496,7 +662,8 @@ def student_transfer(request, pk):
         student.save()
         log_action(request.user, 'updated', student,
                    old_data=old_data,
-                   new_data={**model_to_dict_safe(student), 'transfer_reason': reason})
+                   new_data={**model_to_dict_safe(student), 'transfer_reason': reason},
+                   institution=institution)
         messages.success(request, 'Студент переведён.')
         return redirect('student-detail', pk=pk)
     return render(request, 'core/student_transfer.html', {'form': form, 'student': student})
@@ -508,7 +675,9 @@ def student_transfer(request, pk):
 
 @admin_required
 def parent_list(request):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     q = request.GET.get('q', '')
     parents = Parent.objects.filter(institution=institution)
     if q:
@@ -520,13 +689,15 @@ def parent_list(request):
 
 @admin_required
 def parent_add(request):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     form = ParentForm(request.POST or None, request.FILES or None)
     if request.method == 'POST' and form.is_valid():
         parent = form.save(commit=False)
         parent.institution = institution
         parent.save()
-        log_action(request.user, 'created', parent, new_data=model_to_dict_safe(parent))
+        log_action(request.user, 'created', parent, new_data=model_to_dict_safe(parent), institution=institution)
         messages.success(request, 'Опекун добавлен.')
         return redirect('parent-list')
     return render(request, 'core/parent_form.html', {'form': form, 'title': 'Добавить опекуна'})
@@ -534,13 +705,15 @@ def parent_add(request):
 
 @admin_required
 def parent_edit(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     parent = get_object_or_404(Parent, pk=pk, institution=institution)
     old_data = model_to_dict_safe(parent)
     form = ParentForm(request.POST or None, request.FILES or None, instance=parent)
     if request.method == 'POST' and form.is_valid():
         parent = form.save()
-        log_action(request.user, 'updated', parent, old_data=old_data, new_data=model_to_dict_safe(parent))
+        log_action(request.user, 'updated', parent, old_data=old_data, new_data=model_to_dict_safe(parent), institution=institution)
         messages.success(request, 'Данные обновлены.')
         return redirect('parent-detail', pk=pk)
     return render(request, 'core/parent_form.html', {
@@ -550,7 +723,9 @@ def parent_edit(request, pk):
 
 @admin_required
 def parent_detail(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     parent = get_object_or_404(Parent, pk=pk, institution=institution)
     links = StudentParent.objects.filter(parent=parent).select_related('student')
     documents = Document.objects.filter(owner_type='parent', owner_id=pk)
@@ -566,7 +741,9 @@ def parent_detail(request, pk):
 
 @admin_required
 def guardian_add_student(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     parent = get_object_or_404(Parent, pk=pk, institution=institution)
     if request.method == 'POST':
         student_id = request.POST.get('student')
@@ -583,9 +760,11 @@ def guardian_add_student(request, pk):
 
 @admin_required
 def parent_delete_request(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     parent = get_object_or_404(Parent, pk=pk, institution=institution)
-    if request.user.is_superadmin:
+    if request.user.is_owner:
         return redirect('direct-delete', object_type='Parent', pk=pk)
     if request.method == 'POST':
         form = DeleteRequestForm(request.POST)
@@ -610,7 +789,9 @@ def parent_delete_request(request, pk):
 
 @admin_required
 def employee_list(request):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     q = request.GET.get('q', '')
     employees = Employee.objects.filter(institution=institution).select_related('position')
     if q:
@@ -622,13 +803,15 @@ def employee_list(request):
 
 @admin_required
 def employee_add(request):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     form = EmployeeForm(request.POST or None, request.FILES or None, institution=institution)
     if request.method == 'POST' and form.is_valid():
         employee = form.save(commit=False)
         employee.institution = institution
         employee.save()
-        log_action(request.user, 'created', employee, new_data=model_to_dict_safe(employee))
+        log_action(request.user, 'created', employee, new_data=model_to_dict_safe(employee), institution=institution)
         messages.success(request, 'Сотрудник добавлен.')
         return redirect('employee-detail', pk=employee.pk)
     no_positions = not Position.objects.filter(institution=institution).exists()
@@ -639,7 +822,9 @@ def employee_add(request):
 
 @admin_required
 def employee_detail(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     employee = get_object_or_404(Employee, pk=pk, institution=institution)
     groups = employee.headed_groups.filter(faculty__institution=institution).select_related('faculty')
     subjects = employee.subject_assignments.select_related('group', 'group__faculty', 'subject')
@@ -651,13 +836,15 @@ def employee_detail(request, pk):
 
 @admin_required
 def employee_edit(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     employee = get_object_or_404(Employee, pk=pk, institution=institution)
     old_data = model_to_dict_safe(employee)
     form = EmployeeForm(request.POST or None, request.FILES or None, instance=employee, institution=institution)
     if request.method == 'POST' and form.is_valid():
         employee = form.save()
-        log_action(request.user, 'updated', employee, old_data=old_data, new_data=model_to_dict_safe(employee))
+        log_action(request.user, 'updated', employee, old_data=old_data, new_data=model_to_dict_safe(employee), institution=institution)
         messages.success(request, 'Данные сотрудника обновлены.')
         return redirect('employee-detail', pk=employee.pk)
     return render(request, 'core/employee_form.html', {
@@ -667,7 +854,9 @@ def employee_edit(request, pk):
 
 @admin_required
 def employee_subject_assign(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     employee = get_object_or_404(Employee, pk=pk, institution=institution)
     form = EmployeeSubjectAssignForm(request.POST or None, institution=institution)
     if request.method == 'POST' and form.is_valid():
@@ -687,9 +876,11 @@ def employee_subject_assign(request, pk):
 
 @admin_required
 def employee_delete_request(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     employee = get_object_or_404(Employee, pk=pk, institution=institution)
-    if request.user.is_superadmin:
+    if request.user.is_owner:
         return redirect('direct-delete', object_type='Employee', pk=pk)
     if request.method == 'POST':
         form = DeleteRequestForm(request.POST)
@@ -712,9 +903,11 @@ def employee_delete_request(request, pk):
 # Position
 # ---------------------------------------------------------------------------
 
-@superadmin_required
+@owner_required
 def position_list(request):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     q = request.GET.get('q', '')
     positions = Position.objects.filter(institution=institution)
     if q:
@@ -722,29 +915,33 @@ def position_list(request):
     return render(request, 'core/position_list.html', {'positions': positions, 'q': q})
 
 
-@superadmin_required
+@owner_required
 def position_add(request):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     form = PositionForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         position = form.save(commit=False)
         position.institution = institution
         position.save()
-        log_action(request.user, 'created', position, new_data=model_to_dict_safe(position))
+        log_action(request.user, 'created', position, new_data=model_to_dict_safe(position), institution=institution)
         messages.success(request, 'Должность добавлена.')
         return redirect('position-list')
     return render(request, 'core/position_form.html', {'form': form, 'title': 'Добавить должность'})
 
 
-@superadmin_required
+@owner_required
 def position_edit(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     position = get_object_or_404(Position, pk=pk, institution=institution)
     old_data = model_to_dict_safe(position)
     form = PositionForm(request.POST or None, instance=position)
     if request.method == 'POST' and form.is_valid():
         position = form.save()
-        log_action(request.user, 'updated', position, old_data=old_data, new_data=model_to_dict_safe(position))
+        log_action(request.user, 'updated', position, old_data=old_data, new_data=model_to_dict_safe(position), institution=institution)
         messages.success(request, 'Должность обновлена.')
         return redirect('position-list')
     return render(request, 'core/position_form.html', {
@@ -758,7 +955,9 @@ def position_edit(request, pk):
 
 @admin_required
 def subject_list(request):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     q = request.GET.get('q', '')
     subjects = Subject.objects.filter(institution=institution)
     if q:
@@ -769,13 +968,15 @@ def subject_list(request):
 
 @admin_required
 def subject_add(request):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     form = SubjectForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         subject = form.save(commit=False)
         subject.institution = institution
         subject.save()
-        log_action(request.user, 'created', subject, new_data=model_to_dict_safe(subject))
+        log_action(request.user, 'created', subject, new_data=model_to_dict_safe(subject), institution=institution)
         messages.success(request, 'Предмет добавлен.')
         return redirect('subject-list')
     return render(request, 'core/subject_form.html', {'form': form, 'title': 'Добавить предмет'})
@@ -783,13 +984,15 @@ def subject_add(request):
 
 @admin_required
 def subject_edit(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     subject = get_object_or_404(Subject, pk=pk, institution=institution)
     old_data = model_to_dict_safe(subject)
     form = SubjectForm(request.POST or None, instance=subject)
     if request.method == 'POST' and form.is_valid():
         subject = form.save()
-        log_action(request.user, 'updated', subject, old_data=old_data, new_data=model_to_dict_safe(subject))
+        log_action(request.user, 'updated', subject, old_data=old_data, new_data=model_to_dict_safe(subject), institution=institution)
         messages.success(request, 'Предмет обновлён.')
         return redirect('subject-detail', pk=pk)
     return render(request, 'core/subject_form.html', {
@@ -799,14 +1002,14 @@ def subject_edit(request, pk):
 
 @admin_required
 def subject_detail(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     subject = get_object_or_404(Subject, pk=pk, institution=institution)
     assignments = GroupSubjectEmployee.objects.filter(subject=subject).select_related(
         'group', 'group__faculty', 'employee', 'employee__position'
     )
-    all_teachers = Employee.objects.filter(
-        institution=institution
-    ).select_related('position')
+    all_teachers = Employee.objects.filter(institution=institution).select_related('position')
     assigned_employee_ids = set(assignments.values_list('employee_id', flat=True))
     return render(request, 'core/subject_detail.html', {
         'subject': subject,
@@ -873,9 +1076,11 @@ def _redirect_to_owner(owner_type, owner_id):
 # User management
 # ---------------------------------------------------------------------------
 
-@superadmin_required
+@owner_required
 def user_list(request):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     q = request.GET.get('q', '')
     users = User.objects.filter(institution=institution).select_related('employee')
     if q:
@@ -883,23 +1088,27 @@ def user_list(request):
     return render(request, 'core/user_list.html', {'users': users, 'q': q})
 
 
-@superadmin_required
+@owner_required
 def user_add(request):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     form = UserCreateForm(request.POST or None, institution=institution)
     if request.method == 'POST' and form.is_valid():
         user = form.save(commit=False)
         user.institution = institution
         user.save()
-        log_action(request.user, 'created', user, new_data={'username': user.username, 'role': user.role})
+        log_action(request.user, 'created', user, new_data={'username': user.username, 'role': user.role}, institution=institution)
         messages.success(request, 'Учётная запись создана.')
         return redirect('user-list')
     return render(request, 'core/user_form.html', {'form': form, 'title': 'Создать учётную запись'})
 
 
-@superadmin_required
+@owner_required
 def user_edit(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     user_obj = get_object_or_404(User, pk=pk, institution=institution)
     form = UserEditForm(request.POST or None, instance=user_obj, institution=institution)
     if request.method == 'POST' and form.is_valid():
@@ -911,16 +1120,20 @@ def user_edit(request, pk):
     })
 
 
-@superadmin_required
+@owner_required
 def user_detail(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     user_obj = get_object_or_404(User.objects.select_related('employee'), pk=pk, institution=institution)
     return render(request, 'core/user_detail.html', {'user_obj': user_obj})
 
 
-@superadmin_required
+@owner_required
 def user_set_password(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     user_obj = get_object_or_404(User, pk=pk, institution=institution)
     form = PasswordChangeCustomForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
@@ -932,10 +1145,10 @@ def user_set_password(request, pk):
 
 
 # ---------------------------------------------------------------------------
-# Direct delete (superadmin only)
+# Direct delete (owner only)
 # ---------------------------------------------------------------------------
 
-@superadmin_required
+@owner_required
 def direct_delete(request, object_type, pk):
     model_map = {
         'Faculty': Faculty,
@@ -953,8 +1166,9 @@ def direct_delete(request, object_type, pk):
 
     if request.method == 'POST':
         old_data = model_to_dict_safe(obj)
+        institution, _ = _institution_required(request)
         Document.objects.filter(owner_type=object_type.lower(), owner_id=obj.pk).delete()
-        log_action(request.user, 'deleted', obj, old_data=old_data)
+        log_action(request.user, 'deleted', obj, old_data=old_data, institution=institution)
         obj.delete()
         messages.success(request, 'Объект удалён.')
         return _redirect_after_delete(object_type)
@@ -981,25 +1195,29 @@ def _redirect_after_delete(object_type):
 # Delete requests
 # ---------------------------------------------------------------------------
 
-@superadmin_required
+@owner_required
 def delete_request_list(request):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     requests_qs = DeleteRequest.objects.filter(
         user__institution=institution, status='pending'
     ).select_related('user')
     return render(request, 'core/delete_request_list.html', {'requests': requests_qs})
 
 
-@superadmin_required
+@owner_required
 def delete_request_approve(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     dr = get_object_or_404(DeleteRequest, pk=pk, user__institution=institution)
     if dr.status != 'pending':
         messages.error(request, 'Заявка уже обработана.')
         return redirect('delete-request-list')
 
     if request.method == 'POST':
-        _perform_delete(request.user, dr)
+        _perform_delete(request.user, dr, institution)
         dr.status = 'approved'
         dr.save()
         messages.success(request, 'Объект удалён.')
@@ -1008,9 +1226,11 @@ def delete_request_approve(request, pk):
     return render(request, 'core/delete_request_approve.html', {'dr': dr})
 
 
-@superadmin_required
+@owner_required
 def delete_request_reject(request, pk):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     dr = get_object_or_404(DeleteRequest, pk=pk, user__institution=institution)
     dr.status = 'rejected'
     dr.save()
@@ -1018,7 +1238,7 @@ def delete_request_reject(request, pk):
     return redirect('delete-request-list')
 
 
-def _perform_delete(user, dr):
+def _perform_delete(user, dr, institution=None):
     model_map = {
         'Faculty': Faculty, 'Group': Group, 'Student': Student,
         'Employee': Employee, 'Parent': Parent,
@@ -1030,7 +1250,7 @@ def _perform_delete(user, dr):
         obj = model_cls.objects.get(pk=dr.object_id)
         old_data = model_to_dict_safe(obj)
         Document.objects.filter(owner_type=dr.object_type.lower(), owner_id=obj.pk).delete()
-        log_action(user, 'deleted', obj, old_data=old_data)
+        log_action(user, 'deleted', obj, old_data=old_data, institution=institution)
         obj.delete()
     except model_cls.DoesNotExist:
         pass
@@ -1040,12 +1260,14 @@ def _perform_delete(user, dr):
 # Audit log
 # ---------------------------------------------------------------------------
 
-@superadmin_required
+@owner_required
 def audit_log(request):
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     logs = AuditLog.objects.filter(
-        user__institution=institution
-    ).select_related('user')[:200]
+        Q(institution=institution) | Q(user__institution=institution)
+    ).select_related('user').distinct()[:200]
     return render(request, 'core/audit_log.html', {'logs': logs})
 
 
@@ -1058,7 +1280,9 @@ def export_students(request):
     import openpyxl
     from openpyxl.styles import Font
 
-    institution = get_current_institution(request)
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
     group_id = request.GET.get('group')
     faculty_id = request.GET.get('faculty')
 
@@ -1143,15 +1367,17 @@ def feedback_list(request):
 
 
 # ---------------------------------------------------------------------------
-# Dev: reset database (superadmin only)
+# Dev: reset database (owner only)
 # ---------------------------------------------------------------------------
 
 @login_required
 def dev_reset_db(request):
-    if request.method != 'POST' or not request.user.is_superadmin:
+    if request.method != 'POST' or not request.user.is_owner:
         return HttpResponseForbidden()
-    institution = get_current_institution(request)
-    AuditLog.objects.filter(user__institution=institution).delete()
+    institution, redir = _institution_required(request)
+    if redir:
+        return redir
+    AuditLog.objects.filter(Q(institution=institution) | Q(user__institution=institution)).delete()
     DeleteRequest.objects.filter(user__institution=institution).delete()
     GroupSubjectEmployee.objects.filter(group__faculty__institution=institution).delete()
     StudentParent.objects.filter(student__faculty__institution=institution).delete()
@@ -1162,6 +1388,6 @@ def dev_reset_db(request):
     Faculty.objects.filter(institution=institution).delete()
     Position.objects.filter(institution=institution).delete()
     Subject.objects.filter(institution=institution).delete()
-    User.objects.filter(institution=institution).exclude(pk=request.user.pk).delete()
+    User.objects.filter(institution=institution).delete()
     messages.success(request, 'База данных заведения очищена.')
     return redirect('dashboard')

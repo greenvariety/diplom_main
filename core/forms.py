@@ -4,7 +4,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from .models import (
     Faculty, Group, Student, Parent, StudentParent,
     Employee, Position, Subject, GroupSubjectEmployee,
-    Document, User, DeleteRequest,
+    Document, User, DeleteRequest, Institution,
 )
 
 
@@ -26,28 +26,16 @@ class LoginForm(AuthenticationForm):
 
 
 # ---------------------------------------------------------------------------
-# Platform setup
+# Owner registration
 # ---------------------------------------------------------------------------
 
-class PlatformSetupForm(forms.Form):
-    inst_code = forms.CharField(
-        label='Код учреждения',
-        max_length=20,
-        widget=forms.TextInput(attrs={'class': 'field-input', 'placeholder': 'Например: КГУ', 'autofocus': True}),
-    )
-    inst_name = forms.CharField(
-        label='Полное название учреждения',
-        max_length=255,
-        widget=forms.TextInput(attrs={'class': 'field-input', 'placeholder': 'Краснодарский государственный университет'}),
+class OwnerRegisterForm(forms.Form):
+    username = forms.CharField(
+        label='Логин', max_length=150,
+        widget=forms.TextInput(attrs={'class': 'field-input', 'autofocus': True}),
     )
     display_name = forms.CharField(
-        label='Ваше имя',
-        max_length=150,
-        widget=forms.TextInput(attrs={'class': 'field-input'}),
-    )
-    username = forms.CharField(
-        label='Логин',
-        max_length=150,
+        label='Ваше имя', max_length=150,
         widget=forms.TextInput(attrs={'class': 'field-input'}),
     )
     password = forms.CharField(
@@ -73,6 +61,66 @@ class PlatformSetupForm(forms.Form):
         if p1 and p2 and p1 != p2:
             raise forms.ValidationError('Пароли не совпадают.')
         return cleaned
+
+
+# ---------------------------------------------------------------------------
+# Recover password via seed phrase
+# ---------------------------------------------------------------------------
+
+class RecoverPasswordForm(forms.Form):
+    username = forms.CharField(
+        label='Логин', max_length=150,
+        widget=forms.TextInput(attrs={'class': 'field-input', 'autofocus': True}),
+    )
+    word_1 = forms.CharField(label='Слово 1', max_length=50, widget=forms.TextInput(attrs={'class': 'field-input seed-word'}))
+    word_2 = forms.CharField(label='Слово 2', max_length=50, widget=forms.TextInput(attrs={'class': 'field-input seed-word'}))
+    word_3 = forms.CharField(label='Слово 3', max_length=50, widget=forms.TextInput(attrs={'class': 'field-input seed-word'}))
+    word_4 = forms.CharField(label='Слово 4', max_length=50, widget=forms.TextInput(attrs={'class': 'field-input seed-word'}))
+    word_5 = forms.CharField(label='Слово 5', max_length=50, widget=forms.TextInput(attrs={'class': 'field-input seed-word'}))
+    word_6 = forms.CharField(label='Слово 6', max_length=50, widget=forms.TextInput(attrs={'class': 'field-input seed-word'}))
+    word_7 = forms.CharField(label='Слово 7', max_length=50, widget=forms.TextInput(attrs={'class': 'field-input seed-word'}))
+    word_8 = forms.CharField(label='Слово 8', max_length=50, widget=forms.TextInput(attrs={'class': 'field-input seed-word'}))
+    word_9 = forms.CharField(label='Слово 9', max_length=50, widget=forms.TextInput(attrs={'class': 'field-input seed-word'}))
+    word_10 = forms.CharField(label='Слово 10', max_length=50, widget=forms.TextInput(attrs={'class': 'field-input seed-word'}))
+    word_11 = forms.CharField(label='Слово 11', max_length=50, widget=forms.TextInput(attrs={'class': 'field-input seed-word'}))
+    word_12 = forms.CharField(label='Слово 12', max_length=50, widget=forms.TextInput(attrs={'class': 'field-input seed-word'}))
+    new_password = forms.CharField(
+        label='Новый пароль',
+        widget=forms.PasswordInput(attrs={'class': 'field-input'}),
+        validators=[validate_password_strength],
+    )
+    confirm_password = forms.CharField(
+        label='Подтвердите пароль',
+        widget=forms.PasswordInput(attrs={'class': 'field-input'}),
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        p1 = cleaned.get('new_password')
+        p2 = cleaned.get('confirm_password')
+        if p1 and p2 and p1 != p2:
+            raise forms.ValidationError('Пароли не совпадают.')
+        return cleaned
+
+    def get_phrase(self):
+        words = [self.cleaned_data.get(f'word_{i}', '') for i in range(1, 13)]
+        return ' '.join(w.strip().lower() for w in words)
+
+
+# ---------------------------------------------------------------------------
+# Organization
+# ---------------------------------------------------------------------------
+
+class OrganizationForm(forms.ModelForm):
+    class Meta:
+        model = Institution
+        fields = ['code', 'name', 'notes']
+        labels = {'code': 'Код', 'name': 'Полное название', 'notes': 'Заметки'}
+        widgets = {
+            'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Например: КГУ'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -419,7 +467,6 @@ class DocumentForm(forms.Form):
 # ---------------------------------------------------------------------------
 
 INSTITUTION_ROLE_CHOICES = [
-    ('superadmin', 'Суперадминистратор'),
     ('admin', 'Администратор'),
     ('teacher', 'Преподаватель'),
 ]

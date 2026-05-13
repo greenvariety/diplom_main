@@ -61,7 +61,8 @@
       "PowerShell($items = Get-ChildItem \"C:\\\\Диплом\\\\Программа\" -Force; foreach\\($i in $items\\) { Write-Output $i.FullName })",
       "PowerShell($items = Get-ChildItem \"C:\\\\Диплом\\\\Программа\\\\дизайн сайт\" -Force -Recurse; foreach\\($i in $items\\) { Write-Output $i.FullName })",
       "Bash(python -c \"import os; print\\(os.path.exists\\('templates/includes/feedback_widget.html'\\)\\)\")",
-      "Bash(venv\\\\Scripts\\\\python.exe manage.py makemigrations --name remove_position_is_teacher)"
+      "Bash(venv\\\\Scripts\\\\python.exe manage.py makemigrations --name remove_position_is_teacher)",
+      "Skill(update-config)"
     ]
   }
 }

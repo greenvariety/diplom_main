@@ -576,8 +576,23 @@
 
     <!-- Topbar -->
     <header class="topbar">
+        {% if user.is_owner %}
+        <div style="display:flex;align-items:center;gap:8px;padding:0 4px;border-right:1px solid var(--border);margin-right:4px">
+            {% with inst_id=request.session.institution_id %}
+            {% if inst_id %}
+            <span style="font-size:12px;color:var(--text-muted)">
+                <i class="bi bi-building" style="margin-right:4px"></i>
+                <strong style="color:var(--text)">{{ institution.name|default:"" }}</strong>
+            </span>
+            {% endif %}
+            {% endwith %}
+            <a href="{% url 'organization-list' %}" class="btn btn-ghost btn-sm" title="Сменить организацию">
+                <i class="bi bi-arrow-left-right"></i> Сменить
+            </a>
+        </div>
+        {% endif %}
         <div class="user-chip">
-            <div class="avatar avatar-sm {% if user.role == 'superadmin' %}av-5{% elif user.role == 'admin' %}av-1{% else %}av-2{% endif %}">
+            <div class="avatar avatar-sm {% if user.role == 'owner' %}av-5{% elif user.role == 'admin' %}av-1{% else %}av-2{% endif %}">
                 {{ user.username|first|upper }}
             </div>
             <div>
@@ -641,7 +656,7 @@
         </a>
         {% endif %}
 
-        {% if user.is_superadmin %}
+        {% if user.is_owner %}
         <div class="sidebar-section">Администрирование</div>
         <a class="nav-item {% if 'user' in request.resolver_match.url_name %}active{% endif %}"
            href="{% url 'user-list' %}">

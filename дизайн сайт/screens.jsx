@@ -1,5 +1,5 @@
 /* global React, AIS_DATA, AIS_UI */
-const { STATUSES, STUDENTS, EMPLOYEES, GROUPS, FACULTIES, AUDIT, I } = window.AIS_DATA;
+const { STATUSES, STUDENTS, EMPLOYEES, GROUPS, FACULTIES, AUDIT, ORGS, I } = window.AIS_DATA;
 const { Shell, PageHead, Badge, Avatar } = window.AIS_UI;
 
 /* ============================================================
@@ -16,9 +16,9 @@ function Stat({ label, value, icon, trend }) {
   );
 }
 
-function DashboardSuper({ openModal }) {
+function DashboardOwner({ openModal }) {
   return (
-    <Shell role="superadmin" active="dashboard" openModal={openModal}>
+    <Shell role="owner" active="dashboard" openModal={openModal}>
       <PageHead
         title="Дашборд"
         sub="Сводка по системе на 09 мая 2026"
@@ -62,6 +62,71 @@ function DashboardSuper({ openModal }) {
       </div>
     </Shell>
   );
+}
+
+function OrganizationList({ openModal, onSwitch }) {
+  const orgs = ORGS || [
+    { code: 'КГ-1', name: 'Колледж №1', students: 612, employees: 38, active: true },
+    { code: 'КГ-2', name: 'Колледж №2', students: 0,   employees: 0,  active: false },
+  ];
+  return (
+    <Shell role="owner" active="org-list" openModal={openModal}>
+      <PageHead
+        title="Мои организации"
+        sub="Выберите организацию для работы или добавьте новую"
+        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('orgForm')}>{I.plus}Добавить организацию</button>}
+      />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+        {orgs.map(org => (
+          <div key={org.code} className="card" style={{ border: org.active ? '2px solid var(--accent)' : '1px solid var(--border)', position: 'relative' }}>
+            {org.active && (
+              <div style={{ position: 'absolute', top: 12, right: 12 }}>
+                <span className="badge badge-ok"><span className="dot"></span>Активна</span>
+              </div>
+            )}
+            <div className="card-body" style={{ padding: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 8, background: org.active ? 'var(--accent)' : 'var(--surface-2)', color: org.active ? '#fff' : 'var(--text-muted)', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 14, flexShrink: 0, border: '1px solid var(--border)' }}>
+                  {org.code}
+                </div>
+                <div>
+                  <div className="fwm" style={{ fontSize: 14 }}>{org.name}</div>
+                  <div className="muted" style={{ fontSize: 11 }}>Код: {org.code}</div>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
+                <div style={{ padding: '8px 12px', background: 'var(--surface-2)', borderRadius: 6, textAlign: 'center' }}>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)' }}>{org.students}</div>
+                  <div className="muted" style={{ fontSize: 11 }}>студентов</div>
+                </div>
+                <div style={{ padding: '8px 12px', background: 'var(--surface-2)', borderRadius: 6, textAlign: 'center' }}>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)' }}>{org.employees}</div>
+                  <div className="muted" style={{ fontSize: 11 }}>сотрудников</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {org.active
+                  ? <button className="btn btn-secondary btn-sm" style={{ flex: 1 }}>{I.pencil}Редактировать</button>
+                  : <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={() => onSwitch && onSwitch()}>{I.swap}Перейти</button>
+                }
+                <button className="btn btn-ghost btn-icon btn-sm">{I.more}</button>
+              </div>
+            </div>
+          </div>
+        ))}
+        <div className="card" style={{ border: '2px dashed var(--border)', cursor: 'pointer' }} onClick={() => openModal('orgForm')}>
+          <div className="card-body" style={{ padding: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 180, textAlign: 'center', color: 'var(--text-muted)' }}>
+            {I.plus}
+            <div style={{ marginTop: 8, fontSize: 13 }}>Добавить организацию</div>
+          </div>
+        </div>
+      </div>
+    </Shell>
+  );
+}
+
+function DashboardSuper({ openModal }) {
+  return <DashboardOwner openModal={openModal} />;
 }
 
 function DashboardAdmin({ openModal }) {
@@ -543,7 +608,7 @@ function FacultyList({ openModal }) {
 
 function UserList({ openModal }) {
   return (
-    <Shell role="superadmin" active="users" openModal={openModal}>
+    <Shell role="owner" active="users" openModal={openModal}>
       <PageHead
         title="Пользователи системы"
         sub="Учётные записи и роли"
@@ -555,12 +620,11 @@ function UserList({ openModal }) {
             <thead><tr><th>Логин</th><th>ФИО</th><th>Роль</th><th>Последний вход</th><th>Статус</th><th style={{ width: 40 }}></th></tr></thead>
             <tbody>
               {[
-                { login: 'superadmin', name: 'Соколова Анна Викторовна', role: 'Суперадмин', last: '09.05.2026 14:32', active: true,  cls: 'badge-violet' },
-                { login: 'admin',      name: 'Дмитриева Ольга Петровна', role: 'Администратор', last: '09.05.2026 13:55', active: true,  cls: 'badge-info' },
-                { login: 'admin2',     name: 'Романов Сергей Иванович',  role: 'Администратор', last: '07.05.2026 09:11', active: true,  cls: 'badge-info' },
-                { login: 'teacher1',   name: 'Кузнецова Наталья А.',     role: 'Преподаватель', last: '09.05.2026 12:10', active: true,  cls: 'badge-ok' },
-                { login: 'teacher2',   name: 'Морозов Виктор Г.',         role: 'Преподаватель', last: '04.05.2026 18:00', active: true,  cls: 'badge-ok' },
-                { login: 'teacher3',   name: 'Лебедева Ирина Юрьевна',    role: 'Преподаватель', last: 'никогда',           active: false, cls: 'badge-ok' },
+                { login: 'admin1',   name: 'Дмитриева Ольга Петровна', role: 'Администратор', last: '09.05.2026 13:55', active: true,  cls: 'badge-info' },
+                { login: 'admin2',   name: 'Романов Сергей Иванович',  role: 'Администратор', last: '07.05.2026 09:11', active: true,  cls: 'badge-info' },
+                { login: 'teacher1', name: 'Кузнецова Наталья А.',     role: 'Преподаватель', last: '09.05.2026 12:10', active: true,  cls: 'badge-ok' },
+                { login: 'teacher2', name: 'Морозов Виктор Г.',        role: 'Преподаватель', last: '04.05.2026 18:00', active: true,  cls: 'badge-ok' },
+                { login: 'teacher3', name: 'Лебедева Ирина Юрьевна',   role: 'Преподаватель', last: 'никогда',          active: false, cls: 'badge-ok' },
               ].map(u => (
                 <tr key={u.login}>
                   <td className="mono fwm">{u.login}</td>
@@ -770,7 +834,8 @@ function PositionList({ openModal }) {
 }
 
 window.AIS_SCREENS = {
-  DashboardSuper, DashboardAdmin, DashboardTeacher,
+  DashboardOwner, DashboardSuper, DashboardAdmin, DashboardTeacher,
+  OrganizationList,
   StudentList, StudentDetail,
   EmployeeList, EmployeeDetail,
   GroupList, GroupDetail,

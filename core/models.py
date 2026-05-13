@@ -7,7 +7,11 @@ from django.db import models
 # ---------------------------------------------------------------------------
 
 class Institution(models.Model):
-    code = models.CharField(max_length=20, unique=True, verbose_name='Код')
+    owner = models.ForeignKey(
+        'User', on_delete=models.CASCADE, null=True, blank=True,
+        related_name='institutions', verbose_name='Владелец'
+    )
+    code = models.CharField(max_length=20, verbose_name='Код')
     name = models.CharField(max_length=255, verbose_name='Полное название')
     notes = models.TextField(blank=True, verbose_name='Заметки')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
@@ -16,6 +20,7 @@ class Institution(models.Model):
         verbose_name = 'Учебное заведение'
         verbose_name_plural = 'Учебные заведения'
         ordering = ['name']
+        unique_together = [('owner', 'code')]
 
     def __str__(self):
         return f'{self.code} — {self.name}'
@@ -345,7 +350,7 @@ class UserManager(BaseUserManager):
         return user
 
     def create_superuser(self, username, password=None, **extra_fields):
-        extra_fields.setdefault('role', 'superadmin')
+        extra_fields.setdefault('role', 'owner')
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         return self.create_user(username, password, **extra_fields)
@@ -353,7 +358,7 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = [
-        ('superadmin', 'Суперадминистратор'),
+        ('owner', 'Владелец'),
         ('admin', 'Администратор'),
         ('teacher', 'Преподаватель'),
     ]
@@ -364,7 +369,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         max_length=20, choices=ROLE_CHOICES, default='teacher', verbose_name='Роль'
     )
     institution = models.ForeignKey(
-        Institution, on_delete=models.CASCADE, null=True, blank=True,
+        Institution, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='users', verbose_name='Учебное заведение'
     )
     employee = models.OneToOneField(
@@ -387,16 +392,40 @@ class User(AbstractBaseUser, PermissionsMixin):
         return f'{self.username} ({self.get_role_display()})'
 
     @property
+    def is_owner(self):
+        return self.role == 'owner'
+
+    @property
     def is_superadmin(self):
-        return self.role == 'superadmin'
+        return self.role == 'owner'
 
     @property
     def is_admin(self):
-        return self.role in ('superadmin', 'admin')
+        return self.role in ('owner', 'admin')
 
     @property
     def is_teacher_role(self):
         return self.role == 'teacher'
+
+
+# ---------------------------------------------------------------------------
+# SeedPhrase
+# ---------------------------------------------------------------------------
+
+class SeedPhrase(models.Model):
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name='seed_phrase',
+        verbose_name='Пользователь'
+    )
+    phrase_hash = models.CharField(max_length=255, verbose_name='Хэш фразы')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+
+    class Meta:
+        verbose_name = 'Сид-фраза'
+        verbose_name_plural = 'Сид-фразы'
+
+    def __str__(self):
+        return f'SeedPhrase({self.user.username})'
 
 
 # ---------------------------------------------------------------------------
@@ -475,6 +504,10 @@ class AuditLog(models.Model):
     user = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, related_name='audit_logs',
         verbose_name='Пользователь'
+    )
+    institution = models.ForeignKey(
+        Institution, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='audit_logs', verbose_name='Учебное заведение'
     )
     action = models.CharField(
         max_length=20, choices=ACTION_CHOICES, verbose_name='Действие'

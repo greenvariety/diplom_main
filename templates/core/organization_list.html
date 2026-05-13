@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Мои организации — АИС{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+    <div>
+        <h1>Мои организации</h1>
+        <p style="color:var(--text-muted);margin-top:4px;font-size:13px">Выберите организацию для работы или создайте новую</p>
+    </div>
+    <a href="{% url 'organization-add' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Добавить организацию
+    </a>
+</div>
+
+{% if orgs %}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px">
+    {% for org in orgs %}
+    <div class="card" style="padding:20px;border-radius:8px;border:1px solid var(--border);background:var(--surface);{% if org.pk == current_id %}border-color:var(--accent);{% endif %}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
+            <div>
+                <div style="font-weight:600;font-size:15px;margin-bottom:2px">{{ org.name }}</div>
+                <div style="font-size:12px;color:var(--text-muted);font-family:monospace">{{ org.code }}</div>
+            </div>
+            {% if org.pk == current_id %}
+            <span class="badge badge-ok" style="font-size:11px">Активна</span>
+            {% endif %}
+        </div>
+        {% if org.notes %}
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px">{{ org.notes|truncatechars:80 }}</div>
+        {% endif %}
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <a href="{% url 'organization-switch' org.pk %}" class="btn btn-primary" style="font-size:13px;padding:6px 14px">
+                <i class="bi bi-box-arrow-in-right"></i> Войти
+            </a>
+            <a href="{% url 'organization-edit' org.pk %}" class="btn btn-secondary" style="font-size:13px;padding:6px 14px">
+                <i class="bi bi-pencil"></i> Изменить
+            </a>
+            <form method="post" action="{% url 'organization-delete' org.pk %}" style="display:inline"
+                  onsubmit="return confirm('Удалить организацию «{{ org.name }}» и все её данные?')">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger" style="font-size:13px;padding:6px 14px">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon"><i class="bi bi-building"></i></div>
+    <div class="empty-title">Нет организаций</div>
+    <div class="empty-desc">Создайте первую организацию, чтобы начать работу</div>
+    <a href="{% url 'organization-add' %}" class="btn btn-primary" style="margin-top:16px">Создать организацию</a>
+</div>
+{% endif %}
+{% endblock %}

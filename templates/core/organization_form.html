@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} — АИС{% endblock %}
+
+{% block content %}
+<div style="max-width:560px">
+    <div style="margin-bottom:24px">
+        <h1>{{ title }}</h1>
+    </div>
+
+    <div class="card" style="padding:24px;border:1px solid var(--border);border-radius:8px;background:var(--surface)">
+        <form method="post">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="invalid-feedback d-block" style="margin-bottom:12px">
+                {% for e in form.non_field_errors %}{{ e }}{% endfor %}
+            </div>
+            {% endif %}
+
+            <div style="margin-bottom:16px">
+                <label class="field-label" for="id_code">Код</label>
+                <input type="text" class="form-control" id="id_code" name="code"
+                       value="{{ form.code.value|default:'' }}" placeholder="Например: КГУ">
+                {% if form.code.errors %}
+                <div class="invalid-feedback d-block">{% for e in form.code.errors %}{{ e }}{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            <div style="margin-bottom:16px">
+                <label class="field-label" for="id_name">Полное название</label>
+                <input type="text" class="form-control" id="id_name" name="name"
+                       value="{{ form.name.value|default:'' }}">
+                {% if form.name.errors %}
+                <div class="invalid-feedback d-block">{% for e in form.name.errors %}{{ e }}{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            <div style="margin-bottom:16px">
+                <label class="field-label" for="id_notes">Заметки</label>
+                <textarea class="form-control" id="id_notes" name="notes" rows="3">{{ form.notes.value|default:'' }}</textarea>
+                {% if form.notes.errors %}
+                <div class="invalid-feedback d-block">{% for e in form.notes.errors %}{{ e }}{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:8px">
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+                <a href="{% url 'organization-list' %}" class="btn btn-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

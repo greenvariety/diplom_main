@@ -2,8 +2,9 @@ from django.core.management.base import BaseCommand
 from datetime import date
 from core.models import (
     Institution, Faculty, Position, Employee, Group, Student, Parent,
-    StudentParent, Subject, GroupSubjectEmployee, User,
+    StudentParent, Subject, GroupSubjectEmployee, User, SeedPhrase,
 )
+from core.utils import generate_seed_phrase, hash_seed_phrase
 
 
 class Command(BaseCommand):
@@ -21,11 +22,22 @@ class Command(BaseCommand):
         Parent.objects.all().delete()
         Subject.objects.all().delete()
         User.objects.filter(role__in=['admin', 'teacher']).delete()
+        Institution.objects.all().delete()
+        SeedPhrase.objects.all().delete()
+        User.objects.filter(role='owner').delete()
 
-        inst = Institution.objects.first()
-        if not inst:
-            inst = Institution.objects.create(code='ОУ', name='Образовательное учреждение')
-            self.stdout.write('  Создано учреждение: ОУ')
+        # --- Owner ---
+        owner = User.objects.create_user(
+            username='owner1', password='demo_1234', role='owner', display_name='Владелец Demo'
+        )
+        phrase = generate_seed_phrase()
+        SeedPhrase.objects.create(user=owner, phrase_hash=hash_seed_phrase(phrase))
+        self.stdout.write(f'  Владелец: owner1 / demo_1234')
+        self.stdout.write(f'  Сид-фраза owner1: {phrase}')
+
+        inst = Institution.objects.create(owner=owner, code='КОЛЛЕДЖ1', name='Колледж №1')
+        inst2 = Institution.objects.create(owner=owner, code='КОЛЛЕДЖ2', name='Колледж №2')
+        self.stdout.write(f'  Организации: {inst.name}, {inst2.name}')
 
         # --- Должности ---
         pos_director = Position.objects.create(name='Директор', institution=inst)
@@ -150,14 +162,14 @@ class Command(BaseCommand):
             GroupSubjectEmployee.objects.create(group=grp, subject=subjects[subj_name], employee=emp)
         self.stdout.write(f'  Назначений предметов: {len(assignments)}')
 
-        # --- Пользователи ---
-        User.objects.create_user(username='admin_user', password='admin_-1', role='admin', institution=inst, employee=e1)
-        User.objects.create_user(username='kozlov', password='teacher-1', role='teacher', institution=inst, employee=e2)
-        User.objects.create_user(username='petrova', password='teacher-1', role='teacher', institution=inst, employee=e3)
-        self.stdout.write('  Пользователи: admin_user / kozlov / petrova')
+        # --- Пользователи организации ---
+        admin1 = User.objects.create_user(username='admin1', password='demo_1234', role='admin', institution=inst, display_name='Администратор')
+        teacher1 = User.objects.create_user(username='teacher1', password='demo_1234', role='teacher', institution=inst, employee=e2, display_name='Козлов А.П.')
+        User.objects.create_user(username='teacher2', password='demo_1234', role='teacher', institution=inst, employee=e3, display_name='Петрова Н.С.')
+        self.stdout.write('  Пользователи: admin1 / teacher1 / teacher2 (пароль: demo_1234)')
 
         self.stdout.write(self.style.SUCCESS('\nБаза заполнена успешно!'))
-        self.stdout.write('  Суперадмин:    admin      / admin_-1')
-        self.stdout.write('  Администратор: admin_user / admin_-1')
-        self.stdout.write('  Преподаватель: kozlov     / teacher-1')
-        self.stdout.write('  Преподаватель: petrova    / teacher-1')
+        self.stdout.write('  Владелец:      owner1   / demo_1234  (2 организации)')
+        self.stdout.write('  Администратор: admin1   / demo_1234  (Колледж №1)')
+        self.stdout.write('  Преподаватель: teacher1 / demo_1234  (Колледж №1)')
+        self.stdout.write('  Преподаватель: teacher2 / demo_1234  (Колледж №1)')

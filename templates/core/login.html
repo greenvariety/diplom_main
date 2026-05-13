@@ -115,16 +115,10 @@
 
     <!-- Левая колонка: питч -->
     <div class="login-side">
-        <div class="brand-row">
-            <div class="logo">У</div>
-            Учёт студентов
-        </div>
         <div class="login-pitch">
-            <div class="login-pill">АИС колледжа · v1.0</div>
-            <h1>Один источник правды о студентах, сотрудниках и группах.</h1>
-            <p>Замена бумажных журналов и Excel-таблиц. Личные данные, статусы, перевод и отчисление, документы, журнал изменений — всё в одном месте.</p>
+            <h1>Система управления учебным заведением</h1>
+            <p>Централизованный учёт студентов, сотрудников, групп и документов — в одной системе.</p>
         </div>
-        <div class="login-foot">© Колледж · Дипломная работа · 2026</div>
         <div class="login-art"></div>
     </div>
 
@@ -161,17 +155,13 @@
 
             <button type="submit" class="login-btn">Войти</button>
 
-            <div class="login-tip">
-                <strong style="color:var(--text)">Демо-доступы:</strong>
-                <div style="margin-top:6px;display:grid;gap:3px;">
-                    <div><code>superadmin</code> / <code>admin</code> / <code>teacher1</code></div>
-                    <div style="color:var(--text-faint)">пароль: <code>password</code></div>
-                </div>
+            <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--text-muted);text-align:center">
+                <a href="{% url 'recover-password' %}" style="color:var(--accent)">Забыли пароль? Восстановить через сид-фразу</a>
+                <a href="{% url 'register' %}" style="color:var(--accent)">Нет аккаунта? Зарегистрироваться</a>
             </div>
         </form>
     </div>
 
 </div>
-{% include 'includes/feedback_widget.html' %}
 </body>
 </html>

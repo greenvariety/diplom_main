@@ -1,23 +1,24 @@
-/* global React, AIS_DATA */
+/* global React, AIS_DATA, AIS_UTILS */
 const { STATUSES, STUDENTS, EMPLOYEES, GROUPS, FACULTIES, AUDIT, I } = window.AIS_DATA;
-const { useState } = React;
+const { useDropdown, useToast } = window.AIS_UTILS;
+const { useState, useEffect } = React;
 
 /* ============================================================
    Reusable bits
    ============================================================ */
 
-function Badge({ status, children }) {
+function Badge({ status, children, className = '' }) {
   if (status) {
     const s = STATUSES[status] || { label: status, cls: 'badge-neutral' };
-    return <span className={`badge ${s.cls}`}><span className="dot"></span>{s.label}</span>;
+    return <span className={`badge ${s.cls} ${className}`}><span className="dot"></span>{s.label}</span>;
   }
-  return <span className="badge badge-neutral">{children}</span>;
+  return <span className={`badge badge-neutral ${className}`}>{children}</span>;
 }
 
-function Avatar({ name, size = 'md', av = 1 }) {
+function Avatar({ name, size = 'md', av = 1, className = '' }) {
   const initials = name.split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
   const cls = size === 'lg' ? 'avatar avatar-lg' : size === 'sm' ? 'avatar avatar-sm' : size === 'xl' ? 'avatar avatar-lg' : 'avatar';
-  return <span className={`${cls} av-${((av - 1) % 8) + 1}`}>{initials}</span>;
+  return <span className={`${cls} av-${((av - 1) % 8) + 1} ${className}`}>{initials}</span>;
 }
 
 function Crumbs({ items }) {
@@ -42,6 +43,45 @@ function PageHead({ crumbs, title, sub, actions }) {
         {sub && <div className="sub">{sub}</div>}
       </div>
       {actions && <div className="page-actions">{actions}</div>}
+    </div>
+  );
+}
+
+/* ============================================================
+   User chip with dropdown
+   ============================================================ */
+function UserChip({ role, av, openModal }) {
+  const { open, setOpen, wrapRef } = useDropdown();
+  const toast = useToast();
+  const login = ROLE_LOGIN[role] || role;
+  return (
+    <div ref={wrapRef} className="dd-wrap">
+      <button className="user-chip" onClick={() => setOpen(o => !o)} aria-haspopup="true" aria-expanded={open}>
+        <Avatar name={login} size="sm" av={av} />
+        <div>
+          <div className="name">{login}</div>
+          <div className="role">{ROLE_LABEL[role]}</div>
+        </div>
+        <svg className="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 2, opacity: 0.6, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      {open && (
+        <div className="dd-menu" role="menu">
+          <div style={{ padding: '8px 10px 10px', borderBottom: '1px solid var(--border)', marginBottom: 4 }}>
+            <div style={{ fontWeight: 600, fontSize: 13 }}>{login}</div>
+            <div className="muted" style={{ fontSize: 11 }}>{ROLE_LABEL[role]}</div>
+          </div>
+          <div className="dd-item" onClick={() => { setOpen(false); toast.push('Открыт профиль', { kind: 'info' }); }}>
+            {I.user}<span>Профиль</span>
+          </div>
+          <div className="dd-item" onClick={() => { setOpen(false); toast.push('Открыта смена пароля', { kind: 'info' }); }}>
+            {I.shield}<span>Сменить пароль</span>
+          </div>
+          <div className="dd-sep" />
+          <div className="dd-item danger" onClick={() => { setOpen(false); openModal && openModal('logout'); }}>
+            {I.logout}<span>Выйти</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -136,8 +176,8 @@ function Shell({ role, active, children, openModal }) {
               {I.building}
               <span>Организация:</span>
               <strong style={{ color: 'var(--text)' }}>{ROLE_ORG[role] || 'Колледж №1'}</strong>
-              <button className="btn btn-ghost btn-sm" style={{ marginLeft: 2 }}>
-                <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3l4 4-4 4"/><path d="M21 7H7a4 4 0 0 0-4 4"/><path d="M7 21l-4-4 4-4"/><path d="M3 17h14a4 4 0 0 0 4-4"/></svg>
+              <button className="btn btn-ghost btn-sm" style={{ marginLeft: 2 }} title="Сменить организацию">
+                {I.swap}
                 Сменить
               </button>
             </div>
@@ -149,15 +189,8 @@ function Shell({ role, active, children, openModal }) {
           )}
         </div>
         <div className="topbar-right">
-          <button className="btn btn-ghost btn-icon" title="Уведомления">{I.bell}</button>
-          <div className="user-chip">
-            <Avatar name={ROLE_LOGIN[role] || role} size="sm" av={role === 'owner' ? 3 : role === 'admin' ? 1 : 2} />
-            <div>
-              <div className="name">{ROLE_LOGIN[role] || role}</div>
-              <div className="role">{ROLE_LABEL[role]}</div>
-            </div>
-          </div>
-          <button className="btn btn-ghost btn-icon" title="Выход" onClick={() => openModal && openModal('logout')}>{I.logout}</button>
+          <button className="btn btn-ghost btn-icon has-notif" title="Уведомления">{I.bell}</button>
+          <UserChip role={role} av={role === 'owner' ? 3 : role === 'admin' ? 1 : 2} openModal={openModal} />
         </div>
       </div>
       <nav className="sidebar">
@@ -168,11 +201,15 @@ function Shell({ role, active, children, openModal }) {
               <a className={`nav-item ${it.key === active ? 'active' : ''}`} key={it.key} href="#" onClick={e => e.preventDefault()}>
                 {it.icon}
                 <span>{it.label}</span>
-                {typeof it.count === 'number' && <span className="count">{it.count}</span>}
+                {it.badge === 'bad' && typeof it.count === 'number'
+                  ? <span className="badge-mini with-pulse">{it.count}</span>
+                  : (typeof it.count === 'number' && <span className="count">{it.count}</span>)
+                }
               </a>
             ))}
           </React.Fragment>
         ))}
+        <div style={{ flex: 1 }}></div>
       </nav>
       <main className="main">
         <div className="main-inner">{children}</div>
@@ -181,4 +218,4 @@ function Shell({ role, active, children, openModal }) {
   );
 }
 
-window.AIS_UI = { Shell, PageHead, Crumbs, Badge, Avatar };
+window.AIS_UI = { Shell, PageHead, Crumbs, Badge, Avatar, ROLE_LABEL, ROLE_LOGIN };

@@ -8,7 +8,15 @@
     </div>
 </div>
 
-{% if user.is_superadmin %}
+{% if user.is_owner %}
+
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;color:var(--text-muted);font-size:13px">
+    <i class="bi bi-building"></i>
+    Текущая организация: <strong style="color:var(--text)">{{ institution.name }}</strong>
+    <a href="{% url 'organization-list' %}" class="btn btn-ghost btn-sm" style="margin-left:4px">
+        <i class="bi bi-arrow-left-right"></i> Сменить
+    </a>
+</div>
 
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
     <a href="{% url 'faculty-list' %}" class="stat" style="text-decoration:none;">
@@ -23,9 +31,9 @@
         <div class="stat-value">{{ total_students }}</div>
         <div class="stat-label">Студентов</div>
     </a>
-    <a href="{% url 'delete-request-list' %}" class="stat {% if pending_requests > 0 %}stat-danger{% endif %}" style="text-decoration:none;">
-        <div class="stat-value">{{ pending_requests }}</div>
-        <div class="stat-label">Заявок на удаление</div>
+    <a href="{% url 'employee-list' %}" class="stat" style="text-decoration:none;">
+        <div class="stat-value">{{ total_employees }}</div>
+        <div class="stat-label">Сотрудников</div>
     </a>
 </div>
 

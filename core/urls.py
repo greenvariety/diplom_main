@@ -2,12 +2,19 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    # Platform setup (first launch)
-    path('setup/', views.setup_view, name='setup'),
-
     # Auth
+    path('register/', views.register_view, name='register'),
+    path('register/seed-phrase/', views.seed_phrase_show, name='seed-phrase-show'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
+    path('recover/', views.recover_password_view, name='recover-password'),
+
+    # Organizations (owner only)
+    path('organizations/', views.organization_list, name='organization-list'),
+    path('organizations/add/', views.organization_add, name='organization-add'),
+    path('organizations/<int:pk>/switch/', views.organization_switch, name='organization-switch'),
+    path('organizations/<int:pk>/edit/', views.organization_edit, name='organization-edit'),
+    path('organizations/<int:pk>/delete/', views.organization_delete, name='organization-delete'),
 
     # Dashboard
     path('dashboard/', views.dashboard, name='dashboard'),
@@ -78,7 +85,7 @@ urlpatterns = [
     path('users/<int:pk>/edit/', views.user_edit, name='user-edit'),
     path('users/<int:pk>/password/', views.user_set_password, name='user-set-password'),
 
-    # Direct delete (superadmin only)
+    # Direct delete (owner only)
     path('delete/<str:object_type>/<int:pk>/', views.direct_delete, name='direct-delete'),
 
     # Delete requests
