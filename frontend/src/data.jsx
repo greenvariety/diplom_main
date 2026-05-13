@@ -1,5 +1,3 @@
-/* global React */
-const { useState, useMemo, Fragment } = React;
 
 /* ============================================================
    Icons (Lucide-style strokes)
@@ -102,4 +100,4 @@ const ORGS = [
   { code: 'КГ-2', name: 'Колледж №2', students: 0,   employees: 0,  active: false },
 ];
 
-window.AIS_DATA = { STATUSES, STUDENTS, EMPLOYEES, GROUPS, FACULTIES, AUDIT, ORGS, I };
+export { STATUSES, STUDENTS, EMPLOYEES, GROUPS, FACULTIES, AUDIT, ORGS, I };

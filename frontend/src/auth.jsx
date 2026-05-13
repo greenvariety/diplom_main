@@ -1,15 +1,15 @@
-/* global React, AIS_DATA, AIS_UTILS */
-const { I } = window.AIS_DATA;
-const { useState, useEffect, useRef } = React;
-const { useToast, PasswordRules, PasswordStrength, PasswordInput, Field, LoadButton, pwStrength } = window.AIS_UTILS;
+import { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
+import { I } from './data.jsx';
+import { useToast, PasswordRules, PasswordStrength, PasswordInput, Field, LoadButton, pwStrength } from './utils.jsx';
 
 /* ============================================================
-   LoginScreen — chips for demo, password show/hide, validation
+   LoginScreen
    ============================================================ */
 function LoginScreen({ onLogin, onRegister, onRecover }) {
   const toast = useToast();
-  const [user, setUser]   = useState('owner1');
-  const [pass, setPass]   = useState('demo_1234');
+  const [user, setUser]   = useState('');
+  const [pass, setPass]   = useState('');
   const [errs, setErrs]   = useState({});
   const [touched, setTouched] = useState({});
   const userRef = useRef(null);
@@ -26,7 +26,6 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
     setTouched(t => ({ ...t, [field]: true }));
     setErrs(validate({ user, pass }));
   };
-  // After first error, re-validate on every change
   useEffect(() => {
     if (Object.keys(touched).length) setErrs(validate({ user, pass }));
   }, [user, pass]);
@@ -39,7 +38,7 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
     if (userRef.current) {
       const el = userRef.current;
       el.classList.remove('flash');
-      void el.offsetWidth; // restart anim
+      void el.offsetWidth;
       el.classList.add('flash');
     }
   };
@@ -52,9 +51,16 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
       toast.push('Проверьте поля формы', { kind: 'err' });
       return;
     }
-    await new Promise(r => setTimeout(r, 700));
-    toast.push(`Добро пожаловать, ${user}`, { kind: 'ok' });
-    onLogin && onLogin(user);
+    try {
+      const res = await axios.post('/api/auth/login/', { username: user, password: pass });
+      localStorage.setItem('access_token', res.data.access);
+      localStorage.setItem('refresh_token', res.data.refresh);
+      toast.push(`Добро пожаловать, ${res.data.user.full_name || user}`, { kind: 'ok' });
+      onLogin && onLogin(res.data.user);
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Ошибка входа';
+      toast.push(msg, { kind: 'err' });
+    }
   };
 
   return (
@@ -132,7 +138,7 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
 }
 
 /* ============================================================
-   RegisterScreen — live password rules, strength, step indicator
+   RegisterScreen
    ============================================================ */
 function RegisterScreen({ onDone, onBack }) {
   const toast = useToast();
@@ -170,9 +176,20 @@ function RegisterScreen({ onDone, onBack }) {
       toast.push('Исправьте ошибки в форме', { kind: 'err' });
       return;
     }
-    await new Promise(r => setTimeout(r, 700));
-    toast.push('Аккаунт создан. Сохраните сид-фразу!', { kind: 'ok' });
-    onDone && onDone();
+    try {
+      const res = await axios.post('/api/auth/register/', {
+        login: vals.login,
+        name: vals.name,
+        pass: vals.pass,
+      });
+      localStorage.setItem('access_token', res.data.access);
+      localStorage.setItem('refresh_token', res.data.refresh);
+      toast.push('Аккаунт создан. Сохраните сид-фразу!', { kind: 'ok' });
+      onDone && onDone(res.data.seed_phrase);
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Ошибка регистрации';
+      toast.push(msg, { kind: 'err' });
+    }
   };
 
   return (
@@ -253,18 +270,16 @@ function RegisterScreen({ onDone, onBack }) {
 }
 
 /* ============================================================
-   Seed phrase
+   SeedPhraseScreen
    ============================================================ */
-const SEED_WORDS = ['abandon','ability','able','about','above','absent','absorb','abstract','absurd','abuse','access','accident'];
-
-function SeedPhraseScreen({ onDone }) {
+function SeedPhraseScreen({ seedWords = [], onDone }) {
   const toast = useToast();
   const [confirmed, setConfirmed] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const doCopy = async () => {
     try {
-      await navigator.clipboard.writeText(SEED_WORDS.join(' '));
+      await navigator.clipboard.writeText(seedWords.join(' '));
     } catch {}
     setCopied(true);
     toast.push('Сид-фраза скопирована в буфер', { kind: 'ok' });
@@ -302,7 +317,7 @@ function SeedPhraseScreen({ onDone }) {
                 </button>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 20 }}>
-                {SEED_WORDS.map((w, i) => (
+                {seedWords.map((w, i) => (
                   <div key={i} className="seed-tile">
                     <span className="num">{String(i + 1).padStart(2, '0')}</span>
                     <span className="word">{w}</span>
@@ -326,9 +341,9 @@ function SeedPhraseScreen({ onDone }) {
 }
 
 /* ============================================================
-   Recover password
+   RecoverPasswordScreen
    ============================================================ */
-function RecoverPasswordScreen({ onBack }) {
+function RecoverPasswordScreen({ onBack, onDone }) {
   const toast = useToast();
   const [login, setLogin] = useState('');
   const [words, setWords] = useState(Array(12).fill(''));
@@ -343,9 +358,20 @@ function RecoverPasswordScreen({ onBack }) {
       toast.push('Заполните логин, все 12 слов и пароль', { kind: 'err' });
       return;
     }
-    await new Promise(r => setTimeout(r, 800));
-    toast.push('Пароль успешно изменён', { kind: 'ok' });
-    onBack && onBack();
+    try {
+      const res = await axios.post('/api/auth/recover/', {
+        login: login.trim(),
+        seed_words: words,
+        new_password: p1,
+      });
+      localStorage.setItem('access_token', res.data.access);
+      localStorage.setItem('refresh_token', res.data.refresh);
+      toast.push('Пароль успешно изменён', { kind: 'ok' });
+      onDone && onDone();
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Ошибка восстановления';
+      toast.push(msg, { kind: 'err' });
+    }
   };
 
   return (
@@ -401,4 +427,4 @@ function RecoverPasswordScreen({ onBack }) {
   );
 }
 
-window.AIS_AUTH = { LoginScreen, RegisterScreen, SeedPhraseScreen, RecoverPasswordScreen };
+export { LoginScreen, RegisterScreen, SeedPhraseScreen, RecoverPasswordScreen };

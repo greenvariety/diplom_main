@@ -1,9 +1,8 @@
-/* global React, AIS_DATA */
 /* ============================================================
    Core utilities: toasts, counters, dropdowns, validation, etc.
    ============================================================ */
-const { useState, useEffect, useRef, useCallback, useMemo, createContext, useContext } = React;
-const { I } = window.AIS_DATA;
+import { useState, useEffect, useRef, useCallback, useMemo, createContext, useContext } from 'react';
+import { I } from './data.jsx';
 
 /* ---------- Toast system ---------- */
 const ToastCtx = createContext({ push: () => {}, remove: () => {} });
@@ -452,7 +451,7 @@ function SortHeader({ k, sort, onClick, children, width }) {
   );
 }
 
-window.AIS_UTILS = {
+export {
   ToastProvider, useToast,
   useCountUp, StatNumber,
   useDropdown,
