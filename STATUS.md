@@ -43,3 +43,21 @@
 - `frontend/src/screens.jsx` конвертирован в ES-модуль. DashboardOwner, DashboardAdmin, DashboardTeacher принимают `currentUser` и при монтировании загружают данные из `/api/dashboard/`. Пока нет данных — показывается скелетон загрузки.
 - `frontend/src/main.jsx` обновлён: при наличии токена рендерится `AppShell`, который загружает `/api/me/`, управляет `currentScreen`-состоянием и отображает нужный дашборд по роли пользователя. Клики по пунктам меню переключают экраны. Другие разделы показывают заглушку.
 - `npm run build` — собирается без ошибок.
+
+---
+
+## Задача 3 выполнена — Организации
+
+**Что сделано:**
+
+- Создан `core/api_organizations.py` с вьюхами:
+  - `GET /api/organizations/` — список организаций текущего owner-пользователя с числом студентов и сотрудников.
+  - `POST /api/organizations/` — создание; код автоматически генерируется из первых букв названия, если не указан.
+  - `PATCH /api/organizations/{id}/` — редактирование названия.
+  - `DELETE /api/organizations/{id}/` — удаление организации.
+  - `POST /api/organizations/{id}/switch/` — переключение активной организации (меняет `user.institution`).
+- В `config/urls.py` добавлены три маршрута для организаций.
+- `frontend/src/modals.jsx` конвертирован из prototype-формата (`window.AIS_MODALS`, `React` global) в ES-модуль с `import`/`export`. Добавлен `OrgFormModal` с реальными API-вызовами (создание/редактирование).
+- В `frontend/src/screens.jsx` обновлён `OrganizationList`: теперь загружает данные из `/api/organizations/`, поддерживает переключение, редактирование и удаление. `EmptyOrgOnboarding` получает `currentUser` и `onNavigate` через пропсы.
+- `frontend/src/main.jsx` обновлён: добавлена модальная система (`openModal`/`closeModal`), добавлен экран `org-list`, `openModal` передаётся во все экраны через `sharedProps`, добавлена функция `loadUser` для обновления данных пользователя после переключения организации.
+- `npm run build` — собирается без ошибок.

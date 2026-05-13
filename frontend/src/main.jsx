@@ -4,7 +4,8 @@ import './styles.css';
 import { ToastProvider } from './utils.jsx';
 import { LoginScreen, RegisterScreen, SeedPhraseScreen, RecoverPasswordScreen } from './auth.jsx';
 import { Shell } from './shell.jsx';
-import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher } from './screens.jsx';
+import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, OrganizationList } from './screens.jsx';
+import { OrgFormModal } from './modals.jsx';
 import api from './api.js';
 
 function AuthFlow({ onAuthenticated }) {
@@ -48,8 +49,9 @@ function AppShell({ onLogout }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState(null); // { name, data }
 
-  useEffect(() => {
+  const loadUser = () => {
     api.get('/me/').then(r => {
       setCurrentUser(r.data);
       setLoading(false);
@@ -58,12 +60,25 @@ function AppShell({ onLogout }) {
       localStorage.removeItem('refresh_token');
       onLogout();
     });
-  }, []);
+  };
+
+  useEffect(() => { loadUser(); }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     onLogout();
+  };
+
+  const openModal = (name, data) => setModal({ name, data });
+  const closeModal = () => setModal(null);
+
+  const renderModal = () => {
+    if (!modal) return null;
+    if (modal.name === 'orgForm') {
+      return <OrgFormModal data={modal.data} onClose={closeModal} />;
+    }
+    return null;
   };
 
   if (loading) {
@@ -74,21 +89,39 @@ function AppShell({ onLogout }) {
     );
   }
 
-  const sharedProps = { currentUser, onNavigate: setCurrentScreen, onLogout: handleLogout };
+  const sharedProps = {
+    currentUser,
+    onNavigate: setCurrentScreen,
+    onLogout: handleLogout,
+    openModal,
+  };
 
-  if (currentScreen === 'dashboard') {
-    const role = currentUser.role;
-    if (role === 'teacher') return <DashboardTeacher {...sharedProps} />;
-    if (role === 'admin')   return <DashboardAdmin   {...sharedProps} />;
-    return <DashboardOwner {...sharedProps} />;
-  }
+  const renderScreen = () => {
+    if (currentScreen === 'dashboard') {
+      const role = currentUser.role;
+      if (role === 'teacher') return <DashboardTeacher {...sharedProps} />;
+      if (role === 'admin')   return <DashboardAdmin   {...sharedProps} />;
+      return <DashboardOwner {...sharedProps} />;
+    }
+
+    if (currentScreen === 'org-list') {
+      return <OrganizationList {...sharedProps} onUserRefresh={loadUser} />;
+    }
+
+    return (
+      <Shell currentUser={currentUser} active={currentScreen} onNavigate={setCurrentScreen} onLogout={handleLogout} openModal={openModal}>
+        <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>
+          Раздел будет доступен в следующих обновлениях
+        </div>
+      </Shell>
+    );
+  };
 
   return (
-    <Shell currentUser={currentUser} active={currentScreen} onNavigate={setCurrentScreen} onLogout={handleLogout}>
-      <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>
-        Раздел будет доступен в следующих обновлениях
-      </div>
-    </Shell>
+    <>
+      {renderScreen()}
+      {renderModal()}
+    </>
   );
 }
 

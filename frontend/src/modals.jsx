@@ -1,8 +1,8 @@
-/* global React, AIS_DATA, AIS_UI, AIS_UTILS */
-const { STATUSES, STUDENTS, GROUPS, FACULTIES, I } = window.AIS_DATA;
-const { Badge, Avatar } = window.AIS_UI;
-const { useToast, Field, LoadButton, Combobox } = window.AIS_UTILS;
-const { useEffect, useState, useRef } = React;
+import { useEffect, useState, useRef } from 'react';
+import { STATUSES, STUDENTS, GROUPS, FACULTIES, EMPLOYEES, I } from './data.jsx';
+import { Badge, Avatar } from './shell.jsx';
+import { useToast, Field, LoadButton, Combobox } from './utils.jsx';
+import api from './api.js';
 
 /* ============================================================
    Shared option lists
@@ -21,11 +21,11 @@ const POSITION_OPTS = ['Преподаватель', 'Ст. преподават
 const ROLE_OPTS = ['Преподаватель', 'Администратор', 'Суперадминистратор'].map(p => ({ value: p, label: p }));
 const RELATION_OPTS = ['Мать', 'Отец', 'Опекун'].map(p => ({ value: p, label: p }));
 const DOC_TYPE_OPTS = ['Паспорт', 'Аттестат', 'Справка', 'Полис ОМС', 'СНИЛС', 'Прочее'].map(d => ({ value: d, label: d }));
-const TEACHER_OPTS = window.AIS_DATA.EMPLOYEES.map(e => ({ value: `${e.last} ${e.first[0]}. ${e.mid[0]}.`, label: `${e.last} ${e.first} ${e.mid}`, sub: e.pos }));
+const TEACHER_OPTS = EMPLOYEES.map(e => ({ value: `${e.last} ${e.first[0]}. ${e.mid[0]}.`, label: `${e.last} ${e.first} ${e.mid}`, sub: e.pos }));
 const SUBJECT_OPTS = ['Базы данных', 'Веб-программирование', 'Алгоритмы и структуры данных', 'Высшая математика', 'Микроэкономика'].map(s => ({ value: s, label: s }));
-const STATUS_OPTS = Object.entries(window.AIS_DATA.STATUSES).map(([k, v]) => ({ value: k, label: v.label }));
-const STUDENT_OPTS = window.AIS_DATA.STUDENTS.map(s => ({ value: s.id, label: `${s.last} ${s.first} ${s.mid}`, sub: `${s.fac} · ${s.group}` }));
-const GROUP_OPTS_ALL = window.AIS_DATA.GROUPS.map(g => ({ value: g.name, label: g.name, sub: g.fac }));
+const STATUS_OPTS = Object.entries(STATUSES).map(([k, v]) => ({ value: k, label: v.label }));
+const STUDENT_OPTS = STUDENTS.map(s => ({ value: s.id, label: `${s.last} ${s.first} ${s.mid}`, sub: `${s.fac} · ${s.group}` }));
+const GROUP_OPTS_ALL = GROUPS.map(g => ({ value: g.name, label: g.name, sub: g.fac }));
 
 /* ============================================================
    Animated Modal shell — close uses a fade-out, esc, overlay click,
@@ -654,10 +654,74 @@ function EmployeeDetailModal({ data, onClose, openModal }) {
   );
 }
 
-window.AIS_MODALS = {
+/* ============================================================
+   OrgFormModal — create / edit organization
+   ============================================================ */
+function OrgFormModal({ data, onClose }) {
+  const org = data?.org;
+  const onDone = data?.onDone;
+  const isEdit = !!org;
+  const toast = useToast();
+  const [name, setName] = useState(org?.name || '');
+  const [code, setCode] = useState(org?.code || '');
+  const [err, setErr] = useState('');
+
+  const save = async () => {
+    if (!name.trim()) { setErr('Введите название организации'); return; }
+    setErr('');
+    try {
+      if (isEdit) {
+        await api.patch(`/organizations/${org.id}/`, { name: name.trim(), code: code.trim() || undefined });
+        toast.push('Организация обновлена', { kind: 'ok' });
+      } else {
+        await api.post('/organizations/', { name: name.trim(), code: code.trim() || undefined });
+        toast.push('Организация создана', { kind: 'ok' });
+      }
+      onDone && onDone();
+      onClose && onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка при сохранении');
+    }
+  };
+
+  return (
+    <Modal
+      title={isEdit ? 'Редактировать организацию' : 'Новая организация'}
+      sub={isEdit ? `Код: ${org.code}` : 'Заполните название учебного заведения'}
+      onClose={onClose}
+      footer={<>
+        <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
+        <LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton>
+      </>}
+    >
+      <div className="form-grid">
+        <Field label="Название организации" required error={err}>
+          <input
+            className="input"
+            value={name}
+            onChange={e => { setName(e.target.value); setErr(''); }}
+            placeholder="Колледж информатики и технологий"
+          />
+        </Field>
+        <Field label="Код организации" hint="Автоматически из первых букв названия, если не указан">
+          <input
+            className="input"
+            value={code}
+            onChange={e => setCode(e.target.value.toUpperCase())}
+            placeholder="КИТ"
+            maxLength={20}
+          />
+        </Field>
+      </div>
+    </Modal>
+  );
+}
+
+export {
   StudentFormModal, EmployeeFormModal, GroupFormModal, FacultyFormModal,
   ParentFormModal, SubjectFormModal, PositionFormModal, UserFormModal,
   TransferModal, DeleteConfirmModal, ApproveDeleteModal, UploadDocModal,
   AssignSubjectModal, AuditDiffModal, LogoutModal,
   StudentDetailModal, GroupDetailModal, FacultyDetailModal, EmployeeDetailModal,
+  OrgFormModal,
 };

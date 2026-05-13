@@ -6,6 +6,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 from core.api_auth import LoginView, RegisterView, LogoutView, RecoverView
 from core.api_main import MeView, DashboardView
+from core.api_organizations import OrganizationsView, OrganizationDetailView, OrganizationSwitchView
 
 router = DefaultRouter()
 
@@ -18,6 +19,9 @@ urlpatterns = [
     path('api/auth/recover/', RecoverView.as_view()),
     path('api/me/', MeView.as_view()),
     path('api/dashboard/', DashboardView.as_view()),
+    path('api/organizations/', OrganizationsView.as_view()),
+    path('api/organizations/<int:pk>/', OrganizationDetailView.as_view()),
+    path('api/organizations/<int:pk>/switch/', OrganizationSwitchView.as_view()),
     path('api/', include(router.urls)),
     path('', include('core.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -134,68 +134,108 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
 }
 
 /* ============================================================
-   OrganizationList — hover cards + onboarding for empty org
+   OrganizationList — hover cards with real API
    ============================================================ */
-function OrganizationList({ openModal, onSwitch }) {
-  const [selectedEmpty, setSelectedEmpty] = useState(false);
-  const orgs = ORGS || [];
-  if (selectedEmpty) {
-    return <EmptyOrgOnboarding org={ORGS[1]} openModal={openModal} onBack={() => setSelectedEmpty(false)} />;
+function OrganizationList({ currentUser, openModal, onNavigate, onUserRefresh }) {
+  const [orgs, setOrgs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedOrg, setSelectedOrg] = useState(null);
+  const toast = useToast();
+
+  const load = () => {
+    setLoading(true);
+    api.get('/organizations/').then(r => {
+      setOrgs(r.data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  if (selectedOrg) {
+    return <EmptyOrgOnboarding org={selectedOrg} currentUser={currentUser} onNavigate={onNavigate} openModal={openModal} onBack={() => setSelectedOrg(null)} />;
   }
+
+  const handleSwitch = (org) => {
+    api.post(`/organizations/${org.id}/switch/`).then(() => {
+      setOrgs(prev => prev.map(o => ({ ...o, active: o.id === org.id })));
+      onUserRefresh && onUserRefresh();
+      toast.push(`Переключено на «${org.name}»`, { kind: 'ok' });
+      setSelectedOrg(org);
+    }).catch(() => toast.push('Ошибка переключения', { kind: 'err' }));
+  };
+
+  const handleEdit = (org) => {
+    openModal('orgForm', { org, onDone: load });
+  };
+
+  const handleDelete = (org) => {
+    if (!window.confirm(`Удалить организацию «${org.name}»?\nВсе данные (факультеты, группы, студенты) будут удалены.`)) return;
+    api.delete(`/organizations/${org.id}/`).then(() => {
+      setOrgs(prev => prev.filter(o => o.id !== org.id));
+      toast.push('Организация удалена', { kind: 'ok' });
+    }).catch(e => toast.push(e.response?.data?.error || 'Ошибка удаления', { kind: 'err' }));
+  };
+
   return (
-    <Shell role="owner" active="org-list" openModal={openModal}>
+    <Shell currentUser={currentUser} active="org-list" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
         title="Мои организации"
         sub="Выберите организацию для работы или добавьте новую"
-        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('orgForm')}>{I.plus}Добавить организацию</button>}
+        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('orgForm', { onDone: load })}>{I.plus}Добавить организацию</button>}
       />
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-        {orgs.map(org => (
-          <div key={org.code} className="card card-hover" style={{ border: org.active ? '2px solid var(--accent)' : '1px solid var(--border)', position: 'relative' }}
-            onClick={() => org.active ? (onSwitch && onSwitch()) : setSelectedEmpty(true)}>
-            {org.active && (
-              <div style={{ position: 'absolute', top: 12, right: 12 }}>
-                <span className="badge badge-ok"><span className="dot"></span>Активна</span>
-              </div>
-            )}
-            <div className="card-body" style={{ padding: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 8, background: org.active ? 'var(--accent)' : 'var(--surface-alt)', color: org.active ? '#fff' : 'var(--text-muted)', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 12, flexShrink: 0, border: '1px solid var(--border)' }}>
-                  {org.code}
+      {loading ? (
+        <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>Загрузка…</div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+          {orgs.map(org => (
+            <div key={org.id} className="card" style={{ border: org.active ? '2px solid var(--accent)' : '1px solid var(--border)', position: 'relative' }}>
+              {org.active && (
+                <div style={{ position: 'absolute', top: 12, right: 12 }}>
+                  <span className="badge badge-ok"><span className="dot"></span>Активна</span>
                 </div>
-                <div>
-                  <div className="fwm" style={{ fontSize: 14 }}>{org.name}</div>
-                  <div className="muted" style={{ fontSize: 11 }}>Код: {org.code}</div>
+              )}
+              <div className="card-body" style={{ padding: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 8, background: org.active ? 'var(--accent)' : 'var(--surface-alt)', color: org.active ? '#fff' : 'var(--text-muted)', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 12, flexShrink: 0, border: '1px solid var(--border)' }}>
+                    {org.code}
+                  </div>
+                  <div>
+                    <div className="fwm" style={{ fontSize: 14 }}>{org.name}</div>
+                    <div className="muted" style={{ fontSize: 11 }}>Код: {org.code} · {org.created_at}</div>
+                  </div>
                 </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
-                <div style={{ padding: '10px 12px', background: 'var(--surface-alt)', borderRadius: 6, textAlign: 'center' }}>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)' }}><StatNumber value={org.students} /></div>
-                  <div className="muted" style={{ fontSize: 11 }}>студентов</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
+                  <div style={{ padding: '10px 12px', background: 'var(--surface-alt)', borderRadius: 6, textAlign: 'center' }}>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)' }}><StatNumber value={org.students} /></div>
+                    <div className="muted" style={{ fontSize: 11 }}>студентов</div>
+                  </div>
+                  <div style={{ padding: '10px 12px', background: 'var(--surface-alt)', borderRadius: 6, textAlign: 'center' }}>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)' }}><StatNumber value={org.employees} /></div>
+                    <div className="muted" style={{ fontSize: 11 }}>сотрудников</div>
+                  </div>
                 </div>
-                <div style={{ padding: '10px 12px', background: 'var(--surface-alt)', borderRadius: 6, textAlign: 'center' }}>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)' }}><StatNumber value={org.employees} /></div>
-                  <div className="muted" style={{ fontSize: 11 }}>сотрудников</div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {!org.active && (
+                    <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={() => handleSwitch(org)}>{I.swap}Перейти</button>
+                  )}
+                  <button className="btn btn-secondary btn-sm" style={{ flex: org.active ? 1 : 0 }} onClick={() => handleEdit(org)}>{I.pencil}Редактировать</button>
+                  {!org.active && (
+                    <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDelete(org)} title="Удалить">{I.trash}</button>
+                  )}
                 </div>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
-                {org.active
-                  ? <button className="btn btn-secondary btn-sm" style={{ flex: 1 }}>{I.pencil}Редактировать</button>
-                  : <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={() => setSelectedEmpty(true)}>{I.swap}Перейти</button>
-                }
-                <button className="btn btn-ghost btn-icon btn-sm">{I.more}</button>
               </div>
             </div>
-          </div>
-        ))}
-        <div className="card card-hover" style={{ border: '2px dashed var(--border)' }} onClick={() => openModal('orgForm')}>
-          <div className="card-body" style={{ padding: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 200, textAlign: 'center', color: 'var(--text-muted)' }}>
-            <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--surface-alt)', display: 'grid', placeItems: 'center', marginBottom: 8 }}>{I.plus}</div>
-            <div style={{ fontSize: 13, fontWeight: 500 }}>Добавить организацию</div>
-            <div className="muted" style={{ fontSize: 11, marginTop: 2 }}>Создать новый колледж</div>
+          ))}
+          <div className="card card-hover" style={{ border: '2px dashed var(--border)', cursor: 'pointer' }} onClick={() => openModal('orgForm', { onDone: load })}>
+            <div className="card-body" style={{ padding: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 200, textAlign: 'center', color: 'var(--text-muted)' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--surface-alt)', display: 'grid', placeItems: 'center', marginBottom: 8 }}>{I.plus}</div>
+              <div style={{ fontSize: 13, fontWeight: 500 }}>Добавить организацию</div>
+              <div className="muted" style={{ fontSize: 11, marginTop: 2 }}>Создать новый колледж</div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </Shell>
   );
 }
@@ -203,7 +243,7 @@ function OrganizationList({ openModal, onSwitch }) {
 /* ============================================================
    EmptyOrgOnboarding — new screen for owner who just created an org
    ============================================================ */
-function EmptyOrgOnboarding({ org, openModal, onBack }) {
+function EmptyOrgOnboarding({ org, currentUser, onNavigate, openModal, onBack }) {
   // progress state: faculties → groups → employees → students
   const [done, setDone] = useState({ fac: false, group: false, emp: false, stud: false });
   const steps = [
@@ -216,7 +256,7 @@ function EmptyOrgOnboarding({ org, openModal, onBack }) {
   const doneCount = Object.values(done).filter(Boolean).length;
 
   return (
-    <Shell role="owner" active="dashboard" openModal={openModal}>
+    <Shell currentUser={currentUser} active="dashboard" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
         crumbs={[{ label: 'Организации', href: true, onClick: onBack }, { label: org.name }]}
         title={`Добро пожаловать в ${org.name}!`}
