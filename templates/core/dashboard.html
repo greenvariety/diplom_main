@@ -21,19 +21,19 @@
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
     <a href="{% url 'faculty-list' %}" class="stat" style="text-decoration:none;">
         <div class="stat-value">{{ total_faculties }}</div>
-        <div class="stat-label">Факультетов</div>
+        <div class="stat-label"><i class="bi bi-building"></i> Факультетов</div>
     </a>
     <a href="{% url 'group-list' %}" class="stat" style="text-decoration:none;">
         <div class="stat-value">{{ total_groups }}</div>
-        <div class="stat-label">Групп</div>
+        <div class="stat-label"><i class="bi bi-people"></i> Групп</div>
     </a>
     <a href="{% url 'student-list' %}" class="stat" style="text-decoration:none;">
         <div class="stat-value">{{ total_students }}</div>
-        <div class="stat-label">Студентов</div>
+        <div class="stat-label"><i class="bi bi-person-badge"></i> Студентов</div>
     </a>
     <a href="{% url 'employee-list' %}" class="stat" style="text-decoration:none;">
         <div class="stat-value">{{ total_employees }}</div>
-        <div class="stat-label">Сотрудников</div>
+        <div class="stat-label"><i class="bi bi-briefcase"></i> Сотрудников</div>
     </a>
 </div>
 
@@ -50,6 +50,7 @@
 <div class="card">
     <div class="card-head">
         <div class="title"><i class="bi bi-journal-text" style="margin-right:6px;"></i>Журнал изменений</div>
+        <a href="{% url 'audit-log' %}" class="btn btn-ghost btn-sm">Все записи →</a>
     </div>
     <div class="card-body flush">
         <table class="tbl">
@@ -59,17 +60,22 @@
                     <th style="width:160px;">Пользователь</th>
                     <th style="width:100px;">Действие</th>
                     <th>Объект</th>
+                    <th style="width:60px;"></th>
                 </tr>
             </thead>
             <tbody>
                 {% for log in recent_logs %}
-                <tr {% if log.action == 'updated' and log.old_data and log.new_data %}class="log-toggle" style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#log-{{ log.pk }}"{% endif %}>
+                <tr>
                     <td class="muted mono" style="font-size:11px;">{{ log.created_at|date:"d.m.Y H:i:s" }}</td>
-                    <td>{{ log.user|default:"—" }}</td>
                     <td>
-                        {% if log.action == 'created' %}<span class="badge badge-ok">Создал</span>
-                        {% elif log.action == 'updated' %}<span class="badge badge-warn">Изменил</span>
-                        {% else %}<span class="badge badge-bad">Удалил</span>{% endif %}
+                        {% if log.user %}
+                        <span style="font-weight:500;">{{ log.user.get_full_name|default:log.user.username }}</span>
+                        {% else %}—{% endif %}
+                    </td>
+                    <td>
+                        {% if log.action == 'created' %}<span class="badge badge-ok"><span class="dot"></span>Создал</span>
+                        {% elif log.action == 'updated' %}<span class="badge badge-warn"><span class="dot"></span>Изменил</span>
+                        {% else %}<span class="badge badge-bad"><span class="dot"></span>Удалил</span>{% endif %}
                     </td>
                     <td>
                         {% if log.action == 'deleted' %}
@@ -88,96 +94,45 @@
                             <span class="muted">{{ log.object_type }} #{{ log.object_id }}</span>
                         {% endif %}
                     </td>
-                </tr>
-                {% if log.action == 'updated' and log.old_data and log.new_data %}
-                <script type="application/json" id="log-old-{{ log.pk }}">{{ log.old_data|safe }}</script>
-                <script type="application/json" id="log-new-{{ log.pk }}">{{ log.new_data|safe }}</script>
-                <tr>
-                    <td colspan="4" style="padding:0;">
-                        <div class="collapse" id="log-{{ log.pk }}" data-id="{{ log.pk }}">
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px;background:var(--surface-2);">
-                                <div>
-                                    <div class="muted" style="font-size:11px;font-weight:600;margin-bottom:6px;">До изменения:</div>
-                                    <pre class="log-pre-old" style="font-size:11px;white-space:pre-wrap;margin:0;font-family:var(--font-mono);"></pre>
-                                </div>
-                                <div>
-                                    <div class="muted" style="font-size:11px;font-weight:600;margin-bottom:6px;">После изменения:</div>
-                                    <pre class="log-pre-new" style="font-size:11px;white-space:pre-wrap;margin:0;font-family:var(--font-mono);"></pre>
-                                </div>
-                            </div>
-                        </div>
+                    <td>
+                        {% if log.old_data or log.new_data %}
+                        <button class="btn btn-ghost btn-sm"
+                                onclick="openDiff(this)"
+                                data-old="{{ log.old_data|escapejs }}"
+                                data-new="{{ log.new_data|escapejs }}"
+                                data-action="{{ log.action }}"
+                                data-object="{{ log.object_type }} #{{ log.object_id }}">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        {% endif %}
                     </td>
                 </tr>
-                {% endif %}
                 {% empty %}
-                <tr><td colspan="4"><div class="empty" style="padding:16px;">Нет записей</div></td></tr>
+                <tr><td colspan="5"><div class="empty" style="padding:16px;">Нет записей</div></td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    function renderDiff(collapseEl) {
-        var preOld = collapseEl.querySelector('.log-pre-old');
-        if (preOld.innerHTML !== '') return;
-        var preNew = collapseEl.querySelector('.log-pre-new');
-        var id = collapseEl.dataset.id;
-        var rawOld = document.getElementById('log-old-' + id).textContent;
-        var rawNew = document.getElementById('log-new-' + id).textContent;
-        try {
-            var oldData = JSON.parse(rawOld);
-            var newData = JSON.parse(rawNew);
-        } catch(e) {
-            preOld.textContent = rawOld;
-            preNew.textContent = rawNew;
-            return;
-        }
-        var changedKeys = new Set();
-        Object.keys(newData).forEach(function(k) {
-            if (JSON.stringify(oldData[k]) !== JSON.stringify(newData[k])) changedKeys.add(k);
-        });
-        function renderPre(el, data, color) {
-            el.innerHTML = '';
-            JSON.stringify(data, null, 2).split('\n').forEach(function(line) {
-                var key = (line.match(/"(\w+)"\s*:/) || [])[1];
-                var span = document.createElement('span');
-                span.textContent = line + '\n';
-                if (key && changedKeys.has(key)) {
-                    span.style.color = color;
-                    span.style.fontWeight = 'bold';
-                }
-                el.appendChild(span);
-            });
-        }
-        renderPre(preOld, oldData, 'var(--ok-fg)');
-        renderPre(preNew, newData, 'var(--bad-fg)');
-    }
-    document.querySelectorAll('.collapse[data-id]').forEach(function(el) {
-        el.addEventListener('shown.bs.collapse', function() { renderDiff(this); });
-    });
-});
-</script>
-
 {% elif user.is_admin %}
 
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
     <a href="{% url 'faculty-list' %}" class="stat" style="text-decoration:none;">
         <div class="stat-value">{{ total_faculties }}</div>
-        <div class="stat-label">Факультетов</div>
+        <div class="stat-label"><i class="bi bi-building"></i> Факультетов</div>
     </a>
     <a href="{% url 'group-list' %}" class="stat" style="text-decoration:none;">
         <div class="stat-value">{{ total_groups }}</div>
-        <div class="stat-label">Групп</div>
+        <div class="stat-label"><i class="bi bi-people"></i> Групп</div>
     </a>
     <a href="{% url 'student-list' %}" class="stat" style="text-decoration:none;">
         <div class="stat-value">{{ total_students }}</div>
-        <div class="stat-label">Студентов</div>
+        <div class="stat-label"><i class="bi bi-person-badge"></i> Студентов</div>
     </a>
     <a href="{% url 'employee-list' %}" class="stat" style="text-decoration:none;">
         <div class="stat-value">{{ total_employees }}</div>
-        <div class="stat-label">Сотрудников</div>
+        <div class="stat-label"><i class="bi bi-briefcase"></i> Сотрудников</div>
     </a>
 </div>
 
@@ -244,5 +199,89 @@ document.addEventListener('DOMContentLoaded', function() {
 {% endif %}
 
 {% endif %}
+
+<!-- Diff modal (shared by owner journal) -->
+<div id="diffModal" style="display:none;position:fixed;inset:0;z-index:1080;background:rgba(0,0,0,.45);"
+     onclick="if(event.target===this)closeDiff()">
+    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+                width:min(720px,95vw);max-height:85vh;display:flex;flex-direction:column;
+                background:var(--surface);border-radius:12px;box-shadow:0 24px 64px rgba(0,0,0,.3);">
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    padding:16px 20px;border-bottom:1px solid var(--border);">
+            <div>
+                <div style="font-weight:600;font-size:15px;" id="diffTitle">Детали изменения</div>
+                <div class="muted" style="font-size:12px;" id="diffSubtitle"></div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="closeDiff()">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <div style="overflow-y:auto;padding:16px 20px;" id="diffBody"></div>
+    </div>
+</div>
+
+<script>
+function openDiff(btn) {
+    var oldRaw  = btn.dataset.old  || '';
+    var newRaw  = btn.dataset.new  || '';
+    var action  = btn.dataset.action;
+    var objName = btn.dataset.object;
+    var actionLabel = {created:'Создание', updated:'Изменение', deleted:'Удаление'}[action] || action;
+    document.getElementById('diffTitle').textContent = actionLabel + ': ' + objName;
+    document.getElementById('diffSubtitle').textContent = '';
+    document.getElementById('diffBody').innerHTML = buildDiff(oldRaw, newRaw, action);
+    document.getElementById('diffModal').style.display = 'block';
+}
+function closeDiff() {
+    document.getElementById('diffModal').style.display = 'none';
+}
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeDiff(); });
+
+function parseJson(s) {
+    if (!s) return null;
+    try { return JSON.parse(s); } catch(e) { return null; }
+}
+
+function buildDiff(oldRaw, newRaw, action) {
+    var oldObj = parseJson(oldRaw);
+    var newObj = parseJson(newRaw);
+    if (!oldObj && !newObj) {
+        return '<div class="muted" style="text-align:center;padding:24px;">Нет данных</div>';
+    }
+    var allKeys = {};
+    if (oldObj) Object.keys(oldObj).forEach(function(k){ allKeys[k] = true; });
+    if (newObj) Object.keys(newObj).forEach(function(k){ allKeys[k] = true; });
+    var keys = Object.keys(allKeys);
+    var cards = [];
+    keys.forEach(function(key) {
+        var oldVal = oldObj ? oldObj[key] : undefined;
+        var newVal = newObj ? newObj[key] : undefined;
+        var changed = JSON.stringify(oldVal) !== JSON.stringify(newVal);
+        if (!changed && action === 'updated') return;
+        var oldStr = oldVal !== undefined ? String(oldVal) : '—';
+        var newStr = newVal !== undefined ? String(newVal) : '—';
+        var html = '<div class="diff-card">';
+        html += '<div class="diff-card-head"><span class="field-key">' + escHtml(key) + '</span></div>';
+        if (action === 'created') {
+            html += '<div class="diff-row added"><span class="diff-sign">+</span><span>' + escHtml(newStr) + '</span></div>';
+        } else if (action === 'deleted') {
+            html += '<div class="diff-row removed"><span class="diff-sign">−</span><span class="diff-val removed-val">' + escHtml(oldStr) + '</span></div>';
+        } else {
+            html += '<div class="diff-row removed"><span class="diff-sign">−</span><span class="diff-val removed-val">' + escHtml(oldStr) + '</span></div>';
+            html += '<div class="diff-row added"><span class="diff-sign">+</span><span>' + escHtml(newStr) + '</span></div>';
+        }
+        html += '</div>';
+        cards.push(html);
+    });
+    if (cards.length === 0) {
+        return '<div class="muted" style="text-align:center;padding:24px;">Данные не изменились</div>';
+    }
+    return '<div class="diff-grid">' + cards.join('') + '</div>';
+}
+
+function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
 
 {% endblock %}

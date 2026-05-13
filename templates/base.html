@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Система учёта студентов{% endblock %}</title>
+    <title>{% block title %}АИС Учёт студентов{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -53,6 +53,7 @@
       color: var(--text);
       background: var(--bg);
       -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
     }
     h1,h2,h3,h4,h5,h6 { margin: 0; font-weight: 600; letter-spacing: -.01em; color: var(--text); }
     h1 { font-size: 24px; line-height: 1.25; }
@@ -64,6 +65,13 @@
     button { font-family: inherit; cursor: pointer; }
     input, select, textarea { font-family: inherit; font-size: 14px; }
     ::selection { background: var(--accent-soft); color: var(--accent-ink); }
+
+    /* ============================================================
+       SVG Icon helper
+       ============================================================ */
+    .icon { display: inline-block; width: 16px; height: 16px; vertical-align: -3px; flex-shrink: 0; }
+    .icon-sm { width: 14px; height: 14px; vertical-align: -2px; }
+    .icon-lg { width: 20px; height: 20px; vertical-align: -4px; }
 
     /* ============================================================
        App shell
@@ -88,7 +96,7 @@
       width: 28px; height: 28px; border-radius: 6px;
       background: var(--accent); color: #fff;
       display: grid; place-items: center;
-      font-weight: 700; font-size: 13px; flex-shrink: 0;
+      font-weight: 700; font-size: 13px; flex-shrink: 0; letter-spacing: 0;
     }
     .brand-cell .brand-sub {
       font-size: 11px; color: var(--text-faint);
@@ -96,14 +104,34 @@
     }
     .topbar {
       grid-area: topbar;
-      display: flex; align-items: center; justify-content: flex-end;
+      display: flex; align-items: center; justify-content: space-between;
       padding: 0 24px; gap: 12px;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
     }
+    .topbar-left { display: flex; align-items: center; gap: 16px; flex: 1; min-width: 0; }
+    .topbar-right { display: flex; align-items: center; gap: 8px; }
+    .topbar-search {
+      position: relative;
+      max-width: 320px; flex: 1;
+    }
+    .topbar-search input {
+      width: 100%; height: 32px;
+      padding: 0 10px 0 32px;
+      background: var(--surface-alt);
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      color: var(--text); outline: none; font-size: 13px; font-family: var(--font);
+    }
+    .topbar-search input::placeholder { color: var(--text-faint); }
+    .topbar-search input:focus { background: var(--surface); border-color: var(--border-strong); }
+    .topbar-search .search-ico {
+      position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+      color: var(--text-faint); pointer-events: none;
+    }
     .user-chip {
       display: flex; align-items: center; gap: 8px;
-      padding: 4px 10px 4px 4px;
+      padding: 4px 8px 4px 4px;
       border-radius: 999px;
       border: 1px solid transparent;
       cursor: default;
@@ -133,18 +161,39 @@
       border-radius: var(--radius-sm);
       font-size: 13px; font-weight: 500;
       cursor: pointer; text-decoration: none;
+      transition: background .15s ease, color .15s ease;
     }
     .nav-item:hover { background: var(--surface-alt); color: var(--text); text-decoration: none; }
     .nav-item.active { background: var(--accent-soft); color: var(--accent-ink); }
+    .nav-item .icon { color: currentColor; opacity: .85; }
     .nav-item i { font-size: 15px; opacity: .85; flex-shrink: 0; }
-    .nav-item .nav-count { margin-left: auto; font-size: 11px; color: var(--text-faint); }
+    .nav-item .nav-count { margin-left: auto; font-size: 11px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+    .nav-item.active .nav-count { color: currentColor; opacity: .7; }
+
+    /* Sidebar delete requests badge */
+    .nav-item .badge-mini {
+      margin-left: auto;
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 10px; font-weight: 600;
+      padding: 1px 7px; border-radius: 999px;
+      background: var(--bad-fg); color: #fff;
+      line-height: 1.6;
+    }
+    .nav-item .badge-mini.with-pulse::before {
+      content: ""; width: 5px; height: 5px; border-radius: 50%;
+      background: #fff; animation: pulse-dot 2s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50%       { transform: scale(1.4); opacity: 0.5; }
+    }
 
     .main {
       grid-area: main;
       overflow-y: auto;
       padding: var(--pad-lg) 32px;
       min-width: 0;
-      position: relative;
     }
     .main-inner { max-width: 1280px; margin: 0 auto; }
 
@@ -176,16 +225,19 @@
       border: 1px solid transparent;
       background: transparent; color: var(--text);
       white-space: nowrap;
-      transition: background .12s, border-color .12s, color .12s;
+      transition: background .15s ease, border-color .15s ease, color .15s ease, transform .08s;
       cursor: pointer; text-decoration: none; line-height: 1;
     }
+    .btn:not(:disabled):active { transform: scale(0.97); }
+    .btn:disabled, .btn[disabled] { opacity: .55; cursor: not-allowed; }
     .btn:hover { text-decoration: none; }
     .btn i { font-size: 14px; flex-shrink: 0; }
-    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: #fff; }
+    .btn .icon { width: 14px; height: 14px; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); color: #fff; }
     .btn-secondary { background: var(--surface); border-color: var(--border); color: var(--text); }
     .btn-secondary:hover { background: var(--surface-alt); border-color: var(--border-strong); color: var(--text); }
-    .btn-ghost { color: var(--text-muted); border-color: transparent; }
+    .btn-ghost { color: var(--text-muted); }
     .btn-ghost:hover { background: var(--surface-alt); color: var(--text); }
     .btn-danger { background: var(--surface); border-color: var(--bad-bd); color: var(--bad-fg); }
     .btn-danger:hover { background: var(--bad-bg); color: var(--bad-fg); }
@@ -193,6 +245,7 @@
     .btn-danger-solid:hover { background: #b91c1c; color: #fff; }
     .btn-sm { height: 28px; padding: 0 10px; font-size: 12px; gap: 4px; }
     .btn-sm i { font-size: 13px; }
+    .btn-sm .icon { width: 13px; height: 13px; }
     .btn-icon { width: 32px; padding: 0; justify-content: center; }
     .btn-icon.btn-sm { width: 28px; }
     /* Bootstrap outline compat */
@@ -204,10 +257,6 @@
     .btn-outline-danger:hover { background: var(--bad-bg); color: var(--bad-fg); }
     .btn-outline-success { background: var(--surface); border-color: var(--ok-bd); color: var(--ok-fg); }
     .btn-outline-success:hover { background: var(--ok-bg); color: var(--ok-fg); }
-    .btn-outline-info { background: var(--surface); border-color: var(--info-bd); color: var(--info-fg); }
-    .btn-outline-info:hover { background: var(--info-bg); color: var(--info-fg); }
-    .btn-outline-warning { background: var(--surface); border-color: var(--warn-bd); color: var(--warn-fg); }
-    .btn-outline-warning:hover { background: var(--warn-bg); color: var(--warn-fg); }
 
     /* ============================================================
        Form inputs
@@ -238,9 +287,19 @@
       background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2378716c' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>");
       background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px;
     }
-    .form-control.is-invalid, .form-control:invalid { border-color: var(--bad-bd); }
+    .form-control.is-invalid { border-color: var(--bad-bd); }
     .invalid-feedback { font-size: 12px; color: var(--bad-fg); margin-top: 4px; display: block; }
     .form-text { font-size: 11px; color: var(--text-faint); margin-top: 4px; }
+
+    /* Form sections */
+    .form-section { border-top: 1px solid var(--border); padding-top: 16px; margin-top: 16px; }
+    .form-section:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
+    .form-section-title {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--text-faint); margin-bottom: 12px;
+    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-grid .field-full, .form-grid .col-span-2 { grid-column: 1 / -1; }
 
     /* ============================================================
        Card
@@ -260,6 +319,12 @@
     }
     .card-body { padding: var(--pad); }
     .card-body.flush, .card-body.p-0 { padding: 0; }
+    .card-foot {
+      padding: 14px var(--pad);
+      border-top: 1px solid var(--border);
+      background: var(--surface-alt);
+      display: flex; justify-content: flex-end; gap: 8px;
+    }
 
     /* ============================================================
        Stats
@@ -268,14 +333,14 @@
     .stat {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: var(--radius); padding: 16px;
+      transition: box-shadow .2s, transform .2s, border-color .2s;
     }
+    .stat:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--border-strong); }
     .stat-label { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: 12px; font-weight: 500; }
     .stat-label i { font-size: 14px; }
-    .stat-value { font-size: 28px; font-weight: 600; letter-spacing: -.02em; margin-top: 6px; }
+    .stat-value { font-size: 28px; font-weight: 600; letter-spacing: -.02em; margin-top: 6px; font-variant-numeric: tabular-nums; }
     .stat-trend { font-size: 12px; color: var(--text-faint); margin-top: 4px; }
     .stat-trend.up { color: var(--ok-fg); }
-    .stat-danger { border-color: var(--bad-bd); background: var(--bad-bg); }
-    .stat-danger .stat-value { color: var(--bad-fg); }
 
     /* ============================================================
        Table
@@ -299,8 +364,11 @@
       height: var(--row-h);
     }
     .tbl tbody tr:last-child td, .table tbody tr:last-child td { border-bottom: 0; }
+    .tbl tbody tr { transition: background .12s; }
     .tbl tbody tr.row-link { cursor: pointer; }
-    .tbl tbody tr.row-link:hover td, .table-hover tbody tr:hover td { background: var(--surface-alt); }
+    .tbl tbody tr.row-link td { transition: background .12s, box-shadow .12s; }
+    .tbl tbody tr.row-link:hover td { background: var(--surface-alt); }
+    .tbl tbody tr.row-link:hover td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
     .table-hover > tbody > tr:hover > * { background-color: var(--surface-alt); }
     .table-light th, thead.table-light th { background: var(--surface-alt) !important; }
     .table-sm td, .table-sm th { height: auto; padding: 6px var(--pad); }
@@ -313,6 +381,7 @@
       font-size: 11px; font-weight: 500;
       padding: 2px 8px; border-radius: 999px; border: 1px solid;
       white-space: nowrap; line-height: 1.6; vertical-align: middle;
+      transition: background .15s, color .15s, border-color .15s;
     }
     .badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
     .badge-ok       { background: var(--ok-bg);      color: var(--ok-fg);      border-color: var(--ok-bd); }
@@ -322,19 +391,19 @@
     .badge-neutral  { background: var(--neutral-bg); color: var(--neutral-fg); border-color: var(--neutral-bd); }
     .badge-violet   { background: var(--violet-bg);  color: var(--violet-fg);  border-color: var(--violet-bd); }
     /* Bootstrap badge compat */
-    .bg-success { background: var(--ok-bg)      !important; color: var(--ok-fg)      !important; border-color: var(--ok-bd); }
-    .bg-warning { background: var(--warn-bg)    !important; color: var(--warn-fg)    !important; border-color: var(--warn-bd); }
-    .bg-danger  { background: var(--bad-bg)     !important; color: var(--bad-fg)     !important; border-color: var(--bad-bd); }
-    .bg-info    { background: var(--info-bg)    !important; color: var(--info-fg)    !important; border-color: var(--info-bd); }
-    .bg-secondary { background: var(--neutral-bg) !important; color: var(--neutral-fg) !important; border-color: var(--neutral-bd); }
-    .bg-primary { background: var(--accent)     !important; color: #fff             !important; border-color: var(--accent); }
+    .bg-success { background: var(--ok-bg)!important; color: var(--ok-fg)!important; border-color: var(--ok-bd); }
+    .bg-warning { background: var(--warn-bg)!important; color: var(--warn-fg)!important; border-color: var(--warn-bd); }
+    .bg-danger  { background: var(--bad-bg)!important; color: var(--bad-fg)!important; border-color: var(--bad-bd); }
+    .bg-info    { background: var(--info-bg)!important; color: var(--info-fg)!important; border-color: var(--info-bd); }
+    .bg-secondary { background: var(--neutral-bg)!important; color: var(--neutral-fg)!important; border-color: var(--neutral-bd); }
+    .bg-primary { background: var(--accent)!important; color: #fff!important; }
     /* Student status badges */
-    .badge-status-pending_review     { background: var(--neutral-bg); color: var(--neutral-fg); border-color: var(--neutral-bd); }
-    .badge-status-pending_enrollment { background: var(--info-bg);    color: var(--info-fg);    border-color: var(--info-bd); }
-    .badge-status-enrolled           { background: var(--ok-bg);      color: var(--ok-fg);      border-color: var(--ok-bd); }
-    .badge-status-pending_expulsion  { background: var(--warn-bg);    color: var(--warn-fg);    border-color: var(--warn-bd); }
-    .badge-status-expelled           { background: var(--bad-bg);     color: var(--bad-fg);     border-color: var(--bad-bd); }
-    .badge-status-transferred        { background: var(--violet-bg);  color: var(--violet-fg);  border-color: var(--violet-bd); }
+    .badge-status-pending_review     { background: var(--neutral-bg); color: var(--neutral-fg); border-color: var(--neutral-bd); display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:2px 8px;border-radius:999px;border:1px solid;white-space:nowrap;line-height:1.6; }
+    .badge-status-pending_enrollment { background: var(--info-bg);    color: var(--info-fg);    border-color: var(--info-bd);    display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:2px 8px;border-radius:999px;border:1px solid;white-space:nowrap;line-height:1.6; }
+    .badge-status-enrolled           { background: var(--ok-bg);      color: var(--ok-fg);      border-color: var(--ok-bd);      display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:2px 8px;border-radius:999px;border:1px solid;white-space:nowrap;line-height:1.6; }
+    .badge-status-pending_expulsion  { background: var(--warn-bg);    color: var(--warn-fg);    border-color: var(--warn-bd);    display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:2px 8px;border-radius:999px;border:1px solid;white-space:nowrap;line-height:1.6; }
+    .badge-status-expelled           { background: var(--bad-bg);     color: var(--bad-fg);     border-color: var(--bad-bd);     display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:2px 8px;border-radius:999px;border:1px solid;white-space:nowrap;line-height:1.6; }
+    .badge-status-transferred        { background: var(--violet-bg);  color: var(--violet-fg);  border-color: var(--violet-bd);  display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:2px 8px;border-radius:999px;border:1px solid;white-space:nowrap;line-height:1.6; }
 
     /* ============================================================
        Avatar
@@ -354,6 +423,9 @@
     .av-3 { background: #fef3c7; color: #854d0e; border-color: #fde68a; }
     .av-4 { background: #fce7f3; color: #9d174d; border-color: #fbcfe8; }
     .av-5 { background: #ede9fe; color: #5b21b6; border-color: #ddd6fe; }
+    .av-6 { background: #ffedd5; color: #9a3412; border-color: #fed7aa; }
+    .av-7 { background: #cffafe; color: #155e75; border-color: #a5f3fc; }
+    .av-8 { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
 
     /* ============================================================
        Filters bar
@@ -366,6 +438,51 @@
     }
     .filters .field { flex: 1; min-width: 120px; }
     .filters .field.grow-2 { flex: 2; min-width: 200px; }
+
+    /* Filter chips */
+    .filter-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; align-items: center; }
+    .filter-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      height: 24px; padding: 0 6px 0 10px;
+      background: var(--accent-soft); color: var(--accent-ink);
+      border-radius: 999px; font-size: 12px; font-weight: 500;
+      border: 1px solid transparent;
+      animation: fade-in .15s ease;
+    }
+    .filter-chip button {
+      background: transparent; border: 0; color: inherit; opacity: .7;
+      width: 18px; height: 18px; border-radius: 50%; cursor: pointer;
+      display: grid; place-items: center; margin-left: 2px;
+    }
+    .filter-chip button:hover { background: rgba(0,0,0,.08); opacity: 1; }
+    @keyframes fade-in { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: none; } }
+
+    /* ============================================================
+       Pager
+       ============================================================ */
+    .pager {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; padding: 10px var(--pad);
+      border-top: 1px solid var(--border); background: var(--surface);
+      font-size: 12px; color: var(--text-muted);
+    }
+    .pager-left { display: flex; align-items: center; gap: 6px; }
+    .pager-right { display: flex; align-items: center; gap: 4px; }
+    .pager-right a, .pager-right button.page-btn {
+      background: transparent; border: 1px solid var(--border);
+      height: 26px; min-width: 26px; padding: 0 8px;
+      border-radius: 5px; color: var(--text); font-size: 12px;
+      cursor: pointer; text-decoration: none;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: background .12s, border-color .12s;
+      font-variant-numeric: tabular-nums;
+    }
+    .pager-right a:hover, .pager-right button.page-btn:hover { background: var(--surface-alt); border-color: var(--border-strong); text-decoration: none; }
+    .pager-right .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .pager-right .btn-primary:hover { background: var(--accent-hover); }
+    .pager-right .btn-ghost { color: var(--text-muted); border-color: transparent; }
+    .pager-right .btn-ghost:hover { background: var(--surface-alt); border-color: var(--border-strong); color: var(--text); }
+    .pager-ellipsis { color: var(--text-faint); padding: 0 4px; font-size: 12px; }
 
     /* ============================================================
        Banner / alert
@@ -397,6 +514,7 @@
       display: flex; align-items: center; gap: 10px;
       padding: 10px 12px; border: 1px solid var(--border);
       border-radius: var(--radius-sm); background: var(--surface);
+      transition: border-color .12s, background .12s;
     }
     .doc-tile:hover { border-color: var(--border-strong); background: var(--surface-alt); }
     .doc-icon {
@@ -407,9 +525,158 @@
     .doc-name { font-weight: 500; font-size: 13px; }
     .doc-meta { font-size: 11px; color: var(--text-faint); }
 
-    /* Empty state */
+    /* ============================================================
+       Empty states
+       ============================================================ */
     .empty { text-align: center; padding: 40px 16px; color: var(--text-faint); font-size: 13px; }
     .empty i { font-size: 28px; display: block; margin-bottom: 8px; opacity: .4; }
+    .empty-state {
+      padding: 56px 24px; text-align: center; color: var(--text-muted);
+    }
+    .empty-state .empty-icon {
+      width: 56px; height: 56px; margin: 0 auto 12px;
+      display: grid; place-items: center;
+      background: var(--surface-alt); border-radius: 12px;
+      color: var(--text-faint);
+    }
+    .empty-state .empty-icon i { font-size: 24px; }
+    .empty-state h3 { font-size: 15px; margin-bottom: 4px; color: var(--text); }
+    .empty-state .sub { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+
+    /* ============================================================
+       Diff viewer
+       ============================================================ */
+    .diff-grid { display: grid; gap: 10px; }
+    .diff-card {
+      border: 1px solid var(--border); border-radius: 8px;
+      overflow: hidden; background: var(--surface);
+    }
+    .diff-card-head {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px; background: var(--surface-alt);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px; font-weight: 600; color: var(--text);
+    }
+    .diff-card-head .field-key {
+      font-family: var(--font-mono); color: var(--text-muted); font-weight: 500;
+      margin-left: auto;
+    }
+    .diff-row {
+      display: grid; grid-template-columns: 24px 1fr;
+      gap: 8px; align-items: flex-start;
+      padding: 8px 12px; font-family: var(--font-mono);
+      font-size: 12.5px; line-height: 1.5;
+    }
+    .diff-row.removed { background: var(--bad-bg); color: var(--bad-fg); }
+    .diff-row.added { background: var(--ok-bg); color: var(--ok-fg); border-top: 1px solid var(--border); }
+    .diff-row.neutral { background: var(--surface-alt); color: var(--text-muted); }
+    .diff-sign { font-weight: 700; text-align: center; font-size: 14px; }
+    .diff-val.removed-val { text-decoration: line-through; opacity: .85; }
+
+    /* ============================================================
+       Dropzone
+       ============================================================ */
+    .dropzone {
+      border: 1px dashed var(--border-strong);
+      border-radius: 8px; padding: 28px; text-align: center;
+      background: var(--surface-alt);
+      transition: background .15s, border-color .15s;
+      cursor: pointer;
+    }
+    .dropzone.is-over { border-color: var(--accent); background: var(--accent-soft); border-style: solid; }
+
+    /* ============================================================
+       Modal (custom, not Bootstrap)
+       ============================================================ */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(28,25,23,.5);
+      backdrop-filter: blur(2px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; padding: 24px;
+      animation: overlay-in .15s ease-out;
+    }
+    @keyframes overlay-in { from { opacity: 0; } to { opacity: 1; } }
+    .modal-dialog-custom {
+      background: var(--surface); border-radius: 12px;
+      border: 1px solid var(--border); box-shadow: var(--shadow-lg);
+      width: 100%; max-width: 520px;
+      max-height: calc(100vh - 48px);
+      display: flex; flex-direction: column; overflow: hidden;
+      animation: modal-in .22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes modal-in { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+    .modal-dialog-custom.modal-lg { max-width: 720px; }
+    .modal-dialog-custom.modal-xl { max-width: 880px; }
+    .modal-head-custom {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+    }
+    .modal-title-custom { font-size: 15px; font-weight: 600; }
+    .modal-sub-custom { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .modal-body-custom { padding: 20px; overflow-y: auto; flex: 1; }
+    .modal-foot-custom {
+      display: flex; justify-content: flex-end; gap: 8px;
+      padding: 14px 20px; border-top: 1px solid var(--border);
+      background: var(--surface-alt);
+    }
+
+    /* ============================================================
+       Notifications (toast stack — bottom right)
+       ============================================================ */
+    #toast-container {
+      position: fixed; right: 16px; bottom: 16px;
+      z-index: 9999; width: 360px;
+      display: flex; flex-direction: column-reverse; gap: 8px;
+      pointer-events: none;
+    }
+    .toast-alert {
+      display: flex; align-items: flex-start; gap: 10px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 3px solid var(--text-muted);
+      border-radius: 8px;
+      padding: 12px 14px 12px 12px;
+      box-shadow: var(--shadow-md);
+      font-size: 13px; color: var(--text);
+      pointer-events: auto;
+      animation: toast-in .25s ease-out;
+    }
+    @keyframes toast-in {
+      from { transform: translateX(110%); opacity: 0; }
+      to   { transform: translateX(0);    opacity: 1; }
+    }
+    .toast-alert.alert-success { border-left-color: var(--ok-fg); background: var(--ok-bg); color: var(--ok-fg); border-color: var(--ok-bd); }
+    .toast-alert.alert-danger  { border-left-color: var(--bad-fg); background: var(--bad-bg); color: var(--bad-fg); border-color: var(--bad-bd); }
+    .toast-alert.alert-warning { border-left-color: var(--warn-fg); background: var(--warn-bg); color: var(--warn-fg); border-color: var(--warn-bd); }
+    .toast-alert.alert-info    { border-left-color: var(--info-fg); background: var(--info-bg); color: var(--info-fg); border-color: var(--info-bd); }
+    .toast-close-btn {
+      background: none; border: none; cursor: pointer;
+      color: currentColor; opacity: .55; font-size: 16px; line-height: 1;
+      padding: 0; margin-left: auto; flex-shrink: 0;
+    }
+    .toast-close-btn:hover { opacity: 1; }
+
+    /* ============================================================
+       Select2 overrides
+       ============================================================ */
+    .select2-container--default .select2-selection--single {
+      height: 36px; border: 1px solid var(--border);
+      border-radius: var(--radius-sm) !important; background: var(--surface);
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+      line-height: 34px; padding: 0 30px 0 10px;
+      color: var(--text); font-size: 14px; font-family: var(--font);
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow { height: 34px; right: 8px; }
+    .select2-container--default .select2-results__option--highlighted[aria-selected] { background-color: var(--accent); color: #fff; }
+    .select2-dropdown { border-color: var(--border); border-radius: var(--radius-sm); font-family: var(--font); font-size: 13px; }
+    .select2-search--dropdown .select2-search__field { border-color: var(--border); border-radius: var(--radius-sm); font-family: var(--font); }
+    .select2-container--default.select2-container--focus .select2-selection--single,
+    .select2-container--default.select2-container--open .select2-selection--single {
+      border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+    .select2-container { width: 100% !important; }
+    .select2-results__option { font-size: 13px; }
 
     /* ============================================================
        Misc helpers
@@ -449,7 +716,7 @@
     .gap-3 { gap: 12px; }
     .gap-4 { gap: 16px; }
 
-    /* Spacing helpers */
+    /* Spacing */
     .me-1 { margin-right: 4px; }
     .me-2 { margin-right: 8px; }
     .ms-auto { margin-left: auto; }
@@ -457,7 +724,7 @@
     .mb-0 { margin-bottom: 0 !important; }
     .mb-1 { margin-bottom: 4px; }
     .mb-2 { margin-bottom: 8px; }
-    .mb-3 { margin-bottom: 12px; }
+    .mb-3 { margin-bottom: 16px; }
     .mb-4 { margin-bottom: 24px; }
     .mt-1 { margin-top: 4px; }
     .mt-2 { margin-top: 8px; }
@@ -474,7 +741,7 @@
     .row { display: flex; flex-wrap: wrap; margin: 0 -8px; }
     .row.g-2 { gap: 8px; margin: 0; }
     [class*="col-"] { padding: 0 8px; }
-    .col-6  { flex: 0 0 50%;    max-width: 50%; }
+    .col-6   { flex: 0 0 50%;    max-width: 50%; }
     .col-md-2  { flex: 0 0 16.67%; max-width: 16.67%; }
     .col-md-3  { flex: 0 0 25%;    max-width: 25%; }
     .col-md-4  { flex: 0 0 33.33%; max-width: 33.33%; }
@@ -485,7 +752,6 @@
 
     /* Bootstrap list-group compat */
     .list-group { overflow: hidden; }
-    .list-group-flush { }
     .list-group-item {
       padding: 10px var(--pad); border-bottom: 1px solid var(--border);
       font-size: 13px; background: var(--surface);
@@ -501,62 +767,12 @@
     /* Bootstrap collapse compat */
     .collapse:not(.show) { display: none; }
     .collapsing { height: 0; overflow: hidden; transition: height .35s ease; }
-
-    /* bg-light */
     .bg-light { background: var(--surface-alt) !important; }
 
-    /* form-group margin */
-    .mb-3 { margin-bottom: 16px; }
-
-    /* ============================================================
-       Notifications (toasts)
-       ============================================================ */
-    #toast-container {
-      position: fixed; top: 68px; right: 16px; z-index: 9999; width: 360px;
+    /* Reduce motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
     }
-    .toast-alert {
-      display: flex; align-items: flex-start; gap: 10px;
-      padding: 12px 14px; border-radius: var(--radius); border: 1px solid;
-      margin-bottom: 8px; font-size: 13px;
-      box-shadow: var(--shadow-md);
-      animation: slideIn .3s ease;
-    }
-    @keyframes slideIn { from { opacity:0; transform: translateX(40px); } to { opacity:1; transform:none; } }
-    .toast-alert.alert-success { background: var(--ok-bg);   color: var(--ok-fg);   border-color: var(--ok-bd); }
-    .toast-alert.alert-danger  { background: var(--bad-bg);  color: var(--bad-fg);  border-color: var(--bad-bd); }
-    .toast-alert.alert-warning { background: var(--warn-bg); color: var(--warn-fg); border-color: var(--warn-bd); }
-    .toast-alert.alert-info    { background: var(--info-bg); color: var(--info-fg); border-color: var(--info-bd); }
-    .toast-alert.alert          { background: var(--neutral-bg); color: var(--neutral-fg); border-color: var(--neutral-bd); }
-    .alert-dismissible { position: relative; padding-right: 36px; }
-    .btn-close {
-      position: absolute; top: 10px; right: 10px;
-      background: none; border: none; cursor: pointer;
-      color: currentColor; opacity: .55; font-size: 18px; line-height: 1; padding: 0;
-    }
-    .btn-close:hover { opacity: 1; }
-    .btn-close::before { content: '×'; }
-
-    /* ============================================================
-       Select2 overrides
-       ============================================================ */
-    .select2-container--default .select2-selection--single {
-      height: 36px; border: 1px solid var(--border);
-      border-radius: var(--radius-sm) !important; background: var(--surface);
-    }
-    .select2-container--default .select2-selection--single .select2-selection__rendered {
-      line-height: 34px; padding: 0 30px 0 10px;
-      color: var(--text); font-size: 14px; font-family: var(--font);
-    }
-    .select2-container--default .select2-selection--single .select2-selection__arrow { height: 34px; right: 8px; }
-    .select2-container--default .select2-results__option--highlighted[aria-selected] { background-color: var(--accent); color: #fff; }
-    .select2-dropdown { border-color: var(--border); border-radius: var(--radius-sm); font-family: var(--font); font-size: 13px; }
-    .select2-search--dropdown .select2-search__field { border-color: var(--border); border-radius: var(--radius-sm); font-family: var(--font); }
-    .select2-container--default.select2-container--focus .select2-selection--single,
-    .select2-container--default.select2-container--open .select2-selection--single {
-      border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
-    }
-    .select2-container { width: 100% !important; }
-    .select2-results__option { font-size: 13px; }
 
     {% block extra_css %}{% endblock %}
     </style>
@@ -576,36 +792,41 @@
 
     <!-- Topbar -->
     <header class="topbar">
-        {% if user.is_owner %}
-        <div style="display:flex;align-items:center;gap:8px;padding:0 4px;border-right:1px solid var(--border);margin-right:4px">
-            {% with inst_id=request.session.institution_id %}
-            {% if inst_id %}
-            <span style="font-size:12px;color:var(--text-muted)">
-                <i class="bi bi-building" style="margin-right:4px"></i>
-                <strong style="color:var(--text)">{{ institution.name|default:"" }}</strong>
-            </span>
+        <div class="topbar-left">
+            {% if user.is_owner %}
+            <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-muted);">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01M16 6h.01M12 6h.01M8 10h.01M16 10h.01M12 10h.01M8 14h.01M16 14h.01M12 14h.01"/></svg>
+                <span>Организация:</span>
+                <strong style="color:var(--text)">{{ institution.name|default:"—" }}</strong>
+                <a href="{% url 'organization-list' %}" class="btn btn-ghost btn-sm" title="Сменить организацию" style="margin-left:2px;">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l4 4-4 4"/><path d="M21 7H7a4 4 0 0 0-4 4"/><path d="M7 21l-4-4 4-4"/><path d="M3 17h14a4 4 0 0 0 4-4"/></svg>
+                    Сменить
+                </a>
+            </div>
+            {% else %}
+            <div class="topbar-search">
+                <svg class="icon search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+                <input type="search" placeholder="Поиск студента, группы, сотрудника…" id="topbar-search-input" autocomplete="off">
+            </div>
             {% endif %}
-            {% endwith %}
-            <a href="{% url 'organization-list' %}" class="btn btn-ghost btn-sm" title="Сменить организацию">
-                <i class="bi bi-arrow-left-right"></i> Сменить
-            </a>
         </div>
-        {% endif %}
-        <div class="user-chip">
-            <div class="avatar avatar-sm {% if user.role == 'owner' %}av-5{% elif user.role == 'admin' %}av-1{% else %}av-2{% endif %}">
-                {{ user.username|first|upper }}
+        <div class="topbar-right">
+            <div class="user-chip">
+                <div class="avatar avatar-sm {% if user.role == 'owner' %}av-5{% elif user.role == 'admin' %}av-1{% elif user.role == 'superadmin' %}av-3{% else %}av-2{% endif %}">
+                    {{ user.username|first|upper }}
+                </div>
+                <div>
+                    <div class="name">{{ user.username }}</div>
+                    <div class="role-label">{{ user.get_role_display }}</div>
+                </div>
             </div>
-            <div>
-                <div class="name">{{ user.username }}</div>
-                <div class="role-label">{{ user.get_role_display }}</div>
-            </div>
+            <form method="post" action="{% url 'logout' %}" style="margin:0;display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-ghost btn-icon btn-sm" title="Выход из системы">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                </button>
+            </form>
         </div>
-        <form method="post" action="{% url 'logout' %}" style="margin:0;display:inline;">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-ghost btn-icon btn-sm" title="Выход">
-                <i class="bi bi-box-arrow-right"></i>
-            </button>
-        </form>
     </header>
 
     <!-- Sidebar -->
@@ -613,46 +834,55 @@
         <div class="sidebar-section">Главное</div>
         <a class="nav-item {% if request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'home' %}active{% endif %}"
            href="{% url 'dashboard' %}">
-            <i class="bi bi-speedometer2"></i>Дашборд
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+            Дашборд
         </a>
 
         {% if user.is_admin %}
         <div class="sidebar-section">Учебная структура</div>
         <a class="nav-item {% if 'faculty' in request.resolver_match.url_name %}active{% endif %}"
            href="{% url 'faculty-list' %}">
-            <i class="bi bi-building"></i>Факультеты
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01M16 6h.01M12 6h.01M8 10h.01M16 10h.01M12 10h.01M8 14h.01M16 14h.01M12 14h.01"/></svg>
+            Факультеты
         </a>
         <a class="nav-item {% if 'group' in request.resolver_match.url_name %}active{% endif %}"
            href="{% url 'group-list' %}">
-            <i class="bi bi-people"></i>Группы
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Группы
         </a>
         <a class="nav-item {% if 'subject' in request.resolver_match.url_name %}active{% endif %}"
            href="{% url 'subject-list' %}">
-            <i class="bi bi-book"></i>Предметы
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            Предметы
         </a>
 
         <div class="sidebar-section">Люди</div>
         <a class="nav-item {% if 'employee' in request.resolver_match.url_name %}active{% endif %}"
            href="{% url 'employee-list' %}">
-            <i class="bi bi-briefcase"></i>Сотрудники
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            Сотрудники
         </a>
         <a class="nav-item {% if 'student' in request.resolver_match.url_name %}active{% endif %}"
            href="{% url 'student-list' %}">
-            <i class="bi bi-person-badge"></i>Студенты
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 21v-1a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1"/></svg>
+            Студенты
         </a>
         <a class="nav-item {% if 'parent' in request.resolver_match.url_name %}active{% endif %}"
            href="{% url 'parent-list' %}">
-            <i class="bi bi-person-hearts"></i>Опекуны
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+            Опекуны
         </a>
         {% else %}
         <div class="sidebar-section">Мои данные</div>
         <a class="nav-item {% if 'group' in request.resolver_match.url_name %}active{% endif %}"
            href="{% url 'group-list' %}">
-            <i class="bi bi-people"></i>Мои группы
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Мои группы
         </a>
         <a class="nav-item {% if 'student' in request.resolver_match.url_name %}active{% endif %}"
            href="{% url 'student-list' %}">
-            <i class="bi bi-person-badge"></i>Мои студенты
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 21v-1a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1"/></svg>
+            Мои студенты
         </a>
         {% endif %}
 
@@ -660,26 +890,34 @@
         <div class="sidebar-section">Администрирование</div>
         <a class="nav-item {% if 'user' in request.resolver_match.url_name %}active{% endif %}"
            href="{% url 'user-list' %}">
-            <i class="bi bi-person-gear"></i>Пользователи
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Пользователи
         </a>
         <a class="nav-item {% if 'position' in request.resolver_match.url_name %}active{% endif %}"
            href="{% url 'position-list' %}">
-            <i class="bi bi-diagram-3"></i>Должности
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9"/></svg>
+            Должности
         </a>
         <a class="nav-item {% if 'delete-request' in request.resolver_match.url_name %}active{% endif %}"
            href="{% url 'delete-request-list' %}">
-            <i class="bi bi-trash"></i>Заявки на удаление
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            Заявки на удаление
+            {% if pending_requests_count and pending_requests_count > 0 %}
+            <span class="badge-mini with-pulse">{{ pending_requests_count }}</span>
+            {% endif %}
         </a>
         <a class="nav-item {% if request.resolver_match.url_name == 'audit-log' %}active{% endif %}"
            href="{% url 'audit-log' %}">
-            <i class="bi bi-clock-history"></i>Журнал изменений
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
+            Журнал изменений
         </a>
         {% endif %}
 
         {% if user.is_admin %}
         <div class="sidebar-section">Экспорт</div>
         <a class="nav-item" href="{% url 'export-students' %}">
-            <i class="bi bi-file-earmark-excel"></i>Экспорт в Excel
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="m9 13 6 5M15 13l-6 5"/></svg>
+            Экспорт в Excel
         </a>
         {% endif %}
     </nav>
@@ -689,9 +927,9 @@
         <div id="toast-container">
             {% if messages %}
                 {% for message in messages %}
-                <div class="toast-alert alert alert-{% if message.tags == 'error' %}danger{% elif message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible">
+                <div class="toast-alert alert alert-{% if message.tags == 'error' %}danger{% elif message.tags %}{{ message.tags }}{% else %}info{% endif %}">
                     {{ message }}
-                    <button type="button" class="btn-close" aria-label="Закрыть"></button>
+                    <button type="button" class="toast-close-btn" aria-label="Закрыть">×</button>
                 </div>
                 {% endfor %}
             {% endif %}
@@ -709,17 +947,21 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // Auto-dismiss notifications
+    // Auto-dismiss toast notifications
     document.querySelectorAll('#toast-container .toast-alert').forEach(function (el) {
         setTimeout(function () {
-            el.style.transition = 'opacity 0.5s ease';
+            el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
             el.style.opacity = '0';
-            setTimeout(function () { el.remove(); }, 500);
+            el.style.transform = 'translateX(110%)';
+            setTimeout(function () { el.remove(); }, 400);
         }, 4000);
     });
-    document.querySelectorAll('.btn-close').forEach(function (btn) {
+    document.querySelectorAll('.toast-close-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
-            this.closest('.toast-alert').remove();
+            var el = this.closest('.toast-alert');
+            el.style.transition = 'opacity 0.2s ease';
+            el.style.opacity = '0';
+            setTimeout(function () { el.remove(); }, 200);
         });
     });
     // Select2
@@ -730,6 +972,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 noResults: function () { return 'Ничего не найдено'; },
                 searching: function () { return 'Поиск...'; },
             },
+        });
+    }
+    // Topbar search (navigate to student/employee search)
+    var searchInput = document.getElementById('topbar-search-input');
+    if (searchInput) {
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && this.value.trim()) {
+                window.location.href = '{% url "student-list" %}?search=' + encodeURIComponent(this.value.trim());
+            }
         });
     }
 });

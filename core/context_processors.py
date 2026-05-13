@@ -3,7 +3,15 @@ def current_institution(request):
         return {}
     try:
         from core.utils import get_institution_from_session
+        from core.models import DeleteRequest
         institution = get_institution_from_session(request)
-        return {'institution': institution}
+        ctx = {'institution': institution}
+        if institution and request.user.is_owner:
+            ctx['pending_requests_count'] = DeleteRequest.objects.filter(
+                user__institution=institution, status='pending'
+            ).count()
+        else:
+            ctx['pending_requests_count'] = 0
+        return ctx
     except Exception:
-        return {}
+        return {'pending_requests_count': 0}

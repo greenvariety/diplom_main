@@ -1262,13 +1262,51 @@ def _perform_delete(user, dr, institution=None):
 
 @owner_required
 def audit_log(request):
+    from django.core.paginator import Paginator
     institution, redir = _institution_required(request)
     if redir:
         return redir
-    logs = AuditLog.objects.filter(
+
+    q             = request.GET.get('q', '').strip()
+    action_filter = request.GET.get('action', '').strip()
+    user_filter   = request.GET.get('user', '').strip()
+
+    base_qs = AuditLog.objects.filter(
         Q(institution=institution) | Q(user__institution=institution)
-    ).select_related('user').distinct()[:200]
-    return render(request, 'core/audit_log.html', {'logs': logs})
+    ).select_related('user').distinct().order_by('-created_at')
+
+    logs_qs = base_qs
+    if q:
+        logs_qs = logs_qs.filter(
+            Q(object_type__icontains=q) |
+            Q(user__username__icontains=q) |
+            Q(user__last_name__icontains=q) |
+            Q(user__first_name__icontains=q)
+        )
+    if action_filter in ('created', 'updated', 'deleted'):
+        logs_qs = logs_qs.filter(action=action_filter)
+    if user_filter:
+        logs_qs = logs_qs.filter(user__username=user_filter)
+
+    total_count = logs_qs.count()
+    paginator   = Paginator(logs_qs, 25)
+    page_obj    = paginator.get_page(request.GET.get('page', 1))
+
+    all_users = list(
+        base_qs.values_list('user__username', flat=True)
+               .distinct().order_by('user__username')
+    )
+    all_users = [u for u in all_users if u]
+
+    return render(request, 'core/audit_log.html', {
+        'logs':          page_obj,
+        'page_obj':      page_obj,
+        'total_count':   total_count,
+        'q':             q,
+        'action_filter': action_filter,
+        'user_filter':   user_filter,
+        'all_users':     all_users,
+    })
 
 
 # ---------------------------------------------------------------------------
