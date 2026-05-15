@@ -1447,76 +1447,68 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
   );
 }
 
-function AuditLog({ openModal }) {
-  const ext = useMemo(() => [
-    { ts: '09.05.2026 14:32:11', user: 'admin1',     userName: 'Дмитриева О. П.', role: 'Администратор', action: 'create', label: 'Создал',  obj: 'Студент #612 — Иванов И. И.',     cls: 'badge-ok' },
-    { ts: '09.05.2026 13:55:04', user: 'admin1',     userName: 'Дмитриева О. П.', role: 'Администратор', action: 'update', label: 'Изменил', obj: 'Студент #610 — Петрова М. С.',    cls: 'badge-warn' },
-    { ts: '09.05.2026 12:10:48', user: 'teacher1',   userName: 'Кузнецова Н. А.', role: 'Преподаватель', action: 'update', label: 'Изменил', obj: 'Группа ПИ-301',                   cls: 'badge-warn' },
-    { ts: '08.05.2026 18:04:22', user: 'admin1',     userName: 'Дмитриева О. П.', role: 'Администратор', action: 'delete', label: 'Удалил',  obj: 'Опекун #45',                       cls: 'badge-bad' },
-    { ts: '08.05.2026 17:30:00', user: 'superadmin', userName: 'Петров А. С.',    role: 'Суперадмин',    action: 'create', label: 'Создал',  obj: 'Пользователь #8 — teacher2',       cls: 'badge-ok' },
-    { ts: '08.05.2026 16:48:15', user: 'admin1',     userName: 'Дмитриева О. П.', role: 'Администратор', action: 'update', label: 'Изменил', obj: 'Сотрудник #4 — Лебедева И. Ю.',    cls: 'badge-warn' },
-    { ts: '07.05.2026 09:11:02', user: 'admin2',     userName: 'Романов С. И.',   role: 'Администратор', action: 'create', label: 'Создал',  obj: 'Группа МН-101',                   cls: 'badge-ok' },
-    { ts: '06.05.2026 22:14:55', user: 'admin1',     userName: 'Дмитриева О. П.', role: 'Администратор', action: 'update', label: 'Изменил', obj: 'Факультет ФИТ',                    cls: 'badge-warn' },
-    { ts: '06.05.2026 19:02:11', user: 'teacher2',   userName: 'Морозов В. Г.',   role: 'Преподаватель', action: 'update', label: 'Изменил', obj: 'Студент #609 — Захарова О. Н.',   cls: 'badge-warn' },
-    { ts: '06.05.2026 11:48:30', user: 'admin2',     userName: 'Романов С. И.',   role: 'Администратор', action: 'create', label: 'Создал',  obj: 'Студент #608 — Морозов А. И.',    cls: 'badge-ok' },
-    { ts: '05.05.2026 20:01:09', user: 'admin1',     userName: 'Дмитриева О. П.', role: 'Администратор', action: 'delete', label: 'Удалил',  obj: 'Опекун #42',                       cls: 'badge-bad' },
-    { ts: '05.05.2026 15:44:21', user: 'teacher1',   userName: 'Кузнецова Н. А.', role: 'Преподаватель', action: 'update', label: 'Изменил', obj: 'Группа ПИ-302',                   cls: 'badge-warn' },
-    { ts: '05.05.2026 10:18:50', user: 'superadmin', userName: 'Петров А. С.',    role: 'Суперадмин',    action: 'create', label: 'Создал',  obj: 'Факультет ФМН',                    cls: 'badge-ok' },
-    { ts: '04.05.2026 14:23:00', user: 'admin1',     userName: 'Дмитриева О. П.', role: 'Администратор', action: 'update', label: 'Изменил', obj: 'Студент #605 — Новиков Д. О.',    cls: 'badge-warn' },
-    { ts: '03.05.2026 11:02:09', user: 'admin2',     userName: 'Романов С. И.',   role: 'Администратор', action: 'delete', label: 'Удалил',  obj: 'Сотрудник #11 — Соколов И. К.',   cls: 'badge-bad' },
-    { ts: '02.05.2026 09:30:15', user: 'admin1',     userName: 'Дмитриева О. П.', role: 'Администратор', action: 'create', label: 'Создал',  obj: 'Опекун #46 — Сидоров П. А.',      cls: 'badge-ok' },
-  ], []);
-
+function AuditLog({ currentUser, openModal, onNavigate }) {
   const [q, setQ] = useState('');
   const [userFilter, setUserFilter] = useState('');
   const [actionFilter, setActionFilter] = useState('');
-  const [period, setPeriod] = useState('week');
-  const sort = useSortable({ key: 'ts', dir: 'desc' }, 'audit-log');
+  const [period, setPeriod] = useState('all');
+  const [page, setPage] = useState(1);
+  const [data, setData] = useState({ results: [], count: 0, num_pages: 1 });
+  const [loading, setLoading] = useState(true);
+  const [userOpts, setUserOpts] = useState([]);
 
-  const userOpts = useMemo(() => {
-    const map = new Map();
-    ext.forEach(a => map.set(a.user, { value: a.user, label: a.user, sub: a.role }));
-    return Array.from(map.values());
-  }, [ext]);
+  useEffect(() => {
+    api.get('/audit-log/users/').then(r => setUserOpts(r.data)).catch(() => {});
+  }, []);
 
-  const filtered = useMemo(() => ext.filter(a => {
-    if (q && !`${a.obj} ${a.user} ${a.userName}`.toLowerCase().includes(q.toLowerCase())) return false;
-    if (userFilter && a.user !== userFilter) return false;
-    if (actionFilter && a.action !== actionFilter) return false;
-    return true;
-  }), [ext, q, userFilter, actionFilter]);
+  const load = () => {
+    setLoading(true);
+    const params = new URLSearchParams({ page });
+    if (q) params.set('search', q);
+    if (actionFilter) params.set('action', actionFilter);
+    if (period && period !== 'all') params.set('period', period);
+    if (userFilter) params.set('user_id', userFilter);
+    api.get(`/audit-log/?${params}`).then(r => {
+      setData(r.data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  };
 
-  const sorted = sort.sortFn(filtered, {
-    ts: a => a.ts, user: a => a.user, action: a => a.label, obj: a => a.obj,
-  });
+  useEffect(() => { load(); }, [page]);
 
-  const pager = usePager(sorted.length, { key: 'audit-log', defaultSize: 25 });
-  const rows = pager.slice(sorted);
+  const handleSearch = () => { setPage(1); load(); };
+  const reset = () => { setQ(''); setUserFilter(''); setActionFilter(''); setPeriod('all'); setPage(1); setTimeout(load, 0); };
 
   const activeFilters = [];
-  if (userFilter) activeFilters.push({ k: 'u', l: `Пользователь: ${userFilter}`, clr: () => setUserFilter('') });
+  if (userFilter) {
+    const u = userOpts.find(u => String(u.value) === String(userFilter));
+    activeFilters.push({ k: 'u', l: `Пользователь: ${u?.label || userFilter}`, clr: () => setUserFilter('') });
+  }
   if (actionFilter) activeFilters.push({ k: 'a', l: `Действие: ${actionFilter === 'create' ? 'Создание' : actionFilter === 'update' ? 'Изменение' : 'Удаление'}`, clr: () => setActionFilter('') });
 
   return (
-    <Shell role="superadmin" active="audit" openModal={openModal}>
+    <Shell currentUser={currentUser} active="audit" onNavigate={onNavigate} openModal={openModal}>
       <PageHead title="Журнал изменений"
-        sub={`Найдено: ${filtered.length} записей из ${ext.length}`}
+        sub={loading ? 'Загрузка…' : `Найдено: ${data.count} записей`}
         actions={<button className="btn btn-secondary btn-sm">{I.excel}Экспорт</button>}
       />
       <div className="filters">
         <div className="field grow-2"><label className="field-label">Поиск по объекту, пользователю или ФИО</label>
-          <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} placeholder="Студент, группа, admin1, Дмитриева…" /></div>
+          <div className="input-with-icon">{I.search}<input className="input" value={q}
+            onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearch()}
+            placeholder="Студент, группа, admin1, Дмитриева…" /></div>
         </div>
         <div className="field"><label className="field-label">Пользователь</label>
-          <Combobox value={userFilter} onChange={setUserFilter} options={userOpts} placeholder="Все пользователи" />
+          <Combobox value={userFilter} onChange={v => { setUserFilter(v); setPage(1); setTimeout(load, 0); }}
+            options={userOpts} placeholder="Все пользователи" />
         </div>
         <div className="field"><label className="field-label">Действие</label>
-          <Combobox value={actionFilter} onChange={setActionFilter}
+          <Combobox value={actionFilter} onChange={v => { setActionFilter(v); setPage(1); setTimeout(load, 0); }}
             options={[{ value: 'create', label: 'Создание' }, { value: 'update', label: 'Изменение' }, { value: 'delete', label: 'Удаление' }]}
             placeholder="Все действия" />
         </div>
         <div className="field"><label className="field-label">Период</label>
-          <Combobox value={period} onChange={setPeriod}
+          <Combobox value={period} onChange={v => { setPeriod(v); setPage(1); setTimeout(load, 0); }}
             options={[{ value: 'day', label: 'За сегодня' }, { value: 'week', label: 'За неделю' }, { value: 'month', label: 'За месяц' }, { value: 'all', label: 'За всё время' }]}
             placeholder="Период" allowClear={false} />
         </div>
@@ -1531,35 +1523,43 @@ function AuditLog({ openModal }) {
       )}
       <div className="card">
         <div className="card-body flush">
-          {sorted.length === 0
-            ? <EmptyState icon={I.history} title="Записи не найдены" sub="Измените условия фильтрации или сбросьте фильтры"
-                action={<button className="btn btn-secondary btn-sm" onClick={() => { setQ(''); setUserFilter(''); setActionFilter(''); }}>Сбросить фильтры</button>} />
-            : <table className="tbl">
-                <thead><tr>
-                  <SortHeader k="ts"     sort={sort}>Дата и время</SortHeader>
-                  <SortHeader k="user"   sort={sort}>Пользователь</SortHeader>
-                  <SortHeader k="action" sort={sort}>Действие</SortHeader>
-                  <SortHeader k="obj"    sort={sort}>Объект</SortHeader>
-                  <th style={{ width: 100 }}>Diff</th>
-                </tr></thead>
-                <tbody>
-                  {rows.map((a, i) => (
-                    <tr key={pager.start + i} className="row-link" onClick={() => openModal('auditDiff', a)}>
-                      <td className="mono muted">{a.ts}</td>
-                      <td>
-                        <span className="fwm mono">{a.user}</span>
-                        <div className="muted" style={{ fontSize: 11 }}>{a.userName} · {a.role}</div>
-                      </td>
-                      <td><span className={`badge ${a.cls}`}><span className="dot"></span>{a.label}</span></td>
-                      <td>{a.obj}</td>
-                      <td><a href="#" onClick={ev => { ev.preventDefault(); ev.stopPropagation(); openModal('auditDiff', a); }}>Показать →</a></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {loading
+            ? <table className="tbl"><thead><tr><th>Дата и время</th><th>Пользователь</th><th>Действие</th><th>Объект</th><th style={{ width: 100 }}>Diff</th></tr></thead><tbody><SkeletonRows cols={5} /></tbody></table>
+            : data.results.length === 0
+              ? <EmptyState icon={I.history} title="Записи не найдены" sub="Измените условия фильтрации или сбросьте фильтры"
+                  action={<button className="btn btn-secondary btn-sm" onClick={reset}>Сбросить фильтры</button>} />
+              : <table className="tbl">
+                  <thead><tr>
+                    <th>Дата и время</th>
+                    <th>Пользователь</th>
+                    <th>Действие</th>
+                    <th>Объект</th>
+                    <th style={{ width: 100 }}>Diff</th>
+                  </tr></thead>
+                  <tbody>
+                    {data.results.map(a => (
+                      <tr key={a.id} className="row-link" onClick={() => openModal('auditDiff', a)}>
+                        <td className="mono muted">{a.ts}</td>
+                        <td>
+                          <span className="fwm mono">{a.user}</span>
+                          <div className="muted" style={{ fontSize: 11 }}>{a.userName} · {a.role}</div>
+                        </td>
+                        <td><span className={`badge ${a.cls}`}><span className="dot"></span>{a.label}</span></td>
+                        <td>{a.obj}</td>
+                        <td><a href="#" onClick={ev => { ev.preventDefault(); ev.stopPropagation(); openModal('auditDiff', a); }}>Показать →</a></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
           }
         </div>
-        {sorted.length > 0 && <Pager pager={pager} total={sorted.length} />}
+        {data.num_pages > 1 && (
+          <div className="card-foot" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 16px' }}>
+            <button className="btn btn-ghost btn-sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>← Назад</button>
+            <span className="muted" style={{ fontSize: 13 }}>Страница {page} из {data.num_pages}</span>
+            <button className="btn btn-ghost btn-sm" disabled={page >= data.num_pages} onClick={() => setPage(p => p + 1)}>Вперёд →</button>
+          </div>
+        )}
       </div>
     </Shell>
   );
