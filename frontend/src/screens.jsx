@@ -834,105 +834,238 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
 /* ============================================================
    Employees list / detail
    ============================================================ */
-function EmployeeList({ openModal }) {
+function EmployeeList({ currentUser, openModal, onNavigate }) {
+  const toast = useToast();
   const [q, setQ] = useState('');
-  const filtered = EMPLOYEES.filter(e => !q || `${e.last} ${e.first} ${e.pos}`.toLowerCase().includes(q.toLowerCase()));
+  const [posId, setPosId] = useState('');
+  const [page, setPage] = useState(1);
+  const [data, setData] = useState({ results: [], count: 0, num_pages: 1 });
+  const [loading, setLoading] = useState(true);
+  const [positions, setPositions] = useState([]);
+
+  useEffect(() => {
+    api.get('/positions/').then(r => setPositions(r.data)).catch(() => {});
+  }, []);
+
+  const load = () => {
+    setLoading(true);
+    const params = new URLSearchParams({ page });
+    if (q) params.set('search', q);
+    if (posId) params.set('position_id', posId);
+    api.get(`/employees/?${params}`).then(r => {
+      setData(r.data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, [page]);
+
+  const handleSearch = () => { setPage(1); load(); };
+  const reset = () => { setQ(''); setPosId(''); setPage(1); setTimeout(load, 0); };
+
   return (
-    <Shell role="admin" active="employees" openModal={openModal}>
-      <PageHead title="Сотрудники" sub={`Всего 38 человек${q ? `, найдено ${filtered.length}` : ''}`}
-        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('employeeForm')}>{I.plus}Добавить</button>}
+    <Shell currentUser={currentUser} active="employees" onNavigate={onNavigate} openModal={openModal}>
+      <PageHead
+        crumbs={[{ label: 'Главная', href: true }, { label: 'Сотрудники' }]}
+        title="Сотрудники"
+        sub={loading ? 'Загрузка…' : `Всего ${data.count} человек`}
+        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('employeeForm', { onDone: () => { setPage(1); load(); } })}>{I.plus}Добавить</button>}
       />
       <div className="filters">
         <div className="field grow-2">
-          <label className="field-label">Поиск</label>
-          <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} placeholder="ФИО или должность…" /></div>
+          <label className="field-label">Поиск по ФИО</label>
+          <div className="input-with-icon">{I.search}
+            <input className="input" value={q} onChange={e => setQ(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSearch()}
+              placeholder="Иванов Иван…" />
+          </div>
         </div>
-        <div className="field"><label className="field-label">Должность</label><select className="select"><option>— Все —</option><option>Преподаватель</option><option>Декан</option></select></div>
-        <div className="field"><label className="field-label">Тип</label><select className="select"><option>— Все —</option><option>Преподаватели</option><option>Только админ. персонал</option></select></div>
+        <div className="field"><label className="field-label">Должность</label>
+          <select className="select" value={posId} onChange={e => setPosId(e.target.value)}>
+            <option value="">— Все —</option>
+            {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </div>
+        <button className="btn btn-primary btn-sm" onClick={handleSearch}>Найти</button>
+        <button className="btn btn-ghost btn-sm" onClick={reset}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
-          <table className="tbl">
-            <thead><tr><th style={{ width: 40 }}>#</th><th style={{ width: 50 }}></th><th>ФИО</th><th>Должность</th><th>Преподаёт</th><th>Телефон</th><th style={{ width: 40 }}></th></tr></thead>
-            <tbody>
-              {filtered.map(e => (
-                <tr key={e.id} className="row-link" onClick={() => openModal('employeeDetail', e)}>
-                  <td className="muted">{e.id}</td>
-                  <td><Avatar name={`${e.last} ${e.first}`} size="sm" av={e.av} /></td>
-                  <td className="fwm">{e.last} {e.first} {e.mid}</td>
-                  <td>{e.pos}</td>
-                  <td>{e.teacher ? <Badge status="enrolled">Да</Badge> : <span className="muted">—</span>}</td>
-                  <td className="muted">{e.phone}</td>
-                  <td><button className="btn btn-ghost btn-icon btn-sm" onClick={ev => ev.stopPropagation()}>{I.more}</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {!loading && data.results.length === 0 ? (
+            <EmptyState icon={I.search} title="Сотрудники не найдены" sub="Попробуйте изменить условия поиска" />
+          ) : (
+            <table className="tbl">
+              <thead><tr><th style={{ width: 40 }}>#</th><th>ФИО</th><th>Должность</th><th>Телефон</th><th>Email</th></tr></thead>
+              <tbody>
+                {loading ? <SkeletonRows cols={5} /> : data.results.map(e => (
+                  <tr key={e.id} className="row-link" onClick={() => onNavigate('employee-detail', { employeeId: e.id })}>
+                    <td className="muted mono">{e.id}</td>
+                    <td className="fwm">{e.full_name}</td>
+                    <td>{e.position_name || <span className="muted">—</span>}</td>
+                    <td className="muted">{e.phone || '—'}</td>
+                    <td className="muted">{e.email || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
+        {data.num_pages > 1 && (
+          <div className="card-foot">
+            <Pager page={page} numPages={data.num_pages} onPage={setPage} />
+          </div>
+        )}
       </div>
     </Shell>
   );
 }
 
-function EmployeeDetail({ openModal }) {
-  const e = EMPLOYEES[1];
+function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
+  const toast = useToast();
+  const [employee, setEmployee] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = () => {
+    setLoading(true);
+    api.get(`/employees/${employeeId}/`).then(r => {
+      setEmployee(r.data);
+      setLoading(false);
+    }).catch(() => {
+      setLoading(false);
+      toast.push('Не удалось загрузить данные сотрудника', { kind: 'err' });
+    });
+  };
+
+  useEffect(() => { if (employeeId) load(); }, [employeeId]);
+
+  const removeSubject = async (assignmentId) => {
+    try {
+      await api.delete(`/employees/${employeeId}/subjects/${assignmentId}/`);
+      toast.push('Назначение удалено', { kind: 'ok' });
+      load();
+    } catch {
+      toast.push('Не удалось удалить назначение', { kind: 'err' });
+    }
+  };
+
+  const handleDeleteRequest = async () => {
+    if (!employee) return;
+    try {
+      await api.post(`/employees/${employeeId}/delete-request/`, {});
+      toast.push('Заявка на удаление отправлена', { kind: 'ok' });
+    } catch {
+      toast.push('Не удалось создать заявку', { kind: 'err' });
+    }
+  };
+
+  if (loading || !employee) {
+    return (
+      <Shell currentUser={currentUser} active="employees" onNavigate={onNavigate} openModal={openModal}>
+        <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>Загрузка…</div>
+      </Shell>
+    );
+  }
+
   return (
-    <Shell role="admin" active="employees" openModal={openModal}>
+    <Shell currentUser={currentUser} active="employees" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
-        crumbs={[{ label: 'Сотрудники', href: true }, { label: `${e.last} ${e.first}` }]}
-        title={`${e.last} ${e.first} ${e.mid}`}
-        sub={`${e.pos}${e.teacher ? ' · преподаватель' : ''}`}
+        crumbs={[{ label: 'Сотрудники', href: true, onClick: () => onNavigate('employees') }, { label: employee.full_name }]}
+        title={employee.full_name}
+        sub={employee.position_name || 'Сотрудник'}
         actions={<>
-          <button className="btn btn-secondary btn-sm" onClick={() => openModal('employeeForm', e)}>{I.pencil}Редактировать</button>
-          <button className="btn btn-danger btn-sm" onClick={() => openModal('deleteConfirm', { name: `${e.last} ${e.first}`, type: 'сотрудника' })}>{I.trash}Удалить</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => openModal('employeeForm', { employee, onDone: load })}>{I.pencil}Редактировать</button>
+          <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Удалить</button>
         </>}
       />
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
         <div className="card">
           <div className="card-body" style={{ textAlign: 'center', padding: 24 }}>
-            <Avatar name={`${e.last} ${e.first}`} size="lg" av={e.av} className="avatar-zoomy" />
-            <h3 style={{ marginTop: 14, marginBottom: 6 }}>{e.last} {e.first}</h3>
-            <div className="muted" style={{ fontSize: 13, marginBottom: 12 }}>{e.mid}</div>
-            <div style={{ display: 'flex', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Badge>{e.pos}</Badge>
-              {e.teacher && <Badge status="enrolled">Преподаватель</Badge>}
-            </div>
+            <Avatar name={employee.full_name} size="lg" className="avatar-zoomy" />
+            <h3 style={{ marginTop: 14, marginBottom: 6 }}>{employee.last_name} {employee.first_name}</h3>
+            <div className="muted" style={{ fontSize: 13, marginBottom: 12 }}>{employee.middle_name}</div>
+            {employee.position_name && (
+              <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                <Badge>{employee.position_name}</Badge>
+              </div>
+            )}
           </div>
           <div style={{ borderTop: '1px solid var(--border)' }}>
             <dl className="kv">
-              <dt>Дата рождения</dt><dd>12.07.1985</dd>
-              <dt>Телефон</dt><dd>{e.phone}</dd>
-              <dt>Email</dt><dd>kuznetsova@edu.ru</dd>
+              {employee.birth_date && <><dt>Дата рождения</dt><dd>{employee.birth_date}</dd></>}
+              <dt>Телефон</dt><dd>{employee.phone || '—'}</dd>
+              <dt>Email</dt><dd>{employee.email || '—'}</dd>
             </dl>
           </div>
         </div>
-        <div>
-          <div className="card">
-            <div className="card-head"><div className="title">Классное руководство</div></div>
-            <div className="card-body flush">
-              <table className="tbl">
-                <thead><tr><th>Группа</th><th>Факультет</th><th>Студентов</th></tr></thead>
-                <tbody>
-                  <tr className="row-link"><td className="fwm"><a href="#">ПИ-301</a></td><td>ФИТ</td><td className="mono">28</td></tr>
-                </tbody>
-              </table>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {employee.headed_groups?.length > 0 && (
+            <div className="card">
+              <div className="card-head"><div className="title">Классное руководство</div></div>
+              <div className="card-body flush">
+                <table className="tbl">
+                  <thead><tr><th>Группа</th><th>Факультет</th><th>Студентов</th></tr></thead>
+                  <tbody>
+                    {employee.headed_groups.map(g => (
+                      <tr key={g.id} className="row-link" onClick={() => onNavigate('group-detail', { groupId: g.id })}>
+                        <td className="fwm">{g.name}</td>
+                        <td>{g.faculty_short}</td>
+                        <td className="mono">{g.student_count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          )}
           <div className="card">
             <div className="card-head">
               <div className="title">Ведёт предметы</div>
-              <button className="btn btn-secondary btn-sm" onClick={() => openModal('assignSubject')}>{I.plus}Назначить</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => openModal('employeeAssignSubject', { employeeId, onDone: load })}>{I.plus}Назначить</button>
             </div>
             <div className="card-body flush">
-              <table className="tbl">
-                <thead><tr><th>Предмет</th><th>Группа</th><th>Часов</th><th style={{ width: 40 }}></th></tr></thead>
-                <tbody>
-                  <tr><td className="fwm">Базы данных</td><td><a href="#">ПИ-301</a></td><td className="mono">72</td><td><button className="btn btn-ghost btn-icon btn-sm">{I.x}</button></td></tr>
-                  <tr><td className="fwm">Веб-программирование</td><td><a href="#">ПИ-302</a></td><td className="mono">54</td><td><button className="btn btn-ghost btn-icon btn-sm">{I.x}</button></td></tr>
-                </tbody>
-              </table>
+              {employee.subjects?.length === 0 ? (
+                <EmptyState icon={I.briefcase} title="Предметы не назначены" sub="Нажмите «Назначить» чтобы добавить" />
+              ) : (
+                <table className="tbl">
+                  <thead><tr><th>Предмет</th><th>Группа</th><th style={{ width: 40 }}></th></tr></thead>
+                  <tbody>
+                    {employee.subjects?.map(s => (
+                      <tr key={s.assignment_id}>
+                        <td className="fwm">{s.subject_name}</td>
+                        <td>{s.group_name}</td>
+                        <td>
+                          <button className="btn btn-ghost btn-icon btn-sm" onClick={() => removeSubject(s.assignment_id)} title="Убрать">{I.x}</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
+          {employee.documents?.length > 0 && (
+            <div className="card">
+              <div className="card-head">
+                <div className="title">Документы</div>
+                <button className="btn btn-secondary btn-sm" onClick={() => openModal('uploadDoc', { ownerType: 'employee', ownerId: employeeId, onDone: load })}>{I.plus}Загрузить</button>
+              </div>
+              <div className="card-body flush">
+                <table className="tbl">
+                  <thead><tr><th>Название</th><th>Тип</th><th>Дата</th><th style={{ width: 40 }}></th></tr></thead>
+                  <tbody>
+                    {employee.documents.map(d => (
+                      <tr key={d.id}>
+                        <td className="fwm"><a href={d.file_url} target="_blank" rel="noreferrer">{d.name}</a></td>
+                        <td>{d.doc_type || '—'}</td>
+                        <td className="muted">{d.uploaded_at || '—'}</td>
+                        <td></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </Shell>
@@ -1437,34 +1570,52 @@ function SubjectList({ openModal }) {
   );
 }
 
-function PositionList({ openModal }) {
+function PositionList({ currentUser, openModal, onNavigate }) {
+  const toast = useToast();
+  const [positions, setPositions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = () => {
+    setLoading(true);
+    api.get('/positions/').then(r => {
+      setPositions(r.data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
   return (
-    <Shell role="superadmin" active="positions" openModal={openModal}>
-      <PageHead title="Должности" sub="Справочник должностей сотрудников"
-        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('positionForm')}>{I.plus}Добавить</button>}
+    <Shell currentUser={currentUser} active="positions" onNavigate={onNavigate} openModal={openModal}>
+      <PageHead
+        crumbs={[{ label: 'Главная', href: true }, { label: 'Должности' }]}
+        title="Должности"
+        sub={loading ? 'Загрузка…' : `Всего ${positions.length}`}
+        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('positionForm', { onDone: load })}>{I.plus}Добавить</button>}
       />
       <div className="card">
         <div className="card-body flush">
-          <table className="tbl">
-            <thead><tr><th>Название</th><th>Преподавательская</th><th>Сотрудников</th><th style={{ width: 40 }}></th></tr></thead>
-            <tbody>
-              {[
-                { n: 'Декан', t: false, c: 1 },
-                { n: 'Зав. кафедрой', t: false, c: 3 },
-                { n: 'Преподаватель', t: true, c: 24 },
-                { n: 'Ст. преподаватель', t: true, c: 6 },
-                { n: 'Методист', t: false, c: 2 },
-                { n: 'Лаборант', t: false, c: 2 },
-              ].map(p => (
-                <tr key={p.n} className="row-link">
-                  <td className="fwm">{p.n}</td>
-                  <td>{p.t ? <Badge status="enrolled">Да</Badge> : <span className="badge badge-neutral"><span className="dot"></span>Нет</span>}</td>
-                  <td className="mono">{p.c}</td>
-                  <td><button className="btn btn-ghost btn-icon btn-sm">{I.more}</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {!loading && positions.length === 0 ? (
+            <EmptyState icon={I.briefcase} title="Должности не добавлены" sub="Нажмите «Добавить» чтобы создать первую должность" />
+          ) : (
+            <table className="tbl">
+              <thead><tr><th>Название</th><th>Сотрудников</th><th style={{ width: 40 }}></th></tr></thead>
+              <tbody>
+                {loading ? <SkeletonRows cols={3} /> : positions.map(p => (
+                  <tr key={p.id}>
+                    <td className="fwm">{p.name}</td>
+                    <td className="mono">{p.employee_count}</td>
+                    <td>
+                      <button className="btn btn-ghost btn-icon btn-sm"
+                        onClick={() => openModal('positionForm', { position: p, onDone: load })}>
+                        {I.pencil}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </Shell>

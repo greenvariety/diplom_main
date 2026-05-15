@@ -222,10 +222,54 @@ function StudentFormModal({ data, onClose }) {
    Other entity forms — sections + required + saving feedback
    ============================================================ */
 function EmployeeFormModal({ data, onClose }) {
+  const employee = data?.employee;
+  const onDone = data?.onDone;
+  const isEdit = !!employee;
   const toast = useToast();
-  const save = async () => { await new Promise(r => setTimeout(r, 700)); toast.push(`Сотрудник ${data ? 'обновлён' : 'добавлен'}`, { kind: 'ok' }); onClose(); };
+  const [positions, setPositions] = useState([]);
+  const [lastName, setLastName] = useState(employee?.last_name || '');
+  const [firstName, setFirstName] = useState(employee?.first_name || '');
+  const [middleName, setMiddleName] = useState(employee?.middle_name || '');
+  const [birthDate, setBirthDate] = useState(employee?.birth_date || '');
+  const [phone, setPhone] = useState(employee?.phone || '');
+  const [email, setEmail] = useState(employee?.email || '');
+  const [positionId, setPositionId] = useState(employee?.position_id?.toString() || '');
+  const [err, setErr] = useState('');
+
+  useEffect(() => {
+    api.get('/positions/').then(r => setPositions(r.data)).catch(() => {});
+  }, []);
+
+  const save = async () => {
+    if (!lastName.trim()) { setErr('Введите фамилию'); return; }
+    if (!firstName.trim()) { setErr('Введите имя'); return; }
+    setErr('');
+    try {
+      const payload = {
+        last_name: lastName.trim(),
+        first_name: firstName.trim(),
+        middle_name: middleName.trim(),
+        birth_date: birthDate || null,
+        phone: phone.trim(),
+        email: email.trim(),
+        position_id: positionId ? parseInt(positionId) : null,
+      };
+      if (isEdit) {
+        await api.patch(`/employees/${employee.id}/`, payload);
+        toast.push('Сотрудник обновлён', { kind: 'ok' });
+      } else {
+        await api.post('/employees/', payload);
+        toast.push('Сотрудник добавлен', { kind: 'ok' });
+      }
+      onDone && onDone();
+      onClose && onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка при сохранении');
+    }
+  };
+
   return (
-    <Modal size="lg" title={data ? 'Редактировать сотрудника' : 'Новый сотрудник'} onClose={onClose}
+    <Modal size="lg" title={isEdit ? 'Редактировать сотрудника' : 'Новый сотрудник'} onClose={onClose}
       footer={<>
         <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
         <LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton>
@@ -233,31 +277,95 @@ function EmployeeFormModal({ data, onClose }) {
       <div className="form-section">
         <div className="form-section-title">Личные данные</div>
         <div className="form-grid">
-          <Field label="Фамилия" required><input className="input" defaultValue={data?.last || ''} /></Field>
-          <Field label="Имя" required><input className="input" defaultValue={data?.first || ''} /></Field>
-          <Field label="Отчество"><input className="input" defaultValue={data?.mid || ''} /></Field>
-          <Field label="Дата рождения"><input className="input" type="date" /></Field>
+          <Field label="Фамилия" required error={err && !lastName.trim() ? err : ''}>
+            <input className="input" value={lastName} onChange={e => { setLastName(e.target.value); setErr(''); }} />
+          </Field>
+          <Field label="Имя" required>
+            <input className="input" value={firstName} onChange={e => { setFirstName(e.target.value); setErr(''); }} />
+          </Field>
+          <Field label="Отчество">
+            <input className="input" value={middleName} onChange={e => setMiddleName(e.target.value)} />
+          </Field>
+          <Field label="Дата рождения">
+            <input className="input" type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} />
+          </Field>
         </div>
       </div>
       <div className="form-section">
         <div className="form-section-title">Контакты</div>
         <div className="form-grid">
-          <Field label="Телефон"><input className="input" defaultValue={data?.phone || '+7 '} /></Field>
-          <Field label="Email"><input className="input" /></Field>
+          <Field label="Телефон">
+            <input className="input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+7 " />
+          </Field>
+          <Field label="Email">
+            <input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} />
+          </Field>
         </div>
       </div>
       <div className="form-section">
         <div className="form-section-title">Работа</div>
         <div className="form-grid">
-          <Field label="Должность" required>
-            <Combobox options={POSITION_OPTS} placeholder="Начните вводить должность…" />
+          <Field label="Должность">
+            <select className="select" value={positionId} onChange={e => setPositionId(e.target.value)}>
+              <option value="">— Не указана —</option>
+              {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
           </Field>
-          <div className="field" style={{ display: 'flex', alignItems: 'flex-end' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-              <input type="checkbox" defaultChecked={data?.teacher} /> Является преподавателем
-            </label>
-          </div>
         </div>
+      </div>
+      {err && <div style={{ color: 'var(--bad-fg)', fontSize: 12, padding: '0 4px' }}>{err}</div>}
+    </Modal>
+  );
+}
+
+function EmployeeAssignSubjectModal({ data, onClose }) {
+  const { employeeId, onDone } = data || {};
+  const [groups, setGroups] = useState([]);
+  const [subjects, setSubjects] = useState([]);
+  const [groupId, setGroupId] = useState('');
+  const [subjectId, setSubjectId] = useState('');
+  const [err, setErr] = useState('');
+  const toast = useToast();
+
+  useEffect(() => {
+    api.get('/groups/').then(r => setGroups(r.data)).catch(() => {});
+    api.get('/subjects/').then(r => setSubjects(r.data)).catch(() => {});
+  }, []);
+
+  const save = async () => {
+    if (!groupId) { setErr('Выберите группу'); return; }
+    if (!subjectId) { setErr('Выберите предмет'); return; }
+    setErr('');
+    try {
+      await api.post(`/employees/${employeeId}/subjects/`, {
+        group_id: parseInt(groupId),
+        subject_id: parseInt(subjectId),
+      });
+      toast.push('Предмет назначен', { kind: 'ok' });
+      onDone && onDone();
+      onClose && onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка при назначении');
+    }
+  };
+
+  return (
+    <Modal title="Назначить предмет сотруднику" onClose={onClose}
+      footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>Назначить</LoadButton></>}>
+      <div className="form-grid">
+        <Field label="Группа" required>
+          <select className="select" value={groupId} onChange={e => { setGroupId(e.target.value); setErr(''); }}>
+            <option value="">— Выберите группу —</option>
+            {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+          </select>
+        </Field>
+        <Field label="Предмет" required>
+          <select className="select" value={subjectId} onChange={e => { setSubjectId(e.target.value); setErr(''); }}>
+            <option value="">— Выберите предмет —</option>
+            {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </Field>
+        {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
       </div>
     </Modal>
   );
@@ -446,15 +554,39 @@ function SubjectFormModal({ onClose }) {
   );
 }
 
-function PositionFormModal({ onClose }) {
+function PositionFormModal({ data, onClose }) {
+  const position = data?.position;
+  const onDone = data?.onDone;
+  const isEdit = !!position;
   const toast = useToast();
-  const save = async () => { await new Promise(r => setTimeout(r, 600)); toast.push('Должность добавлена', { kind: 'ok' }); onClose(); };
+  const [name, setName] = useState(position?.name || '');
+  const [err, setErr] = useState('');
+
+  const save = async () => {
+    if (!name.trim()) { setErr('Введите название должности'); return; }
+    setErr('');
+    try {
+      if (isEdit) {
+        await api.patch(`/positions/${position.id}/`, { name: name.trim() });
+        toast.push('Должность обновлена', { kind: 'ok' });
+      } else {
+        await api.post('/positions/', { name: name.trim() });
+        toast.push('Должность добавлена', { kind: 'ok' });
+      }
+      onDone && onDone();
+      onClose && onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка при сохранении');
+    }
+  };
+
   return (
-    <Modal title="Новая должность" onClose={onClose}
+    <Modal title={isEdit ? 'Редактировать должность' : 'Новая должность'} onClose={onClose}
       footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton></>}>
       <div className="form-grid">
-        <Field label="Название" required><input className="input" /></Field>
-        <div className="field field-full"><label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}><input type="checkbox" /> Преподавательская должность</label></div>
+        <Field label="Название" required error={err}>
+          <input className="input" value={name} onChange={e => { setName(e.target.value); setErr(''); }} placeholder="Например: Преподаватель" />
+        </Field>
       </div>
     </Modal>
   );
@@ -972,7 +1104,7 @@ export {
   StudentFormModal, EmployeeFormModal, GroupFormModal, FacultyFormModal,
   ParentFormModal, SubjectFormModal, PositionFormModal, UserFormModal,
   TransferModal, DeleteConfirmModal, ApproveDeleteModal, UploadDocModal,
-  AssignSubjectModal, AuditDiffModal, LogoutModal,
+  AssignSubjectModal, EmployeeAssignSubjectModal, AuditDiffModal, LogoutModal,
   StudentDetailModal, GroupDetailModal, FacultyDetailModal, EmployeeDetailModal,
   OrgFormModal,
 };

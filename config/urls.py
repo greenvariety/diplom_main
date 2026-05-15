@@ -9,13 +9,17 @@ from core.api_main import MeView, DashboardView
 from core.api_organizations import OrganizationsView, OrganizationDetailView, OrganizationSwitchView
 from core.api_faculties import FacultiesView, FacultyDetailView, FacultyDeleteRequestView
 from core.api_groups import GroupsView, GroupDetailView, GroupDeleteRequestView, GroupSubjectsView, GroupSubjectDetailView
-from core.api_employees import EmployeesView
+from core.api_employees import (
+    EmployeesView, EmployeeDetailView, EmployeeDeleteRequestView,
+    EmployeeSubjectsView, EmployeeSubjectDetailView,
+)
 from core.api_subjects import SubjectsView
 from core.api_students import (
     StudentsView, StudentDetailView, StudentDeleteRequestView,
     StudentTransferView, StudentParentsView, StudentParentDetailView,
 )
 from core.api_documents import DocumentUploadView, DocumentDetailView
+from core.api_positions import PositionsView, PositionDetailView
 
 router = DefaultRouter()
 
@@ -40,6 +44,10 @@ urlpatterns = [
     path('api/groups/<int:pk>/subjects/', GroupSubjectsView.as_view()),
     path('api/groups/<int:pk>/subjects/<int:assignment_pk>/', GroupSubjectDetailView.as_view()),
     path('api/employees/', EmployeesView.as_view()),
+    path('api/employees/<int:pk>/', EmployeeDetailView.as_view()),
+    path('api/employees/<int:pk>/delete-request/', EmployeeDeleteRequestView.as_view()),
+    path('api/employees/<int:pk>/subjects/', EmployeeSubjectsView.as_view()),
+    path('api/employees/<int:pk>/subjects/<int:assignment_pk>/', EmployeeSubjectDetailView.as_view()),
     path('api/subjects/', SubjectsView.as_view()),
     path('api/students/', StudentsView.as_view()),
     path('api/students/<int:pk>/', StudentDetailView.as_view()),
@@ -47,6 +55,8 @@ urlpatterns = [
     path('api/students/<int:pk>/transfer/', StudentTransferView.as_view()),
     path('api/students/<int:pk>/parents/', StudentParentsView.as_view()),
     path('api/students/<int:pk>/parents/<int:sp_pk>/', StudentParentDetailView.as_view()),
+    path('api/positions/', PositionsView.as_view()),
+    path('api/positions/<int:pk>/', PositionDetailView.as_view()),
     path('api/documents/upload/', DocumentUploadView.as_view()),
     path('api/documents/<int:pk>/', DocumentDetailView.as_view()),
     path('api/', include(router.urls)),

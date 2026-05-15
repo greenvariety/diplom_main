@@ -109,3 +109,17 @@
 - `frontend/src/shell.jsx` — добавлен `TopbarSearch`: поиск студентов в реальном времени с выпадающим списком.
 - `frontend/src/main.jsx` — добавлены экраны `students` и `student-detail`, зарегистрированы новые модалки.
 - `npm run build` — собирается без ошибок.
+
+---
+
+## Задача 7 выполнена — Сотрудники
+
+**Что сделано:**
+
+- Создан `core/api_employees.py`: список с пагинацией (фильтр по поиску и должности), детальная (предметы, классное руководство, документы), создание, редактирование, заявка на удаление, назначение предмета (группа + предмет), снятие предмета.
+- Создан `core/api_positions.py`: список должностей с `employee_count` (аннотация Count), создание, редактирование.
+- В `config/urls.py` добавлены маршруты для сотрудников и должностей.
+- `frontend/src/screens.jsx` — `EmployeeList`: реальные данные с пагинацией, фильтр по должности, поиск по ФИО. `EmployeeDetail`: профиль, классное руководство, назначенные предметы, документы. `PositionList`: реальные данные вместо моков, кнопка редактировать на каждой строке.
+- `frontend/src/modals.jsx` — `EmployeeFormModal`: поля ФИО, дата рождения, телефон, email, должность (выбор из API). `EmployeeAssignSubjectModal`: выбор группы и предмета из API. `PositionFormModal`: реальные POST/PATCH вместо заглушки-setTimeout.
+- `frontend/src/main.jsx` — добавлены экраны `employees`, `employee-detail`, `positions`; зарегистрированы модалки `employeeForm`, `employeeAssignSubject`, `positionForm`.
+- `npm run build` — собирается без ошибок.

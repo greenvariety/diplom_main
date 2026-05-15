@@ -4,8 +4,8 @@ import './styles.css';
 import { ToastProvider } from './utils.jsx';
 import { LoginScreen, RegisterScreen, SeedPhraseScreen, RecoverPasswordScreen } from './auth.jsx';
 import { Shell } from './shell.jsx';
-import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, OrganizationList, FacultyList, GroupList, GroupDetail, StudentList, StudentDetail } from './screens.jsx';
-import { OrgFormModal, FacultyFormModal, FacultyDetailModal, GroupFormModal, AssignSubjectModal, StudentFormModal, TransferModal, UploadDocModal, ParentFormModal, DeleteConfirmModal } from './modals.jsx';
+import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, OrganizationList, FacultyList, GroupList, GroupDetail, StudentList, StudentDetail, EmployeeList, EmployeeDetail, PositionList } from './screens.jsx';
+import { OrgFormModal, FacultyFormModal, FacultyDetailModal, GroupFormModal, AssignSubjectModal, StudentFormModal, TransferModal, UploadDocModal, ParentFormModal, DeleteConfirmModal, EmployeeFormModal, EmployeeAssignSubjectModal, PositionFormModal } from './modals.jsx';
 import api from './api.js';
 
 function AuthFlow({ onAuthenticated }) {
@@ -111,6 +111,15 @@ function AppShell({ onLogout }) {
     if (modal.name === 'deleteConfirm') {
       return <DeleteConfirmModal data={modal.data} onClose={closeModal} />;
     }
+    if (modal.name === 'employeeForm') {
+      return <EmployeeFormModal data={modal.data} onClose={closeModal} />;
+    }
+    if (modal.name === 'employeeAssignSubject') {
+      return <EmployeeAssignSubjectModal data={modal.data} onClose={closeModal} />;
+    }
+    if (modal.name === 'positionForm') {
+      return <PositionFormModal data={modal.data} onClose={closeModal} />;
+    }
     return null;
   };
 
@@ -159,6 +168,18 @@ function AppShell({ onLogout }) {
 
     if (currentScreen === 'student-detail') {
       return <StudentDetail {...sharedProps} studentId={navExtra?.studentId} />;
+    }
+
+    if (currentScreen === 'employees') {
+      return <EmployeeList {...sharedProps} />;
+    }
+
+    if (currentScreen === 'employee-detail') {
+      return <EmployeeDetail {...sharedProps} employeeId={navExtra?.employeeId} />;
+    }
+
+    if (currentScreen === 'positions') {
+      return <PositionList {...sharedProps} />;
     }
 
     return (
