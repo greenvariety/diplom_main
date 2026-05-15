@@ -4,8 +4,8 @@ import './styles.css';
 import { ToastProvider } from './utils.jsx';
 import { LoginScreen, RegisterScreen, SeedPhraseScreen, RecoverPasswordScreen } from './auth.jsx';
 import { Shell } from './shell.jsx';
-import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, OrganizationList, FacultyList } from './screens.jsx';
-import { OrgFormModal, FacultyFormModal, FacultyDetailModal } from './modals.jsx';
+import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, OrganizationList, FacultyList, GroupList, GroupDetail } from './screens.jsx';
+import { OrgFormModal, FacultyFormModal, FacultyDetailModal, GroupFormModal, AssignSubjectModal } from './modals.jsx';
 import api from './api.js';
 
 function AuthFlow({ onAuthenticated }) {
@@ -48,6 +48,7 @@ function AuthFlow({ onAuthenticated }) {
 function AppShell({ onLogout }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [currentScreen, setCurrentScreen] = useState('dashboard');
+  const [navExtra, setNavExtra] = useState(null);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null); // { name, data }
 
@@ -70,6 +71,11 @@ function AppShell({ onLogout }) {
     onLogout();
   };
 
+  const handleNavigate = (screen, extra = null) => {
+    setCurrentScreen(screen);
+    setNavExtra(extra);
+  };
+
   const openModal = (name, data) => setModal({ name, data });
   const closeModal = () => setModal(null);
 
@@ -84,6 +90,12 @@ function AppShell({ onLogout }) {
     if (modal.name === 'facultyDetail') {
       return <FacultyDetailModal data={modal.data} onClose={closeModal} openModal={openModal} />;
     }
+    if (modal.name === 'groupForm') {
+      return <GroupFormModal data={modal.data} onClose={closeModal} />;
+    }
+    if (modal.name === 'assignSubject') {
+      return <AssignSubjectModal data={modal.data} onClose={closeModal} />;
+    }
     return null;
   };
 
@@ -97,7 +109,7 @@ function AppShell({ onLogout }) {
 
   const sharedProps = {
     currentUser,
-    onNavigate: setCurrentScreen,
+    onNavigate: handleNavigate,
     onLogout: handleLogout,
     openModal,
   };
@@ -118,8 +130,16 @@ function AppShell({ onLogout }) {
       return <FacultyList {...sharedProps} />;
     }
 
+    if (currentScreen === 'groups') {
+      return <GroupList {...sharedProps} />;
+    }
+
+    if (currentScreen === 'group-detail') {
+      return <GroupDetail {...sharedProps} groupId={navExtra?.groupId} />;
+    }
+
     return (
-      <Shell currentUser={currentUser} active={currentScreen} onNavigate={setCurrentScreen} onLogout={handleLogout} openModal={openModal}>
+      <Shell currentUser={currentUser} active={currentScreen} onNavigate={handleNavigate} onLogout={handleLogout} openModal={openModal}>
         <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>
           Раздел будет доступен в следующих обновлениях
         </div>

@@ -215,24 +215,69 @@ function EmployeeFormModal({ data, onClose }) {
 }
 
 function GroupFormModal({ data, onClose }) {
+  const { group, onDone } = data || {};
+  const isEdit = !!group;
+  const [faculties, setFaculties] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [facultyId, setFacultyId] = useState(group?.faculty_id?.toString() || '');
+  const [year, setYear] = useState(group?.year?.toString() || new Date().getFullYear().toString());
+  const [headteacherId, setHeadteacherId] = useState(group?.headteacher_id?.toString() || '');
+  const [err, setErr] = useState('');
   const toast = useToast();
-  const save = async () => { await new Promise(r => setTimeout(r, 600)); toast.push(`Группа ${data ? 'обновлена' : 'создана'}`, { kind: 'ok' }); onClose(); };
+
+  useEffect(() => {
+    api.get('/faculties/').then(r => setFaculties(r.data)).catch(() => {});
+    api.get('/employees/').then(r => setEmployees(r.data)).catch(() => {});
+  }, []);
+
+  const save = async () => {
+    if (!facultyId) { setErr('Выберите факультет'); return; }
+    if (!year) { setErr('Укажите год начала'); return; }
+    setErr('');
+    try {
+      const payload = {
+        faculty_id: parseInt(facultyId),
+        year: parseInt(year),
+        headteacher_id: headteacherId ? parseInt(headteacherId) : null,
+      };
+      if (isEdit) {
+        await api.patch(`/groups/${group.id}/`, payload);
+        toast.push('Группа обновлена', { kind: 'ok' });
+      } else {
+        await api.post('/groups/', payload);
+        toast.push('Группа создана', { kind: 'ok' });
+      }
+      onDone && onDone();
+      onClose && onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка при сохранении');
+    }
+  };
+
   return (
-    <Modal title={data ? 'Редактировать группу' : 'Новая группа'} onClose={onClose}
+    <Modal title={isEdit ? 'Редактировать группу' : 'Новая группа'} onClose={onClose}
       footer={<>
         <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
         <LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton>
       </>}>
       <div className="form-grid">
-        <Field label="Название" required><input className="input" defaultValue={data?.name || ''} placeholder="ПИ-301" /></Field>
         <Field label="Факультет" required>
-          <Combobox value={data?.fac || 'ФИТ'} options={FAC_SHORT_OPTS} placeholder="Выберите факультет" />
+          <select className="select" value={facultyId} onChange={e => { setFacultyId(e.target.value); setErr(''); }}>
+            <option value="">— Выберите факультет —</option>
+            {faculties.map(f => <option key={f.id} value={f.id}>{f.short_name} — {f.full_name}</option>)}
+          </select>
         </Field>
-        <Field label="Год начала" required><input className="input" type="number" defaultValue={data?.year || 2025} /></Field>
+        <Field label="Год начала" required>
+          <input className="input" type="number" value={year} onChange={e => { setYear(e.target.value); setErr(''); }} min={2000} max={2099} />
+        </Field>
         <div className="field field-full">
           <label className="field-label">Классный руководитель</label>
-          <Combobox options={TEACHER_OPTS.filter(t => t.sub === 'Преподаватель' || t.sub === 'Ст. преподаватель' || t.sub === 'Декан')} placeholder="Начните вводить ФИО преподавателя…" />
+          <select className="select" value={headteacherId} onChange={e => setHeadteacherId(e.target.value)}>
+            <option value="">— Не назначен —</option>
+            {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
+          </select>
         </div>
+        {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
       </div>
     </Modal>
   );
@@ -506,16 +551,54 @@ function UploadDocModal({ onClose }) {
   );
 }
 
-function AssignSubjectModal({ onClose }) {
+function AssignSubjectModal({ data, onClose }) {
+  const { groupId, onDone } = data || {};
+  const [subjects, setSubjects] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [subjectId, setSubjectId] = useState('');
+  const [employeeId, setEmployeeId] = useState('');
+  const [err, setErr] = useState('');
   const toast = useToast();
-  const save = async () => { await new Promise(r => setTimeout(r, 600)); toast.push('Предмет назначен', { kind: 'ok' }); onClose(); };
+
+  useEffect(() => {
+    api.get('/subjects/').then(r => setSubjects(r.data)).catch(() => {});
+    api.get('/employees/').then(r => setEmployees(r.data)).catch(() => {});
+  }, []);
+
+  const save = async () => {
+    if (!subjectId) { setErr('Выберите предмет'); return; }
+    if (!employeeId) { setErr('Выберите преподавателя'); return; }
+    setErr('');
+    try {
+      await api.post(`/groups/${groupId}/subjects/`, {
+        subject_id: parseInt(subjectId),
+        employee_id: parseInt(employeeId),
+      });
+      toast.push('Предмет назначен', { kind: 'ok' });
+      onDone && onDone();
+      onClose && onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка при назначении');
+    }
+  };
+
   return (
     <Modal title="Назначить предмет" onClose={onClose}
       footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>Назначить</LoadButton></>}>
       <div className="form-grid">
-        <Field label="Предмет" required><Combobox options={SUBJECT_OPTS} placeholder="Начните вводить название предмета…" /></Field>
-        <Field label="Группа" required><Combobox options={GROUP_OPTS_ALL} placeholder="Выберите группу…" /></Field>
-        <Field label="Часов" required><input className="input" type="number" defaultValue="72" /></Field>
+        <Field label="Предмет" required>
+          <select className="select" value={subjectId} onChange={e => { setSubjectId(e.target.value); setErr(''); }}>
+            <option value="">— Выберите предмет —</option>
+            {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </Field>
+        <Field label="Преподаватель" required>
+          <select className="select" value={employeeId} onChange={e => { setEmployeeId(e.target.value); setErr(''); }}>
+            <option value="">— Выберите преподавателя —</option>
+            {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
+          </select>
+        </Field>
+        {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
       </div>
     </Modal>
   );

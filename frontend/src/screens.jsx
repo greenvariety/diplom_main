@@ -817,29 +817,68 @@ function EmployeeDetail({ openModal }) {
 /* ============================================================
    Groups list / detail; Faculties list
    ============================================================ */
-function GroupList({ openModal }) {
+function GroupList({ currentUser, openModal, onNavigate }) {
+  const [groups, setGroups] = useState([]);
+  const [faculties, setFaculties] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [facultyFilter, setFacultyFilter] = useState('');
+  const [search, setSearch] = useState('');
+
+  const load = (fid) => {
+    const f = fid !== undefined ? fid : facultyFilter;
+    setLoading(true);
+    const params = f ? `?faculty_id=${f}` : '';
+    api.get(`/groups/${params}`).then(r => {
+      setGroups(r.data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    api.get('/faculties/').then(r => setFaculties(r.data)).catch(() => {});
+    load('');
+  }, []);
+
+  const filtered = groups.filter(g =>
+    !search || g.name.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
-    <Shell role="admin" active="groups" openModal={openModal}>
-      <PageHead title="Группы" sub="Всего 24 группы"
-        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('groupForm')}>{I.plus}Создать группу</button>}
+    <Shell currentUser={currentUser} active="groups" onNavigate={onNavigate} openModal={openModal}>
+      <PageHead
+        title="Группы"
+        sub={loading ? '…' : `Всего ${filtered.length} групп`}
+        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('groupForm', { onDone: load })}>{I.plus}Создать группу</button>}
       />
       <div className="filters">
-        <div className="field grow-2"><label className="field-label">Поиск</label><div className="input-with-icon">{I.search}<input className="input" placeholder="Название группы…" /></div></div>
-        <div className="field"><label className="field-label">Факультет</label><select className="select"><option>— Все —</option><option>ФИТ</option><option>ФЭ</option></select></div>
-        <div className="field"><label className="field-label">Год начала</label><select className="select"><option>— Все —</option><option>2024</option><option>2023</option></select></div>
+        <div className="field grow-2">
+          <label className="field-label">Поиск</label>
+          <div className="input-with-icon">{I.search}<input className="input" value={search} onChange={e => setSearch(e.target.value)} placeholder="Название группы…" /></div>
+        </div>
+        <div className="field">
+          <label className="field-label">Факультет</label>
+          <select className="select" value={facultyFilter} onChange={e => { setFacultyFilter(e.target.value); load(e.target.value); }}>
+            <option value="">— Все —</option>
+            {faculties.map(f => <option key={f.id} value={f.id}>{f.short_name}</option>)}
+          </select>
+        </div>
       </div>
       <div className="card">
         <div className="card-body flush">
           <table className="tbl">
             <thead><tr><th>Название</th><th>Факультет</th><th>Год</th><th>Классный руководитель</th><th>Студентов</th><th style={{ width: 40 }}></th></tr></thead>
             <tbody>
-              {GROUPS.map(g => (
-                <tr key={g.name} className="row-link" onClick={() => openModal('groupDetail', g)}>
+              {loading ? (
+                <SkeletonRows cols={6} rows={4} />
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Группы не найдены</td></tr>
+              ) : filtered.map(g => (
+                <tr key={g.id} className="row-link" onClick={() => onNavigate('group-detail', { groupId: g.id })}>
                   <td className="fwm">{g.name}</td>
-                  <td>{g.fac}</td>
+                  <td>{g.faculty_short}</td>
                   <td className="mono muted">{g.year}</td>
-                  <td>{g.curator}</td>
-                  <td className="mono">{g.count}</td>
+                  <td>{g.headteacher_name || '—'}</td>
+                  <td className="mono">{g.student_count}</td>
                   <td>{I.chevr}</td>
                 </tr>
               ))}
@@ -851,37 +890,80 @@ function GroupList({ openModal }) {
   );
 }
 
-function GroupDetail({ openModal }) {
+function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
+  const [group, setGroup] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = () => {
+    setLoading(true);
+    api.get(`/groups/${groupId}/`).then(r => {
+      setGroup(r.data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  };
+
+  useEffect(() => { if (groupId) load(); }, [groupId]);
+
+  if (loading || !group) {
+    return (
+      <Shell currentUser={currentUser} active="groups" onNavigate={onNavigate} openModal={openModal}>
+        <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>Загрузка…</div>
+      </Shell>
+    );
+  }
+
+  const handleDeleteRequest = async () => {
+    if (!confirm(`Отправить заявку на удаление группы ${group.name}?`)) return;
+    try {
+      await api.post(`/groups/${groupId}/delete-request/`);
+      onNavigate('groups');
+    } catch (e) {
+      alert(e.response?.data?.error || 'Ошибка при отправке заявки');
+    }
+  };
+
+  const handleRemoveSubject = async (assignmentId) => {
+    if (!confirm('Убрать предмет из группы?')) return;
+    try {
+      await api.delete(`/groups/${groupId}/subjects/${assignmentId}/`);
+      load();
+    } catch (e) {
+      alert(e.response?.data?.error || 'Ошибка');
+    }
+  };
+
   return (
-    <Shell role="admin" active="groups" openModal={openModal}>
+    <Shell currentUser={currentUser} active="groups" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
-        crumbs={[{ label: 'Группы', href: true }, { label: 'ПИ-301' }]}
-        title="ПИ-301"
-        sub="Факультет информационных технологий · Год набора 2022"
+        crumbs={[{ label: 'Группы', href: true, onClick: () => onNavigate('groups') }, { label: group.name }]}
+        title={group.name}
+        sub={`${group.faculty_name} · Год набора ${group.year}`}
         actions={<>
-          <button className="btn btn-secondary btn-sm">{I.excel}Excel</button>
-          <button className="btn btn-secondary btn-sm" onClick={() => openModal('groupForm', GROUPS[0])}>{I.pencil}Редактировать</button>
-          <button className="btn btn-danger btn-sm" onClick={() => openModal('deleteConfirm', { name: 'ПИ-301', type: 'группу' })}>{I.trash}Удалить</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => openModal('groupForm', { group, onDone: load })}>{I.pencil}Редактировать</button>
+          <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Удалить</button>
         </>}
       />
-      <div className="banner banner-info">
-        {I.user}
-        <div className="banner-body"><strong>Классный руководитель:</strong> Кузнецова Наталья Андреевна · <a href="#" style={{ color: 'inherit', textDecoration: 'underline' }}>Изменить</a></div>
-      </div>
+      {group.headteacher_name && (
+        <div className="banner banner-info">
+          {I.user}
+          <div className="banner-body"><strong>Классный руководитель:</strong> {group.headteacher_name}</div>
+        </div>
+      )}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
         <div className="card">
           <div className="card-head">
-            <div className="title">Студенты <span className="muted" style={{ fontWeight: 400 }}>· 28</span></div>
-            <button className="btn btn-secondary btn-sm" onClick={() => openModal('studentForm')}>{I.plus}Добавить</button>
+            <div className="title">Студенты <span className="muted" style={{ fontWeight: 400 }}>· {group.students.length}</span></div>
           </div>
           <div className="card-body flush">
             <table className="tbl">
               <thead><tr><th style={{ width: 40 }}>#</th><th>ФИО</th><th>Статус</th></tr></thead>
               <tbody>
-                {STUDENTS.slice(0, 5).map(s => (
-                  <tr key={s.id} className="row-link" onClick={() => openModal('studentDetail', s)}>
+                {group.students.length === 0 ? (
+                  <tr><td colSpan={3} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>Студенты не добавлены</td></tr>
+                ) : group.students.map(s => (
+                  <tr key={s.id}>
                     <td className="muted">{s.id}</td>
-                    <td className="fwm">{s.last} {s.first} {s.mid}</td>
+                    <td className="fwm">{s.last_name} {s.first_name} {s.middle_name}</td>
                     <td><Badge status={s.status} /></td>
                   </tr>
                 ))}
@@ -892,17 +974,19 @@ function GroupDetail({ openModal }) {
         <div>
           <div className="card">
             <div className="card-head">
-              <div className="title">Предметы <span className="muted" style={{ fontWeight: 400 }}>· 3</span></div>
-              <button className="btn btn-secondary btn-sm">{I.plus}</button>
+              <div className="title">Предметы <span className="muted" style={{ fontWeight: 400 }}>· {group.subjects.length}</span></div>
+              <button className="btn btn-secondary btn-sm" onClick={() => openModal('assignSubject', { groupId, onDone: load })}>{I.plus}</button>
             </div>
             <div className="card-body" style={{ display: 'grid', gap: 8 }}>
-              {[{ s: 'Базы данных', t: 'Кузнецова Н. А.' }, { s: 'Веб-программирование', t: 'Кузнецова Н. А.' }, { s: 'Алгоритмы', t: 'Морозов В. Г.' }].map(p => (
-                <div key={p.s} style={{ padding: '8px 0', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between' }}>
+              {group.subjects.length === 0 ? (
+                <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: '8px 0' }}>Предметы не назначены</div>
+              ) : group.subjects.map(a => (
+                <div key={a.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between' }}>
                   <div>
-                    <div className="fwm" style={{ fontSize: 13 }}>{p.s}</div>
-                    <div className="muted" style={{ fontSize: 11 }}>{p.t}</div>
+                    <div className="fwm" style={{ fontSize: 13 }}>{a.subject_name}</div>
+                    <div className="muted" style={{ fontSize: 11 }}>{a.employee_name}</div>
                   </div>
-                  <button className="btn btn-ghost btn-icon btn-sm">{I.x}</button>
+                  <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleRemoveSubject(a.id)}>{I.x}</button>
                 </div>
               ))}
             </div>

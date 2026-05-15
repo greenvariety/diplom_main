@@ -79,3 +79,18 @@
 - `frontend/src/modals.jsx` — `FacultyFormModal` переписан: реальные вызовы POST/PATCH вместо mock. `FacultyDetailModal` переписан: кнопки «Редактировать» и «Удалить» (создаёт заявку на удаление с toast-уведомлением).
 - `frontend/src/main.jsx` обновлён: добавлен экран `faculties`, добавлена обработка модалок `facultyForm` и `facultyDetail`.
 - `npm run build` — собирается без ошибок.
+
+---
+
+## Задача 5 выполнена — Группы
+
+**Что сделано:**
+
+- Создан `core/api_groups.py` с вьюхами: список групп (с фильтром по факультету), детальная (студенты + предметы), создание, редактирование, заявка на удаление, назначение предмета, снятие предмета.
+- Созданы минимальные `core/api_employees.py` (GET список) и `core/api_subjects.py` (GET список) для выпадающих списков в формах.
+- В `config/urls.py` добавлены маршруты для групп, сотрудников и предметов.
+- `frontend/src/screens.jsx` — `GroupList` переписан: реальные данные, фильтр по факультету, поиск. Клик навигирует на отдельную страницу группы.
+- `frontend/src/screens.jsx` — `GroupDetail` переписан: загружает студентов и предметы, хлебные крошки, кнопки редактировать и удалить (заявка).
+- `frontend/src/modals.jsx` — `GroupFormModal` и `AssignSubjectModal` переписаны на реальные API-вызовы.
+- `frontend/src/main.jsx` обновлён: добавлены экраны `groups` и `group-detail` (с контекстом навигации через `navExtra`), модалки `groupForm` и `assignSubject`.
+- `npm run build` — собирается без ошибок.
