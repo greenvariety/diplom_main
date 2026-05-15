@@ -1,7 +1,8 @@
 import { StrictMode, useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
-import { ToastProvider } from './utils.jsx';
+import { ToastProvider, useToast, LoadButton } from './utils.jsx';
+import { I } from './data.jsx';
 import { LoginScreen, RegisterScreen, SeedPhraseScreen, RecoverPasswordScreen } from './auth.jsx';
 import { Shell } from './shell.jsx';
 import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, OrganizationList, FacultyList, GroupList, GroupDetail, StudentList, StudentDetail, EmployeeList, EmployeeDetail, PositionList, ParentList, ParentDetail, SubjectList, UserList, DeleteRequests, AuditLog } from './screens.jsx';
@@ -42,6 +43,166 @@ function AuthFlow({ onAuthenticated }) {
       onRegister={() => setScreen('register')}
       onRecover={() => setScreen('recover')}
     />
+  );
+}
+
+/* ============================================================
+   OrgPickerScreen — выбор / создание организации после логина
+   ============================================================ */
+function OrgPickerScreen({ user, onOrgSelected, onLogout }) {
+  const toast = useToast();
+  const [orgs, setOrgs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (user.role === 'owner') {
+      api.get('/organizations/')
+        .then(r => { setOrgs(r.data); setLoading(false); })
+        .catch(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  const pickOrg = async (orgId, orgName) => {
+    try {
+      await api.post(`/organizations/${orgId}/switch/`);
+      toast.push(`Организация «${orgName}» выбрана`, { kind: 'ok' });
+      onOrgSelected();
+    } catch {
+      toast.push('Ошибка при выборе организации', { kind: 'err' });
+    }
+  };
+
+  const createOrg = async () => {
+    if (!newName.trim()) { toast.push('Введите название организации', { kind: 'err' }); return; }
+    setSubmitting(true);
+    try {
+      const res = await api.post('/organizations/', { name: newName.trim() });
+      await api.post(`/organizations/${res.data.id}/switch/`);
+      toast.push(`Организация «${res.data.name}» создана`, { kind: 'ok' });
+      onOrgSelected();
+    } catch (err) {
+      toast.push(err.response?.data?.error || 'Ошибка создания', { kind: 'err' });
+      setSubmitting(false);
+    }
+  };
+
+  const brand = (
+    <div style={{ textAlign: 'center', marginBottom: 24 }}>
+      <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 18, margin: '0 auto 10px' }}>У</div>
+      <div style={{ fontWeight: 600, fontSize: 15 }}>Учёт студентов</div>
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', color: 'var(--text-muted)', fontFamily: 'var(--font)' }}>
+        Загрузка…
+      </div>
+    );
+  }
+
+  if (user.role !== 'owner') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg)', fontFamily: 'var(--font)', padding: 24 }}>
+        {brand}
+        <div className="card screen-fade-in" style={{ width: '100%', maxWidth: 400 }}>
+          <div className="card-body" style={{ padding: 28, textAlign: 'center' }}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>⏳</div>
+            <h2 style={{ marginBottom: 8 }}>Ожидайте назначения</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '0 0 20px' }}>
+              Администратор ещё не назначил вас в организацию. Обратитесь к владельцу системы.
+            </p>
+            <button className="btn btn-secondary btn-sm" onClick={onLogout}>{I.logout} Выйти</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg)', fontFamily: 'var(--font)', padding: 24 }}>
+      {brand}
+      <div className="card screen-fade-in" style={{ width: '100%', maxWidth: 480 }}>
+        <div className="card-body" style={{ padding: 28 }}>
+          <h2 style={{ marginBottom: 6 }}>
+            {orgs.length > 0 ? 'Выберите организацию' : 'Создайте организацию'}
+          </h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: orgs.length > 0 ? 20 : 16 }}>
+            {orgs.length > 0
+              ? 'Выберите организацию для работы или создайте новую.'
+              : 'У вас ещё нет организаций. Создайте первую, чтобы начать работу.'}
+          </p>
+
+          {orgs.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+              {orgs.map(org => (
+                <button
+                  key={org.id}
+                  onClick={() => pickOrg(org.id, org.name)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
+                    background: 'var(--surface-alt)', border: '1px solid var(--border)',
+                    borderRadius: 8, cursor: 'pointer', textAlign: 'left', width: '100%',
+                    transition: 'border-color .15s, background .15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'var(--accent-soft)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface-alt)'; }}
+                >
+                  <div style={{ width: 36, height: 36, borderRadius: 7, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 11, flexShrink: 0 }}>
+                    {org.code}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{org.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>
+                      {org.students} студ. · {org.employees} сотр. · {org.created_at}
+                    </div>
+                  </div>
+                  {I.chevr}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {showCreate ? (
+            <div style={{ background: 'var(--surface-alt)', borderRadius: 8, padding: 16, border: '1px solid var(--border)' }}>
+              <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 10 }}>Новая организация</div>
+              <input
+                className="input"
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && !submitting && createOrg()}
+                placeholder="Название организации"
+                autoFocus
+              />
+              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                <button className="btn btn-secondary btn-sm" onClick={() => { setShowCreate(false); setNewName(''); }}>Отмена</button>
+                <LoadButton className="btn btn-primary btn-sm" onClick={createOrg} style={{ flex: 1 }}>
+                  {I.check} Создать
+                </LoadButton>
+              </div>
+            </div>
+          ) : (
+            <button
+              className="btn btn-primary"
+              onClick={() => setShowCreate(true)}
+              style={{ width: '100%', justifyContent: 'center' }}
+            >
+              {I.plus} Создать организацию
+            </button>
+          )}
+        </div>
+        <div className="modal-foot" style={{ padding: '10px 16px' }}>
+          <button className="btn btn-ghost btn-sm" onClick={onLogout} style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+            {I.logout} Выйти из аккаунта
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -150,6 +311,10 @@ function AppShell({ onLogout }) {
         Загрузка…
       </div>
     );
+  }
+
+  if (!currentUser.institution) {
+    return <OrgPickerScreen user={currentUser} onOrgSelected={loadUser} onLogout={handleLogout} />;
   }
 
   const sharedProps = {
