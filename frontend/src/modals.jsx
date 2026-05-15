@@ -1071,9 +1071,14 @@ function AuditDiffModal({ data, onClose }) {
   );
 }
 
-function LogoutModal({ onClose }) {
+function LogoutModal({ onClose, onLogout }) {
   const toast = useToast();
-  const submit = async () => { await new Promise(r => setTimeout(r, 500)); toast.push('Сеанс завершён', { kind: 'info' }); onClose(); };
+  const submit = async () => {
+    await new Promise(r => setTimeout(r, 400));
+    toast.push('Сеанс завершён', { kind: 'info' });
+    onClose();
+    onLogout && onLogout();
+  };
   return (
     <Modal title="Выйти из системы?" onClose={onClose}
       footer={<><button className="btn btn-secondary" onClick={onClose}>Остаться</button><LoadButton className="btn btn-primary" onClick={submit}>{I.logout}Выйти</LoadButton></>}>

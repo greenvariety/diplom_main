@@ -136,7 +136,7 @@ function UserChip({ currentUser, onLogout, openModal }) {
             {I.shield}<span>Сменить пароль</span>
           </div>
           <div className="dd-sep" />
-          <div className="dd-item danger" onClick={() => { setOpen(false); onLogout && onLogout(); }}>
+          <div className="dd-item danger" onClick={() => { setOpen(false); openModal && openModal('logout'); }}>
             {I.logout}<span>Выйти</span>
           </div>
         </div>

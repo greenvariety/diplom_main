@@ -5,7 +5,7 @@ import { ToastProvider } from './utils.jsx';
 import { LoginScreen, RegisterScreen, SeedPhraseScreen, RecoverPasswordScreen } from './auth.jsx';
 import { Shell } from './shell.jsx';
 import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, OrganizationList, FacultyList, GroupList, GroupDetail, StudentList, StudentDetail, EmployeeList, EmployeeDetail, PositionList, ParentList, ParentDetail, SubjectList, UserList, DeleteRequests, AuditLog } from './screens.jsx';
-import { OrgFormModal, FacultyFormModal, FacultyDetailModal, GroupFormModal, AssignSubjectModal, StudentFormModal, TransferModal, UploadDocModal, ParentFormModal, ParentAddStudentModal, DeleteConfirmModal, EmployeeFormModal, EmployeeAssignSubjectModal, PositionFormModal, SubjectFormModal, UserFormModal, UserSetPasswordModal, ApproveDeleteModal, AuditDiffModal } from './modals.jsx';
+import { OrgFormModal, FacultyFormModal, FacultyDetailModal, GroupFormModal, AssignSubjectModal, StudentFormModal, TransferModal, UploadDocModal, ParentFormModal, ParentAddStudentModal, DeleteConfirmModal, EmployeeFormModal, EmployeeAssignSubjectModal, PositionFormModal, SubjectFormModal, UserFormModal, UserSetPasswordModal, ApproveDeleteModal, AuditDiffModal, LogoutModal } from './modals.jsx';
 import api from './api.js';
 
 function AuthFlow({ onAuthenticated }) {
@@ -138,6 +138,9 @@ function AppShell({ onLogout }) {
     if (modal.name === 'auditDiff') {
       return <AuditDiffModal data={modal.data} onClose={closeModal} />;
     }
+    if (modal.name === 'logout') {
+      return <LogoutModal onClose={closeModal} onLogout={handleLogout} />;
+    }
     return null;
   };
 
@@ -245,6 +248,12 @@ function App() {
   const [authenticated, setAuthenticated] = useState(
     () => !!localStorage.getItem('access_token')
   );
+
+  useEffect(() => {
+    const onForceLogout = () => setAuthenticated(false);
+    window.addEventListener('auth:logout', onForceLogout);
+    return () => window.removeEventListener('auth:logout', onForceLogout);
+  }, []);
 
   if (!authenticated) {
     return (

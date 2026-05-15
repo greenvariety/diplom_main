@@ -50,7 +50,7 @@ api.interceptors.response.use(
       if (!refreshToken) {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
-        window.location.href = '/';
+        window.dispatchEvent(new Event('auth:logout'));
         return Promise.reject(error);
       }
 
@@ -66,7 +66,7 @@ api.interceptors.response.use(
         processQueue(refreshError, null);
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
-        window.location.href = '/';
+        window.dispatchEvent(new Event('auth:logout'));
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
