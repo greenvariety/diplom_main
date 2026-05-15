@@ -44,6 +44,15 @@ class DocumentUploadView(APIView):
 
 
 class DocumentDetailView(APIView):
+    def get(self, request, pk):
+        try:
+            doc = Document.objects.get(pk=pk)
+        except Document.DoesNotExist:
+            return Response({'error': 'Не найдено'}, status=404)
+        if not doc.file:
+            return Response({'error': 'Файл отсутствует'}, status=404)
+        return FileResponse(doc.file.open('rb'), as_attachment=True, filename=doc.name or doc.file.name.split('/')[-1])
+
     def delete(self, request, pk):
         institution = request.user.institution
         try:

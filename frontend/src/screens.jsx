@@ -948,6 +948,17 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
     }
   };
 
+  const handleDeleteDoc = async (docId) => {
+    if (!confirm('Удалить документ?')) return;
+    try {
+      await api.delete(`/documents/${docId}/`);
+      toast.push('Документ удалён', { kind: 'ok' });
+      load();
+    } catch {
+      toast.push('Ошибка при удалении документа', { kind: 'err' });
+    }
+  };
+
   const handleDeleteRequest = async () => {
     if (!employee) return;
     try {
@@ -1043,13 +1054,15 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
               )}
             </div>
           </div>
-          {employee.documents?.length > 0 && (
-            <div className="card">
-              <div className="card-head">
-                <div className="title">Документы</div>
-                <button className="btn btn-secondary btn-sm" onClick={() => openModal('uploadDoc', { ownerType: 'employee', ownerId: employeeId, onDone: load })}>{I.plus}Загрузить</button>
-              </div>
-              <div className="card-body flush">
+          <div className="card">
+            <div className="card-head">
+              <div className="title">Документы</div>
+              <button className="btn btn-secondary btn-sm" onClick={() => openModal('uploadDoc', { ownerType: 'employee', ownerId: employeeId, onDone: load })}>{I.upload}Загрузить</button>
+            </div>
+            <div className="card-body flush">
+              {!employee.documents?.length ? (
+                <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Документы не загружены</div>
+              ) : (
                 <table className="tbl">
                   <thead><tr><th>Название</th><th>Тип</th><th>Дата</th><th style={{ width: 40 }}></th></tr></thead>
                   <tbody>
@@ -1058,14 +1071,14 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                         <td className="fwm"><a href={d.file_url} target="_blank" rel="noreferrer">{d.name}</a></td>
                         <td>{d.doc_type || '—'}</td>
                         <td className="muted">{d.uploaded_at || '—'}</td>
-                        <td></td>
+                        <td><button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDeleteDoc(d.id)}>{I.x}</button></td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </Shell>
