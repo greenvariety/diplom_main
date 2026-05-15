@@ -61,3 +61,21 @@
 - В `frontend/src/screens.jsx` обновлён `OrganizationList`: теперь загружает данные из `/api/organizations/`, поддерживает переключение, редактирование и удаление. `EmptyOrgOnboarding` получает `currentUser` и `onNavigate` через пропсы.
 - `frontend/src/main.jsx` обновлён: добавлена модальная система (`openModal`/`closeModal`), добавлен экран `org-list`, `openModal` передаётся во все экраны через `sharedProps`, добавлена функция `loadUser` для обновления данных пользователя после переключения организации.
 - `npm run build` — собирается без ошибок.
+
+---
+
+## Задача 4 выполнена — Факультеты
+
+**Что сделано:**
+
+- Создан `core/api_faculties.py` с тремя вьюхами:
+  - `GET /api/faculties/` — список факультетов текущей организации с числом групп и студентов.
+  - `POST /api/faculties/` — создание (поля: `full_name`, `short_name`). Доступно admin и owner.
+  - `PATCH /api/faculties/{id}/` — редактирование. Доступно admin и owner.
+  - `POST /api/faculties/{id}/delete-request/` — создание заявки на удаление (не удаляет сразу).
+- Все изменения логируются через `log_action()`.
+- В `config/urls.py` добавлены три маршрута для факультетов.
+- `frontend/src/screens.jsx` — `FacultyList` переписан: загружает данные из API, показывает скелетон при загрузке, таблица с реальными данными (код, название, групп, студентов). Клик по строке открывает детальную модалку.
+- `frontend/src/modals.jsx` — `FacultyFormModal` переписан: реальные вызовы POST/PATCH вместо mock. `FacultyDetailModal` переписан: кнопки «Редактировать» и «Удалить» (создаёт заявку на удаление с toast-уведомлением).
+- `frontend/src/main.jsx` обновлён: добавлен экран `faculties`, добавлена обработка модалок `facultyForm` и `facultyDetail`.
+- `npm run build` — собирается без ошибок.

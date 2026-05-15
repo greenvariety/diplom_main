@@ -239,21 +239,47 @@ function GroupFormModal({ data, onClose }) {
 }
 
 function FacultyFormModal({ data, onClose }) {
+  const faculty = data?.faculty;
+  const onDone = data?.onDone;
+  const isEdit = !!faculty;
   const toast = useToast();
-  const save = async () => { await new Promise(r => setTimeout(r, 600)); toast.push(`Факультет ${data ? 'обновлён' : 'создан'}`, { kind: 'ok' }); onClose(); };
+  const [fullName, setFullName] = useState(faculty?.full_name || '');
+  const [shortName, setShortName] = useState(faculty?.short_name || '');
+  const [err, setErr] = useState('');
+
+  const save = async () => {
+    if (!fullName.trim()) { setErr('Введите полное название'); return; }
+    if (!shortName.trim()) { setErr('Введите код факультета'); return; }
+    setErr('');
+    try {
+      if (isEdit) {
+        await api.patch(`/faculties/${faculty.id}/`, { full_name: fullName.trim(), short_name: shortName.trim() });
+        toast.push('Факультет обновлён', { kind: 'ok' });
+      } else {
+        await api.post('/faculties/', { full_name: fullName.trim(), short_name: shortName.trim() });
+        toast.push('Факультет создан', { kind: 'ok' });
+      }
+      onDone && onDone();
+      onClose && onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка при сохранении');
+    }
+  };
+
   return (
-    <Modal title={data ? 'Редактировать факультет' : 'Новый факультет'} onClose={onClose}
+    <Modal title={isEdit ? 'Редактировать факультет' : 'Новый факультет'} onClose={onClose}
       footer={<>
         <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
         <LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton>
       </>}>
       <div className="form-grid">
-        <Field label="Код" required><input className="input" defaultValue={data?.code || ''} placeholder="ФИТ" /></Field>
-        <Field label="Декан">
-          <Combobox options={TEACHER_OPTS} placeholder="Начните вводить ФИО декана…" />
+        <Field label="Код (аббревиатура)" required>
+          <input className="input" value={shortName} onChange={e => { setShortName(e.target.value.toUpperCase()); setErr(''); }} placeholder="ФИТ" maxLength={50} />
         </Field>
-        <Field label="Полное название" required><input className="input" defaultValue={data?.name || ''} /></Field>
-        <div className="field field-full"><label className="field-label">Описание</label><textarea className="textarea" /></div>
+        <Field label="Полное название" required>
+          <input className="input" value={fullName} onChange={e => { setFullName(e.target.value); setErr(''); }} placeholder="Факультет информационных технологий" />
+        </Field>
+        {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
       </div>
     </Modal>
   );
@@ -612,17 +638,33 @@ function GroupDetailModal({ data, onClose, openModal }) {
 }
 
 function FacultyDetailModal({ data, onClose, openModal }) {
-  const f = data || FACULTIES[0];
+  const f = data?.faculty || data;
+  const onDone = data?.onDone;
+  const toast = useToast();
+
+  const handleDeleteRequest = async () => {
+    if (!window.confirm(`Отправить заявку на удаление факультета «${f.full_name}»?`)) return;
+    try {
+      await api.post(`/faculties/${f.id}/delete-request/`, { reason: `Удаление факультета: ${f.full_name}` });
+      toast.push('Заявка на удаление отправлена', { kind: 'ok' });
+      onDone && onDone();
+      onClose();
+    } catch (e) {
+      toast.push(e.response?.data?.error || 'Ошибка', { kind: 'err' });
+    }
+  };
+
   return (
-    <Modal title={f.name} sub={`Код: ${f.code}`} onClose={onClose}
+    <Modal title={f.full_name || f.name} sub={`Код: ${f.short_name || f.code}`} onClose={onClose}
       footer={<>
+        <button className="btn btn-danger" onClick={handleDeleteRequest}>{I.trash}Удалить</button>
+        <div style={{ flex: 1 }}></div>
         <button className="btn btn-secondary" onClick={onClose}>Закрыть</button>
-        <button className="btn btn-primary" onClick={() => openModal('facultyForm', f)}>{I.pencil}Редактировать</button>
+        <button className="btn btn-primary" onClick={() => openModal('facultyForm', { faculty: f, onDone })}>{I.pencil}Редактировать</button>
       </>}>
       <dl className="kv" style={{ padding: 0 }}>
-        <dt>Декан</dt><dd className="fwm">{f.dean}</dd>
-        <dt>Групп</dt><dd className="mono">{f.groups}</dd>
-        <dt>Студентов</dt><dd className="mono">{f.students}</dd>
+        <dt>Групп</dt><dd className="mono">{f.group_count ?? f.groups ?? '—'}</dd>
+        <dt>Студентов</dt><dd className="mono">{f.student_count ?? f.students ?? '—'}</dd>
       </dl>
     </Modal>
   );

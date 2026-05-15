@@ -913,24 +913,44 @@ function GroupDetail({ openModal }) {
   );
 }
 
-function FacultyList({ openModal }) {
+function FacultyList({ currentUser, openModal, onNavigate }) {
+  const [faculties, setFaculties] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = () => {
+    setLoading(true);
+    api.get('/faculties/').then(r => {
+      setFaculties(r.data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
   return (
-    <Shell role="admin" active="faculties" openModal={openModal}>
-      <PageHead title="Факультеты" sub="Всего 5 факультетов"
-        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('facultyForm')}>{I.plus}Добавить</button>}
+    <Shell currentUser={currentUser} active="faculties" onNavigate={onNavigate} openModal={openModal}>
+      <PageHead
+        title="Факультеты"
+        sub={loading ? '…' : `Всего ${faculties.length} факультетов`}
+        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('facultyForm', { onDone: load })}>{I.plus}Добавить</button>}
       />
       <div className="card">
         <div className="card-body flush">
           <table className="tbl">
-            <thead><tr><th>Код</th><th>Название</th><th>Декан</th><th>Групп</th><th>Студентов</th><th style={{ width: 40 }}></th></tr></thead>
+            <thead>
+              <tr><th>Код</th><th>Название</th><th>Групп</th><th>Студентов</th><th style={{ width: 40 }}></th></tr>
+            </thead>
             <tbody>
-              {FACULTIES.map(f => (
-                <tr key={f.code} className="row-link" onClick={() => openModal('facultyDetail', f)}>
-                  <td><span className="badge badge-neutral mono" style={{ padding: '1px 6px' }}>{f.code}</span></td>
-                  <td className="fwm">{f.name}</td>
-                  <td>{f.dean}</td>
-                  <td className="mono">{f.groups}</td>
-                  <td className="mono">{f.students}</td>
+              {loading ? (
+                <SkeletonRows cols={5} rows={4} />
+              ) : faculties.length === 0 ? (
+                <tr><td colSpan={5} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Факультеты не найдены</td></tr>
+              ) : faculties.map(f => (
+                <tr key={f.id} className="row-link" onClick={() => openModal('facultyDetail', { faculty: f, onDone: load })}>
+                  <td><span className="badge badge-neutral mono" style={{ padding: '1px 6px' }}>{f.short_name}</span></td>
+                  <td className="fwm">{f.full_name}</td>
+                  <td className="mono">{f.group_count}</td>
+                  <td className="mono">{f.student_count}</td>
                   <td>{I.chevr}</td>
                 </tr>
               ))}

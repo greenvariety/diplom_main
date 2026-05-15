@@ -4,8 +4,8 @@ import './styles.css';
 import { ToastProvider } from './utils.jsx';
 import { LoginScreen, RegisterScreen, SeedPhraseScreen, RecoverPasswordScreen } from './auth.jsx';
 import { Shell } from './shell.jsx';
-import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, OrganizationList } from './screens.jsx';
-import { OrgFormModal } from './modals.jsx';
+import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, OrganizationList, FacultyList } from './screens.jsx';
+import { OrgFormModal, FacultyFormModal, FacultyDetailModal } from './modals.jsx';
 import api from './api.js';
 
 function AuthFlow({ onAuthenticated }) {
@@ -78,6 +78,12 @@ function AppShell({ onLogout }) {
     if (modal.name === 'orgForm') {
       return <OrgFormModal data={modal.data} onClose={closeModal} />;
     }
+    if (modal.name === 'facultyForm') {
+      return <FacultyFormModal data={modal.data} onClose={closeModal} />;
+    }
+    if (modal.name === 'facultyDetail') {
+      return <FacultyDetailModal data={modal.data} onClose={closeModal} openModal={openModal} />;
+    }
     return null;
   };
 
@@ -106,6 +112,10 @@ function AppShell({ onLogout }) {
 
     if (currentScreen === 'org-list') {
       return <OrganizationList {...sharedProps} onUserRefresh={loadUser} />;
+    }
+
+    if (currentScreen === 'faculties') {
+      return <FacultyList {...sharedProps} />;
     }
 
     return (

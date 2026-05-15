@@ -7,6 +7,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from core.api_auth import LoginView, RegisterView, LogoutView, RecoverView
 from core.api_main import MeView, DashboardView
 from core.api_organizations import OrganizationsView, OrganizationDetailView, OrganizationSwitchView
+from core.api_faculties import FacultiesView, FacultyDetailView, FacultyDeleteRequestView
 
 router = DefaultRouter()
 
@@ -22,6 +23,9 @@ urlpatterns = [
     path('api/organizations/', OrganizationsView.as_view()),
     path('api/organizations/<int:pk>/', OrganizationDetailView.as_view()),
     path('api/organizations/<int:pk>/switch/', OrganizationSwitchView.as_view()),
+    path('api/faculties/', FacultiesView.as_view()),
+    path('api/faculties/<int:pk>/', FacultyDetailView.as_view()),
+    path('api/faculties/<int:pk>/delete-request/', FacultyDeleteRequestView.as_view()),
     path('api/', include(router.urls)),
     path('', include('core.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

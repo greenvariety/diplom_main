@@ -1,0 +1,107 @@
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from .models import Faculty, Student, DeleteRequest
+from .utils import log_action
+
+
+def _faculty_data(f):
+    return {
+        'id': f.pk,
+        'full_name': f.full_name,
+        'short_name': f.short_name,
+        'created_at': f.created_at.strftime('%d.%m.%Y') if f.created_at else None,
+        'group_count': f.groups.count(),
+        'student_count': Student.objects.filter(faculty=f).count(),
+    }
+
+
+def _admin_only(request):
+    if request.user.role not in ('owner', 'admin'):
+        return Response({'error': 'Доступ запрещён'}, status=403)
+    return None
+
+
+class FacultiesView(APIView):
+    def get(self, request):
+        institution = request.user.institution
+        if not institution:
+            return Response([])
+        faculties = Faculty.objects.filter(institution=institution).order_by('full_name')
+        return Response([_faculty_data(f) for f in faculties])
+
+    def post(self, request):
+        err = _admin_only(request)
+        if err:
+            return err
+        institution = request.user.institution
+        if not institution:
+            return Response({'error': 'Нет активной организации'}, status=400)
+        full_name = request.data.get('full_name', '').strip()
+        short_name = request.data.get('short_name', '').strip()
+        created_at = request.data.get('created_at') or None
+        if not full_name:
+            return Response({'error': 'Введите полное название'}, status=400)
+        if not short_name:
+            return Response({'error': 'Введите код (аббревиатуру)'}, status=400)
+        faculty = Faculty.objects.create(
+            institution=institution,
+            full_name=full_name,
+            short_name=short_name,
+            created_at=created_at,
+        )
+        log_action(request.user, 'created', faculty,
+                   new_data={'full_name': full_name, 'short_name': short_name},
+                   institution=institution)
+        return Response(_faculty_data(faculty), status=201)
+
+
+class FacultyDetailView(APIView):
+    def _get_faculty(self, request, pk):
+        try:
+            return Faculty.objects.get(pk=pk, institution=request.user.institution)
+        except Faculty.DoesNotExist:
+            return None
+
+    def patch(self, request, pk):
+        err = _admin_only(request)
+        if err:
+            return err
+        faculty = self._get_faculty(request, pk)
+        if not faculty:
+            return Response({'error': 'Не найдено'}, status=404)
+        old_data = {'full_name': faculty.full_name, 'short_name': faculty.short_name}
+        full_name = request.data.get('full_name', '').strip()
+        short_name = request.data.get('short_name', '').strip()
+        if not full_name:
+            return Response({'error': 'Введите полное название'}, status=400)
+        if not short_name:
+            return Response({'error': 'Введите код'}, status=400)
+        faculty.full_name = full_name
+        faculty.short_name = short_name
+        if 'created_at' in request.data:
+            faculty.created_at = request.data['created_at'] or None
+        faculty.save()
+        log_action(request.user, 'updated', faculty,
+                   old_data=old_data,
+                   new_data={'full_name': faculty.full_name, 'short_name': faculty.short_name},
+                   institution=request.user.institution)
+        return Response(_faculty_data(faculty))
+
+
+class FacultyDeleteRequestView(APIView):
+    def post(self, request, pk):
+        err = _admin_only(request)
+        if err:
+            return err
+        try:
+            faculty = Faculty.objects.get(pk=pk, institution=request.user.institution)
+        except Faculty.DoesNotExist:
+            return Response({'error': 'Не найдено'}, status=404)
+        reason = (request.data.get('reason') or '').strip() or f'Удаление факультета: {faculty.full_name}'
+        DeleteRequest.objects.create(
+            user=request.user,
+            object_type='Faculty',
+            object_id=faculty.pk,
+            reason=reason,
+        )
+        return Response({'ok': True})
