@@ -10,11 +10,11 @@ type: project
 
 | Слой | Технология |
 |---|---|
-| Backend | Django 4.2 (Python) |
+| Backend | Django 4.2 (Python) + Django REST Framework |
 | БД | SQLite (файл `db.sqlite3`) |
-| Формы | django-crispy-forms + crispy-bootstrap5 |
-| Шаблоны | Django Templates (Jinja-подобный синтаксис) |
-| Фронтенд | Bootstrap 5 (CDN), без JS-фреймворков |
+| Аутентификация | JWT (djangorestframework-simplejwt) |
+| Фронтенд | React 18 + Vite (папка `frontend/`) |
+| HTTP-клиент | Axios |
 | Изображения | Pillow |
 | Экспорт | openpyxl (Excel) |
 
@@ -23,38 +23,63 @@ type: project
 ```
 Программа/
 ├── config/                  # Настройки Django-проекта
-│   ├── settings.py          # Вся конфигурация (DEBUG, DB, AUTH и т.д.)
-│   ├── urls.py              # Корневые URL (подключает core.urls)
+│   ├── settings.py          # Вся конфигурация (DEBUG, DB, AUTH, DRF, JWT)
+│   ├── urls.py              # Корневые URL: /api/... + catch-all → React SPA
 │   ├── asgi.py / wsgi.py
 │
 ├── core/                    # Единственное Django-приложение
 │   ├── models.py            # Все модели БД
-│   ├── views.py             # Все представления (~1000 строк)
-│   ├── urls.py              # URL-маршруты
-│   ├── forms.py             # Django-формы
-│   ├── utils.py             # log_action, декораторы ролей
-│   ├── admin.py             # Django Admin (не используется активно)
+│   ├── views.py             # serve_frontend — отдаёт frontend/dist/index.html
+│   ├── urls.py              # Пустой (все роуты в config/urls.py)
+│   ├── api_auth.py          # API: логин, регистрация, восстановление
+│   ├── api_main.py          # API: /me/, /dashboard/
+│   ├── api_organizations.py # API: организации
+│   ├── api_faculties.py     # API: факультеты
+│   ├── api_groups.py        # API: группы
+│   ├── api_students.py      # API: студенты
+│   ├── api_employees.py     # API: сотрудники
+│   ├── api_parents.py       # API: родители/опекуны
+│   ├── api_subjects.py      # API: предметы
+│   ├── api_positions.py     # API: должности
+│   ├── api_documents.py     # API: документы
+│   ├── api_users.py         # API: пользователи системы
+│   ├── api_delete_requests.py # API: заявки на удаление
+│   ├── api_audit.py         # API: аудит-лог
+│   ├── forms.py             # Django ModelForms (legacy, не используются фронтом)
+│   ├── utils.py             # log_action(), декораторы ролей
+│   ├── admin.py             # Django Admin
 │   ├── management/
 │   │   └── commands/
 │   │       ├── create_superadmin.py   # python manage.py create_superadmin
 │   │       └── seed_data.py           # python manage.py seed_data
 │   └── migrations/          # Миграции БД
 │
-├── templates/               # HTML-шаблоны
-│   ├── base.html            # Базовый шаблон (navbar, сообщения)
-│   ├── base_login.html      # Шаблон для страницы входа
-│   └── core/                # Шаблоны приложения
+├── frontend/                # React SPA (Vite)
+│   ├── src/                 # Исходники
+│   │   ├── main.jsx         # Точка входа
+│   │   ├── auth.jsx         # Экраны авторизации
+│   │   ├── shell.jsx        # Навигационная оболочка (sidebar + topbar)
+│   │   ├── screens.jsx      # Все экраны приложения
+│   │   ├── modals.jsx       # Модальные формы
+│   │   ├── api.js           # Axios-клиент с JWT
+│   │   ├── styles.css       # Дизайн-система
+│   │   └── ...
+│   ├── dist/                # Собранный билд (отдаётся Django)
+│   └── vite.config.js       # Настройки Vite + proxy на Django
 │
 ├── docs/                    # База знаний (эта папка)
-├── Reference materials/     # ТЗ и справочные материалы
+├── media/                   # Загруженные файлы (документы)
 ├── manage.py
 ├── requirements.txt
-└── Запустить проект.bat     # Скрипт запуска dev-сервера
+└── Запустить проект.bat     # Скрипт: сборка фронта + запуск Django
 ```
 
 ## Архитектурные решения
 
-- **Монолит**: весь код в одном приложении `core` — нормально для дипломного проекта такого масштаба.
-- **Кастомная User-модель**: `core.User` наследует `AbstractBaseUser` + `PermissionsMixin`. Роли хранятся в поле `role`, не через Django groups.
-- **Декораторы вместо миксинов**: `@admin_required`, `@superadmin_required` из `core/utils.py` — функциональные декораторы.
-- **Generic relations через поля**: Document привязан к владельцу через `owner_type` (строка) + `owner_id` (int) вместо `GenericForeignKey` — проще для понимания.
+- **SPA + API**: фронтенд — React SPA в `frontend/`, бэкенд — Django REST Framework в `core/api_*.py`. Django не рендерит HTML страниц — только отдаёт данные через `/api/`.
+- **JWT-авторизация**: access-токен (60 мин) + refresh-токен (30 дней). Хранятся в `localStorage`. Axios-интерцептор автоматически обновляет access при 401.
+- **Кастомная User-модель**: `core.User` с полем `role` (superadmin / admin / teacher). Роли проверяются в DRF-вьюхах через `request.user.role`.
+- **Монолит**: весь бэкенд-код в одном приложении `core` — нормально для дипломного проекта.
+- **Generic relations через поля**: Document привязан к владельцу через `owner_type` (строка) + `owner_id` (int) вместо `GenericForeignKey`.
+- **Двухуровневое удаление**: admin создаёт `DeleteRequest`, superadmin одобряет → объект удаляется реально.
+- **Django как SPA-хост**: `serve_frontend` в `core/views.py` отдаёт `frontend/dist/index.html` для всех путей кроме `/api/` и `/media/`. Статика JS/CSS из `frontend/dist/assets/` обслуживается тем же catch-all.

@@ -56,6 +56,12 @@ goto CHECK
 
 :START
 cls
+echo  Building frontend...
+echo.
+cd frontend
+call npm run build
+cd ..
+echo.
 echo  Starting server...
 echo.
 if not exist "venv\Scripts\python.exe" (

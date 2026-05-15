@@ -1,8 +1,9 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
+from core.views import serve_frontend
 from rest_framework_simplejwt.views import TokenRefreshView
 from core.api_auth import LoginView, RegisterView, LogoutView, RecoverView
 from core.api_main import MeView, DashboardView
@@ -82,5 +83,5 @@ urlpatterns = [
     path('api/audit-log/', AuditLogView.as_view()),
     path('api/audit-log/users/', AuditLogUsersView.as_view()),
     path('api/', include(router.urls)),
-    path('', include('core.urls')),
+    re_path(r'^(?P<path>.*)$', serve_frontend),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

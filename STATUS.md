@@ -220,3 +220,19 @@
 - Секция документов в `EmployeeDetail` теперь отображается всегда (не только когда `length > 0`): показывает заглушку «Документы не загружены» при пустом списке, кнопку «Загрузить» всегда видна.
 - В таблице документов сотрудника добавлена кнопка удаления в последней колонке.
 - Поведение теперь идентично секции документов в `StudentDetail`.
+
+---
+
+## Задача 15 выполнена — Финальная очистка
+
+**Что сделано:**
+
+- Удалена папка `templates/` — все HTML-шаблоны Django больше не нужны (фронт в React).
+- `core/views.py` заменён на минимальный файл: только функция `serve_frontend`, которая отдаёт `frontend/dist/index.html` (или статические файлы из `frontend/dist/`, если они существуют).
+- `core/urls.py` очищен — все маршруты уже в `config/urls.py`.
+- В `config/urls.py` добавлен catch-all маршрут для React SPA: все пути, не начинающиеся с `/api/` или `/media/`, отдаются через `serve_frontend`.
+- Из `requirements.txt` удалены `django-crispy-forms` и `crispy-bootstrap5`.
+- Из `config/settings.py` убраны: `crispy_forms`, `crispy_bootstrap5` из INSTALLED_APPS, настройки CRISPY_*, LOGIN_URL/LOGIN_REDIRECT_URL/LOGOUT_REDIRECT_URL, несуществующая `STATICFILES_DIRS`, устаревший контекст-процессор.
+- `Запустить проект.bat` обновлён: при запуске сервера автоматически выполняется `npm run build` в папке `frontend/`.
+- Обновлена документация: `docs/architecture.md` и `docs/deployment.md` отражают новый стек (React SPA + DRF вместо Django Templates).
+- Проверено: `python manage.py check` — 0 ошибок; `GET http://127.0.0.1:8000/` — HTTP 200, React SPA загружается.
