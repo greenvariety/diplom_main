@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { I, STATUSES } from './data.jsx';
 import { useDropdown, useToast } from './utils.jsx';
+import api from './api.js';
 
 /* ============================================================
    Reusable bits
@@ -50,6 +51,62 @@ function PageHead({ crumbs, title, sub, actions }) {
    User chip with dropdown
    ============================================================ */
 const ROLE_LABEL = { owner: 'Владелец', superadmin: 'Суперадминистратор', admin: 'Администратор', teacher: 'Преподаватель' };
+
+function TopbarSearch({ onNavigate }) {
+  const [q, setQ] = useState('');
+  const [results, setResults] = useState([]);
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!q.trim()) { setResults([]); setOpen(false); return; }
+    const t = setTimeout(() => {
+      api.get(`/students/?search=${encodeURIComponent(q)}`).then(r => {
+        setResults(r.data.results || []);
+        setOpen(true);
+      }).catch(() => {});
+    }, 300);
+    return () => clearTimeout(t);
+  }, [q]);
+
+  useEffect(() => {
+    const handler = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const pick = (id) => {
+    setQ(''); setOpen(false);
+    onNavigate && onNavigate('student-detail', { studentId: id });
+  };
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <div className="topbar-search">
+        {I.search}
+        <input
+          placeholder="Поиск студента…"
+          value={q}
+          onChange={e => setQ(e.target.value)}
+          onFocus={() => results.length && setOpen(true)}
+        />
+      </div>
+      {open && results.length > 0 && (
+        <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, boxShadow: 'var(--shadow-md)', zIndex: 999, maxHeight: 240, overflowY: 'auto' }}>
+          {results.map(s => (
+            <div key={s.id} style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid var(--border-faint)' }}
+              onMouseDown={() => pick(s.id)}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-hover)'}
+              onMouseLeave={e => e.currentTarget.style.background = ''}>
+              <div style={{ fontWeight: 500, fontSize: 13 }}>{s.last_name} {s.first_name} {s.middle_name}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.faculty_short} · {s.group_name || 'без группы'}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function UserChip({ currentUser, onLogout, openModal }) {
   const { open, setOpen, wrapRef } = useDropdown();
@@ -162,10 +219,7 @@ function Shell({ currentUser, role: roleProp, active, onNavigate, onLogout, open
               <strong style={{ color: 'var(--text)' }}>{institutionName || 'Не выбрана'}</strong>
             </div>
           ) : (
-            <div className="topbar-search">
-              {I.search}
-              <input placeholder="Поиск студента, группы, сотрудника…" />
-            </div>
+            <TopbarSearch onNavigate={onNavigate} />
           )}
         </div>
         <div className="topbar-right">

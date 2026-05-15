@@ -94,3 +94,18 @@
 - `frontend/src/modals.jsx` — `GroupFormModal` и `AssignSubjectModal` переписаны на реальные API-вызовы.
 - `frontend/src/main.jsx` обновлён: добавлены экраны `groups` и `group-detail` (с контекстом навигации через `navExtra`), модалки `groupForm` и `assignSubject`.
 - `npm run build` — собирается без ошибок.
+
+---
+
+## Задача 6 выполнена — Студенты
+
+**Что сделано:**
+
+- Создан `core/api_students.py`: список с пагинацией и фильтрами, профиль со списком документов/опекунов/аудита, создание, редактирование, заявка на удаление, перевод в группу, добавление/удаление опекуна.
+- Создан `core/api_documents.py`: загрузка файла (multipart), удаление документа.
+- В `config/urls.py` добавлены маршруты для студентов и документов.
+- `frontend/src/screens.jsx` — `StudentList`: реальные данные с пагинацией, фильтры по факультету/группе/статусу, поиск по ФИО, смена статуса из таблицы. `StudentDetail`: профиль, опекуны, документы (drag-drop, скачивание, удаление), история из аудит-лога.
+- `frontend/src/modals.jsx` — обновлены: `StudentFormModal`, `TransferModal`, `UploadDocModal`, `ParentFormModal`, `DeleteConfirmModal` — все работают с реальным API.
+- `frontend/src/shell.jsx` — добавлен `TopbarSearch`: поиск студентов в реальном времени с выпадающим списком.
+- `frontend/src/main.jsx` — добавлены экраны `students` и `student-detail`, зарегистрированы новые модалки.
+- `npm run build` — собирается без ошибок.

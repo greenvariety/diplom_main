@@ -82,42 +82,83 @@ function useClosable(onClose) {
 }
 
 /* ============================================================
-   StudentFormModal — sectioned, required asterisks, live validation,
-   focus-flow, loading save button, focus border via .input:focus
+   StudentFormModal — создать / редактировать студента (реальный API)
    ============================================================ */
 function StudentFormModal({ data, onClose }) {
-  const isEdit = !!data;
+  const { student, onDone } = data || {};
+  const isEdit = !!student;
   const toast = useToast();
+  const [faculties, setFaculties] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [vals, setVals] = useState({
-    last: data?.last || '', first: data?.first || '', mid: data?.mid || '',
-    dob: '2004-03-15', phone: data?.phone || '+7 ', email: data?.email || '',
-    fac: data?.fac || 'ФИТ', group: data?.group || '—', status: data?.status || 'pending_review',
-    addr: '', note: '',
+    last_name: student?.last_name || '',
+    first_name: student?.first_name || '',
+    middle_name: student?.middle_name || '',
+    birth_date: student?.birth_date || '',
+    phone: student?.phone || '',
+    email: student?.email || '',
+    faculty_id: student?.faculty_id ? String(student.faculty_id) : '',
+    group_id: student?.group_id ? String(student.group_id) : '',
+    status: student?.status || 'pending_review',
   });
   const [touched, setTouched] = useState({});
+  const [err, setErr] = useState('');
   const set = (k, v) => setVals(s => ({ ...s, [k]: v }));
 
+  useEffect(() => {
+    api.get('/faculties/').then(r => setFaculties(r.data)).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (vals.faculty_id) {
+      api.get(`/groups/?faculty_id=${vals.faculty_id}`).then(r => setGroups(r.data)).catch(() => {});
+    } else {
+      setGroups([]);
+      set('group_id', '');
+    }
+  }, [vals.faculty_id]);
+
   const errs = {};
-  if (!vals.last.trim()) errs.last = 'Обязательно';
-  if (!vals.first.trim()) errs.first = 'Обязательно';
+  if (!vals.last_name.trim()) errs.last_name = 'Обязательно';
+  if (!vals.first_name.trim()) errs.first_name = 'Обязательно';
   if (vals.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(vals.email)) errs.email = 'Некорректный email';
+  if (!vals.faculty_id) errs.faculty_id = 'Выберите факультет';
 
   const save = async () => {
-    setTouched({ last: 1, first: 1, email: 1 });
-    if (Object.keys(errs).length) {
-      toast.push('Проверьте обязательные поля', { kind: 'err' });
-      return;
+    setTouched({ last_name: 1, first_name: 1, email: 1, faculty_id: 1 });
+    if (Object.keys(errs).length) { toast.push('Проверьте обязательные поля', { kind: 'err' }); return; }
+    setErr('');
+    try {
+      const payload = {
+        last_name: vals.last_name.trim(),
+        first_name: vals.first_name.trim(),
+        middle_name: vals.middle_name.trim(),
+        birth_date: vals.birth_date || null,
+        phone: vals.phone.trim(),
+        email: vals.email.trim(),
+        status: vals.status,
+        faculty_id: parseInt(vals.faculty_id),
+        group_id: vals.group_id ? parseInt(vals.group_id) : null,
+      };
+      if (isEdit) {
+        await api.patch(`/students/${student.id}/`, payload);
+        toast.push(`Студент ${vals.last_name} обновлён`, { kind: 'ok' });
+      } else {
+        await api.post('/students/', payload);
+        toast.push(`Студент ${vals.last_name} добавлен`, { kind: 'ok' });
+      }
+      onDone && onDone();
+      onClose && onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка при сохранении');
     }
-    await new Promise(r => setTimeout(r, 700));
-    toast.push(`Студент ${vals.last} ${vals.first[0] || ''}. ${isEdit ? 'обновлён' : 'добавлен'}`, { kind: 'ok' });
-    onClose && onClose();
   };
 
   return (
     <Modal
       size="lg"
       title={isEdit ? 'Редактировать студента' : 'Новый студент'}
-      sub={isEdit ? `#${data.id} · ${data.fac}` : 'Заполните личные данные и распределение'}
+      sub={isEdit ? `#${student.id} · ${student.faculty_short}` : 'Заполните личные данные и распределение'}
       onClose={onClose}
       footer={<>
         <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
@@ -127,14 +168,14 @@ function StudentFormModal({ data, onClose }) {
       <div className="form-section">
         <div className="form-section-title">Личные данные</div>
         <div className="form-grid">
-          <Field label="Фамилия" required error={touched.last && errs.last}>
-            <input className={`input ${touched.last && errs.last ? 'is-error' : ''}`} value={vals.last} onChange={e => set('last', e.target.value)} onBlur={() => setTouched(t => ({ ...t, last: 1 }))} />
+          <Field label="Фамилия" required error={touched.last_name && errs.last_name}>
+            <input className={`input ${touched.last_name && errs.last_name ? 'is-error' : ''}`} value={vals.last_name} onChange={e => set('last_name', e.target.value)} onBlur={() => setTouched(t => ({ ...t, last_name: 1 }))} />
           </Field>
-          <Field label="Имя" required error={touched.first && errs.first}>
-            <input className={`input ${touched.first && errs.first ? 'is-error' : ''}`} value={vals.first} onChange={e => set('first', e.target.value)} onBlur={() => setTouched(t => ({ ...t, first: 1 }))} />
+          <Field label="Имя" required error={touched.first_name && errs.first_name}>
+            <input className={`input ${touched.first_name && errs.first_name ? 'is-error' : ''}`} value={vals.first_name} onChange={e => set('first_name', e.target.value)} onBlur={() => setTouched(t => ({ ...t, first_name: 1 }))} />
           </Field>
-          <Field label="Отчество"><input className="input" value={vals.mid} onChange={e => set('mid', e.target.value)} /></Field>
-          <Field label="Дата рождения" required><input className="input" type="date" value={vals.dob} onChange={e => set('dob', e.target.value)} /></Field>
+          <Field label="Отчество"><input className="input" value={vals.middle_name} onChange={e => set('middle_name', e.target.value)} /></Field>
+          <Field label="Дата рождения"><input className="input" type="date" value={vals.birth_date || ''} onChange={e => set('birth_date', e.target.value)} /></Field>
         </div>
       </div>
 
@@ -145,26 +186,34 @@ function StudentFormModal({ data, onClose }) {
           <Field label="Email" error={touched.email && errs.email}>
             <input className={`input ${touched.email && errs.email ? 'is-error' : ''}`} value={vals.email} onChange={e => set('email', e.target.value)} onBlur={() => setTouched(t => ({ ...t, email: 1 }))} />
           </Field>
-          <div className="field field-full"><label className="field-label">Адрес проживания</label><input className="input" value={vals.addr} onChange={e => set('addr', e.target.value)} placeholder="г. Москва, ул. Ленина, д. 1" /></div>
         </div>
       </div>
 
       <div className="form-section">
         <div className="form-section-title">Учёба</div>
         <div className="form-grid">
-          <Field label="Факультет" required>
-            <Combobox value={vals.fac} onChange={(v) => set('fac', v)} options={FAC_OPTS} placeholder="Начните вводить название факультета…" />
+          <Field label="Факультет" required error={touched.faculty_id && errs.faculty_id}>
+            <select className={`select ${touched.faculty_id && errs.faculty_id ? 'is-error' : ''}`}
+              value={vals.faculty_id}
+              onChange={e => { set('faculty_id', e.target.value); set('group_id', ''); setTouched(t => ({ ...t, faculty_id: 1 })); }}>
+              <option value="">— Выберите факультет —</option>
+              {faculties.map(f => <option key={f.id} value={f.id}>{f.short_name} — {f.full_name}</option>)}
+            </select>
           </Field>
           <Field label="Группа">
-            <Combobox value={vals.group} onChange={(v) => set('group', v)} options={GROUP_OPTS_ALL.filter(g => !vals.fac || g.sub === vals.fac)} placeholder="Выберите группу" />
+            <select className="select" value={vals.group_id} onChange={e => set('group_id', e.target.value)} disabled={!vals.faculty_id}>
+              <option value="">— Без группы —</option>
+              {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+            </select>
           </Field>
           <Field label="Статус">
-            <Combobox value={vals.status} onChange={(v) => set('status', v)} options={STATUS_OPTS} placeholder="Выберите статус" allowClear={false} />
+            <select className="select" value={vals.status} onChange={e => set('status', e.target.value)}>
+              {Object.entries(STATUSES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+            </select>
           </Field>
-          <Field label="Фото"><input className="input" type="file" /></Field>
-          <div className="field field-full"><label className="field-label">Примечание</label><textarea className="textarea" value={vals.note} onChange={e => set('note', e.target.value)} placeholder="Дополнительная информация…"></textarea></div>
         </div>
       </div>
+      {err && <div style={{ color: 'var(--bad-fg)', fontSize: 13, marginTop: 8 }}>{err}</div>}
     </Modal>
   );
 }
@@ -331,27 +380,52 @@ function FacultyFormModal({ data, onClose }) {
 }
 
 function ParentFormModal({ data, onClose }) {
+  const { studentId, onDone } = data || {};
   const toast = useToast();
-  const save = async () => { await new Promise(r => setTimeout(r, 600)); toast.push('Опекун добавлен', { kind: 'ok' }); onClose(); };
+  const [vals, setVals] = useState({ last_name: '', first_name: '', middle_name: '', phone: '', email: '', relation_type: 'guardian' });
+  const [err, setErr] = useState('');
+  const set = (k, v) => setVals(s => ({ ...s, [k]: v }));
+
+  const save = async () => {
+    if (!vals.last_name.trim() || !vals.first_name.trim()) { setErr('Введите фамилию и имя'); return; }
+    setErr('');
+    try {
+      await api.post(`/students/${studentId}/parents/`, {
+        last_name: vals.last_name.trim(),
+        first_name: vals.first_name.trim(),
+        middle_name: vals.middle_name.trim(),
+        phone: vals.phone.trim(),
+        email: vals.email.trim(),
+        relation_type: vals.relation_type,
+      });
+      toast.push('Опекун добавлен', { kind: 'ok' });
+      onDone && onDone();
+      onClose && onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка при сохранении');
+    }
+  };
+
   return (
-    <Modal title={data ? 'Редактировать опекуна' : 'Новый опекун'} onClose={onClose}
+    <Modal title="Добавить опекуна" onClose={onClose}
       footer={<>
         <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
         <LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton>
       </>}>
       <div className="form-grid">
-        <Field label="Фамилия" required><input className="input" /></Field>
-        <Field label="Имя" required><input className="input" /></Field>
-        <Field label="Отчество"><input className="input" /></Field>
+        <Field label="Фамилия" required><input className="input" value={vals.last_name} onChange={e => set('last_name', e.target.value)} /></Field>
+        <Field label="Имя" required><input className="input" value={vals.first_name} onChange={e => set('first_name', e.target.value)} /></Field>
+        <Field label="Отчество"><input className="input" value={vals.middle_name} onChange={e => set('middle_name', e.target.value)} /></Field>
         <Field label="Связь" required>
-          <Combobox options={RELATION_OPTS} placeholder="Кем приходится…" allowClear={false} />
+          <select className="select" value={vals.relation_type} onChange={e => set('relation_type', e.target.value)}>
+            <option value="mother">Мать</option>
+            <option value="father">Отец</option>
+            <option value="guardian">Опекун</option>
+          </select>
         </Field>
-        <Field label="Телефон"><input className="input" defaultValue="+7 " /></Field>
-        <Field label="Email"><input className="input" /></Field>
-        <div className="field field-full">
-          <label className="field-label">Студент<span className="req">*</span></label>
-          <Combobox options={STUDENT_OPTS} placeholder="Начните вводить фамилию студента…" />
-        </div>
+        <Field label="Телефон"><input className="input" value={vals.phone} onChange={e => set('phone', e.target.value)} placeholder="+7 " /></Field>
+        <Field label="Email"><input className="input" value={vals.email} onChange={e => set('email', e.target.value)} /></Field>
+        {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
       </div>
     </Modal>
   );
@@ -412,41 +486,55 @@ function UserFormModal({ onClose }) {
    Action modals — transfer, delete (with shake), approve, upload
    ============================================================ */
 function TransferModal({ data, onClose }) {
+  const { student, onDone } = data || {};
   const toast = useToast();
-  const [grp, setGrp] = useState('');
+  const [groups, setGroups] = useState([]);
+  const [groupId, setGroupId] = useState('');
   const [touched, setTouched] = useState(false);
+  const [err, setErr] = useState('');
+
+  useEffect(() => {
+    api.get('/groups/').then(r => setGroups(r.data)).catch(() => {});
+  }, []);
+
   const submit = async () => {
     setTouched(true);
-    if (!grp) { toast.push('Выберите новую группу', { kind: 'err' }); return; }
-    await new Promise(r => setTimeout(r, 700));
-    toast.push(`${data?.last || 'Студент'} переведён в ${grp}`, { kind: 'ok' });
-    onClose();
+    if (!groupId) { toast.push('Выберите новую группу', { kind: 'err' }); return; }
+    setErr('');
+    try {
+      await api.post(`/students/${student.id}/transfer/`, { group_id: parseInt(groupId) });
+      toast.push(`${student.last_name} переведён`, { kind: 'ok' });
+      onDone && onDone();
+      onClose && onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка при переводе');
+    }
   };
+
   return (
     <Modal title="Перевод студента"
-      sub={`${data?.last || 'Иванов'} ${data?.first || 'Иван'} — текущая группа ${data?.group || 'ПИ-301'}`}
+      sub={`${student?.last_name || ''} ${student?.first_name || ''} — текущая группа: ${student?.group_name || 'не назначена'}`}
       onClose={onClose}
       footer={<>
         <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
         <LoadButton className="btn btn-primary" onClick={submit}>{I.swap}Перевести</LoadButton>
       </>}>
-      <div className="banner banner-info">{I.info}<div className="banner-body">При переводе студент получает статус «Переведён» в текущей группе и «Зачислен» в новой.</div></div>
-      <Field label="Новая группа" required error={touched && !grp ? 'Выберите группу' : null}>
-        <Combobox
-          value={grp}
-          onChange={(v) => setGrp(v)}
-          options={GROUPS.filter(g => g.name !== data?.group).map(g => ({ value: g.name, label: g.name, sub: g.fac }))}
-          placeholder="Начните вводить название группы…"
-          error={touched && !grp}
-        />
+      <div className="banner banner-info">{I.info}<div className="banner-body">При переводе студент получает статус «Переведён» и привязывается к новой группе и факультету.</div></div>
+      <Field label="Новая группа" required error={touched && !groupId ? 'Выберите группу' : null}>
+        <select className={`select ${touched && !groupId ? 'is-error' : ''}`} value={groupId} onChange={e => setGroupId(e.target.value)}>
+          <option value="">— Выберите группу —</option>
+          {groups.filter(g => !student?.group_id || g.id !== student.group_id).map(g => (
+            <option key={g.id} value={g.id}>{g.name} — {g.faculty_name}</option>
+          ))}
+        </select>
       </Field>
-      <Field label="Дата перевода" required><input className="input" type="date" defaultValue="2026-05-09" /></Field>
-      <Field label="Причина"><textarea className="textarea" placeholder="Укажите причину перевода…"></textarea></Field>
+      {err && <div style={{ color: 'var(--bad-fg)', fontSize: 13, marginTop: 8 }}>{err}</div>}
     </Modal>
   );
 }
 
 function DeleteConfirmModal({ data, onClose }) {
+  const { name, type, studentId, onDone } = data || {};
   const toast = useToast();
   const [confirmed, setConfirmed] = useState(false);
   const [reason, setReason] = useState('');
@@ -460,9 +548,16 @@ function DeleteConfirmModal({ data, onClose }) {
       toast.push(!reason.trim() ? 'Укажите причину удаления' : 'Подтвердите действие', { kind: 'err' });
       return;
     }
-    await new Promise(r => setTimeout(r, 700));
-    toast.push(`Заявка на удаление "${data?.name || 'записи'}" отправлена`, { kind: 'ok' });
-    onClose();
+    try {
+      if (studentId) {
+        await api.post(`/students/${studentId}/delete-request/`, { reason: reason.trim() });
+      }
+      toast.push(`Заявка на удаление "${name || 'записи'}" отправлена`, { kind: 'ok' });
+      onDone && onDone();
+      onClose();
+    } catch (e) {
+      toast.push(e.response?.data?.error || 'Ошибка при отправке заявки', { kind: 'err' });
+    }
   };
 
   return (
@@ -512,16 +607,36 @@ function ApproveDeleteModal({ data, onClose }) {
   );
 }
 
-function UploadDocModal({ onClose }) {
+function UploadDocModal({ data, onClose }) {
+  const { ownerId, ownerType, onDone, file: initFile } = data || {};
   const toast = useToast();
   const [over, setOver] = useState(false);
-  const [file, setFile] = useState(null);
+  const [file, setFile] = useState(initFile || null);
+  const [name, setName] = useState(initFile?.name || '');
+  const [docType, setDocType] = useState('other');
+  const [err, setErr] = useState('');
+
+  useEffect(() => { if (initFile) setName(initFile.name); }, []);
+
   const submit = async () => {
     if (!file) { toast.push('Выберите файл', { kind: 'err' }); return; }
-    await new Promise(r => setTimeout(r, 800));
-    toast.push(`Документ "${file.name}" загружен`, { kind: 'ok' });
-    onClose();
+    setErr('');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('name', name.trim() || file.name);
+      fd.append('doc_type', docType);
+      fd.append('owner_type', ownerType || 'student');
+      fd.append('owner_id', ownerId);
+      await api.post('/documents/upload/', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      toast.push(`Документ "${name || file.name}" загружен`, { kind: 'ok' });
+      onDone && onDone();
+      onClose && onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка при загрузке');
+    }
   };
+
   return (
     <Modal title="Загрузить документ" onClose={onClose}
       footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={submit}>{I.upload}Загрузить</LoadButton></>}>
@@ -529,24 +644,35 @@ function UploadDocModal({ onClose }) {
         className={`dropzone ${over ? 'is-over' : ''}`}
         onDragOver={e => { e.preventDefault(); setOver(true); }}
         onDragLeave={() => setOver(false)}
-        onDrop={e => { e.preventDefault(); setOver(false); const f = e.dataTransfer.files?.[0]; if (f) setFile(f); }}
+        onDrop={e => { e.preventDefault(); setOver(false); const f = e.dataTransfer.files?.[0]; if (f) { setFile(f); setName(f.name); } }}
       >
         <div className="dropzone-ico">{I.upload}</div>
         {file
           ? <>
               <div style={{ fontWeight: 500 }}>{file.name}</div>
-              <div className="muted" style={{ fontSize: 12 }}>{(file.size / 1024).toFixed(1)} КБ — нажмите «Загрузить»</div>
+              <div className="muted" style={{ fontSize: 12 }}>{(file.size / 1024).toFixed(1)} КБ</div>
             </>
           : <>
               <div style={{ fontWeight: 500, marginBottom: 4 }}>Перетащите файл сюда</div>
               <div className="muted" style={{ fontSize: 12 }}>или нажмите чтобы выбрать · PDF, JPG до 10 МБ</div>
             </>
         }
-        <input type="file" style={{ display: 'none' }} accept=".pdf,.jpg,.jpeg,.png" onChange={e => setFile(e.target.files?.[0])} />
+        <input type="file" style={{ display: 'none' }} accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={e => { const f = e.target.files?.[0]; if (f) { setFile(f); setName(f.name); } }} />
       </label>
-      <Field label="Тип документа" required>
-        <Combobox options={DOC_TYPE_OPTS} placeholder="Начните вводить тип…" allowClear={false} />
+      <Field label="Название документа">
+        <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="Паспорт, Аттестат…" />
       </Field>
+      <Field label="Тип документа">
+        <select className="select" value={docType} onChange={e => setDocType(e.target.value)}>
+          <option value="passport">Паспорт</option>
+          <option value="snils">СНИЛС</option>
+          <option value="policy">Полис ОМС</option>
+          <option value="certificate">Аттестат</option>
+          <option value="order">Приказ</option>
+          <option value="other">Прочее</option>
+        </select>
+      </Field>
+      {err && <div style={{ color: 'var(--bad-fg)', fontSize: 13, marginTop: 8 }}>{err}</div>}
     </Modal>
   );
 }

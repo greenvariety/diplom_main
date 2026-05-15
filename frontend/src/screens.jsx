@@ -478,60 +478,102 @@ function StatusDropdown({ value, onChange }) {
 }
 
 /* ============================================================
-   StudentList — search + filters + chips + count + skeleton
+   StudentList — поиск + фильтры + пагинация (реальный API)
    ============================================================ */
-function StudentList({ openModal }) {
+function StudentList({ currentUser, openModal, onNavigate }) {
   const toast = useToast();
   const [q, setQ] = useState('');
-  const [fac, setFac] = useState('');
-  const [grp, setGrp] = useState('');
+  const [facId, setFacId] = useState('');
+  const [grpId, setGrpId] = useState('');
   const [stat, setStat] = useState('');
+  const [page, setPage] = useState(1);
+  const [data, setData] = useState({ results: [], count: 0, num_pages: 1 });
   const [loading, setLoading] = useState(true);
+  const [faculties, setFaculties] = useState([]);
+  const [groups, setGroups] = useState([]);
 
   useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 700);
-    return () => clearTimeout(t);
+    api.get('/faculties/').then(r => setFaculties(r.data)).catch(() => {});
   }, []);
 
-  const filtered = useMemo(() => STUDENTS.filter(s => {
-    if (q && !`${s.last} ${s.first} ${s.mid}`.toLowerCase().includes(q.toLowerCase())) return false;
-    if (fac && s.fac !== fac) return false;
-    if (grp && s.group !== grp) return false;
-    if (stat && s.status !== stat) return false;
-    return true;
-  }), [q, fac, grp, stat]);
+  useEffect(() => {
+    if (facId) {
+      api.get(`/groups/?faculty_id=${facId}`).then(r => setGroups(r.data)).catch(() => {});
+    } else {
+      setGroups([]);
+      setGrpId('');
+    }
+  }, [facId]);
+
+  const load = () => {
+    setLoading(true);
+    const params = new URLSearchParams({ page });
+    if (q) params.set('search', q);
+    if (stat) params.set('status', stat);
+    if (facId) params.set('faculty_id', facId);
+    if (grpId) params.set('group_id', grpId);
+    api.get(`/students/?${params}`).then(r => {
+      setData(r.data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, [page]);
+
+  const handleSearch = () => { setPage(1); load(); };
+
+  const handleStatusChange = async (studentId, newStatus) => {
+    try {
+      await api.patch(`/students/${studentId}/`, { status: newStatus });
+      toast.push(`Статус изменён на "${STATUSES[newStatus]?.label || newStatus}"`, { kind: 'ok' });
+      load();
+    } catch {
+      toast.push('Не удалось изменить статус', { kind: 'err' });
+    }
+  };
+
+  const reset = () => { setQ(''); setFacId(''); setGrpId(''); setStat(''); setPage(1); setTimeout(load, 0); };
 
   const activeFilters = [];
-  if (fac)  activeFilters.push({ k: 'fac',  l: `Факультет: ${fac}`,    clr: () => setFac('') });
-  if (grp)  activeFilters.push({ k: 'grp',  l: `Группа: ${grp}`,        clr: () => setGrp('') });
+  if (facId) {
+    const f = faculties.find(f => String(f.id) === String(facId));
+    activeFilters.push({ k: 'fac', l: `Факультет: ${f?.short_name || facId}`, clr: () => { setFacId(''); setGrpId(''); } });
+  }
+  if (grpId) {
+    const g = groups.find(g => String(g.id) === String(grpId));
+    activeFilters.push({ k: 'grp', l: `Группа: ${g?.name || grpId}`, clr: () => setGrpId('') });
+  }
   if (stat) activeFilters.push({ k: 'stat', l: `Статус: ${STATUSES[stat]?.label || stat}`, clr: () => setStat('') });
 
-  const reset = () => { setQ(''); setFac(''); setGrp(''); setStat(''); };
-
   return (
-    <Shell role="admin" active="students" openModal={openModal}>
+    <Shell currentUser={currentUser} active="students" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
         crumbs={[{ label: 'Главная', href: true }, { label: 'Студенты' }]}
         title="Студенты"
-        sub={loading ? 'Загрузка…' : `Всего 612 человек, найдено по фильтрам — ${filtered.length}`}
+        sub={loading ? 'Загрузка…' : `Всего ${data.count} человек`}
         actions={<>
-          <button className="btn btn-secondary btn-sm">{I.excel}Excel</button>
-          <button className="btn btn-primary btn-sm" onClick={() => openModal('studentForm')}>{I.plus}Добавить</button>
+          <button className="btn btn-primary btn-sm" onClick={() => openModal('studentForm', { onDone: () => { setPage(1); load(); } })}>{I.plus}Добавить</button>
         </>}
       />
       <div className="filters">
         <div className="field grow-2">
           <label className="field-label">Поиск по ФИО</label>
-          <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} placeholder="Иванов Иван…" /></div>
+          <div className="input-with-icon">{I.search}
+            <input className="input" value={q} onChange={e => setQ(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSearch()}
+              placeholder="Иванов Иван…" />
+          </div>
         </div>
         <div className="field"><label className="field-label">Факультет</label>
-          <select className="select" value={fac} onChange={e => setFac(e.target.value)}>
-            <option value="">— Все —</option><option>ФИТ</option><option>ФЭ</option><option>ФМН</option>
+          <select className="select" value={facId} onChange={e => { setFacId(e.target.value); setGrpId(''); }}>
+            <option value="">— Все —</option>
+            {faculties.map(f => <option key={f.id} value={f.id}>{f.short_name}</option>)}
           </select>
         </div>
         <div className="field"><label className="field-label">Группа</label>
-          <select className="select" value={grp} onChange={e => setGrp(e.target.value)}>
-            <option value="">— Все —</option><option>ПИ-301</option><option>ПИ-302</option><option>ЭК-201</option><option>ЭК-202</option>
+          <select className="select" value={grpId} onChange={e => setGrpId(e.target.value)} disabled={!facId}>
+            <option value="">— Все —</option>
+            {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
           </select>
         </div>
         <div className="field"><label className="field-label">Статус</label>
@@ -540,7 +582,8 @@ function StudentList({ openModal }) {
             {Object.entries(STATUSES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
           </select>
         </div>
-        <button className="btn btn-ghost btn-sm" onClick={reset} disabled={!q && !fac && !grp && !stat}>Сбросить</button>
+        <button className="btn btn-primary btn-sm" onClick={handleSearch}>Найти</button>
+        <button className="btn btn-ghost btn-sm" onClick={reset}>Сбросить</button>
       </div>
       {activeFilters.length > 0 && (
         <div className="filter-chips" style={{ marginBottom: 12 }}>
@@ -552,7 +595,7 @@ function StudentList({ openModal }) {
       )}
       <div className="card">
         <div className="card-body flush">
-          {filtered.length === 0 && !loading ? (
+          {!loading && data.results.length === 0 ? (
             <EmptyState
               icon={I.search}
               title="Студенты не найдены"
@@ -561,22 +604,21 @@ function StudentList({ openModal }) {
             />
           ) : (
             <table className="tbl">
-              <thead><tr><th style={{ width: 40 }}>#</th><th style={{ width: 50 }}></th><th>ФИО</th><th>Статус</th><th>Факультет</th><th>Группа</th><th>Контакт</th><th style={{ width: 40 }}></th></tr></thead>
+              <thead><tr><th style={{ width: 40 }}>#</th><th style={{ width: 50 }}></th><th>ФИО</th><th>Статус</th><th>Факультет</th><th>Группа</th><th>Контакт</th></tr></thead>
               {loading
-                ? <SkeletonRows rows={6} cols={8} />
+                ? <SkeletonRows rows={6} cols={7} />
                 : <tbody>
-                    {filtered.map(s => (
-                      <tr key={s.id} className="row-link" onClick={() => openModal('studentDetail', s)}>
+                    {data.results.map(s => (
+                      <tr key={s.id} className="row-link" onClick={() => onNavigate('student-detail', { studentId: s.id })}>
                         <td className="muted">{s.id}</td>
-                        <td><Avatar name={`${s.last} ${s.first}`} size="sm" av={s.av} /></td>
-                        <td className="fwm">{s.last} {s.first} {s.mid}</td>
+                        <td><Avatar name={`${s.last_name} ${s.first_name}`} size="sm" /></td>
+                        <td className="fwm">{s.last_name} {s.first_name} {s.middle_name}</td>
                         <td onClick={e => e.stopPropagation()}>
-                          <StatusDropdown value={s.status} onChange={(v) => toast.push(`Статус изменён на "${STATUSES[v].label}"`, { kind: 'ok' })} />
+                          <StatusDropdown value={s.status} onChange={v => handleStatusChange(s.id, v)} />
                         </td>
-                        <td>{s.fac}</td>
-                        <td>{s.group}</td>
+                        <td>{s.faculty_short}</td>
+                        <td>{s.group_name || <span className="muted">—</span>}</td>
                         <td className="muted">{s.phone}</td>
-                        <td><button className="btn btn-ghost btn-icon btn-sm" onClick={e => e.stopPropagation()}>{I.more}</button></td>
                       </tr>
                     ))}
                   </tbody>
@@ -584,54 +626,112 @@ function StudentList({ openModal }) {
             </table>
           )}
         </div>
+        {data.num_pages > 1 && (
+          <div className="card-foot" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 16px' }}>
+            <button className="btn btn-ghost btn-sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>← Назад</button>
+            <span className="muted" style={{ fontSize: 13 }}>Страница {page} из {data.num_pages}</span>
+            <button className="btn btn-ghost btn-sm" disabled={page >= data.num_pages} onClick={() => setPage(p => p + 1)}>Вперёд →</button>
+          </div>
+        )}
       </div>
     </Shell>
   );
 }
 
 /* ============================================================
-   StudentDetail — drag-drop docs, status dropdown, collapse history
+   StudentDetail — профиль, документы, опекуны, история (реальный API)
    ============================================================ */
-function StudentDetail({ openModal }) {
-  const s = STUDENTS[0];
-  const toast = useToast();
+function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
+  const [student, setStudent] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [over, setOver] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const toast = useToast();
 
-  const onDrop = (e) => {
-    e.preventDefault(); setOver(false);
-    const f = e.dataTransfer.files?.[0];
-    if (f) toast.push(`Документ "${f.name}" подготовлен к загрузке`, { kind: 'info' });
+  const load = () => {
+    setLoading(true);
+    api.get(`/students/${studentId}/`).then(r => {
+      setStudent(r.data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
   };
 
+  useEffect(() => { if (studentId) load(); }, [studentId]);
+
+  const handleStatusChange = async (newStatus) => {
+    try {
+      await api.patch(`/students/${studentId}/`, { status: newStatus });
+      toast.push(`Статус изменён на "${STATUSES[newStatus]?.label || newStatus}"`, { kind: 'ok' });
+      load();
+    } catch {
+      toast.push('Не удалось изменить статус', { kind: 'err' });
+    }
+  };
+
+  const handleRemoveParent = async (spId) => {
+    if (!confirm('Убрать опекуна?')) return;
+    try {
+      await api.delete(`/students/${studentId}/parents/${spId}/`);
+      toast.push('Опекун удалён', { kind: 'ok' });
+      load();
+    } catch {
+      toast.push('Ошибка при удалении', { kind: 'err' });
+    }
+  };
+
+  const handleDeleteDoc = async (docId) => {
+    if (!confirm('Удалить документ?')) return;
+    try {
+      await api.delete(`/documents/${docId}/`);
+      toast.push('Документ удалён', { kind: 'ok' });
+      load();
+    } catch {
+      toast.push('Ошибка при удалении документа', { kind: 'err' });
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault(); setOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) openModal('uploadDoc', { file, ownerId: studentId, ownerType: 'student', onDone: load });
+  };
+
+  if (loading || !student) {
+    return (
+      <Shell currentUser={currentUser} active="students" onNavigate={onNavigate} openModal={openModal}>
+        <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>Загрузка…</div>
+      </Shell>
+    );
+  }
+
   return (
-    <Shell role="admin" active="students" openModal={openModal}>
+    <Shell currentUser={currentUser} active="students" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
-        crumbs={[{ label: 'Студенты', href: true }, { label: `${s.last} ${s.first} ${s.mid}` }]}
-        title={`${s.last} ${s.first} ${s.mid}`}
-        sub={`#${s.id} · ${s.fac} · ${s.group}`}
+        crumbs={[{ label: 'Студенты', href: true, onClick: () => onNavigate('students') }, { label: `${student.last_name} ${student.first_name}` }]}
+        title={`${student.last_name} ${student.first_name} ${student.middle_name}`}
+        sub={`#${student.id} · ${student.faculty_short} · ${student.group_name || 'без группы'}`}
         actions={<>
-          <button className="btn btn-secondary btn-sm" onClick={() => openModal('studentForm', s)}>{I.pencil}Редактировать</button>
-          <button className="btn btn-secondary btn-sm" onClick={() => openModal('transfer', s)}>{I.swap}Перевести</button>
-          <button className="btn btn-danger btn-sm" onClick={() => openModal('deleteConfirm', { name: `${s.last} ${s.first}`, type: 'студента' })}>{I.trash}Удалить</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => openModal('studentForm', { student, onDone: load })}>{I.pencil}Редактировать</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => openModal('transfer', { student, onDone: load })}>{I.swap}Перевести</button>
+          <button className="btn btn-danger btn-sm" onClick={() => openModal('deleteConfirm', { name: `${student.last_name} ${student.first_name}`, type: 'студента', studentId, onDone: () => onNavigate('students') })}>{I.trash}Удалить</button>
         </>}
       />
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
         <div>
           <div className="card">
             <div className="card-body" style={{ textAlign: 'center', padding: 24 }}>
-              <Avatar name={`${s.last} ${s.first}`} size="lg" av={s.av} className="avatar-zoomy" />
-              <h3 style={{ marginTop: 14, marginBottom: 6 }}>{s.last} {s.first}</h3>
-              <div className="muted" style={{ fontSize: 13, marginBottom: 12 }}>{s.mid}</div>
-              <StatusDropdown value={s.status} onChange={(v) => toast.push(`Статус изменён на "${STATUSES[v].label}"`, { kind: 'ok' })} />
+              <Avatar name={`${student.last_name} ${student.first_name}`} size="lg" className="avatar-zoomy" />
+              <h3 style={{ marginTop: 14, marginBottom: 6 }}>{student.last_name} {student.first_name}</h3>
+              <div className="muted" style={{ fontSize: 13, marginBottom: 12 }}>{student.middle_name}</div>
+              <StatusDropdown value={student.status} onChange={handleStatusChange} />
             </div>
             <div style={{ borderTop: '1px solid var(--border)' }}>
               <dl className="kv">
-                <dt>Дата рождения</dt><dd>{s.dob}</dd>
-                <dt>Телефон</dt><dd>{s.phone}</dd>
-                <dt>Email</dt><dd>{s.email}</dd>
-                <dt>Факультет</dt><dd>{s.fac}</dd>
-                <dt>Группа</dt><dd><a href="#">{s.group}</a></dd>
+                <dt>Дата рождения</dt><dd>{student.birth_date || '—'}</dd>
+                <dt>Телефон</dt><dd>{student.phone || '—'}</dd>
+                <dt>Email</dt><dd>{student.email || '—'}</dd>
+                <dt>Факультет</dt><dd>{student.faculty_name}</dd>
+                <dt>Группа</dt><dd>{student.group_name || <span className="muted">—</span>}</dd>
               </dl>
             </div>
           </div>
@@ -640,63 +740,88 @@ function StudentDetail({ openModal }) {
           <div className="card">
             <div className="card-head">
               <div className="title">Опекуны и родители</div>
-              <button className="btn btn-secondary btn-sm" onClick={() => openModal('parentForm')}>{I.plus}Добавить</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => openModal('parentForm', { studentId, onDone: load })}>{I.plus}Добавить</button>
             </div>
             <div className="card-body flush">
-              <table className="tbl">
-                <thead><tr><th>ФИО</th><th>Связь</th><th>Телефон</th><th style={{ width: 40 }}></th></tr></thead>
-                <tbody>
-                  <tr><td className="fwm">Иванова Елена Васильевна</td><td>Мать</td><td className="muted">+7 900 765-43-21</td><td><button className="btn btn-ghost btn-icon btn-sm">{I.x}</button></td></tr>
-                  <tr><td className="fwm">Иванов Иван Петрович</td><td>Отец</td><td className="muted">+7 900 111-22-33</td><td><button className="btn btn-ghost btn-icon btn-sm">{I.x}</button></td></tr>
-                </tbody>
-              </table>
+              {student.parents.length === 0 ? (
+                <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Опекуны не добавлены</div>
+              ) : (
+                <table className="tbl">
+                  <thead><tr><th>ФИО</th><th>Связь</th><th>Телефон</th><th style={{ width: 40 }}></th></tr></thead>
+                  <tbody>
+                    {student.parents.map(p => (
+                      <tr key={p.id}>
+                        <td className="fwm">{p.parent_name}</td>
+                        <td>{p.relation_display}</td>
+                        <td className="muted">{p.phone || '—'}</td>
+                        <td><button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleRemoveParent(p.id)}>{I.x}</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
 
           <div className="card">
             <div className="card-head">
               <div className="title">Документы</div>
-              <button className="btn btn-secondary btn-sm" onClick={() => openModal('uploadDoc')}>{I.upload}Загрузить</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => openModal('uploadDoc', { ownerId: studentId, ownerType: 'student', onDone: load })}>{I.upload}Загрузить</button>
             </div>
             <div className="card-body">
               <div className={`dropzone ${over ? 'is-over' : ''}`} style={{ marginBottom: 12, padding: 16 }}
                 onDragOver={e => { e.preventDefault(); setOver(true); }}
                 onDragLeave={() => setOver(false)}
-                onDrop={onDrop}
+                onDrop={handleDrop}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--text-muted)', fontSize: 13 }}>
                   {I.upload}{over ? 'Отпустите для загрузки' : 'Перетащите файлы сюда или нажмите «Загрузить»'}
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                {[{ n: 'Паспорт.pdf', d: '01.01.2026' }, { n: 'Справка.pdf', d: '15.04.2026' }, { n: 'Аттестат.pdf', d: '01.09.2022' }].map(d => (
-                  <div key={d.n} className="doc-tile">
-                    <div className="doc-icon">{I.doc}</div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className="doc-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.n}</div>
-                      <div className="doc-meta">{d.d}</div>
+              {student.documents.length === 0 ? (
+                <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: '8px 0' }}>Документы не загружены</div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                  {student.documents.map(d => (
+                    <div key={d.id} className="doc-tile" style={{ position: 'relative' }}>
+                      <a href={d.file_url} target="_blank" rel="noreferrer" style={{ display: 'contents' }}>
+                        <div className="doc-icon">{I.doc}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div className="doc-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</div>
+                          <div className="doc-meta">{d.uploaded_at}</div>
+                        </div>
+                      </a>
+                      <button className="btn btn-ghost btn-icon btn-sm" style={{ position: 'absolute', top: 4, right: 4 }} onClick={() => handleDeleteDoc(d.id)}>{I.x}</button>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
           <div className="card">
             <div className="card-head" style={{ cursor: 'pointer' }} onClick={() => setHistoryOpen(o => !o)}>
-              <div className="title">{I.history}<span>История изменений</span><span className="muted" style={{ fontWeight: 400, fontSize: 12, marginLeft: 6 }}>· 3 события</span></div>
+              <div className="title">{I.history}<span>История изменений</span><span className="muted" style={{ fontWeight: 400, fontSize: 12, marginLeft: 6 }}>· {student.audit_log.length} событий</span></div>
               <svg className="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: historyOpen ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}><polyline points="6 9 12 15 18 9"/></svg>
             </div>
             {historyOpen && (
               <div className="card-body flush">
-                <table className="tbl">
-                  <thead><tr><th>Дата и время</th><th>Пользователь</th><th>Действие</th></tr></thead>
-                  <tbody>
-                    <tr><td className="mono muted">09.05.2026 14:32</td><td className="fwm">admin1</td><td><Badge>Создал</Badge></td></tr>
-                    <tr><td className="mono muted">09.05.2026 15:10</td><td className="fwm">admin1</td><td><Badge>Изменил</Badge></td></tr>
-                    <tr><td className="mono muted">10.05.2026 09:24</td><td className="fwm">teacher1</td><td><Badge>Изменил</Badge></td></tr>
-                  </tbody>
-                </table>
+                {student.audit_log.length === 0 ? (
+                  <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>История пуста</div>
+                ) : (
+                  <table className="tbl">
+                    <thead><tr><th>Дата и время</th><th>Пользователь</th><th>Действие</th></tr></thead>
+                    <tbody>
+                      {student.audit_log.map((l, i) => (
+                        <tr key={i}>
+                          <td className="mono muted">{l.created_at}</td>
+                          <td className="fwm">{l.user}</td>
+                          <td><Badge>{l.action}</Badge></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             )}
           </div>

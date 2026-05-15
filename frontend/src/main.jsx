@@ -4,8 +4,8 @@ import './styles.css';
 import { ToastProvider } from './utils.jsx';
 import { LoginScreen, RegisterScreen, SeedPhraseScreen, RecoverPasswordScreen } from './auth.jsx';
 import { Shell } from './shell.jsx';
-import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, OrganizationList, FacultyList, GroupList, GroupDetail } from './screens.jsx';
-import { OrgFormModal, FacultyFormModal, FacultyDetailModal, GroupFormModal, AssignSubjectModal } from './modals.jsx';
+import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, OrganizationList, FacultyList, GroupList, GroupDetail, StudentList, StudentDetail } from './screens.jsx';
+import { OrgFormModal, FacultyFormModal, FacultyDetailModal, GroupFormModal, AssignSubjectModal, StudentFormModal, TransferModal, UploadDocModal, ParentFormModal, DeleteConfirmModal } from './modals.jsx';
 import api from './api.js';
 
 function AuthFlow({ onAuthenticated }) {
@@ -96,6 +96,21 @@ function AppShell({ onLogout }) {
     if (modal.name === 'assignSubject') {
       return <AssignSubjectModal data={modal.data} onClose={closeModal} />;
     }
+    if (modal.name === 'studentForm') {
+      return <StudentFormModal data={modal.data} onClose={closeModal} />;
+    }
+    if (modal.name === 'transfer') {
+      return <TransferModal data={modal.data} onClose={closeModal} />;
+    }
+    if (modal.name === 'uploadDoc') {
+      return <UploadDocModal data={modal.data} onClose={closeModal} />;
+    }
+    if (modal.name === 'parentForm') {
+      return <ParentFormModal data={modal.data} onClose={closeModal} />;
+    }
+    if (modal.name === 'deleteConfirm') {
+      return <DeleteConfirmModal data={modal.data} onClose={closeModal} />;
+    }
     return null;
   };
 
@@ -136,6 +151,14 @@ function AppShell({ onLogout }) {
 
     if (currentScreen === 'group-detail') {
       return <GroupDetail {...sharedProps} groupId={navExtra?.groupId} />;
+    }
+
+    if (currentScreen === 'students') {
+      return <StudentList {...sharedProps} />;
+    }
+
+    if (currentScreen === 'student-detail') {
+      return <StudentDetail {...sharedProps} studentId={navExtra?.studentId} />;
     }
 
     return (

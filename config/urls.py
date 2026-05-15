@@ -11,6 +11,11 @@ from core.api_faculties import FacultiesView, FacultyDetailView, FacultyDeleteRe
 from core.api_groups import GroupsView, GroupDetailView, GroupDeleteRequestView, GroupSubjectsView, GroupSubjectDetailView
 from core.api_employees import EmployeesView
 from core.api_subjects import SubjectsView
+from core.api_students import (
+    StudentsView, StudentDetailView, StudentDeleteRequestView,
+    StudentTransferView, StudentParentsView, StudentParentDetailView,
+)
+from core.api_documents import DocumentUploadView, DocumentDetailView
 
 router = DefaultRouter()
 
@@ -36,6 +41,14 @@ urlpatterns = [
     path('api/groups/<int:pk>/subjects/<int:assignment_pk>/', GroupSubjectDetailView.as_view()),
     path('api/employees/', EmployeesView.as_view()),
     path('api/subjects/', SubjectsView.as_view()),
+    path('api/students/', StudentsView.as_view()),
+    path('api/students/<int:pk>/', StudentDetailView.as_view()),
+    path('api/students/<int:pk>/delete-request/', StudentDeleteRequestView.as_view()),
+    path('api/students/<int:pk>/transfer/', StudentTransferView.as_view()),
+    path('api/students/<int:pk>/parents/', StudentParentsView.as_view()),
+    path('api/students/<int:pk>/parents/<int:sp_pk>/', StudentParentDetailView.as_view()),
+    path('api/documents/upload/', DocumentUploadView.as_view()),
+    path('api/documents/<int:pk>/', DocumentDetailView.as_view()),
     path('api/', include(router.urls)),
     path('', include('core.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
