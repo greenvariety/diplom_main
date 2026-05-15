@@ -1383,38 +1383,64 @@ function UserList({ currentUser, openModal, onNavigate }) {
   );
 }
 
-function DeleteRequests({ openModal }) {
-  const reqs = [
-    { id: 1, type: 'Студент',   target: 'Сидоров Алексей Петрович', author: 'admin1',  date: '09.05.2026 11:20', reason: 'Отчислен по собственному желанию' },
-    { id: 2, type: 'Опекун',    target: 'Петрова Светлана Ивановна', author: 'admin1',  date: '08.05.2026 16:45', reason: 'Дубликат записи' },
-    { id: 3, type: 'Сотрудник', target: 'Волков Андрей Степанович', author: 'admin2',  date: '08.05.2026 09:30', reason: 'Уволен' },
-  ];
+function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
+  const [reqs, setReqs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const toast = useToast();
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const r = await api.get('/delete-requests/');
+      setReqs(r.data);
+    } catch {}
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const reject = async (id) => {
+    try {
+      await api.post(`/delete-requests/${id}/reject/`);
+      toast.push('Заявка отклонена', { kind: 'ok' });
+      load();
+    } catch (e) {
+      toast.push(e.response?.data?.error || 'Ошибка', { kind: 'err' });
+    }
+  };
+
   return (
-    <Shell role="superadmin" active="delreq" openModal={openModal}>
+    <Shell currentUser={currentUser} active="delreq" openModal={openModal} onNavigate={onNavigate} onLogout={onLogout}>
       <PageHead title="Заявки на удаление" sub="Подтвердите или отклоните заявки от администраторов" />
       <div className="banner banner-info">{I.info}<div className="banner-body">Двухступенчатое удаление: администратор подаёт заявку, суперадмин подтверждает. До подтверждения объект остаётся в системе.</div></div>
       <div className="card">
         <div className="card-body flush">
-          <table className="tbl">
-            <thead><tr><th>Тип</th><th>Объект</th><th>Кто подал</th><th>Когда</th><th>Причина</th><th style={{ width: 200 }}>Действия</th></tr></thead>
-            <tbody>
-              {reqs.map(r => (
-                <tr key={r.id}>
-                  <td><Badge>{r.type}</Badge></td>
-                  <td className="fwm">{r.target}</td>
-                  <td className="mono">{r.author}</td>
-                  <td className="mono muted">{r.date}</td>
-                  <td className="muted">{r.reason}</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button className="btn btn-danger-solid btn-sm" onClick={() => openModal('approveDelete', r)}>{I.check}Одобрить</button>
-                      <button className="btn btn-secondary btn-sm">Отклонить</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {loading ? (
+            <table className="tbl"><thead><tr><th>Тип</th><th>Объект</th><th>Кто подал</th><th>Когда</th><th>Причина</th><th style={{ width: 200 }}>Действия</th></tr></thead><tbody><SkeletonRows cols={6} /></tbody></table>
+          ) : (
+            <table className="tbl">
+              <thead><tr><th>Тип</th><th>Объект</th><th>Кто подал</th><th>Когда</th><th>Причина</th><th style={{ width: 200 }}>Действия</th></tr></thead>
+              <tbody>
+                {reqs.length === 0 ? (
+                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32 }} className="muted">Нет заявок на удаление</td></tr>
+                ) : reqs.map(r => (
+                  <tr key={r.id}>
+                    <td><Badge>{r.type_label}</Badge></td>
+                    <td className="fwm">{r.object_repr}</td>
+                    <td className="mono">{r.author}</td>
+                    <td className="mono muted">{r.created_at}</td>
+                    <td className="muted">{r.reason}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button className="btn btn-danger-solid btn-sm" onClick={() => openModal('approveDelete', { ...r, onDone: load })}>{I.check}Одобрить</button>
+                        <button className="btn btn-secondary btn-sm" onClick={() => reject(r.id)}>Отклонить</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </Shell>

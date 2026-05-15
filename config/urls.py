@@ -25,6 +25,7 @@ from core.api_parents import (
     ParentStudentsView, ParentStudentDetailView,
 )
 from core.api_users import UsersView, UserDetailView, UserSetPasswordView
+from core.api_delete_requests import DeleteRequestsView, DeleteRequestApproveView, DeleteRequestRejectView, DeleteRequestsCountView
 
 router = DefaultRouter()
 
@@ -73,6 +74,10 @@ urlpatterns = [
     path('api/users/', UsersView.as_view()),
     path('api/users/<int:pk>/', UserDetailView.as_view()),
     path('api/users/<int:pk>/set-password/', UserSetPasswordView.as_view()),
+    path('api/delete-requests/', DeleteRequestsView.as_view()),
+    path('api/delete-requests/count/', DeleteRequestsCountView.as_view()),
+    path('api/delete-requests/<int:pk>/approve/', DeleteRequestApproveView.as_view()),
+    path('api/delete-requests/<int:pk>/reject/', DeleteRequestRejectView.as_view()),
     path('api/', include(router.urls)),
     path('', include('core.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

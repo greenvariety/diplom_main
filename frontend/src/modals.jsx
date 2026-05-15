@@ -877,7 +877,18 @@ function DeleteConfirmModal({ data, onClose }) {
 
 function ApproveDeleteModal({ data, onClose }) {
   const toast = useToast();
-  const submit = async () => { await new Promise(r => setTimeout(r, 800)); toast.push(`${data?.target || 'Запись'} удалена навсегда`, { kind: 'ok' }); onClose(); };
+  const [err, setErr] = useState('');
+  const submit = async () => {
+    setErr('');
+    try {
+      await api.post(`/delete-requests/${data.id}/approve/`);
+      toast.push(`${data?.object_repr || 'Запись'} удалена навсегда`, { kind: 'ok' });
+      data?.onDone && data.onDone();
+      onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка при удалении');
+    }
+  };
   return (
     <Modal title="Подтвердить удаление?" kind="danger" onClose={onClose}
       footer={<>
@@ -886,11 +897,12 @@ function ApproveDeleteModal({ data, onClose }) {
       </>}>
       <div className="banner banner-bad">{I.alert}<div className="banner-body"><strong>Действие необратимо.</strong> Запись и связанные с ней данные будут удалены из системы.</div></div>
       <dl className="kv" style={{ padding: 0, marginTop: 12 }}>
-        <dt>Тип</dt><dd><Badge>{data?.type || 'Студент'}</Badge></dd>
-        <dt>Объект</dt><dd className="fwm">{data?.target || 'Сидоров А. П.'}</dd>
-        <dt>Заявку подал</dt><dd className="mono">{data?.author || 'admin'} · {data?.date || '09.05.2026'}</dd>
-        <dt>Причина</dt><dd className="muted">{data?.reason || 'Отчислен'}</dd>
+        <dt>Тип</dt><dd><Badge>{data?.type_label || 'Объект'}</Badge></dd>
+        <dt>Объект</dt><dd className="fwm">{data?.object_repr || '—'}</dd>
+        <dt>Заявку подал</dt><dd className="mono">{data?.author || '—'} · {data?.created_at || '—'}</dd>
+        <dt>Причина</dt><dd className="muted">{data?.reason || '—'}</dd>
       </dl>
+      {err && <div className="banner banner-bad" style={{ marginTop: 8 }}>{I.alert}<div className="banner-body">{err}</div></div>}
     </Modal>
   );
 }

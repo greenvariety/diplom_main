@@ -200,6 +200,12 @@ function Shell({ currentUser, role: roleProp, active, onNavigate, onLogout, open
   const nav = NAV_BY_ROLE[role] || NAV_BY_ROLE.admin;
   const institutionName = currentUser?.institution?.name || '';
   const mockUser = currentUser || { role, username: role, display_name: role };
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    if (role !== 'owner' && role !== 'superadmin') return;
+    api.get('/delete-requests/count/').then(r => setPendingCount(r.data.count)).catch(() => {});
+  }, [role, active]);
 
   return (
     <div className="app-shell">
@@ -240,6 +246,11 @@ function Shell({ currentUser, role: roleProp, active, onNavigate, onLogout, open
               >
                 {it.icon}
                 <span>{it.label}</span>
+                {it.key === 'delreq' && pendingCount > 0 && (
+                  <span style={{ marginLeft: 'auto', background: 'var(--danger)', color: '#fff', borderRadius: 10, fontSize: 11, fontWeight: 700, padding: '1px 7px', lineHeight: '18px' }}>
+                    {pendingCount}
+                  </span>
+                )}
               </a>
             ))}
           </span>

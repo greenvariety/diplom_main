@@ -168,6 +168,23 @@
 
 ---
 
+## Задача 12 выполнена — Заявки на удаление
+
+**Что сделано:**
+
+- Создан `core/api_delete_requests.py` с четырьмя вьюхами:
+  - `GET /api/delete-requests/` — список pending-заявок для текущей организации (доступно admin и owner). Для каждой заявки подгружается строковое представление объекта.
+  - `POST /api/delete-requests/{id}/approve/` — одобрение: физически удаляет объект из БД, логирует через `log_action()`, помечает заявку как `approved`. Доступно только owner.
+  - `POST /api/delete-requests/{id}/reject/` — отклонение: статус → `rejected`, логируется. Доступно только owner.
+  - `GET /api/delete-requests/count/` — количество pending-заявок для badge в sidebar.
+- В `config/urls.py` добавлены четыре маршрута для заявок на удаление.
+- `frontend/src/screens.jsx` — `DeleteRequests` переписан: загружает реальные данные из API, показывает тип объекта, его имя, автора, дату, причину. Кнопка «Одобрить» открывает `ApproveDeleteModal`, кнопка «Отклонить» напрямую вызывает POST/reject. Список обновляется после каждого действия.
+- `frontend/src/modals.jsx` — `ApproveDeleteModal` переписан: реальный вызов `POST /api/delete-requests/{id}/approve/`, показывает данные из заявки, ошибки API отображаются в форме.
+- `frontend/src/shell.jsx` — добавлен счётчик pending-заявок: Shell делает `GET /api/delete-requests/count/` при каждой смене активного раздела и отображает красный badge с числом рядом с пунктом «Заявки на удаление» в сайдбаре.
+- `frontend/src/main.jsx` — добавлен экран `delreq`, импортированы `DeleteRequests` и `ApproveDeleteModal`, зарегистрирована модалка `approveDelete`.
+
+---
+
 ## Задача 10 выполнена — Должности
 
 **Что сделано:**
