@@ -150,6 +150,24 @@
 
 ---
 
+## Задача 11 выполнена — Пользователи системы
+
+**Что сделано:**
+
+- Создан `core/api_users.py` с четырьмя вьюхами (доступ только для role='owner'):
+  - `GET /api/users/` — список пользователей текущей организации (username, display_name, role, is_active, last_login, employee).
+  - `POST /api/users/` — создание пользователя (поля: username, display_name, role, password, employee_id). Роли admin/teacher, нельзя создать второго owner. Проверяется уникальность логина.
+  - `PATCH /api/users/{id}/` — редактирование (display_name, role, is_active, employee_id). Все изменения логируются.
+  - `DELETE /api/users/{id}/` — удаление. Нельзя удалить свой аккаунт.
+  - `POST /api/users/{id}/set-password/` — смена пароля пользователя.
+- В `config/urls.py` добавлены три маршрута: `/api/users/`, `/api/users/{id}/`, `/api/users/{id}/set-password/`.
+- `frontend/src/screens.jsx` — `UserList` переписан: загружает реальных пользователей из API, таблица с логином, ФИО, цветным бейджем роли, датой последнего входа, статусом активности. Кнопки: редактировать (pencil), сменить пароль (shield), удалить (trash).
+- `frontend/src/modals.jsx` — `UserFormModal` переписан: поддерживает создание и редактирование (accept `data.user`). При создании — поля логин, пароль, подтверждение. При редактировании — только ФИО, роль, сотрудник. Добавлен `UserSetPasswordModal`: форма с новым паролем и подтверждением.
+- `frontend/src/main.jsx` — импортированы `UserList`, `UserFormModal`, `UserSetPasswordModal`; добавлен экран `users`; зарегистрированы модалки `userForm` и `userSetPassword`.
+- `npm run build` — собирается без ошибок.
+
+---
+
 ## Задача 10 выполнена — Должности
 
 **Что сделано:**

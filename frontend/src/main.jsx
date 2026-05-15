@@ -4,8 +4,8 @@ import './styles.css';
 import { ToastProvider } from './utils.jsx';
 import { LoginScreen, RegisterScreen, SeedPhraseScreen, RecoverPasswordScreen } from './auth.jsx';
 import { Shell } from './shell.jsx';
-import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, OrganizationList, FacultyList, GroupList, GroupDetail, StudentList, StudentDetail, EmployeeList, EmployeeDetail, PositionList, ParentList, ParentDetail, SubjectList } from './screens.jsx';
-import { OrgFormModal, FacultyFormModal, FacultyDetailModal, GroupFormModal, AssignSubjectModal, StudentFormModal, TransferModal, UploadDocModal, ParentFormModal, ParentAddStudentModal, DeleteConfirmModal, EmployeeFormModal, EmployeeAssignSubjectModal, PositionFormModal, SubjectFormModal } from './modals.jsx';
+import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, OrganizationList, FacultyList, GroupList, GroupDetail, StudentList, StudentDetail, EmployeeList, EmployeeDetail, PositionList, ParentList, ParentDetail, SubjectList, UserList } from './screens.jsx';
+import { OrgFormModal, FacultyFormModal, FacultyDetailModal, GroupFormModal, AssignSubjectModal, StudentFormModal, TransferModal, UploadDocModal, ParentFormModal, ParentAddStudentModal, DeleteConfirmModal, EmployeeFormModal, EmployeeAssignSubjectModal, PositionFormModal, SubjectFormModal, UserFormModal, UserSetPasswordModal } from './modals.jsx';
 import api from './api.js';
 
 function AuthFlow({ onAuthenticated }) {
@@ -126,6 +126,12 @@ function AppShell({ onLogout }) {
     if (modal.name === 'subjectForm') {
       return <SubjectFormModal data={modal.data} onClose={closeModal} />;
     }
+    if (modal.name === 'userForm') {
+      return <UserFormModal data={modal.data} onClose={closeModal} />;
+    }
+    if (modal.name === 'userSetPassword') {
+      return <UserSetPasswordModal data={modal.data} onClose={closeModal} />;
+    }
     return null;
   };
 
@@ -198,6 +204,10 @@ function AppShell({ onLogout }) {
 
     if (currentScreen === 'parent-detail') {
       return <ParentDetail {...sharedProps} parentId={navExtra?.parentId} />;
+    }
+
+    if (currentScreen === 'users') {
+      return <UserList {...sharedProps} />;
     }
 
     return (

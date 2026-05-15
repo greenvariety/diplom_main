@@ -24,6 +24,7 @@ from core.api_parents import (
     ParentsView, ParentDetailView, ParentDeleteRequestView,
     ParentStudentsView, ParentStudentDetailView,
 )
+from core.api_users import UsersView, UserDetailView, UserSetPasswordView
 
 router = DefaultRouter()
 
@@ -69,6 +70,9 @@ urlpatterns = [
     path('api/parents/<int:pk>/students/<int:sp_pk>/', ParentStudentDetailView.as_view()),
     path('api/documents/upload/', DocumentUploadView.as_view()),
     path('api/documents/<int:pk>/', DocumentDetailView.as_view()),
+    path('api/users/', UsersView.as_view()),
+    path('api/users/<int:pk>/', UserDetailView.as_view()),
+    path('api/users/<int:pk>/set-password/', UserSetPasswordView.as_view()),
     path('api/', include(router.urls)),
     path('', include('core.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

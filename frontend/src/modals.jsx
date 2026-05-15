@@ -632,24 +632,140 @@ function PositionFormModal({ data, onClose }) {
   );
 }
 
-function UserFormModal({ onClose }) {
+const REAL_ROLE_OPTS = [
+  { value: 'admin', label: 'Администратор' },
+  { value: 'teacher', label: 'Преподаватель' },
+];
+
+function UserFormModal({ data, onClose }) {
+  const { user, onDone } = data || {};
+  const isEdit = !!user;
   const toast = useToast();
-  const save = async () => { await new Promise(r => setTimeout(r, 700)); toast.push('Пользователь создан', { kind: 'ok' }); onClose(); };
+  const [employees, setEmployees] = useState([]);
+  const [username, setUsername] = useState(user?.username || '');
+  const [displayName, setDisplayName] = useState(user?.display_name || '');
+  const [role, setRole] = useState(user?.role || 'teacher');
+  const [employeeId, setEmployeeId] = useState(user?.employee_id ? String(user.employee_id) : '');
+  const [password, setPassword] = useState('');
+  const [password2, setPassword2] = useState('');
+  const [err, setErr] = useState('');
+
+  useEffect(() => {
+    api.get('/employees/').then(r => setEmployees(r.data)).catch(() => {});
+  }, []);
+
+  const employeeOpts = employees.map(e => ({ value: String(e.id), label: e.full_name, sub: e.position_name || '' }));
+
+  const save = async () => {
+    setErr('');
+    if (!isEdit && !username.trim()) { setErr('Введите логин'); return; }
+    if (!isEdit && !password) { setErr('Введите пароль'); return; }
+    if (!isEdit && password !== password2) { setErr('Пароли не совпадают'); return; }
+    try {
+      if (isEdit) {
+        await api.patch(`/users/${user.id}/`, {
+          display_name: displayName,
+          role,
+          employee_id: employeeId ? parseInt(employeeId) : null,
+        });
+        toast.push('Пользователь обновлён', { kind: 'ok' });
+      } else {
+        await api.post('/users/', {
+          username,
+          display_name: displayName,
+          role,
+          password,
+          employee_id: employeeId ? parseInt(employeeId) : null,
+        });
+        toast.push('Пользователь создан', { kind: 'ok' });
+      }
+      onDone && onDone();
+      onClose && onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка при сохранении');
+    }
+  };
+
   return (
-    <Modal title="Создать пользователя" sub="Учётная запись для входа в систему" onClose={onClose}
-      footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>{I.check}Создать</LoadButton></>}>
+    <Modal
+      title={isEdit ? 'Редактировать пользователя' : 'Создать пользователя'}
+      sub="Учётная запись для входа в систему"
+      onClose={onClose}
+      footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>{I.check}{isEdit ? 'Сохранить' : 'Создать'}</LoadButton></>}
+    >
       <div className="form-grid">
-        <Field label="Логин" required><input className="input" placeholder="teacher2" /></Field>
-        <Field label="Роль" required>
-          <Combobox options={ROLE_OPTS} placeholder="Выберите роль" allowClear={false} />
+        {!isEdit && (
+          <Field label="Логин" required>
+            <input className="input" placeholder="teacher2" value={username} onChange={e => setUsername(e.target.value)} />
+          </Field>
+        )}
+        <Field label="ФИО">
+          <input className="input" placeholder="Иванов Иван Иванович" value={displayName} onChange={e => setDisplayName(e.target.value)} />
         </Field>
-        <Field label="Пароль" required><input className="input" type="password" /></Field>
-        <Field label="Повторите" required><input className="input" type="password" /></Field>
+        <Field label="Роль" required>
+          <select className="select" value={role} onChange={e => setRole(e.target.value)}>
+            {REAL_ROLE_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </Field>
+        {!isEdit && <>
+          <Field label="Пароль" required>
+            <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+          </Field>
+          <Field label="Повторите" required>
+            <input className="input" type="password" value={password2} onChange={e => setPassword2(e.target.value)} />
+          </Field>
+        </>}
         <div className="field field-full">
           <label className="field-label">Привязать к сотруднику</label>
-          <Combobox options={TEACHER_OPTS} placeholder="Начните вводить ФИО сотрудника…" />
+          <Combobox
+            options={employeeOpts}
+            value={employeeId}
+            onChange={setEmployeeId}
+            placeholder="Начните вводить ФИО сотрудника…"
+          />
         </div>
       </div>
+      {err && <div style={{ color: 'var(--bad-fg)', fontSize: 13, marginTop: 8 }}>{err}</div>}
+    </Modal>
+  );
+}
+
+function UserSetPasswordModal({ data, onClose }) {
+  const { userId, username } = data || {};
+  const toast = useToast();
+  const [password, setPassword] = useState('');
+  const [password2, setPassword2] = useState('');
+  const [err, setErr] = useState('');
+
+  const save = async () => {
+    setErr('');
+    if (!password) { setErr('Введите новый пароль'); return; }
+    if (password !== password2) { setErr('Пароли не совпадают'); return; }
+    try {
+      await api.post(`/users/${userId}/set-password/`, { new_password: password });
+      toast.push('Пароль изменён', { kind: 'ok' });
+      onClose && onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка при смене пароля');
+    }
+  };
+
+  return (
+    <Modal
+      title="Сменить пароль"
+      sub={`Учётная запись: ${username || ''}`}
+      onClose={onClose}
+      footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>{I.shield}Сменить</LoadButton></>}
+    >
+      <div className="form-grid">
+        <Field label="Новый пароль" required>
+          <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+        </Field>
+        <Field label="Повторите" required>
+          <input className="input" type="password" value={password2} onChange={e => setPassword2(e.target.value)} />
+        </Field>
+      </div>
+      {err && <div style={{ color: 'var(--bad-fg)', fontSize: 13, marginTop: 8 }}>{err}</div>}
     </Modal>
   );
 }
@@ -1197,7 +1313,7 @@ function ParentAddStudentModal({ data, onClose }) {
 
 export {
   StudentFormModal, EmployeeFormModal, GroupFormModal, FacultyFormModal,
-  ParentFormModal, ParentAddStudentModal, SubjectFormModal, PositionFormModal, UserFormModal,
+  ParentFormModal, ParentAddStudentModal, SubjectFormModal, PositionFormModal, UserFormModal, UserSetPasswordModal,
   TransferModal, DeleteConfirmModal, ApproveDeleteModal, UploadDocModal,
   AssignSubjectModal, EmployeeAssignSubjectModal, AuditDiffModal, LogoutModal,
   StudentDetailModal, GroupDetailModal, FacultyDetailModal, EmployeeDetailModal,

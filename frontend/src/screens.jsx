@@ -1307,35 +1307,76 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
 /* ============================================================
    Admin: users / delete requests / audit
    ============================================================ */
-function UserList({ openModal }) {
+const ROLE_CLS = { owner: 'badge-bad', admin: 'badge-info', teacher: 'badge-ok' };
+
+function UserList({ currentUser, openModal, onNavigate }) {
+  const toast = useToast();
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = () => {
+    setLoading(true);
+    api.get('/users/').then(r => {
+      setUsers(r.data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleDelete = async (u) => {
+    if (!confirm(`Удалить пользователя «${u.username}»? Это действие необратимо.`)) return;
+    try {
+      await api.delete(`/users/${u.id}/`);
+      toast.push('Пользователь удалён', { kind: 'ok' });
+      load();
+    } catch (e) {
+      toast.push(e.response?.data?.error || 'Ошибка при удалении', { kind: 'err' });
+    }
+  };
+
   return (
-    <Shell role="owner" active="users" openModal={openModal}>
-      <PageHead title="Пользователи системы" sub="Учётные записи и роли"
-        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('userForm')}>{I.plus}Создать пользователя</button>}
+    <Shell currentUser={currentUser} active="users" onNavigate={onNavigate} openModal={openModal}>
+      <PageHead
+        crumbs={[{ label: 'Главная', href: true }, { label: 'Пользователи системы' }]}
+        title="Пользователи системы"
+        sub={loading ? 'Загрузка…' : `Всего ${users.length}`}
+        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('userForm', { onDone: load })}>{I.plus}Создать пользователя</button>}
       />
       <div className="card">
         <div className="card-body flush">
-          <table className="tbl">
-            <thead><tr><th>Логин</th><th>ФИО</th><th>Роль</th><th>Последний вход</th><th>Статус</th><th style={{ width: 40 }}></th></tr></thead>
-            <tbody>
-              {[
-                { login: 'admin1',   name: 'Дмитриева Ольга Петровна', role: 'Администратор', last: '09.05.2026 13:55', active: true,  cls: 'badge-info' },
-                { login: 'admin2',   name: 'Романов Сергей Иванович',  role: 'Администратор', last: '07.05.2026 09:11', active: true,  cls: 'badge-info' },
-                { login: 'teacher1', name: 'Кузнецова Наталья А.',     role: 'Преподаватель', last: '09.05.2026 12:10', active: true,  cls: 'badge-ok' },
-                { login: 'teacher2', name: 'Морозов Виктор Г.',        role: 'Преподаватель', last: '04.05.2026 18:00', active: true,  cls: 'badge-ok' },
-                { login: 'teacher3', name: 'Лебедева Ирина Юрьевна',   role: 'Преподаватель', last: 'никогда',          active: false, cls: 'badge-ok' },
-              ].map(u => (
-                <tr key={u.login} className="row-link">
-                  <td className="mono fwm">{u.login}</td>
-                  <td>{u.name}</td>
-                  <td><span className={`badge ${u.cls}`}><span className="dot"></span>{u.role}</span></td>
-                  <td className="mono muted">{u.last}</td>
-                  <td>{u.active ? <Badge status="enrolled">Активен</Badge> : <span className="badge badge-neutral"><span className="dot"></span>Неактивен</span>}</td>
-                  <td><button className="btn btn-ghost btn-icon btn-sm">{I.more}</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {!loading && users.length === 0 ? (
+            <EmptyState icon={I.users} title="Пользователи не найдены" sub="Нажмите «Создать пользователя» чтобы добавить первого" />
+          ) : (
+            <table className="tbl">
+              <thead><tr><th>Логин</th><th>ФИО</th><th>Роль</th><th>Последний вход</th><th>Статус</th><th style={{ width: 100 }}></th></tr></thead>
+              <tbody>
+                {loading ? <SkeletonRows cols={6} /> : users.map(u => (
+                  <tr key={u.id}>
+                    <td className="mono fwm">{u.username}</td>
+                    <td>{u.display_name || '—'}</td>
+                    <td><span className={`badge ${ROLE_CLS[u.role] || 'badge-neutral'}`}><span className="dot"></span>{u.role_display}</span></td>
+                    <td className="mono muted">{u.last_login || 'никогда'}</td>
+                    <td>{u.is_active ? <Badge status="enrolled">Активен</Badge> : <span className="badge badge-neutral"><span className="dot"></span>Неактивен</span>}</td>
+                    <td style={{ display: 'flex', gap: 4 }}>
+                      <button className="btn btn-ghost btn-icon btn-sm" title="Редактировать"
+                        onClick={() => openModal('userForm', { user: u, onDone: load })}>
+                        {I.pencil}
+                      </button>
+                      <button className="btn btn-ghost btn-icon btn-sm" title="Сменить пароль"
+                        onClick={() => openModal('userSetPassword', { userId: u.id, username: u.username })}>
+                        {I.shield}
+                      </button>
+                      <button className="btn btn-ghost btn-icon btn-sm" title="Удалить"
+                        onClick={() => handleDelete(u)}>
+                        {I.trash}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </Shell>
