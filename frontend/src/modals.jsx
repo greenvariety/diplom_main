@@ -488,25 +488,40 @@ function FacultyFormModal({ data, onClose }) {
 }
 
 function ParentFormModal({ data, onClose }) {
-  const { studentId, onDone } = data || {};
+  const { studentId, parent, onDone } = data || {};
+  const isEdit = !!parent;
+  const isStudentContext = !!studentId;
   const toast = useToast();
-  const [vals, setVals] = useState({ last_name: '', first_name: '', middle_name: '', phone: '', email: '', relation_type: 'guardian' });
+  const [lastName, setLastName] = useState(parent?.last_name || '');
+  const [firstName, setFirstName] = useState(parent?.first_name || '');
+  const [middleName, setMiddleName] = useState(parent?.middle_name || '');
+  const [phone, setPhone] = useState(parent?.phone || '');
+  const [email, setEmail] = useState(parent?.email || '');
+  const [relationType, setRelationType] = useState('guardian');
   const [err, setErr] = useState('');
-  const set = (k, v) => setVals(s => ({ ...s, [k]: v }));
 
   const save = async () => {
-    if (!vals.last_name.trim() || !vals.first_name.trim()) { setErr('Введите фамилию и имя'); return; }
+    if (!lastName.trim()) { setErr('Введите фамилию'); return; }
+    if (!firstName.trim()) { setErr('Введите имя'); return; }
     setErr('');
+    const payload = {
+      last_name: lastName.trim(),
+      first_name: firstName.trim(),
+      middle_name: middleName.trim(),
+      phone: phone.trim(),
+      email: email.trim(),
+    };
     try {
-      await api.post(`/students/${studentId}/parents/`, {
-        last_name: vals.last_name.trim(),
-        first_name: vals.first_name.trim(),
-        middle_name: vals.middle_name.trim(),
-        phone: vals.phone.trim(),
-        email: vals.email.trim(),
-        relation_type: vals.relation_type,
-      });
-      toast.push('Опекун добавлен', { kind: 'ok' });
+      if (isEdit) {
+        await api.patch(`/parents/${parent.id}/`, payload);
+        toast.push('Опекун обновлён', { kind: 'ok' });
+      } else if (isStudentContext) {
+        await api.post(`/students/${studentId}/parents/`, { ...payload, relation_type: relationType });
+        toast.push('Опекун добавлен', { kind: 'ok' });
+      } else {
+        await api.post('/parents/', payload);
+        toast.push('Опекун добавлен', { kind: 'ok' });
+      }
       onDone && onDone();
       onClose && onClose();
     } catch (e) {
@@ -515,24 +530,26 @@ function ParentFormModal({ data, onClose }) {
   };
 
   return (
-    <Modal title="Добавить опекуна" onClose={onClose}
+    <Modal title={isEdit ? 'Редактировать опекуна' : 'Новый опекун'} onClose={onClose}
       footer={<>
         <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
         <LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton>
       </>}>
       <div className="form-grid">
-        <Field label="Фамилия" required><input className="input" value={vals.last_name} onChange={e => set('last_name', e.target.value)} /></Field>
-        <Field label="Имя" required><input className="input" value={vals.first_name} onChange={e => set('first_name', e.target.value)} /></Field>
-        <Field label="Отчество"><input className="input" value={vals.middle_name} onChange={e => set('middle_name', e.target.value)} /></Field>
-        <Field label="Связь" required>
-          <select className="select" value={vals.relation_type} onChange={e => set('relation_type', e.target.value)}>
-            <option value="mother">Мать</option>
-            <option value="father">Отец</option>
-            <option value="guardian">Опекун</option>
-          </select>
-        </Field>
-        <Field label="Телефон"><input className="input" value={vals.phone} onChange={e => set('phone', e.target.value)} placeholder="+7 " /></Field>
-        <Field label="Email"><input className="input" value={vals.email} onChange={e => set('email', e.target.value)} /></Field>
+        <Field label="Фамилия" required><input className="input" value={lastName} onChange={e => { setLastName(e.target.value); setErr(''); }} /></Field>
+        <Field label="Имя" required><input className="input" value={firstName} onChange={e => { setFirstName(e.target.value); setErr(''); }} /></Field>
+        <Field label="Отчество"><input className="input" value={middleName} onChange={e => setMiddleName(e.target.value)} /></Field>
+        {isStudentContext && !isEdit && (
+          <Field label="Связь" required>
+            <select className="select" value={relationType} onChange={e => setRelationType(e.target.value)}>
+              <option value="mother">Мать</option>
+              <option value="father">Отец</option>
+              <option value="guardian">Опекун</option>
+            </select>
+          </Field>
+        )}
+        <Field label="Телефон"><input className="input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+7 " /></Field>
+        <Field label="Email"><input className="input" value={email} onChange={e => setEmail(e.target.value)} /></Field>
         {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
       </div>
     </Modal>
@@ -1100,9 +1117,64 @@ function OrgFormModal({ data, onClose }) {
   );
 }
 
+function ParentAddStudentModal({ data, onClose }) {
+  const { parentId, onDone } = data || {};
+  const toast = useToast();
+  const [students, setStudents] = useState([]);
+  const [studentId, setStudentId] = useState('');
+  const [relationType, setRelationType] = useState('guardian');
+  const [err, setErr] = useState('');
+
+  useEffect(() => {
+    api.get('/students/').then(r => {
+      const items = Array.isArray(r.data) ? r.data : (r.data.results || []);
+      setStudents(items);
+    }).catch(() => {});
+  }, []);
+
+  const save = async () => {
+    if (!studentId) { setErr('Выберите студента'); return; }
+    setErr('');
+    try {
+      await api.post(`/parents/${parentId}/students/`, { student_id: parseInt(studentId), relation_type: relationType });
+      toast.push('Студент привязан', { kind: 'ok' });
+      onDone && onDone();
+      onClose && onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка при сохранении');
+    }
+  };
+
+  return (
+    <Modal title="Привязать студента" onClose={onClose}
+      footer={<>
+        <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
+        <LoadButton className="btn btn-primary" onClick={save}>{I.check}Привязать</LoadButton>
+      </>}>
+      <div className="form-grid">
+        <div className="field field-full">
+          <label className="field-label">Студент<span className="req">*</span></label>
+          <select className="select" value={studentId} onChange={e => { setStudentId(e.target.value); setErr(''); }}>
+            <option value="">— Выберите студента —</option>
+            {students.map(s => <option key={s.id} value={s.id}>{s.full_name || `${s.last_name} ${s.first_name}`}</option>)}
+          </select>
+        </div>
+        <Field label="Связь" required>
+          <select className="select" value={relationType} onChange={e => setRelationType(e.target.value)}>
+            <option value="mother">Мать</option>
+            <option value="father">Отец</option>
+            <option value="guardian">Опекун</option>
+          </select>
+        </Field>
+        {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
+      </div>
+    </Modal>
+  );
+}
+
 export {
   StudentFormModal, EmployeeFormModal, GroupFormModal, FacultyFormModal,
-  ParentFormModal, SubjectFormModal, PositionFormModal, UserFormModal,
+  ParentFormModal, ParentAddStudentModal, SubjectFormModal, PositionFormModal, UserFormModal,
   TransferModal, DeleteConfirmModal, ApproveDeleteModal, UploadDocModal,
   AssignSubjectModal, EmployeeAssignSubjectModal, AuditDiffModal, LogoutModal,
   StudentDetailModal, GroupDetailModal, FacultyDetailModal, EmployeeDetailModal,

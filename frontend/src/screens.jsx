@@ -1498,38 +1498,200 @@ function AuditLog({ openModal }) {
   );
 }
 
-function ParentList({ openModal }) {
+function ParentList({ currentUser, openModal, onNavigate }) {
+  const toast = useToast();
+  const [q, setQ] = useState('');
+  const [page, setPage] = useState(1);
+  const [data, setData] = useState({ results: [], count: 0, num_pages: 1 });
+  const [loading, setLoading] = useState(true);
+
+  const load = () => {
+    setLoading(true);
+    const params = new URLSearchParams({ page });
+    if (q) params.set('search', q);
+    api.get(`/parents/?${params}`).then(r => {
+      setData(r.data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, [page]);
+
+  const handleSearch = () => { setPage(1); load(); };
+  const reset = () => { setQ(''); setPage(1); setTimeout(load, 0); };
+
+  const handleDeleteRequest = async (p) => {
+    try {
+      await api.post(`/parents/${p.id}/delete-request/`, {});
+      toast.push('Заявка на удаление отправлена', { kind: 'ok' });
+    } catch {
+      toast.push('Не удалось создать заявку', { kind: 'err' });
+    }
+  };
+
   return (
-    <Shell role="admin" active="parents" openModal={openModal}>
-      <PageHead title="Опекуны и родители" sub="Всего 421 запись"
-        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('parentForm')}>{I.plus}Добавить</button>}
+    <Shell currentUser={currentUser} active="parents" onNavigate={onNavigate} openModal={openModal}>
+      <PageHead
+        crumbs={[{ label: 'Главная', href: true }, { label: 'Опекуны и родители' }]}
+        title="Опекуны и родители"
+        sub={loading ? 'Загрузка…' : `Всего ${data.count} человек`}
+        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('parentForm', { onDone: () => { setPage(1); load(); } })}>{I.plus}Добавить</button>}
       />
       <div className="filters">
-        <div className="field grow-2"><label className="field-label">Поиск</label><div className="input-with-icon">{I.search}<input className="input" placeholder="ФИО опекуна или студента…" /></div></div>
+        <div className="field grow-2">
+          <label className="field-label">Поиск по ФИО</label>
+          <div className="input-with-icon">{I.search}
+            <input className="input" value={q} onChange={e => setQ(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSearch()}
+              placeholder="Иванов Иван…" />
+          </div>
+        </div>
+        <button className="btn btn-primary btn-sm" onClick={handleSearch}>Найти</button>
+        <button className="btn btn-ghost btn-sm" onClick={reset}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
-          <table className="tbl">
-            <thead><tr><th>ФИО</th><th>Связь</th><th>Студент</th><th>Телефон</th><th>Email</th><th style={{ width: 40 }}></th></tr></thead>
-            <tbody>
-              {[
-                { n: 'Иванова Елена Васильевна', r: 'Мать',  s: 'Иванов Иван Иванович',     p: '+7 900 765-43-21', e: 'ivanova@mail.ru' },
-                { n: 'Иванов Иван Петрович',     r: 'Отец',  s: 'Иванов Иван Иванович',     p: '+7 900 111-22-33', e: '—' },
-                { n: 'Петрова Светлана Ивановна',r: 'Мать',  s: 'Петрова Мария Сергеевна',  p: '+7 900 222-44-55', e: 'petrova.s@mail.ru' },
-                { n: 'Сидоров Пётр Алексеевич',  r: 'Отец',  s: 'Сидоров Алексей Петрович', p: '+7 900 333-22-11', e: '—' },
-                { n: 'Козлов Дмитрий Олегович',  r: 'Опекун',s: 'Козлова Анна Дмитриевна',  p: '+7 900 444-77-88', e: 'kozlov@mail.ru' },
-              ].map((p, i) => (
-                <tr key={i} className="row-link">
-                  <td className="fwm">{p.n}</td>
-                  <td>{p.r}</td>
-                  <td><a href="#" onClick={e => e.stopPropagation()}>{p.s}</a></td>
-                  <td className="muted">{p.p}</td>
-                  <td className="muted">{p.e}</td>
-                  <td><button className="btn btn-ghost btn-icon btn-sm" onClick={e => e.stopPropagation()}>{I.more}</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {!loading && data.results.length === 0 ? (
+            <EmptyState icon={I.search} title="Опекуны не найдены" sub="Попробуйте изменить условия поиска или добавьте нового опекуна" />
+          ) : (
+            <table className="tbl">
+              <thead><tr><th style={{ width: 40 }}>#</th><th>ФИО</th><th>Телефон</th><th>Email</th><th style={{ width: 40 }}></th></tr></thead>
+              <tbody>
+                {loading ? <SkeletonRows cols={5} /> : data.results.map(p => (
+                  <tr key={p.id} className="row-link" onClick={() => onNavigate('parent-detail', { parentId: p.id })}>
+                    <td className="muted mono">{p.id}</td>
+                    <td className="fwm">{p.full_name}</td>
+                    <td className="muted">{p.phone || '—'}</td>
+                    <td className="muted">{p.email || '—'}</td>
+                    <td onClick={e => e.stopPropagation()}>
+                      <button className="btn btn-ghost btn-icon btn-sm"
+                        onClick={() => openModal('parentForm', { parent: p, onDone: load })}>
+                        {I.pencil}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+        {data.num_pages > 1 && (
+          <div className="card-foot">
+            <Pager page={page} numPages={data.num_pages} onPage={setPage} />
+          </div>
+        )}
+      </div>
+    </Shell>
+  );
+}
+
+function ParentDetail({ currentUser, openModal, onNavigate, parentId }) {
+  const toast = useToast();
+  const [parent, setParent] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = () => {
+    setLoading(true);
+    api.get(`/parents/${parentId}/`).then(r => {
+      setParent(r.data);
+      setLoading(false);
+    }).catch(() => {
+      setLoading(false);
+      toast.push('Не удалось загрузить данные опекуна', { kind: 'err' });
+    });
+  };
+
+  useEffect(() => { if (parentId) load(); }, [parentId]);
+
+  const removeStudent = async (spId) => {
+    try {
+      await api.delete(`/parents/${parentId}/students/${spId}/`);
+      toast.push('Студент откреплён', { kind: 'ok' });
+      load();
+    } catch {
+      toast.push('Не удалось открепить студента', { kind: 'err' });
+    }
+  };
+
+  const handleDeleteRequest = async () => {
+    if (!parent) return;
+    try {
+      await api.post(`/parents/${parentId}/delete-request/`, {});
+      toast.push('Заявка на удаление отправлена', { kind: 'ok' });
+    } catch {
+      toast.push('Не удалось создать заявку', { kind: 'err' });
+    }
+  };
+
+  if (loading || !parent) {
+    return (
+      <Shell currentUser={currentUser} active="parents" onNavigate={onNavigate} openModal={openModal}>
+        <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>Загрузка…</div>
+      </Shell>
+    );
+  }
+
+  return (
+    <Shell currentUser={currentUser} active="parents" onNavigate={onNavigate} openModal={openModal}>
+      <PageHead
+        crumbs={[{ label: 'Опекуны и родители', href: true, onClick: () => onNavigate('parents') }, { label: parent.full_name }]}
+        title={parent.full_name}
+        sub="Опекун / родитель"
+        actions={<>
+          <button className="btn btn-secondary btn-sm" onClick={() => openModal('parentForm', { parent, onDone: load })}>{I.pencil}Редактировать</button>
+          <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Удалить</button>
+        </>}
+      />
+      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
+        <div className="card">
+          <div className="card-body" style={{ textAlign: 'center', padding: 24 }}>
+            <Avatar name={parent.full_name} size="lg" className="avatar-zoomy" />
+            <h3 style={{ marginTop: 14, marginBottom: 6 }}>{parent.last_name} {parent.first_name}</h3>
+            <div className="muted" style={{ fontSize: 13 }}>{parent.middle_name}</div>
+          </div>
+          <div style={{ borderTop: '1px solid var(--border)' }}>
+            <dl className="kv">
+              {parent.birth_date && <><dt>Дата рождения</dt><dd>{parent.birth_date}</dd></>}
+              <dt>Телефон</dt><dd>{parent.phone || '—'}</dd>
+              <dt>Email</dt><dd>{parent.email || '—'}</dd>
+            </dl>
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-head">
+            <div className="title">Привязанные студенты</div>
+            <button className="btn btn-secondary btn-sm"
+              onClick={() => openModal('parentAddStudent', { parentId, onDone: load })}>
+              {I.plus}Привязать студента
+            </button>
+          </div>
+          <div className="card-body flush">
+            {parent.students?.length === 0 ? (
+              <EmptyState icon={I.search} title="Студенты не привязаны" sub="Нажмите «Привязать студента» чтобы добавить" />
+            ) : (
+              <table className="tbl">
+                <thead><tr><th>Студент</th><th>Связь</th><th>Группа</th><th style={{ width: 40 }}></th></tr></thead>
+                <tbody>
+                  {parent.students?.map(s => (
+                    <tr key={s.sp_id}>
+                      <td className="fwm">
+                        <a href="#" onClick={e => { e.preventDefault(); onNavigate('student-detail', { studentId: s.student_id }); }}>
+                          {s.student_name}
+                        </a>
+                      </td>
+                      <td>{s.relation_display}</td>
+                      <td>{s.group_name || '—'}</td>
+                      <td>
+                        <button className="btn btn-ghost btn-icon btn-sm"
+                          onClick={() => removeStudent(s.sp_id)} title="Открепить">{I.x}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
       </div>
     </Shell>
@@ -1630,5 +1792,5 @@ export {
   GroupList, GroupDetail,
   FacultyList,
   UserList, DeleteRequests, AuditLog,
-  ParentList, SubjectList, PositionList,
+  ParentList, ParentDetail, SubjectList, PositionList,
 };

@@ -20,6 +20,10 @@ from core.api_students import (
 )
 from core.api_documents import DocumentUploadView, DocumentDetailView
 from core.api_positions import PositionsView, PositionDetailView
+from core.api_parents import (
+    ParentsView, ParentDetailView, ParentDeleteRequestView,
+    ParentStudentsView, ParentStudentDetailView,
+)
 
 router = DefaultRouter()
 
@@ -57,6 +61,11 @@ urlpatterns = [
     path('api/students/<int:pk>/parents/<int:sp_pk>/', StudentParentDetailView.as_view()),
     path('api/positions/', PositionsView.as_view()),
     path('api/positions/<int:pk>/', PositionDetailView.as_view()),
+    path('api/parents/', ParentsView.as_view()),
+    path('api/parents/<int:pk>/', ParentDetailView.as_view()),
+    path('api/parents/<int:pk>/delete-request/', ParentDeleteRequestView.as_view()),
+    path('api/parents/<int:pk>/students/', ParentStudentsView.as_view()),
+    path('api/parents/<int:pk>/students/<int:sp_pk>/', ParentStudentDetailView.as_view()),
     path('api/documents/upload/', DocumentUploadView.as_view()),
     path('api/documents/<int:pk>/', DocumentDetailView.as_view()),
     path('api/', include(router.urls)),

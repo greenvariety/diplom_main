@@ -123,3 +123,15 @@
 - `frontend/src/modals.jsx` — `EmployeeFormModal`: поля ФИО, дата рождения, телефон, email, должность (выбор из API). `EmployeeAssignSubjectModal`: выбор группы и предмета из API. `PositionFormModal`: реальные POST/PATCH вместо заглушки-setTimeout.
 - `frontend/src/main.jsx` — добавлены экраны `employees`, `employee-detail`, `positions`; зарегистрированы модалки `employeeForm`, `employeeAssignSubject`, `positionForm`.
 - `npm run build` — собирается без ошибок.
+
+---
+
+## Задача 8 выполнена — Родители/Опекуны
+
+**Что сделано:**
+
+- Создан `core/api_parents.py`: список с пагинацией и поиском по ФИО, детальная страница со списком привязанных студентов, создание, редактирование, заявка на удаление, привязка/отвязка студента.
+- В `config/urls.py` добавлены маршруты: `GET/POST /api/parents/`, `GET/PATCH /api/parents/{id}/`, `POST /api/parents/{id}/delete-request/`, `POST /api/parents/{id}/students/`, `DELETE /api/parents/{id}/students/{sp_id}/`.
+- `frontend/src/screens.jsx` — `ParentList` переписан: реальные данные с пагинацией и поиском, клик по строке → навигация на детальную. Добавлен `ParentDetail`: профиль опекуна, таблица привязанных студентов с кнопкой открепить, кнопки «Редактировать» и «Удалить».
+- `frontend/src/modals.jsx` — `ParentFormModal` расширен: три режима — редактирование, создание и привязка к студенту (из StudentDetail), standalone-создание (из списка). Добавлен `ParentAddStudentModal`: выбор студента + тип связи.
+- `frontend/src/main.jsx` — импортированы `ParentList`, `ParentDetail`, `ParentAddStudentModal`; добавлены экраны `parents` и `parent-detail`; зарегистрирована модалка `parentAddStudent`.

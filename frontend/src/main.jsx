@@ -4,8 +4,8 @@ import './styles.css';
 import { ToastProvider } from './utils.jsx';
 import { LoginScreen, RegisterScreen, SeedPhraseScreen, RecoverPasswordScreen } from './auth.jsx';
 import { Shell } from './shell.jsx';
-import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, OrganizationList, FacultyList, GroupList, GroupDetail, StudentList, StudentDetail, EmployeeList, EmployeeDetail, PositionList } from './screens.jsx';
-import { OrgFormModal, FacultyFormModal, FacultyDetailModal, GroupFormModal, AssignSubjectModal, StudentFormModal, TransferModal, UploadDocModal, ParentFormModal, DeleteConfirmModal, EmployeeFormModal, EmployeeAssignSubjectModal, PositionFormModal } from './modals.jsx';
+import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, OrganizationList, FacultyList, GroupList, GroupDetail, StudentList, StudentDetail, EmployeeList, EmployeeDetail, PositionList, ParentList, ParentDetail } from './screens.jsx';
+import { OrgFormModal, FacultyFormModal, FacultyDetailModal, GroupFormModal, AssignSubjectModal, StudentFormModal, TransferModal, UploadDocModal, ParentFormModal, ParentAddStudentModal, DeleteConfirmModal, EmployeeFormModal, EmployeeAssignSubjectModal, PositionFormModal } from './modals.jsx';
 import api from './api.js';
 
 function AuthFlow({ onAuthenticated }) {
@@ -108,6 +108,9 @@ function AppShell({ onLogout }) {
     if (modal.name === 'parentForm') {
       return <ParentFormModal data={modal.data} onClose={closeModal} />;
     }
+    if (modal.name === 'parentAddStudent') {
+      return <ParentAddStudentModal data={modal.data} onClose={closeModal} />;
+    }
     if (modal.name === 'deleteConfirm') {
       return <DeleteConfirmModal data={modal.data} onClose={closeModal} />;
     }
@@ -180,6 +183,14 @@ function AppShell({ onLogout }) {
 
     if (currentScreen === 'positions') {
       return <PositionList {...sharedProps} />;
+    }
+
+    if (currentScreen === 'parents') {
+      return <ParentList {...sharedProps} />;
+    }
+
+    if (currentScreen === 'parent-detail') {
+      return <ParentDetail {...sharedProps} parentId={navExtra?.parentId} />;
     }
 
     return (
