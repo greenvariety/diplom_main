@@ -135,3 +135,15 @@
 - `frontend/src/screens.jsx` — `ParentList` переписан: реальные данные с пагинацией и поиском, клик по строке → навигация на детальную. Добавлен `ParentDetail`: профиль опекуна, таблица привязанных студентов с кнопкой открепить, кнопки «Редактировать» и «Удалить».
 - `frontend/src/modals.jsx` — `ParentFormModal` расширен: три режима — редактирование, создание и привязка к студенту (из StudentDetail), standalone-создание (из списка). Добавлен `ParentAddStudentModal`: выбор студента + тип связи.
 - `frontend/src/main.jsx` — импортированы `ParentList`, `ParentDetail`, `ParentAddStudentModal`; добавлены экраны `parents` и `parent-detail`; зарегистрирована модалка `parentAddStudent`.
+
+---
+
+## Задача 9 выполнена — Предметы
+
+**Что сделано:**
+
+- `core/api_subjects.py` расширен: добавлены `POST /api/subjects/` (создание) и `SubjectDetailView` с `PATCH /api/subjects/{id}/` (редактирование) и `DELETE /api/subjects/{id}/` (удаление с проверкой — если предмет назначен группам, удаление запрещается с ошибкой). Все изменения логируются через `log_action()`.
+- В `config/urls.py` добавлен маршрут `api/subjects/<int:pk>/` для `SubjectDetailView`.
+- `frontend/src/screens.jsx` — `SubjectList` переписан: загружает реальные данные из API, показывает скелетон при загрузке, кнопки «Редактировать» и «Удалить» на каждой строке.
+- `frontend/src/modals.jsx` — `SubjectFormModal` переписан: поддерживает создание и редактирование, реальные вызовы `POST`/`PATCH`, показывает ошибки валидации.
+- `frontend/src/main.jsx` — импортированы `SubjectList` и `SubjectFormModal`, добавлен экран `subjects`, зарегистрирована модалка `subjectForm`.

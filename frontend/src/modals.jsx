@@ -556,16 +556,39 @@ function ParentFormModal({ data, onClose }) {
   );
 }
 
-function SubjectFormModal({ onClose }) {
+function SubjectFormModal({ data, onClose }) {
+  const subject = data?.subject;
+  const onDone = data?.onDone;
+  const isEdit = !!subject;
   const toast = useToast();
-  const save = async () => { await new Promise(r => setTimeout(r, 600)); toast.push('Предмет добавлен', { kind: 'ok' }); onClose(); };
+  const [name, setName] = useState(subject?.name || '');
+  const [err, setErr] = useState('');
+
+  const save = async () => {
+    if (!name.trim()) { setErr('Введите название предмета'); return; }
+    setErr('');
+    try {
+      if (isEdit) {
+        await api.patch(`/subjects/${subject.id}/`, { name: name.trim() });
+        toast.push('Предмет обновлён', { kind: 'ok' });
+      } else {
+        await api.post('/subjects/', { name: name.trim() });
+        toast.push('Предмет добавлен', { kind: 'ok' });
+      }
+      onDone && onDone();
+      onClose && onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка при сохранении');
+    }
+  };
+
   return (
-    <Modal title="Новый предмет" onClose={onClose}
+    <Modal title={isEdit ? 'Редактировать предмет' : 'Новый предмет'} onClose={onClose}
       footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton></>}>
       <div className="form-grid">
-        <Field label="Название" required><input className="input" placeholder="Базы данных" /></Field>
-        <Field label="Факультет"><Combobox options={FAC_SHORT_OPTS} placeholder="Выберите факультет" /></Field>
-        <Field label="Часов" required><input className="input" type="number" defaultValue="72" /></Field>
+        <Field label="Название" required error={err}>
+          <input className="input" value={name} onChange={e => { setName(e.target.value); setErr(''); }} placeholder="Например: Базы данных" />
+        </Field>
       </div>
     </Modal>
   );

@@ -1698,34 +1698,66 @@ function ParentDetail({ currentUser, openModal, onNavigate, parentId }) {
   );
 }
 
-function SubjectList({ openModal }) {
+function SubjectList({ currentUser, openModal, onNavigate }) {
+  const toast = useToast();
+  const [subjects, setSubjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = () => {
+    setLoading(true);
+    api.get('/subjects/').then(r => {
+      setSubjects(r.data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleDelete = async (s) => {
+    if (!confirm(`Удалить предмет «${s.name}»?`)) return;
+    try {
+      await api.delete(`/subjects/${s.id}/`);
+      toast.push('Предмет удалён', { kind: 'ok' });
+      load();
+    } catch (e) {
+      toast.push(e.response?.data?.error || 'Ошибка при удалении', { kind: 'err' });
+    }
+  };
+
   return (
-    <Shell role="admin" active="subjects" openModal={openModal}>
-      <PageHead title="Предметы" sub="Всего 32 предмета"
-        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('subjectForm')}>{I.plus}Добавить</button>}
+    <Shell currentUser={currentUser} active="subjects" onNavigate={onNavigate} openModal={openModal}>
+      <PageHead
+        crumbs={[{ label: 'Главная', href: true }, { label: 'Предметы' }]}
+        title="Предметы"
+        sub={loading ? 'Загрузка…' : `Всего ${subjects.length}`}
+        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('subjectForm', { onDone: load })}>{I.plus}Добавить</button>}
       />
       <div className="card">
         <div className="card-body flush">
-          <table className="tbl">
-            <thead><tr><th>Название</th><th>Факультет</th><th>Часов</th><th>Преподавателей</th><th style={{ width: 40 }}></th></tr></thead>
-            <tbody>
-              {[
-                { n: 'Базы данных', f: 'ФИТ', h: 72, t: 2 },
-                { n: 'Веб-программирование', f: 'ФИТ', h: 54, t: 1 },
-                { n: 'Алгоритмы и структуры данных', f: 'ФИТ', h: 90, t: 2 },
-                { n: 'Микроэкономика', f: 'ФЭ', h: 48, t: 1 },
-                { n: 'Высшая математика', f: 'ФМН', h: 108, t: 3 },
-              ].map(s => (
-                <tr key={s.n} className="row-link">
-                  <td className="fwm">{s.n}</td>
-                  <td>{s.f}</td>
-                  <td className="mono">{s.h}</td>
-                  <td className="mono">{s.t}</td>
-                  <td><button className="btn btn-ghost btn-icon btn-sm">{I.more}</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {!loading && subjects.length === 0 ? (
+            <EmptyState icon={I.book} title="Предметы не добавлены" sub="Нажмите «Добавить» чтобы создать первый предмет" />
+          ) : (
+            <table className="tbl">
+              <thead><tr><th>Название</th><th style={{ width: 80 }}></th></tr></thead>
+              <tbody>
+                {loading ? <SkeletonRows cols={2} /> : subjects.map(s => (
+                  <tr key={s.id}>
+                    <td className="fwm">{s.name}</td>
+                    <td style={{ display: 'flex', gap: 4 }}>
+                      <button className="btn btn-ghost btn-icon btn-sm"
+                        onClick={() => openModal('subjectForm', { subject: s, onDone: load })}>
+                        {I.pencil}
+                      </button>
+                      <button className="btn btn-ghost btn-icon btn-sm"
+                        onClick={() => handleDelete(s)}>
+                        {I.trash}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </Shell>
