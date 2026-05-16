@@ -168,7 +168,7 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout }) {
               ))}
             </div>
           </div>
-          <div className="modal-foot" style={{ padding: '10px 16px' }}>
+          <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', background: 'var(--surface-alt)' }}>
             <button className="btn btn-ghost btn-sm" onClick={onLogout} style={{ color: 'var(--text-muted)', fontSize: 12 }}>
               {I.logout} Выйти из аккаунта
             </button>

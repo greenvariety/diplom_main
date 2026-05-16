@@ -94,9 +94,9 @@ function TopbarSearch({ onNavigate }) {
       {open && results.length > 0 && (
         <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, boxShadow: 'var(--shadow-md)', zIndex: 999, maxHeight: 240, overflowY: 'auto' }}>
           {results.map(s => (
-            <div key={s.id} style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid var(--border-faint)' }}
+            <div key={s.id} style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}
               onMouseDown={() => pick(s.id)}
-              onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-hover)'}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-alt)'}
               onMouseLeave={e => e.currentTarget.style.background = ''}>
               <div style={{ fontWeight: 500, fontSize: 13 }}>{s.last_name} {s.first_name} {s.middle_name}</div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.faculty_short} · {s.group_name || 'без группы'}</div>
@@ -247,7 +247,7 @@ function Shell({ currentUser, role: roleProp, active, onNavigate, onLogout, open
                 {it.icon}
                 <span>{it.label}</span>
                 {it.key === 'delreq' && pendingCount > 0 && (
-                  <span style={{ marginLeft: 'auto', background: 'var(--danger)', color: '#fff', borderRadius: 10, fontSize: 11, fontWeight: 700, padding: '1px 7px', lineHeight: '18px' }}>
+                  <span style={{ marginLeft: 'auto', background: 'var(--bad-fg)', color: '#fff', borderRadius: 10, fontSize: 11, fontWeight: 700, padding: '1px 7px', lineHeight: '18px' }}>
                     {pendingCount}
                   </span>
                 )}

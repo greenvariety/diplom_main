@@ -101,7 +101,7 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
         </div>
         <div className="card-body flush">
           {!dashData
-            ? <SkeletonRows n={5} cols={4} />
+            ? <SkeletonRows rows={5} cols={4} />
             : sorted.length === 0
               ? <EmptyState icon={I.history} title="Записи не найдены" sub="Измените условия поиска" />
               : <table className="tbl">
@@ -219,7 +219,7 @@ function OrganizationList({ currentUser, openModal, onNavigate, onUserRefresh })
                   {!org.active && (
                     <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={() => handleSwitch(org)}>{I.swap}Перейти</button>
                   )}
-                  <button className="btn btn-secondary btn-sm" style={{ flex: org.active ? 1 : 0 }} onClick={() => handleEdit(org)}>{I.pencil}Редактировать</button>
+                  <button className="btn btn-secondary btn-sm" style={org.active ? { flex: 1 } : {}} onClick={() => handleEdit(org)}>{I.pencil}Редактировать</button>
                   {!org.active && (
                     <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDelete(org)} title="Удалить">{I.trash}</button>
                   )}
@@ -379,7 +379,7 @@ function DashboardAdmin({ currentUser, onNavigate, onLogout, openModal }) {
           </div>
           <div className="card-body flush">
             {!dashData
-              ? <SkeletonRows n={5} cols={4} />
+              ? <SkeletonRows rows={5} cols={4} />
               : sorted.length === 0
                 ? <EmptyState icon={I.history} title="Ничего не найдено" sub="Измените условия поиска" />
                 : <table className="tbl">
@@ -911,8 +911,10 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
           )}
         </div>
         {data.num_pages > 1 && (
-          <div className="card-foot">
-            <Pager page={page} numPages={data.num_pages} onPage={setPage} />
+          <div className="card-foot" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 16px' }}>
+            <button className="btn btn-ghost btn-sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>← Назад</button>
+            <span className="muted" style={{ fontSize: 13 }}>Страница {page} из {data.num_pages}</span>
+            <button className="btn btn-ghost btn-sm" disabled={page >= data.num_pages} onClick={() => setPage(p => p + 1)}>Вперёд →</button>
           </div>
         )}
       </div>
@@ -1378,7 +1380,7 @@ function UserList({ currentUser, openModal, onNavigate }) {
                       }
                     </td>
                     <td className="mono muted">{u.last_login || 'никогда'}</td>
-                    <td>{u.is_active ? <Badge status="enrolled">Активен</Badge> : <span className="badge badge-neutral"><span className="dot"></span>Неактивен</span>}</td>
+                    <td>{u.is_active ? <span className="badge badge-ok"><span className="dot"></span>Активен</span> : <span className="badge badge-neutral"><span className="dot"></span>Неактивен</span>}</td>
                     <td style={{ display: 'flex', gap: 4 }}>
                       <button className="btn btn-ghost btn-icon btn-sm" title="Редактировать"
                         onClick={() => openModal('userForm', { user: u, onDone: load })}>
@@ -1664,8 +1666,10 @@ function ParentList({ currentUser, openModal, onNavigate }) {
           )}
         </div>
         {data.num_pages > 1 && (
-          <div className="card-foot">
-            <Pager page={page} numPages={data.num_pages} onPage={setPage} />
+          <div className="card-foot" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 16px' }}>
+            <button className="btn btn-ghost btn-sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>← Назад</button>
+            <span className="muted" style={{ fontSize: 13 }}>Страница {page} из {data.num_pages}</span>
+            <button className="btn btn-ghost btn-sm" disabled={page >= data.num_pages} onClick={() => setPage(p => p + 1)}>Вперёд →</button>
           </div>
         )}
       </div>
