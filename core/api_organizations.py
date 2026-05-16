@@ -100,13 +100,24 @@ class OrganizationDetailView(APIView):
 
 class OrganizationSwitchView(APIView):
     def post(self, request, pk):
-        err = _owner_only(request)
-        if err:
-            return err
-        try:
-            org = Institution.objects.get(pk=pk, owner=request.user)
-        except Institution.DoesNotExist:
-            return Response({'error': 'Не найдено'}, status=404)
+        if request.user.role == 'owner':
+            try:
+                org = Institution.objects.get(pk=pk, owner=request.user)
+            except Institution.DoesNotExist:
+                return Response({'error': 'Не найдено'}, status=404)
+        else:
+            try:
+                org = request.user.allowed_institutions.get(pk=pk)
+            except Institution.DoesNotExist:
+                return Response({'error': 'Не найдено'}, status=404)
         request.user.institution = org
         request.user.save(update_fields=['institution'])
         return Response({'ok': True, 'institution': {'id': org.pk, 'name': org.name}})
+
+
+class AllowedOrganizationsView(APIView):
+    def get(self, request):
+        if request.user.role == 'owner':
+            return Response({'error': 'Доступ запрещён'}, status=403)
+        orgs = request.user.allowed_institutions.all().order_by('name')
+        return Response([{'id': o.pk, 'name': o.name, 'code': o.code} for o in orgs])

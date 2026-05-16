@@ -7,7 +7,7 @@ from core.views import serve_frontend
 from rest_framework_simplejwt.views import TokenRefreshView
 from core.api_auth import LoginView, RegisterView, LogoutView, RecoverView
 from core.api_main import MeView, DashboardView
-from core.api_organizations import OrganizationsView, OrganizationDetailView, OrganizationSwitchView
+from core.api_organizations import OrganizationsView, OrganizationDetailView, OrganizationSwitchView, AllowedOrganizationsView
 from core.api_faculties import FacultiesView, FacultyDetailView, FacultyDeleteRequestView
 from core.api_groups import GroupsView, GroupDetailView, GroupDeleteRequestView, GroupSubjectsView, GroupSubjectDetailView
 from core.api_employees import (
@@ -41,6 +41,7 @@ urlpatterns = [
     path('api/me/', MeView.as_view()),
     path('api/dashboard/', DashboardView.as_view()),
     path('api/organizations/', OrganizationsView.as_view()),
+    path('api/organizations/allowed/', AllowedOrganizationsView.as_view()),
     path('api/organizations/<int:pk>/', OrganizationDetailView.as_view()),
     path('api/organizations/<int:pk>/switch/', OrganizationSwitchView.as_view()),
     path('api/faculties/', FacultiesView.as_view()),

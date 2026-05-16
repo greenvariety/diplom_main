@@ -287,3 +287,18 @@
 - `Запустить проект.bat` обновлён: при запуске сервера автоматически выполняется `npm run build` в папке `frontend/`.
 - Обновлена документация: `docs/architecture.md` и `docs/deployment.md` отражают новый стек (React SPA + DRF вместо Django Templates).
 - Проверено: `python manage.py check` — 0 ошибок; `GET http://127.0.0.1:8000/` — HTTP 200, React SPA загружается.
+
+---
+
+## PLAN задача 4 выполнена — Автоматический выбор организации для преподавателя/рабочего
+
+**Что сделано:**
+
+- `core/api_organizations.py` — добавлен `AllowedOrganizationsView` (GET `/api/organizations/allowed/`): возвращает список разрешённых организаций для текущего non-owner пользователя. Также исправлен `OrganizationSwitchView` — теперь admin/teacher может переключаться между своими `allowed_institutions`.
+- `config/urls.py` — добавлен маршрут `/api/organizations/allowed/`.
+- `frontend/src/main.jsx` — `OrgPickerScreen`:
+  - Для admin/teacher: загружает `/api/organizations/allowed/`.
+  - Если 1 организация — автоматически переключается на неё и заходит в систему.
+  - Если несколько — показывает экран выбора (список карточек, без кнопки создания).
+  - Если 0 — показывает экран «Ожидайте назначения».
+- Фронтенд пересобран (`npm run build` — успешно).

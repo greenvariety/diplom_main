@@ -63,7 +63,17 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout }) {
         .then(r => { setOrgs(r.data); setLoading(false); })
         .catch(() => setLoading(false));
     } else {
-      setLoading(false);
+      api.get('/organizations/allowed/')
+        .then(r => {
+          const list = r.data;
+          if (list.length === 1) {
+            return api.post(`/organizations/${list[0].id}/switch/`)
+              .then(() => { onOrgSelected(); });
+          }
+          setOrgs(list);
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
     }
   }, []);
 
@@ -107,17 +117,61 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout }) {
   }
 
   if (user.role !== 'owner') {
+    if (orgs.length === 0) {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg)', fontFamily: 'var(--font)', padding: 24 }}>
+          {brand}
+          <div className="card screen-fade-in" style={{ width: '100%', maxWidth: 400 }}>
+            <div className="card-body" style={{ padding: 28, textAlign: 'center' }}>
+              <div style={{ fontSize: 36, marginBottom: 12 }}>⏳</div>
+              <h2 style={{ marginBottom: 8 }}>Ожидайте назначения</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '0 0 20px' }}>
+                Администратор ещё не назначил вас в организацию. Обратитесь к владельцу системы.
+              </p>
+              <button className="btn btn-secondary btn-sm" onClick={onLogout}>{I.logout} Выйти</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg)', fontFamily: 'var(--font)', padding: 24 }}>
         {brand}
-        <div className="card screen-fade-in" style={{ width: '100%', maxWidth: 400 }}>
-          <div className="card-body" style={{ padding: 28, textAlign: 'center' }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>⏳</div>
-            <h2 style={{ marginBottom: 8 }}>Ожидайте назначения</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '0 0 20px' }}>
-              Администратор ещё не назначил вас в организацию. Обратитесь к владельцу системы.
+        <div className="card screen-fade-in" style={{ width: '100%', maxWidth: 480 }}>
+          <div className="card-body" style={{ padding: 28 }}>
+            <h2 style={{ marginBottom: 6 }}>Выберите организацию</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 20 }}>
+              Выберите организацию для работы.
             </p>
-            <button className="btn btn-secondary btn-sm" onClick={onLogout}>{I.logout} Выйти</button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {orgs.map(org => (
+                <button
+                  key={org.id}
+                  onClick={() => pickOrg(org.id, org.name)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
+                    background: 'var(--surface-alt)', border: '1px solid var(--border)',
+                    borderRadius: 8, cursor: 'pointer', textAlign: 'left', width: '100%',
+                    transition: 'border-color .15s, background .15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'var(--accent-soft)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface-alt)'; }}
+                >
+                  <div style={{ width: 36, height: 36, borderRadius: 7, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 11, flexShrink: 0 }}>
+                    {org.code}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{org.name}</div>
+                  </div>
+                  {I.chevr}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="modal-foot" style={{ padding: '10px 16px' }}>
+            <button className="btn btn-ghost btn-sm" onClick={onLogout} style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+              {I.logout} Выйти из аккаунта
+            </button>
           </div>
         </div>
       </div>
