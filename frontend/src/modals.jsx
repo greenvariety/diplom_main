@@ -642,17 +642,26 @@ function UserFormModal({ data, onClose }) {
   const isEdit = !!user;
   const toast = useToast();
   const [employees, setEmployees] = useState([]);
+  const [orgs, setOrgs] = useState([]);
   const [username, setUsername] = useState(user?.username || '');
   const [displayName, setDisplayName] = useState(user?.display_name || '');
   const [role, setRole] = useState(user?.role || 'teacher');
   const [employeeId, setEmployeeId] = useState(user?.employee_id ? String(user.employee_id) : '');
+  const [institutionIds, setInstitutionIds] = useState(user?.institution_ids || []);
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
   const [err, setErr] = useState('');
 
   useEffect(() => {
     api.get('/employees/').then(r => setEmployees(r.data)).catch(() => {});
+    api.get('/organizations/').then(r => setOrgs(r.data)).catch(() => {});
   }, []);
+
+  const toggleOrg = (id) => {
+    setInstitutionIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
 
   const employeeOpts = employees.map(e => ({ value: String(e.id), label: e.full_name, sub: e.position_name || '' }));
 
@@ -661,12 +670,14 @@ function UserFormModal({ data, onClose }) {
     if (!isEdit && !username.trim()) { setErr('Введите логин'); return; }
     if (!isEdit && !password) { setErr('Введите пароль'); return; }
     if (!isEdit && password !== password2) { setErr('Пароли не совпадают'); return; }
+    if (institutionIds.length === 0) { setErr('Выберите хотя бы одну организацию'); return; }
     try {
       if (isEdit) {
         await api.patch(`/users/${user.id}/`, {
           display_name: displayName,
           role,
           employee_id: employeeId ? parseInt(employeeId) : null,
+          institution_ids: institutionIds,
         });
         toast.push('Пользователь обновлён', { kind: 'ok' });
       } else {
@@ -676,6 +687,7 @@ function UserFormModal({ data, onClose }) {
           role,
           password,
           employee_id: employeeId ? parseInt(employeeId) : null,
+          institution_ids: institutionIds,
         });
         toast.push('Пользователь создан', { kind: 'ok' });
       }
@@ -723,6 +735,26 @@ function UserFormModal({ data, onClose }) {
             onChange={setEmployeeId}
             placeholder="Начните вводить ФИО сотрудника…"
           />
+        </div>
+        <div className="field field-full">
+          <label className="field-label">Доступ к организациям <span className="req">*</span></label>
+          {orgs.length === 0 ? (
+            <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Нет организаций</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+              {orgs.map(org => (
+                <label key={org.id} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+                  <input
+                    type="checkbox"
+                    checked={institutionIds.includes(org.id)}
+                    onChange={() => toggleOrg(org.id)}
+                  />
+                  <span style={{ fontWeight: 500 }}>{org.code}</span>
+                  <span style={{ color: 'var(--text-muted)' }}>{org.name}</span>
+                </label>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       {err && <div style={{ color: 'var(--bad-fg)', fontSize: 13, marginTop: 8 }}>{err}</div>}

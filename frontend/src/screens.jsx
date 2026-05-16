@@ -1362,13 +1362,21 @@ function UserList({ currentUser, openModal, onNavigate }) {
             <EmptyState icon={I.users} title="Пользователи не найдены" sub="Нажмите «Создать пользователя» чтобы добавить первого" />
           ) : (
             <table className="tbl">
-              <thead><tr><th>Логин</th><th>ФИО</th><th>Роль</th><th>Последний вход</th><th>Статус</th><th style={{ width: 100 }}></th></tr></thead>
+              <thead><tr><th>Логин</th><th>ФИО</th><th>Роль</th><th>Организации</th><th>Последний вход</th><th>Статус</th><th style={{ width: 100 }}></th></tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={6} /> : users.map(u => (
+                {loading ? <SkeletonRows cols={7} /> : users.map(u => (
                   <tr key={u.id}>
                     <td className="mono fwm">{u.username}</td>
                     <td>{u.display_name || '—'}</td>
                     <td><span className={`badge ${ROLE_CLS[u.role] || 'badge-neutral'}`}><span className="dot"></span>{u.role_display}</span></td>
+                    <td>
+                      {u.institution_codes && u.institution_codes.length > 0
+                        ? u.institution_codes.map(c => (
+                            <span key={c} className="badge badge-neutral" style={{ marginRight: 4 }}>{c}</span>
+                          ))
+                        : <span className="muted" style={{ fontSize: 12 }}>нет</span>
+                      }
+                    </td>
                     <td className="mono muted">{u.last_login || 'никогда'}</td>
                     <td>{u.is_active ? <Badge status="enrolled">Активен</Badge> : <span className="badge badge-neutral"><span className="dot"></span>Неактивен</span>}</td>
                     <td style={{ display: 'flex', gap: 4 }}>

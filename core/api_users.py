@@ -21,6 +21,8 @@ def _user_data(u):
         'last_login': u.last_login.strftime('%d.%m.%Y %H:%M') if u.last_login else None,
         'employee_id': u.employee_id,
         'employee_name': str(u.employee) if u.employee_id else None,
+        'institution_ids': list(u.allowed_institutions.values_list('id', flat=True)),
+        'institution_codes': [o.code for o in u.allowed_institutions.all()],
     }
 
 
@@ -34,8 +36,10 @@ class UsersView(APIView):
             return Response([])
         users = (
             User.objects
-            .filter(institution=institution)
+            .filter(allowed_institutions=institution)
             .select_related('employee')
+            .prefetch_related('allowed_institutions')
+            .distinct()
             .order_by('username')
         )
         return Response([_user_data(u) for u in users])
@@ -78,6 +82,14 @@ class UsersView(APIView):
             institution=institution,
             employee=employee,
         )
+        # По умолчанию добавляем текущую организацию в разрешённые
+        user.allowed_institutions.add(institution)
+        # Если переданы дополнительные организации — учтём
+        extra_ids = request.data.get('institution_ids', [])
+        if extra_ids:
+            from .models import Institution as Inst
+            allowed = Inst.objects.filter(pk__in=extra_ids, owner=request.user)
+            user.allowed_institutions.set(list(allowed))
         log_action(request.user, 'created', user,
                    new_data={'username': username, 'role': role},
                    institution=institution)
@@ -90,7 +102,7 @@ class UserDetailView(APIView):
         if not institution:
             return None
         try:
-            return User.objects.select_related('employee').get(pk=pk, institution=institution)
+            return User.objects.select_related('employee').prefetch_related('allowed_institutions').get(pk=pk, institution=institution)
         except User.DoesNotExist:
             return None
 
@@ -126,6 +138,15 @@ class UserDetailView(APIView):
                     return Response({'error': 'Сотрудник не найден'}, status=404)
             else:
                 user.employee = None
+
+        if 'institution_ids' in request.data:
+            from .models import Institution as Inst
+            ids = request.data['institution_ids'] or []
+            allowed = list(Inst.objects.filter(pk__in=ids, owner=request.user))
+            user.allowed_institutions.set(allowed)
+            # Если текущая активная организация больше не в разрешённых — сбросить
+            if user.institution_id and user.institution_id not in [o.pk for o in allowed]:
+                user.institution = allowed[0] if len(allowed) == 1 else None
 
         user.save()
         log_action(request.user, 'updated', user,

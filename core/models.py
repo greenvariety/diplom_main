@@ -376,6 +376,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         Employee, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='user_account', verbose_name='Сотрудник'
     )
+    allowed_institutions = models.ManyToManyField(
+        Institution, blank=True,
+        related_name='allowed_users',
+        verbose_name='Доступные организации'
+    )
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
