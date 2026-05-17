@@ -217,7 +217,7 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout, onBack }) {
                       />
                       <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                         <button className="btn btn-secondary btn-sm" onClick={() => setEditingId(null)}>Отмена</button>
-                        <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={() => saveEdit(org.id)}>{I.check} Сохранить</button>
+                        <button className="btn btn-primary btn-sm" onClick={() => saveEdit(org.id)}>{I.check} Сохранить</button>
                       </div>
                     </div>
                   ) : (
