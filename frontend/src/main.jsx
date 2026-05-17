@@ -427,7 +427,7 @@ function AppShell({ onLogout }) {
       return (
         <OrgPickerScreen
           user={currentUser}
-          onOrgSelected={() => { loadUser(); handleNavigate('dashboard'); }}
+          onOrgSelected={() => { loadUser(true); handleNavigate('dashboard'); }}
           onLogout={handleLogout}
           onBack={() => handleNavigate('dashboard')}
         />
