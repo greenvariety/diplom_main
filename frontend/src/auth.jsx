@@ -151,7 +151,9 @@ function RegisterScreen({ onDone, onBack }) {
   const errs = {};
   if (!vals.login.trim()) errs.login = 'Введите логин';
   else if (!/^[a-z0-9_]{3,20}$/.test(vals.login)) errs.login = 'Только латиница, цифры и _, 3–20 символов';
-  if (!vals.name.trim()) errs.name = 'Укажите имя для отображения';
+  if (!vals.name.trim()) errs.name = 'Укажите ФИО';
+  else if (!/^[А-ЯЁа-яё\s\-]+$/.test(vals.name.trim())) errs.name = 'Только кириллица';
+  else if (vals.name.trim().split(/\s+/).filter(Boolean).length < 2) errs.name = 'Введите фамилию и имя (минимум 2 слова)';
   if (vals.pass) {
     if (vals.pass.length < 8) errs.pass = 'Минимум 8 символов';
     else if (!/\d/.test(vals.pass)) errs.pass = 'Нужна хотя бы одна цифра';
@@ -163,7 +165,7 @@ function RegisterScreen({ onDone, onBack }) {
   const submit = async () => {
     const full = {
       ...(!vals.login.trim() ? { login: 'Введите логин' } : {}),
-      ...(!vals.name.trim() ? { name: 'Введите имя' } : {}),
+      ...(!vals.name.trim() ? { name: 'Введите ФИО' } : {}),
       ...(!vals.pass ? { pass: 'Введите пароль' } : {}),
       ...(vals.pass && vals.pass.length < 8 ? { pass: 'Минимум 8 символов' } : {}),
       ...(vals.pass && !/\d/.test(vals.pass) ? { pass: 'Нужна хотя бы одна цифра' } : {}),
@@ -209,19 +211,19 @@ function RegisterScreen({ onDone, onBack }) {
 
           <div className="card">
             <div className="card-body" style={{ padding: 28 }}>
-              <h2 style={{ marginBottom: 6 }}>Регистрация владельца</h2>
-              <p className="muted" style={{ marginBottom: 20, fontSize: 13 }}>Создайте аккаунт. После регистрации вы получите сид-фразу для восстановления пароля — сохраните её в надёжном месте.</p>
+              <h2 style={{ marginBottom: 6 }}>Создание аккаунта владельца</h2>
+              <p className="muted" style={{ marginBottom: 20, fontSize: 13 }}>После регистрации вы получите секретную сид-фразу. Она нужна для восстановления доступа к аккаунту. Запишите её и храните в безопасном месте.</p>
 
               <div className="form-grid">
-                <Field label="Логин" required hint="Латиница, цифры и подчёркивание · 3–20 симв." error={touched.login && errs.login}>
-                  <input className={`input ${touched.login && errs.login ? 'is-error' : ''}`} placeholder="owner1"
+                <Field label="Логин" required error={touched.login && errs.login}>
+                  <input className={`input ${touched.login && errs.login ? 'is-error' : ''}`}
                     value={vals.login}
                     onChange={e => set('login', e.target.value)}
                     onBlur={() => setTouched(t => ({ ...t, login: 1 }))}
                   />
                 </Field>
-                <Field label="Имя (отображается в системе)" required error={touched.name && errs.name}>
-                  <input className={`input ${touched.name && errs.name ? 'is-error' : ''}`} placeholder="Иванов Иван Иванович"
+                <Field label="ФИО" required error={touched.name && errs.name}>
+                  <input className={`input ${touched.name && errs.name ? 'is-error' : ''}`}
                     value={vals.name}
                     onChange={e => set('name', e.target.value)}
                     onBlur={() => setTouched(t => ({ ...t, name: 1 }))}
@@ -303,12 +305,10 @@ function SeedPhraseScreen({ seedWords = [], onDone }) {
 
           <div className="card">
             <div className="card-body" style={{ padding: 28 }}>
-              <div className="banner banner-bad" style={{ marginBottom: 20 }}>
-                {I.alert}
-                <div className="banner-body"><strong>Запишите эти 12 слов!</strong> Они показываются только один раз. Без сид-фразы восстановить пароль невозможно.</div>
-              </div>
+              <h2 style={{ marginBottom: 6 }}>Запишите секретную фразу</h2>
+              <p className="muted" style={{ marginBottom: 20, fontSize: 13 }}>Эти 12 слов показываются один раз. Потеря фразы означает полную потерю доступа к аккаунту.</p>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                <h2>Ваша сид-фраза</h2>
+                <div></div>
                 <button className="btn btn-secondary btn-sm" onClick={doCopy} style={{ minWidth: 130 }}>
                   {copied
                     ? <>{I.check}Скопировано</>
@@ -326,7 +326,7 @@ function SeedPhraseScreen({ seedWords = [], onDone }) {
               </div>
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, cursor: 'pointer' }}>
                 <input type="checkbox" style={{ marginTop: 2 }} checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />
-                <span>Я записал(а) сид-фразу и понимаю, что без неё восстановление пароля невозможно</span>
+                <span>Я сохранил(а) фразу в надёжном месте и принимаю все риски потери доступа.</span>
               </label>
             </div>
             <div className="modal-foot">
