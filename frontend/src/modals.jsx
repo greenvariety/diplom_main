@@ -295,7 +295,7 @@ function EmployeeFormModal({ data, onClose }) {
         <div className="form-section-title">Контакты</div>
         <div className="form-grid">
           <Field label="Телефон">
-            <input className="input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+7 " />
+            <input className="input" value={phone} onChange={e => setPhone(e.target.value)} />
           </Field>
           <Field label="Email">
             <input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} />
@@ -476,10 +476,10 @@ function FacultyFormModal({ data, onClose }) {
       </>}>
       <div className="form-grid">
         <Field label="Код (аббревиатура)" required>
-          <input className="input" value={shortName} onChange={e => { setShortName(e.target.value.toUpperCase()); setErr(''); }} placeholder="ФИТ" maxLength={50} />
+          <input className="input" value={shortName} onChange={e => { setShortName(e.target.value.toUpperCase()); setErr(''); }} maxLength={50} />
         </Field>
         <Field label="Полное название" required>
-          <input className="input" value={fullName} onChange={e => { setFullName(e.target.value); setErr(''); }} placeholder="Факультет информационных технологий" />
+          <input className="input" value={fullName} onChange={e => { setFullName(e.target.value); setErr(''); }} />
         </Field>
         {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
       </div>
@@ -548,7 +548,7 @@ function ParentFormModal({ data, onClose }) {
             </select>
           </Field>
         )}
-        <Field label="Телефон"><input className="input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+7 " /></Field>
+        <Field label="Телефон"><input className="input" value={phone} onChange={e => setPhone(e.target.value)} /></Field>
         <Field label="Email"><input className="input" value={email} onChange={e => setEmail(e.target.value)} /></Field>
         {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
       </div>
@@ -587,7 +587,7 @@ function SubjectFormModal({ data, onClose }) {
       footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton></>}>
       <div className="form-grid">
         <Field label="Название" required error={err}>
-          <input className="input" value={name} onChange={e => { setName(e.target.value); setErr(''); }} placeholder="Например: Базы данных" />
+          <input className="input" value={name} onChange={e => { setName(e.target.value); setErr(''); }} />
         </Field>
       </div>
     </Modal>
@@ -625,7 +625,7 @@ function PositionFormModal({ data, onClose }) {
       footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton></>}>
       <div className="form-grid">
         <Field label="Название" required error={err}>
-          <input className="input" value={name} onChange={e => { setName(e.target.value); setErr(''); }} placeholder="Например: Преподаватель" />
+          <input className="input" value={name} onChange={e => { setName(e.target.value); setErr(''); }} />
         </Field>
       </div>
     </Modal>
@@ -708,11 +708,11 @@ function UserFormModal({ data, onClose }) {
       <div className="form-grid">
         {!isEdit && (
           <Field label="Логин" required>
-            <input className="input" placeholder="teacher2" value={username} onChange={e => setUsername(e.target.value)} />
+            <input className="input" value={username} onChange={e => setUsername(e.target.value)} />
           </Field>
         )}
         <Field label="ФИО">
-          <input className="input" placeholder="Иванов Иван Иванович" value={displayName} onChange={e => setDisplayName(e.target.value)} />
+          <input className="input" value={displayName} onChange={e => setDisplayName(e.target.value)} />
         </Field>
         <Field label="Роль" required>
           <select className="select" value={role} onChange={e => setRole(e.target.value)}>
@@ -896,7 +896,7 @@ function DeleteConfirmModal({ data, onClose }) {
         </div>
         <div className="field" style={{ marginTop: 16 }}>
           <label className="field-label">Причина удаления<span className="req">*</span></label>
-          <textarea className={`textarea ${shake && !reason.trim() ? 'is-error' : ''}`} value={reason} onChange={e => setReason(e.target.value)} placeholder="Например: уволен, отчислен, дубликат…" />
+          <textarea className={`textarea ${shake && !reason.trim() ? 'is-error' : ''}`} value={reason} onChange={e => setReason(e.target.value)} />
         </div>
         <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 12, fontSize: 13, cursor: 'pointer' }}>
           <input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} style={{ marginTop: 2 }} />
@@ -992,7 +992,7 @@ function UploadDocModal({ data, onClose }) {
         <input type="file" style={{ display: 'none' }} accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={e => { const f = e.target.files?.[0]; if (f) { setFile(f); setName(f.name); } }} />
       </label>
       <Field label="Название документа">
-        <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="Паспорт, Аттестат…" />
+        <input className="input" value={name} onChange={e => setName(e.target.value)} />
       </Field>
       <Field label="Тип документа">
         <select className="select" value={docType} onChange={e => setDocType(e.target.value)}>
@@ -1288,7 +1288,6 @@ function OrgFormModal({ data, onClose }) {
             className="input"
             value={name}
             onChange={e => { setName(e.target.value); setErr(''); }}
-            placeholder="Колледж информатики и технологий"
           />
         </Field>
         <Field label="Код организации" hint="Автоматически из первых букв названия, если не указан">
@@ -1296,7 +1295,6 @@ function OrgFormModal({ data, onClose }) {
             className="input"
             value={code}
             onChange={e => setCode(e.target.value.toUpperCase())}
-            placeholder="КИТ"
             maxLength={20}
           />
         </Field>

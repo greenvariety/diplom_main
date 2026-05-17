@@ -257,7 +257,6 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout, onBack }) {
                 value={newName}
                 onChange={e => setNewName(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && !submitting && createOrg()}
-                placeholder="Название организации"
                 autoFocus
               />
               <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>

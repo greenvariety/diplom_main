@@ -127,7 +127,7 @@ class OrganizationForm(forms.ModelForm):
         fields = ['code', 'name', 'notes']
         labels = {'code': 'Код', 'name': 'Полное название', 'notes': 'Заметки'}
         widgets = {
-            'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Например: КГУ'}),
+            'code': forms.TextInput(attrs={'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
