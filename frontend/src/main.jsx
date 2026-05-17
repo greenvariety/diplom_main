@@ -64,20 +64,14 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout, onBack }) {
     setLoading(true);
     const endpoint = user.role === 'owner' ? '/organizations/' : '/organizations/allowed/';
     api.get(endpoint)
-      .then(r => {
-        const list = r.data;
-        if (user.role !== 'owner' && list.length === 1) {
-          return api.post(`/organizations/${list[0].id}/switch/`).then(() => onOrgSelected());
-        }
-        setOrgs(list);
-        setLoading(false);
-      })
+      .then(r => { setOrgs(r.data); setLoading(false); })
       .catch(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, []);
 
-  const pickOrg = async (orgId, orgName) => {
+  const pickOrg = async (orgId, orgName, isActive = false) => {
+    if (isActive) { onOrgSelected(); return; }
     try {
       await api.post(`/organizations/${orgId}/switch/`);
       toast.push(`Организация «${orgName}» выбрана`, { kind: 'ok' });
@@ -253,11 +247,10 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout, onBack }) {
                       <button
                         className="btn btn-primary btn-sm"
                         style={{ fontSize: 11, padding: '4px 10px', flexShrink: 0 }}
-                        onClick={() => pickOrg(org.id, org.name)}
-                        disabled={org.active}
+                        onClick={() => pickOrg(org.id, org.name, org.active)}
                       >
                         {org.active ? I.check : I.swap}
-                        {org.active ? 'Текущая' : 'Выбрать'}
+                        {org.active ? 'Войти' : 'Выбрать'}
                       </button>
                       <button className="btn btn-ghost btn-icon btn-sm" onClick={() => startEdit(org)} title="Переименовать">{I.pencil}</button>
                       <button className="btn btn-ghost btn-icon btn-sm" onClick={() => deleteOrg(org)} title={org.active ? 'Нельзя удалить активную организацию' : 'Удалить'} disabled={org.active} style={{ color: org.active ? 'var(--text-faint)' : 'var(--bad-fg)' }}>{I.trash}</button>
@@ -306,44 +299,14 @@ function AppShell({ onLogout }) {
   const [modal, setModal] = useState(null); // { name, data }
 
   const loadUser = (afterSwitch = false) => {
-    api.get('/me/').then(async r => {
+    api.get('/me/').then(r => {
       const user = r.data;
       if (!afterSwitch) {
-        if (user.role !== 'owner') {
-          // Для не-владельцев: всегда проверяем allowed_institutions
-          try {
-            const orgsRes = await api.get('/organizations/allowed/');
-            const list = orgsRes.data;
-            if (list.length === 0) {
-              // Нет доступных организаций - ждём назначения
-              setCurrentUser({ ...user, institution: null });
-              setLoading(false);
-              return;
-            }
-            if (list.length === 1) {
-              // Ровно одна - автопереключение (если нужно)
-              if (!user.institution || user.institution.id !== list[0].id) {
-                await api.post(`/organizations/${list[0].id}/switch/`);
-              }
-              return loadUser(true);
-            }
-            // Несколько - показываем пикер
-            setCurrentUser({ ...user, _showPicker: true });
-            setLoading(false);
-            return;
-          } catch {}
-        } else if (!user.institution) {
-          // Владелец без активной орг - автопереключение на первую
-          try {
-            const orgsRes = await api.get('/organizations/');
-            if (orgsRes.data.length > 0) {
-              await api.post(`/organizations/${orgsRes.data[0].id}/switch/`);
-              return loadUser(true);
-            }
-          } catch {}
-        }
+        // Всегда показываем пикер организации при открытии приложения
+        setCurrentUser({ ...user, _showPicker: true });
+      } else {
+        setCurrentUser(user);
       }
-      setCurrentUser(user);
       setLoading(false);
     }).catch(() => {
       localStorage.removeItem('access_token');
@@ -441,15 +404,7 @@ function AppShell({ onLogout }) {
     );
   }
 
-  if (currentUser.role === 'owner' && !currentUser.institution) {
-    return <OrgPickerScreen user={currentUser} onOrgSelected={() => loadUser(true)} onLogout={handleLogout} />;
-  }
-
-  if (!currentUser.institution && currentUser.role !== 'owner') {
-    return <OrgPickerScreen user={currentUser} onOrgSelected={() => loadUser(true)} onLogout={handleLogout} />;
-  }
-
-  if (currentUser._showPicker) {
+  if (currentUser._showPicker || !currentUser.institution) {
     return <OrgPickerScreen user={currentUser} onOrgSelected={() => loadUser(true)} onLogout={handleLogout} />;
   }
 
