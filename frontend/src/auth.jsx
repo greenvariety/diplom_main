@@ -382,7 +382,7 @@ function RecoverPasswordScreen({ onBack, onDone }) {
               <p className="muted" style={{ marginBottom: 20, fontSize: 13 }}>Введите логин и все 12 слов вашей сид-фразы, затем задайте новый пароль.</p>
 
               <Field label="Логин" required error={touched.all && !login.trim() ? 'Введите логин' : null}>
-                <input className={`input ${touched.all && !login.trim() ? 'is-error' : ''}`} placeholder="owner1" value={login} onChange={e => setLogin(e.target.value)} />
+                <input className={`input ${touched.all && !login.trim() ? 'is-error' : ''}`} value={login} onChange={e => setLogin(e.target.value)} />
               </Field>
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, marginBottom: 8 }}>
@@ -393,7 +393,7 @@ function RecoverPasswordScreen({ onBack, onDone }) {
                 {words.map((w, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ fontSize: 11, color: 'var(--text-faint)', minWidth: 20, fontFamily: 'var(--font-mono)' }}>{String(i + 1).padStart(2, '0')}.</span>
-                    <input className={`input ${touched.all && !w ? 'is-error' : ''}`} style={{ fontSize: 12, padding: '6px 8px', fontFamily: 'var(--font-mono)' }} placeholder={`слово ${i + 1}`} value={w}
+                    <input className={`input ${touched.all && !w ? 'is-error' : ''}`} style={{ fontSize: 12, padding: '6px 8px', fontFamily: 'var(--font-mono)' }} value={w}
                       onChange={e => { const a = [...words]; a[i] = e.target.value.trim(); setWords(a); }}
                     />
                   </div>

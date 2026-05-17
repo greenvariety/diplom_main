@@ -572,7 +572,7 @@ function StudentList({ currentUser, openModal, onNavigate }) {
           <div className="input-with-icon">{I.search}
             <input className="input" value={q} onChange={e => setQ(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              placeholder="Иванов Иван…" />
+              />
           </div>
         </div>
         <div className="field"><label className="field-label">Факультет</label>
@@ -888,7 +888,7 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
           <div className="input-with-icon">{I.search}
             <input className="input" value={q} onChange={e => setQ(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              placeholder="Иванов Иван…" />
+              />
           </div>
         </div>
         <div className="field"><label className="field-label">Должность</label>
@@ -1530,7 +1530,7 @@ function AuditLog({ currentUser, openModal, onNavigate }) {
         <div className="field grow-2"><label className="field-label">Поиск по объекту, пользователю или ФИО</label>
           <div className="input-with-icon">{I.search}<input className="input" value={q}
             onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearch()}
-            placeholder="Студент, группа, admin1, Дмитриева…" /></div>
+            /></div>
         </div>
         <div className="field"><label className="field-label">Пользователь</label>
           <Combobox value={userFilter} onChange={v => { setUserFilter(v); setPage(1); setTimeout(load, 0); }}
@@ -1644,7 +1644,7 @@ function ParentList({ currentUser, openModal, onNavigate }) {
           <div className="input-with-icon">{I.search}
             <input className="input" value={q} onChange={e => setQ(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              placeholder="Иванов Иван…" />
+              />
           </div>
         </div>
         <button className="btn btn-primary btn-sm" onClick={handleSearch}>Найти</button>
