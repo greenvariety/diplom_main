@@ -4,7 +4,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 
-from .models import User, Institution, SeedPhrase
+from .models import User, SeedPhrase
 from .utils import generate_seed_phrase, hash_seed_phrase, verify_seed_phrase
 
 
@@ -57,14 +57,6 @@ class RegisterView(APIView):
             role='owner',
             display_name=display_name,
         )
-
-        institution = Institution.objects.create(
-            owner=user,
-            code=username,
-            name=display_name,
-        )
-        user.institution = institution
-        user.save(update_fields=['institution'])
 
         phrase = generate_seed_phrase()
         SeedPhrase.objects.create(user=user, phrase_hash=hash_seed_phrase(phrase))
