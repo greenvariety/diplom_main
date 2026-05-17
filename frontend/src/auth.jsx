@@ -71,7 +71,7 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
               <input
                 className={`input ${touched.user && errs.user ? 'is-error' : ''}`}
                 value={user}
-                onChange={e => setUser(e.target.value)}
+                onChange={e => setUser(e.target.value.replace(/[А-ЯЁа-яё]/g, ''))}
                 onBlur={() => onBlur('user')}
                 autoComplete="username"
               />
@@ -125,6 +125,7 @@ function RegisterScreen({ onDone, onBack }) {
   if (vals.pass) {
     if (vals.pass.length < 8) errs.pass = 'Минимум 8 символов';
     else if (!/\d/.test(vals.pass)) errs.pass = 'Нужна хотя бы одна цифра';
+    else if (!/[A-Za-z]/.test(vals.pass)) errs.pass = 'Нужна хотя бы одна латинская буква';
     else if (!/[_\-!@#$%^&*+.,;:?]/.test(vals.pass)) errs.pass = 'Нужен хотя бы один спецсимвол';
   }
   if (vals.pass2 && vals.pass !== vals.pass2) errs.pass2 = 'Пароли не совпадают';
@@ -137,6 +138,7 @@ function RegisterScreen({ onDone, onBack }) {
       ...(!vals.pass ? { pass: 'Введите пароль' } : {}),
       ...(vals.pass && vals.pass.length < 8 ? { pass: 'Минимум 8 символов' } : {}),
       ...(vals.pass && !/\d/.test(vals.pass) ? { pass: 'Нужна хотя бы одна цифра' } : {}),
+      ...(vals.pass && !/[A-Za-z]/.test(vals.pass) ? { pass: 'Нужна хотя бы одна латинская буква' } : {}),
       ...(vals.pass && !/[_\-!@#$%^&*+.,;:?]/.test(vals.pass) ? { pass: 'Нужен спецсимвол' } : {}),
       ...(!vals.pass2 ? { pass2: 'Повторите пароль' } : {}),
       ...(vals.pass && vals.pass2 && vals.pass !== vals.pass2 ? { pass2: 'Пароли не совпадают' } : {}),
@@ -203,7 +205,7 @@ function RegisterScreen({ onDone, onBack }) {
                 >
                   <input className={`input ${touched.name && errs.name ? 'is-error' : ''}`}
                     value={vals.name}
-                    onChange={e => set('name', e.target.value)}
+                    onChange={e => set('name', e.target.value.replace(/[A-Za-z]/g, ''))}
                     onBlur={() => setTouched(t => ({ ...t, name: 1 }))}
                   />
                 </Field>

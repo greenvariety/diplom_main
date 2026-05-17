@@ -9,11 +9,13 @@ from .models import (
 
 
 def validate_password_strength(value):
-    """Мин. 8 символов, только A-Z a-z 0-9 _ -, обязательно ≥1 цифра и ≥1 спецсимвол (_ или -)."""
+    """Мин. 8 символов, только A-Z a-z 0-9 _ -, обязательно ≥1 латинская буква, ≥1 цифра и ≥1 спецсимвол (_ или -)."""
     if len(value) < 8:
         raise forms.ValidationError('Пароль должен содержать не менее 8 символов.')
     if not re.fullmatch(r'[A-Za-z0-9_\-]+', value):
         raise forms.ValidationError('Пароль может содержать только латинские буквы, цифры, _ и -.')
+    if not re.search(r'[A-Za-z]', value):
+        raise forms.ValidationError('Пароль должен содержать хотя бы одну латинскую букву.')
     if not re.search(r'[0-9]', value):
         raise forms.ValidationError('Пароль должен содержать хотя бы одну цифру.')
     if not re.search(r'[_\-]', value):
@@ -50,9 +52,17 @@ class OwnerRegisterForm(forms.Form):
 
     def clean_username(self):
         username = self.cleaned_data['username']
+        if re.search(r'[А-ЯЁа-яё]', username):
+            raise forms.ValidationError('Логин может содержать только латинские буквы, цифры и знаки _ и -.')
         if User.objects.filter(username=username).exists():
             raise forms.ValidationError('Этот логин уже занят.')
         return username
+
+    def clean_display_name(self):
+        name = self.cleaned_data['display_name']
+        if re.search(r'[A-Za-z]', name):
+            raise forms.ValidationError('ФИО должно содержать только кириллицу.')
+        return name
 
     def clean(self):
         cleaned = super().clean()
