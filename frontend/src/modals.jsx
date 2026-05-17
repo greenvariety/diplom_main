@@ -1402,7 +1402,7 @@ function OrgDeleteConfirmModal({ data, onClose }) {
           <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--bad-bg)', color: 'var(--bad-fg)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>{I.alert}</div>
           <div>
             <p style={{ marginBottom: 4 }}>Будет удалена организация <strong>{org?.name}</strong>.</p>
-            <p className="muted" style={{ fontSize: 13 }}>Все данные (факультеты, группы, студенты, сотрудники) удалятся безвозвратно. Это действие нельзя отменить.</p>
+            <p className="muted" style={{ fontSize: 13 }}>Все данные организации, будут удалены безвозвратно. Это действие нельзя отменить!</p>
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
