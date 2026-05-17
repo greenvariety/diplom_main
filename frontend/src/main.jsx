@@ -441,6 +441,10 @@ function AppShell({ onLogout }) {
     );
   }
 
+  if (currentUser.role === 'owner' && !currentUser.institution) {
+    return <OrgPickerScreen user={currentUser} onOrgSelected={() => loadUser(true)} onLogout={handleLogout} />;
+  }
+
   if (!currentUser.institution && currentUser.role !== 'owner') {
     return <OrgPickerScreen user={currentUser} onOrgSelected={() => loadUser(true)} onLogout={handleLogout} />;
   }
