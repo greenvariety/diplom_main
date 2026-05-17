@@ -262,7 +262,7 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout, onBack }) {
               />
               <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                 <button className="btn btn-secondary btn-sm" onClick={() => { setShowCreate(false); setNewName(''); }}>Отмена</button>
-                <LoadButton className="btn btn-primary btn-sm" onClick={createOrg} style={{ flex: 1 }}>
+                <LoadButton className="btn btn-primary btn-sm" onClick={createOrg}>
                   {I.check} Создать
                 </LoadButton>
               </div>
