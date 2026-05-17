@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { I } from './data.jsx';
 import { useToast, PasswordRules, PasswordStrength, PasswordInput, Field, LoadButton, pwStrength } from './utils.jsx';
@@ -12,13 +12,11 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
   const [pass, setPass]   = useState('');
   const [errs, setErrs]   = useState({});
   const [touched, setTouched] = useState({});
-  const userRef = useRef(null);
 
   const validate = (vals) => {
     const e = {};
     if (!vals.user.trim()) e.user = 'Введите логин';
     if (!vals.pass) e.pass = 'Введите пароль';
-    else if (vals.pass.length < 4) e.pass = 'Слишком короткий пароль';
     return e;
   };
 
@@ -29,19 +27,6 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
   useEffect(() => {
     if (Object.keys(touched).length) setErrs(validate({ user, pass }));
   }, [user, pass]);
-
-  const pickDemo = (login) => {
-    setUser(login);
-    setPass('demo_1234');
-    setTouched({});
-    setErrs({});
-    if (userRef.current) {
-      const el = userRef.current;
-      el.classList.remove('flash');
-      void el.offsetWidth;
-      el.classList.add('flash');
-    }
-  };
 
   const submit = async (e) => {
     e && e.preventDefault();
@@ -66,13 +51,13 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
   return (
     <div className="login-wrap">
       <div className="login-side">
-        <div className="brand-row"><div className="logo">У</div>Учёт студентов</div>
+        <div className="brand-row"><img src="/logo.png" className="logo" alt="" style={{ objectFit: 'contain' }} />АИСК</div>
         <div className="login-pitch">
           <div style={{ display: 'inline-block', padding: '4px 10px', background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontSize: 11, fontWeight: 500, borderRadius: 999, marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.06em' }}>АИС колледжа · v2.0</div>
-          <h1>Один источник правды о&nbsp;студентах, сотрудниках и&nbsp;группах.</h1>
-          <p>Замена бумажных журналов и Excel-таблиц. Личные данные, статусы, перевод и&nbsp;отчисление, документы, журнал изменений — всё в одном месте.</p>
+          <h1>Единая система учета студентов и&nbsp;преподавателей.</h1>
+          <p>Замена бумажных журналов и Excel-таблиц. Личные данные, статусы, перевод и отчисление, документы, журнал изменений — всё в одном месте.</p>
         </div>
-        <div className="login-foot">© Колледж · Дипломная работа · 2026</div>
+        <div className="login-foot">© ГБПОУ МКАГ · Дипломная работа · Пушков Н. М. · Группа ИСиП-3-22 · 2026</div>
         <div className="login-art"></div>
       </div>
       <div className="login-form-wrap">
@@ -84,7 +69,6 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
             <div className="input-with-icon">
               {I.user}
               <input
-                ref={userRef}
                 className={`input ${touched.user && errs.user ? 'is-error' : ''}`}
                 value={user}
                 onChange={e => setUser(e.target.value)}
@@ -115,22 +99,6 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
             <a href="#" onClick={e => { e.preventDefault(); onRecover && onRecover(); }} style={{ color: 'var(--text-muted)' }}>Восстановить через сид-фразу</a>
           </div>
 
-          <div className="login-tip">
-            <div style={{ color: 'var(--text)', fontWeight: 600, fontSize: 12, marginBottom: 8 }}>Демо-доступы — клик для быстрого входа:</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {[
-                { l: 'owner1',   t: 'Владелец' },
-                { l: 'admin1',   t: 'Админ' },
-                { l: 'teacher1', t: 'Преп.' },
-              ].map(d => (
-                <button type="button" key={d.l} className="demo-chip" onClick={() => pickDemo(d.l)} title={`Войти как ${d.t}`}>
-                  <span>{d.l}</span>
-                  <span className="muted" style={{ fontSize: 10 }}>· {d.t}</span>
-                </button>
-              ))}
-            </div>
-            <div className="muted" style={{ fontSize: 11, marginTop: 8 }}>Пароль для всех: <code>demo_1234</code></div>
-          </div>
         </form>
       </div>
     </div>
@@ -199,8 +167,8 @@ function RegisterScreen({ onDone, onBack }) {
       <div className="login-form-wrap screen-fade-in" style={{ padding: '40px 24px' }}>
         <div style={{ width: '100%', maxWidth: 520 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, justifyContent: 'center' }}>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700 }}>У</div>
-            <div style={{ fontWeight: 600 }}>Учёт студентов</div>
+            <img src="/logo.png" style={{ width: 36, height: 36, objectFit: 'contain' }} alt="" />
+            <div style={{ fontWeight: 600 }}>АИСК</div>
           </div>
 
           <div className="steps" style={{ justifyContent: 'center' }}>
@@ -303,8 +271,8 @@ function SeedPhraseScreen({ seedWords = [], onDone }) {
       <div className="login-form-wrap screen-fade-in" style={{ padding: '40px 24px' }}>
         <div style={{ width: '100%', maxWidth: 560 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, justifyContent: 'center' }}>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700 }}>У</div>
-            <div style={{ fontWeight: 600 }}>Учёт студентов</div>
+            <img src="/logo.png" style={{ width: 36, height: 36, objectFit: 'contain' }} alt="" />
+            <div style={{ fontWeight: 600 }}>АИСК</div>
           </div>
 
           <div className="steps" style={{ justifyContent: 'center' }}>
@@ -389,8 +357,8 @@ function RecoverPasswordScreen({ onBack, onDone }) {
       <div className="login-form-wrap screen-fade-in" style={{ padding: '40px 24px' }}>
         <div style={{ width: '100%', maxWidth: 560 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, justifyContent: 'center' }}>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700 }}>У</div>
-            <div style={{ fontWeight: 600 }}>Учёт студентов</div>
+            <img src="/logo.png" style={{ width: 36, height: 36, objectFit: 'contain' }} alt="" />
+            <div style={{ fontWeight: 600 }}>АИСК</div>
           </div>
           <div className="card">
             <div className="card-body" style={{ padding: 28 }}>

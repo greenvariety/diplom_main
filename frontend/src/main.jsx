@@ -132,8 +132,8 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout, onBack }) {
 
   const brand = (
     <div style={{ textAlign: 'center', marginBottom: 24 }}>
-      <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 18, margin: '0 auto 10px' }}>У</div>
-      <div style={{ fontWeight: 600, fontSize: 15 }}>Учёт студентов</div>
+      <img src="/logo.png" style={{ width: 44, height: 44, objectFit: 'contain', margin: '0 auto 10px', display: 'block' }} alt="" />
+      <div style={{ fontWeight: 600, fontSize: 15 }}>АИСК</div>
     </div>
   );
 
