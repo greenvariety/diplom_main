@@ -721,10 +721,10 @@ function UserFormModal({ data, onClose }) {
         </Field>
         {!isEdit && <>
           <Field label="Пароль" required>
-            <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+            <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value.replace(/[^\x00-\x7F]/g, ''))} />
           </Field>
           <Field label="Повторите" required>
-            <input className="input" type="password" value={password2} onChange={e => setPassword2(e.target.value)} />
+            <input className="input" type="password" value={password2} onChange={e => setPassword2(e.target.value.replace(/[^\x00-\x7F]/g, ''))} />
           </Field>
         </>}
         <div className="field field-full">
@@ -791,10 +791,10 @@ function UserSetPasswordModal({ data, onClose }) {
     >
       <div className="form-grid">
         <Field label="Новый пароль" required>
-          <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+          <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value.replace(/[^\x00-\x7F]/g, ''))} />
         </Field>
         <Field label="Повторите" required>
-          <input className="input" type="password" value={password2} onChange={e => setPassword2(e.target.value)} />
+          <input className="input" type="password" value={password2} onChange={e => setPassword2(e.target.value.replace(/[^\x00-\x7F]/g, ''))} />
         </Field>
       </div>
       {err && <div style={{ color: 'var(--bad-fg)', fontSize: 13, marginTop: 8 }}>{err}</div>}
@@ -1360,11 +1360,89 @@ function ParentAddStudentModal({ data, onClose }) {
   );
 }
 
+function OrgDeleteConfirmModal({ data, onClose }) {
+  const { org, onDone } = data || {};
+  const toast = useToast();
+  const [p1, setP1] = useState('');
+  const [p2, setP2] = useState('');
+  const [words, setWords] = useState(Array(12).fill(''));
+  const [shake, setShake] = useState(false);
+
+  const blockPaste = (e) => e.preventDefault();
+  const filled = words.filter(Boolean).length;
+  const canSubmit = p1 && p1 === p2 && filled === 12;
+
+  const submit = async () => {
+    if (!canSubmit) {
+      setShake(true);
+      setTimeout(() => setShake(false), 400);
+      if (!p1) toast.push('Введите пароль', { kind: 'err' });
+      else if (p1 !== p2) toast.push('Пароли не совпадают', { kind: 'err' });
+      else toast.push('Введите все 12 слов сид-фразы', { kind: 'err' });
+      return;
+    }
+    try {
+      await api.delete(`/organizations/${org.id}/`, { data: { password: p1, seed_words: words } });
+      toast.push('Организация удалена', { kind: 'ok' });
+      onDone && onDone(org.id);
+      onClose();
+    } catch (e) {
+      toast.push(e.response?.data?.error || 'Ошибка удаления', { kind: 'err' });
+    }
+  };
+
+  return (
+    <Modal title="Удалить организацию?" kind="danger" onClose={onClose} allowOverlayClose={false}
+      footer={<>
+        <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
+        <LoadButton className={`btn btn-danger-solid ${shake ? 'shake' : ''}`} onClick={submit}>{I.trash}Удалить навсегда</LoadButton>
+      </>}>
+      <div className={shake ? 'shake' : ''}>
+        <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', marginBottom: 16 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--bad-bg)', color: 'var(--bad-fg)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>{I.alert}</div>
+          <div>
+            <p style={{ marginBottom: 4 }}>Будет удалена организация <strong>{org?.name}</strong>.</p>
+            <p className="muted" style={{ fontSize: 13 }}>Все данные (факультеты, группы, студенты, сотрудники) удалятся безвозвратно. Это действие нельзя отменить.</p>
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <Field label="Пароль" required>
+            <PasswordInput value={p1} onChange={setP1} onPaste={blockPaste} autoComplete="off" placeholder="Введите вручную" hasError={shake && !p1} />
+          </Field>
+          <Field label="Повторите пароль" required error={p2 && p1 !== p2 ? 'Не совпадает' : null} success={p2 && p1 === p2}>
+            <PasswordInput value={p2} onChange={setP2} onPaste={blockPaste} autoComplete="off" placeholder="Повторите вручную" hasError={shake && (!p2 || p1 !== p2)} />
+          </Field>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, marginBottom: 8 }}>
+          <div className="form-section-title" style={{ margin: 0 }}>Сид-фраза</div>
+          <span className="muted" style={{ fontSize: 12 }}>{filled} / 12 введено</span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+          {words.map((w, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 11, color: 'var(--text-faint)', minWidth: 20, fontFamily: 'var(--font-mono)' }}>{String(i + 1).padStart(2, '0')}.</span>
+              <input
+                className={`input ${shake && !w ? 'is-error' : ''}`}
+                style={{ fontSize: 12, padding: '6px 8px', fontFamily: 'var(--font-mono)' }}
+                placeholder={`слово ${i + 1}`}
+                value={w}
+                autoComplete="off"
+                onChange={e => { const a = [...words]; a[i] = e.target.value.trim(); setWords(a); }}
+                onPaste={blockPaste}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 export {
   StudentFormModal, EmployeeFormModal, GroupFormModal, FacultyFormModal,
   ParentFormModal, ParentAddStudentModal, SubjectFormModal, PositionFormModal, UserFormModal, UserSetPasswordModal,
   TransferModal, DeleteConfirmModal, ApproveDeleteModal, UploadDocModal,
   AssignSubjectModal, EmployeeAssignSubjectModal, AuditDiffModal, LogoutModal,
   StudentDetailModal, GroupDetailModal, FacultyDetailModal, EmployeeDetailModal,
-  OrgFormModal,
+  OrgFormModal, OrgDeleteConfirmModal,
 };

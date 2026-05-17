@@ -98,6 +98,7 @@ function useDropdown() {
 const PW_RULES = [
   { id: 'len',    label: 'Минимум 8 символов',          test: (s) => s.length >= 8 },
   { id: 'digit',  label: 'Минимум 1 цифра',             test: (s) => /\d/.test(s) },
+  { id: 'latin',  label: 'Минимум 1 латинская буква',   test: (s) => /[A-Za-z]/.test(s) },
   { id: 'spec',   label: 'Минимум 1 спецсимвол (_ -)',  test: (s) => /[_\-!@#$%^&*+.,;:?]/.test(s) },
 ];
 
@@ -144,7 +145,7 @@ function PasswordStrength({ value }) {
 }
 
 /* ---------- Password input with show/hide ---------- */
-function PasswordInput({ value, onChange, onFocus, onBlur, placeholder, autoComplete, className, hasError }) {
+function PasswordInput({ value, onChange, onFocus, onBlur, onPaste, placeholder, autoComplete, className, hasError }) {
   const [show, setShow] = useState(false);
   return (
     <div className="input-pw-wrap">
@@ -154,9 +155,10 @@ function PasswordInput({ value, onChange, onFocus, onBlur, placeholder, autoComp
         value={value || ''}
         placeholder={placeholder || ''}
         autoComplete={autoComplete}
-        onChange={(e) => onChange && onChange(e.target.value)}
+        onChange={(e) => onChange && onChange(e.target.value.replace(/[^\x00-\x7F]/g, ''))}
         onFocus={onFocus}
         onBlur={onBlur}
+        onPaste={onPaste}
       />
       <button type="button" className="input-pw-toggle" onClick={() => setShow(s => !s)} aria-label={show ? 'Скрыть' : 'Показать'} tabIndex={-1}>
         {show

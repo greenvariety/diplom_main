@@ -6,7 +6,7 @@ import { I } from './data.jsx';
 import { LoginScreen, RegisterScreen, SeedPhraseScreen, RecoverPasswordScreen } from './auth.jsx';
 import { Shell } from './shell.jsx';
 import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, FacultyList, GroupList, GroupDetail, StudentList, StudentDetail, EmployeeList, EmployeeDetail, PositionList, ParentList, ParentDetail, SubjectList, UserList, DeleteRequests, AuditLog } from './screens.jsx';
-import { OrgFormModal, FacultyFormModal, FacultyDetailModal, GroupFormModal, AssignSubjectModal, StudentFormModal, TransferModal, UploadDocModal, ParentFormModal, ParentAddStudentModal, DeleteConfirmModal, EmployeeFormModal, EmployeeAssignSubjectModal, PositionFormModal, SubjectFormModal, UserFormModal, UserSetPasswordModal, ApproveDeleteModal, AuditDiffModal, LogoutModal } from './modals.jsx';
+import { OrgFormModal, FacultyFormModal, FacultyDetailModal, GroupFormModal, AssignSubjectModal, StudentFormModal, TransferModal, UploadDocModal, ParentFormModal, ParentAddStudentModal, DeleteConfirmModal, EmployeeFormModal, EmployeeAssignSubjectModal, PositionFormModal, SubjectFormModal, UserFormModal, UserSetPasswordModal, ApproveDeleteModal, AuditDiffModal, LogoutModal, OrgDeleteConfirmModal } from './modals.jsx';
 import api from './api.js';
 
 function AuthFlow({ onAuthenticated }) {
@@ -59,6 +59,7 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout, onBack }) {
   const [submitting, setSubmitting] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const load = () => {
     setLoading(true);
@@ -109,20 +110,7 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout, onBack }) {
     }
   };
 
-  const deleteOrg = async (org) => {
-    if (org.active) {
-      toast.push('Нельзя удалить активную организацию. Сначала переключитесь на другую.', { kind: 'err' });
-      return;
-    }
-    if (!window.confirm(`Удалить организацию «${org.name}»?\nВсе данные будут удалены.`)) return;
-    try {
-      await api.delete(`/organizations/${org.id}/`);
-      toast.push('Организация удалена', { kind: 'ok' });
-      setOrgs(prev => prev.filter(o => o.id !== org.id));
-    } catch (err) {
-      toast.push(err.response?.data?.error || 'Ошибка удаления', { kind: 'err' });
-    }
-  };
+  const deleteOrg = (org) => { setDeleteTarget(org); };
 
   const brand = (
     <div style={{ textAlign: 'center', marginBottom: 24 }}>
@@ -253,7 +241,7 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout, onBack }) {
                         {org.active ? 'Войти' : 'Выбрать'}
                       </button>
                       <button className="btn btn-ghost btn-icon btn-sm" onClick={() => startEdit(org)} title="Переименовать">{I.pencil}</button>
-                      <button className="btn btn-ghost btn-icon btn-sm" onClick={() => deleteOrg(org)} title={org.active ? 'Нельзя удалить активную организацию' : 'Удалить'} disabled={org.active} style={{ color: org.active ? 'var(--text-faint)' : 'var(--bad-fg)' }}>{I.trash}</button>
+                      <button className="btn btn-ghost btn-icon btn-sm" onClick={() => deleteOrg(org)} title="Удалить организацию" style={{ color: 'var(--bad-fg)' }}>{I.trash}</button>
                     </div>
                   )}
                 </div>
@@ -287,6 +275,12 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout, onBack }) {
         </div>
         {footer}
       </div>
+      {deleteTarget && (
+        <OrgDeleteConfirmModal
+          data={{ org: deleteTarget, onDone: (id) => setOrgs(prev => prev.filter(o => o.id !== id)) }}
+          onClose={() => setDeleteTarget(null)}
+        />
+      )}
     </div>
   );
 }
