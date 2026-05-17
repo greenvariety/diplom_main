@@ -1,4 +1,4 @@
-import { StrictMode, useState, useEffect } from 'react';
+﻿import { StrictMode, useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 import { ToastProvider, useToast, LoadButton } from './utils.jsx';
@@ -47,7 +47,7 @@ function AuthFlow({ onAuthenticated }) {
 }
 
 /* ============================================================
-   OrgPickerScreen — выбор / создание / управление организациями
+   OrgPickerScreen - выбор / создание / управление организациями
    Показывается после логина и при клике на название орг в топбаре.
    ============================================================ */
 function OrgPickerScreen({ user, onOrgSelected, onLogout, onBack }) {
@@ -132,7 +132,7 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout, onBack }) {
 
   const brand = (
     <div style={{ textAlign: 'center', marginBottom: 24 }}>
-      <img src="/logo.png" style={{ width: 44, height: 44, objectFit: 'contain', margin: '0 auto 10px', display: 'block' }} alt="" />
+      <img src="/logo.png" style={{ width: 44, height: 44, objectFit: 'contain', borderRadius: '50%', margin: '0 auto 10px', display: 'block' }} alt="" />
       <div style={{ fontWeight: 600, fontSize: 15 }}>АИСК</div>
     </div>
   );
@@ -315,25 +315,25 @@ function AppShell({ onLogout }) {
             const orgsRes = await api.get('/organizations/allowed/');
             const list = orgsRes.data;
             if (list.length === 0) {
-              // Нет доступных организаций — ждём назначения
+              // Нет доступных организаций - ждём назначения
               setCurrentUser({ ...user, institution: null });
               setLoading(false);
               return;
             }
             if (list.length === 1) {
-              // Ровно одна — автопереключение (если нужно)
+              // Ровно одна - автопереключение (если нужно)
               if (!user.institution || user.institution.id !== list[0].id) {
                 await api.post(`/organizations/${list[0].id}/switch/`);
               }
               return loadUser(true);
             }
-            // Несколько — показываем пикер
+            // Несколько - показываем пикер
             setCurrentUser({ ...user, _showPicker: true });
             setLoading(false);
             return;
           } catch {}
         } else if (!user.institution) {
-          // Владелец без активной орг — автопереключение на первую
+          // Владелец без активной орг - автопереключение на первую
           try {
             const orgsRes = await api.get('/organizations/');
             if (orgsRes.data.length > 0) {

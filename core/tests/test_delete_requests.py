@@ -1,4 +1,4 @@
-"""
+﻿"""
 Тесты заявок на удаление (двухуровневый процесс).
 """
 from django.test import TestCase
@@ -69,7 +69,7 @@ class DeleteRequestApproveTest(TestCase):
         self.assertEqual(resp.status_code, 403)
 
     def test_approve_already_deleted_object_marks_approved(self):
-        """Одобрение заявки, где объект уже удалён — статус всё равно approved."""
+        """Одобрение заявки, где объект уже удалён - статус всё равно approved."""
         faculty = make_faculty(self.org)
         req = DeleteRequest.objects.create(
             user=self.admin, object_type='Faculty', object_id=faculty.pk,

@@ -1,4 +1,4 @@
-import hashlib
+﻿import hashlib
 import json
 import random
 from functools import wraps
@@ -273,7 +273,7 @@ def verify_seed_phrase(phrase: str, stored_hash: str) -> bool:
 # ---------------------------------------------------------------------------
 
 def get_current_institution(request):
-    """Legacy helper — delegates to get_institution_from_session."""
+    """Legacy helper - delegates to get_institution_from_session."""
     return get_institution_from_session(request)
 
 

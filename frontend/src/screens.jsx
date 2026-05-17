@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+﻿import { useState, useMemo, useEffect } from 'react';
 import { STATUSES, STUDENTS, EMPLOYEES, GROUPS, FACULTIES, AUDIT, ORGS, I } from './data.jsx';
 import { Shell, PageHead, Badge, Avatar } from './shell.jsx';
 import { StatNumber, useToast, useDropdown, Field, EmptyState, SkeletonRows, LoadButton, Combobox, Pager, usePager, useSortable, SortHeader } from './utils.jsx';
@@ -143,7 +143,7 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
 }
 
 /* ============================================================
-   OrganizationList — hover cards with real API
+   OrganizationList - hover cards with real API
    ============================================================ */
 function OrganizationList({ currentUser, openModal, onNavigate, onUserRefresh }) {
   const [orgs, setOrgs] = useState([]);
@@ -252,7 +252,7 @@ function OrganizationList({ currentUser, openModal, onNavigate, onUserRefresh })
 }
 
 /* ============================================================
-   EmptyOrgOnboarding — new screen for owner who just created an org
+   EmptyOrgOnboarding - new screen for owner who just created an org
    ============================================================ */
 function EmptyOrgOnboarding({ org, currentUser, onNavigate, openModal, onBack }) {
   // progress state: faculties → groups → employees → students
@@ -271,7 +271,7 @@ function EmptyOrgOnboarding({ org, currentUser, onNavigate, openModal, onBack })
       <PageHead
         crumbs={[{ label: 'Организации', href: true, onClick: onBack }, { label: org.name }]}
         title={`Добро пожаловать в ${org.name}!`}
-        sub="Начните с настройки структуры — каждый шаг становится активным после завершения предыдущего."
+        sub="Начните с настройки структуры - каждый шаг становится активным после завершения предыдущего."
       />
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="card-body" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -489,7 +489,7 @@ function StatusDropdown({ value, onChange }) {
 }
 
 /* ============================================================
-   StudentList — поиск + фильтры + пагинация (реальный API)
+   StudentList - поиск + фильтры + пагинация (реальный API)
    ============================================================ */
 function StudentList({ currentUser, openModal, onNavigate }) {
   const toast = useToast();
@@ -577,19 +577,19 @@ function StudentList({ currentUser, openModal, onNavigate }) {
         </div>
         <div className="field"><label className="field-label">Факультет</label>
           <select className="select" value={facId} onChange={e => { setFacId(e.target.value); setGrpId(''); }}>
-            <option value="">— Все —</option>
+            <option value="">- Все -</option>
             {faculties.map(f => <option key={f.id} value={f.id}>{f.short_name}</option>)}
           </select>
         </div>
         <div className="field"><label className="field-label">Группа</label>
           <select className="select" value={grpId} onChange={e => setGrpId(e.target.value)} disabled={!facId}>
-            <option value="">— Все —</option>
+            <option value="">- Все -</option>
             {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
           </select>
         </div>
         <div className="field"><label className="field-label">Статус</label>
           <select className="select" value={stat} onChange={e => setStat(e.target.value)}>
-            <option value="">— Все —</option>
+            <option value="">- Все -</option>
             {Object.entries(STATUSES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
           </select>
         </div>
@@ -628,7 +628,7 @@ function StudentList({ currentUser, openModal, onNavigate }) {
                           <StatusDropdown value={s.status} onChange={v => handleStatusChange(s.id, v)} />
                         </td>
                         <td>{s.faculty_short}</td>
-                        <td>{s.group_name || <span className="muted">—</span>}</td>
+                        <td>{s.group_name || <span className="muted">-</span>}</td>
                         <td className="muted">{s.phone}</td>
                       </tr>
                     ))}
@@ -650,7 +650,7 @@ function StudentList({ currentUser, openModal, onNavigate }) {
 }
 
 /* ============================================================
-   StudentDetail — профиль, документы, опекуны, история (реальный API)
+   StudentDetail - профиль, документы, опекуны, история (реальный API)
    ============================================================ */
 function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
   const [student, setStudent] = useState(null);
@@ -738,11 +738,11 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
             </div>
             <div style={{ borderTop: '1px solid var(--border)' }}>
               <dl className="kv">
-                <dt>Дата рождения</dt><dd>{student.birth_date || '—'}</dd>
-                <dt>Телефон</dt><dd>{student.phone || '—'}</dd>
-                <dt>Email</dt><dd>{student.email || '—'}</dd>
+                <dt>Дата рождения</dt><dd>{student.birth_date || '-'}</dd>
+                <dt>Телефон</dt><dd>{student.phone || '-'}</dd>
+                <dt>Email</dt><dd>{student.email || '-'}</dd>
                 <dt>Факультет</dt><dd>{student.faculty_name}</dd>
-                <dt>Группа</dt><dd>{student.group_name || <span className="muted">—</span>}</dd>
+                <dt>Группа</dt><dd>{student.group_name || <span className="muted">-</span>}</dd>
               </dl>
             </div>
           </div>
@@ -764,7 +764,7 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
                       <tr key={p.id}>
                         <td className="fwm">{p.parent_name}</td>
                         <td>{p.relation_display}</td>
-                        <td className="muted">{p.phone || '—'}</td>
+                        <td className="muted">{p.phone || '-'}</td>
                         <td><button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleRemoveParent(p.id)}>{I.x}</button></td>
                       </tr>
                     ))}
@@ -893,7 +893,7 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
         </div>
         <div className="field"><label className="field-label">Должность</label>
           <select className="select" value={posId} onChange={e => setPosId(e.target.value)}>
-            <option value="">— Все —</option>
+            <option value="">- Все -</option>
             {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
@@ -912,9 +912,9 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
                   <tr key={e.id} className="row-link" onClick={() => onNavigate('employee-detail', { employeeId: e.id })}>
                     <td className="muted mono">{e.id}</td>
                     <td className="fwm">{e.full_name}</td>
-                    <td>{e.position_name || <span className="muted">—</span>}</td>
-                    <td className="muted">{e.phone || '—'}</td>
-                    <td className="muted">{e.email || '—'}</td>
+                    <td>{e.position_name || <span className="muted">-</span>}</td>
+                    <td className="muted">{e.phone || '-'}</td>
+                    <td className="muted">{e.email || '-'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1016,8 +1016,8 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
           <div style={{ borderTop: '1px solid var(--border)' }}>
             <dl className="kv">
               {employee.birth_date && <><dt>Дата рождения</dt><dd>{employee.birth_date}</dd></>}
-              <dt>Телефон</dt><dd>{employee.phone || '—'}</dd>
-              <dt>Email</dt><dd>{employee.email || '—'}</dd>
+              <dt>Телефон</dt><dd>{employee.phone || '-'}</dd>
+              <dt>Email</dt><dd>{employee.email || '-'}</dd>
             </dl>
           </div>
         </div>
@@ -1082,8 +1082,8 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                     {employee.documents.map(d => (
                       <tr key={d.id}>
                         <td className="fwm"><a href={d.file_url} target="_blank" rel="noreferrer">{d.name}</a></td>
-                        <td>{d.doc_type || '—'}</td>
-                        <td className="muted">{d.uploaded_at || '—'}</td>
+                        <td>{d.doc_type || '-'}</td>
+                        <td className="muted">{d.uploaded_at || '-'}</td>
                         <td><button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDeleteDoc(d.id)}>{I.x}</button></td>
                       </tr>
                     ))}
@@ -1142,7 +1142,7 @@ function GroupList({ currentUser, openModal, onNavigate }) {
         <div className="field">
           <label className="field-label">Факультет</label>
           <select className="select" value={facultyFilter} onChange={e => { setFacultyFilter(e.target.value); load(e.target.value); }}>
-            <option value="">— Все —</option>
+            <option value="">- Все -</option>
             {faculties.map(f => <option key={f.id} value={f.id}>{f.short_name}</option>)}
           </select>
         </div>
@@ -1161,7 +1161,7 @@ function GroupList({ currentUser, openModal, onNavigate }) {
                   <td className="fwm">{g.name}</td>
                   <td>{g.faculty_short}</td>
                   <td className="mono muted">{g.year}</td>
-                  <td>{g.headteacher_name || '—'}</td>
+                  <td>{g.headteacher_name || '-'}</td>
                   <td className="mono">{g.student_count}</td>
                   <td>{I.chevr}</td>
                 </tr>
@@ -1380,7 +1380,7 @@ function UserList({ currentUser, openModal, onNavigate }) {
                 {loading ? <SkeletonRows cols={7} /> : users.map(u => (
                   <tr key={u.id}>
                     <td className="mono fwm">{u.username}</td>
-                    <td>{u.display_name || '—'}</td>
+                    <td>{u.display_name || '-'}</td>
                     <td><span className={`badge ${ROLE_CLS[u.role] || 'badge-neutral'}`}><span className="dot"></span>{u.role_display}</span></td>
                     <td>
                       {u.institution_codes && u.institution_codes.length > 0
@@ -1662,8 +1662,8 @@ function ParentList({ currentUser, openModal, onNavigate }) {
                   <tr key={p.id} className="row-link" onClick={() => onNavigate('parent-detail', { parentId: p.id })}>
                     <td className="muted mono">{p.id}</td>
                     <td className="fwm">{p.full_name}</td>
-                    <td className="muted">{p.phone || '—'}</td>
-                    <td className="muted">{p.email || '—'}</td>
+                    <td className="muted">{p.phone || '-'}</td>
+                    <td className="muted">{p.email || '-'}</td>
                     <td onClick={e => e.stopPropagation()}>
                       <button className="btn btn-ghost btn-icon btn-sm"
                         onClick={() => openModal('parentForm', { parent: p, onDone: load })}>
@@ -1755,8 +1755,8 @@ function ParentDetail({ currentUser, openModal, onNavigate, parentId }) {
           <div style={{ borderTop: '1px solid var(--border)' }}>
             <dl className="kv">
               {parent.birth_date && <><dt>Дата рождения</dt><dd>{parent.birth_date}</dd></>}
-              <dt>Телефон</dt><dd>{parent.phone || '—'}</dd>
-              <dt>Email</dt><dd>{parent.email || '—'}</dd>
+              <dt>Телефон</dt><dd>{parent.phone || '-'}</dd>
+              <dt>Email</dt><dd>{parent.email || '-'}</dd>
             </dl>
           </div>
         </div>
@@ -1783,7 +1783,7 @@ function ParentDetail({ currentUser, openModal, onNavigate, parentId }) {
                         </a>
                       </td>
                       <td>{s.relation_display}</td>
-                      <td>{s.group_name || '—'}</td>
+                      <td>{s.group_name || '-'}</td>
                       <td>
                         <button className="btn btn-ghost btn-icon btn-sm"
                           onClick={() => removeStudent(s.sp_id)} title="Открепить">{I.x}

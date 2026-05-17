@@ -1,4 +1,4 @@
-from rest_framework.views import APIView
+﻿from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Student, Employee, Faculty, AuditLog, DeleteRequest, Group
 
@@ -50,9 +50,9 @@ class DashboardView(APIView):
             recent_audit.append({
                 'id': a.pk,
                 'ts': a.created_at.strftime('%d.%m.%Y %H:%M:%S'),
-                'user': u.username if u else '—',
-                'userName': (u.display_name or u.username) if u else '—',
-                'role': u.get_role_display() if u else '—',
+                'user': u.username if u else '-',
+                'userName': (u.display_name or u.username) if u else '-',
+                'role': u.get_role_display() if u else '-',
                 'action': a.action,
                 'label': ACTION_LABEL.get(a.action, a.action),
                 'obj': f'{a.object_type} #{a.object_id}',

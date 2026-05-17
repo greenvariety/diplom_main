@@ -1,4 +1,4 @@
-from rest_framework.views import APIView
+﻿from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.paginator import Paginator
 from django.db.models import Q
@@ -173,7 +173,7 @@ class StudentDetailView(APIView):
         ).order_by('-created_at')[:10]
         data['audit_log'] = [
             {
-                'user': (log.user.display_name or log.user.username) if log.user else '—',
+                'user': (log.user.display_name or log.user.username) if log.user else '-',
                 'action': log.get_action_display(),
                 'created_at': log.created_at.strftime('%d.%m.%Y %H:%M'),
             }

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+﻿import { useEffect, useState, useRef } from 'react';
 import { STATUSES, STUDENTS, GROUPS, FACULTIES, EMPLOYEES, I } from './data.jsx';
 import { Badge, Avatar } from './shell.jsx';
 import { useToast, Field, LoadButton, Combobox } from './utils.jsx';
@@ -8,9 +8,9 @@ import api from './api.js';
    Shared option lists
    ============================================================ */
 const FAC_OPTS = [
-  { value: 'ФИТ', label: 'ФИТ — Факультет информационных технологий' },
-  { value: 'ФЭ',  label: 'ФЭ — Факультет экономики' },
-  { value: 'ФМН', label: 'ФМН — Факультет мат. наук' },
+  { value: 'ФИТ', label: 'ФИТ - Факультет информационных технологий' },
+  { value: 'ФЭ',  label: 'ФЭ - Факультет экономики' },
+  { value: 'ФМН', label: 'ФМН - Факультет мат. наук' },
 ];
 const FAC_SHORT_OPTS = [
   { value: 'ФИТ', label: 'ФИТ' },
@@ -28,7 +28,7 @@ const STUDENT_OPTS = STUDENTS.map(s => ({ value: s.id, label: `${s.last} ${s.fir
 const GROUP_OPTS_ALL = GROUPS.map(g => ({ value: g.name, label: g.name, sub: g.fac }));
 
 /* ============================================================
-   Animated Modal shell — close uses a fade-out, esc, overlay click,
+   Animated Modal shell - close uses a fade-out, esc, overlay click,
    focus trap on first input, no shrink on overlay click for danger.
    ============================================================ */
 function Modal({ size, title, sub, kind, onClose, children, footer, allowOverlayClose = true }) {
@@ -77,12 +77,12 @@ function Modal({ size, title, sub, kind, onClose, children, footer, allowOverlay
 
 /* Re-export close intent so child triggers (cancel button) can animate too. */
 function useClosable(onClose) {
-  // No-op — modal owns closing animation. Cancel buttons just call onClose.
+  // No-op - modal owns closing animation. Cancel buttons just call onClose.
   return onClose;
 }
 
 /* ============================================================
-   StudentFormModal — создать / редактировать студента (реальный API)
+   StudentFormModal - создать / редактировать студента (реальный API)
    ============================================================ */
 function StudentFormModal({ data, onClose }) {
   const { student, onDone } = data || {};
@@ -196,13 +196,13 @@ function StudentFormModal({ data, onClose }) {
             <select className={`select ${touched.faculty_id && errs.faculty_id ? 'is-error' : ''}`}
               value={vals.faculty_id}
               onChange={e => { set('faculty_id', e.target.value); set('group_id', ''); setTouched(t => ({ ...t, faculty_id: 1 })); }}>
-              <option value="">— Выберите факультет —</option>
-              {faculties.map(f => <option key={f.id} value={f.id}>{f.short_name} — {f.full_name}</option>)}
+              <option value="">- Выберите факультет -</option>
+              {faculties.map(f => <option key={f.id} value={f.id}>{f.short_name} - {f.full_name}</option>)}
             </select>
           </Field>
           <Field label="Группа">
             <select className="select" value={vals.group_id} onChange={e => set('group_id', e.target.value)} disabled={!vals.faculty_id}>
-              <option value="">— Без группы —</option>
+              <option value="">- Без группы -</option>
               {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
             </select>
           </Field>
@@ -219,7 +219,7 @@ function StudentFormModal({ data, onClose }) {
 }
 
 /* ============================================================
-   Other entity forms — sections + required + saving feedback
+   Other entity forms - sections + required + saving feedback
    ============================================================ */
 function EmployeeFormModal({ data, onClose }) {
   const employee = data?.employee;
@@ -307,7 +307,7 @@ function EmployeeFormModal({ data, onClose }) {
         <div className="form-grid">
           <Field label="Должность">
             <select className="select" value={positionId} onChange={e => setPositionId(e.target.value)}>
-              <option value="">— Не указана —</option>
+              <option value="">- Не указана -</option>
               {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </Field>
@@ -355,13 +355,13 @@ function EmployeeAssignSubjectModal({ data, onClose }) {
       <div className="form-grid">
         <Field label="Группа" required>
           <select className="select" value={groupId} onChange={e => { setGroupId(e.target.value); setErr(''); }}>
-            <option value="">— Выберите группу —</option>
+            <option value="">- Выберите группу -</option>
             {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
           </select>
         </Field>
         <Field label="Предмет" required>
           <select className="select" value={subjectId} onChange={e => { setSubjectId(e.target.value); setErr(''); }}>
-            <option value="">— Выберите предмет —</option>
+            <option value="">- Выберите предмет -</option>
             {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </Field>
@@ -420,8 +420,8 @@ function GroupFormModal({ data, onClose }) {
       <div className="form-grid">
         <Field label="Факультет" required>
           <select className="select" value={facultyId} onChange={e => { setFacultyId(e.target.value); setErr(''); }}>
-            <option value="">— Выберите факультет —</option>
-            {faculties.map(f => <option key={f.id} value={f.id}>{f.short_name} — {f.full_name}</option>)}
+            <option value="">- Выберите факультет -</option>
+            {faculties.map(f => <option key={f.id} value={f.id}>{f.short_name} - {f.full_name}</option>)}
           </select>
         </Field>
         <Field label="Год начала" required>
@@ -430,7 +430,7 @@ function GroupFormModal({ data, onClose }) {
         <div className="field field-full">
           <label className="field-label">Классный руководитель</label>
           <select className="select" value={headteacherId} onChange={e => setHeadteacherId(e.target.value)}>
-            <option value="">— Не назначен —</option>
+            <option value="">- Не назначен -</option>
             {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
           </select>
         </div>
@@ -803,7 +803,7 @@ function UserSetPasswordModal({ data, onClose }) {
 }
 
 /* ============================================================
-   Action modals — transfer, delete (with shake), approve, upload
+   Action modals - transfer, delete (with shake), approve, upload
    ============================================================ */
 function TransferModal({ data, onClose }) {
   const { student, onDone } = data || {};
@@ -833,7 +833,7 @@ function TransferModal({ data, onClose }) {
 
   return (
     <Modal title="Перевод студента"
-      sub={`${student?.last_name || ''} ${student?.first_name || ''} — текущая группа: ${student?.group_name || 'не назначена'}`}
+      sub={`${student?.last_name || ''} ${student?.first_name || ''} - текущая группа: ${student?.group_name || 'не назначена'}`}
       onClose={onClose}
       footer={<>
         <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
@@ -842,9 +842,9 @@ function TransferModal({ data, onClose }) {
       <div className="banner banner-info">{I.info}<div className="banner-body">При переводе студент получает статус «Переведён» и привязывается к новой группе и факультету.</div></div>
       <Field label="Новая группа" required error={touched && !groupId ? 'Выберите группу' : null}>
         <select className={`select ${touched && !groupId ? 'is-error' : ''}`} value={groupId} onChange={e => setGroupId(e.target.value)}>
-          <option value="">— Выберите группу —</option>
+          <option value="">- Выберите группу -</option>
           {groups.filter(g => !student?.group_id || g.id !== student.group_id).map(g => (
-            <option key={g.id} value={g.id}>{g.name} — {g.faculty_name}</option>
+            <option key={g.id} value={g.id}>{g.name} - {g.faculty_name}</option>
           ))}
         </select>
       </Field>
@@ -930,9 +930,9 @@ function ApproveDeleteModal({ data, onClose }) {
       <div className="banner banner-bad">{I.alert}<div className="banner-body"><strong>Действие необратимо.</strong> Запись и связанные с ней данные будут удалены из системы.</div></div>
       <dl className="kv" style={{ padding: 0, marginTop: 12 }}>
         <dt>Тип</dt><dd><Badge>{data?.type_label || 'Объект'}</Badge></dd>
-        <dt>Объект</dt><dd className="fwm">{data?.object_repr || '—'}</dd>
-        <dt>Заявку подал</dt><dd className="mono">{data?.author || '—'} · {data?.created_at || '—'}</dd>
-        <dt>Причина</dt><dd className="muted">{data?.reason || '—'}</dd>
+        <dt>Объект</dt><dd className="fwm">{data?.object_repr || '-'}</dd>
+        <dt>Заявку подал</dt><dd className="mono">{data?.author || '-'} · {data?.created_at || '-'}</dd>
+        <dt>Причина</dt><dd className="muted">{data?.reason || '-'}</dd>
       </dl>
       {err && <div className="banner banner-bad" style={{ marginTop: 8 }}>{I.alert}<div className="banner-body">{err}</div></div>}
     </Modal>
@@ -1046,13 +1046,13 @@ function AssignSubjectModal({ data, onClose }) {
       <div className="form-grid">
         <Field label="Предмет" required>
           <select className="select" value={subjectId} onChange={e => { setSubjectId(e.target.value); setErr(''); }}>
-            <option value="">— Выберите предмет —</option>
+            <option value="">- Выберите предмет -</option>
             {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </Field>
         <Field label="Преподаватель" required>
           <select className="select" value={employeeId} onChange={e => { setEmployeeId(e.target.value); setErr(''); }}>
-            <option value="">— Выберите преподавателя —</option>
+            <option value="">- Выберите преподавателя -</option>
             {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
           </select>
         </Field>
@@ -1064,7 +1064,7 @@ function AssignSubjectModal({ data, onClose }) {
 
 function AuditDiffModal({ data, onClose }) {
   // Render each changed field as its own card; old/new are clearly separated.
-  // No IP shown — only when/who/what.
+  // No IP shown - only when/who/what.
   const changes = data?.changes || [
     { key: 'phone',  label: 'Телефон',  from: '+7 900 222-33-44',  to: '+7 900 222-33-99' },
     { key: 'status', label: 'Статус',   from: 'pending_review',    to: 'enrolled' },
@@ -1075,10 +1075,10 @@ function AuditDiffModal({ data, onClose }) {
       onClose={onClose}
       footer={<button className="btn btn-secondary" onClick={onClose}>Закрыть</button>}>
       <dl className="kv" style={{ padding: 0, marginBottom: 16 }}>
-        <dt>Кто</dt><dd className="fwm"><span className="mono">{data?.user || 'admin1'}</span> <span className="muted">— {data?.userName || 'Дмитриева О. П.'}</span></dd>
+        <dt>Кто</dt><dd className="fwm"><span className="mono">{data?.user || 'admin1'}</span> <span className="muted">- {data?.userName || 'Дмитриева О. П.'}</span></dd>
         <dt>Когда</dt><dd className="mono">{data?.ts || '09.05.2026 13:55:04'}</dd>
         <dt>Действие</dt><dd><Badge>{data?.label || 'Изменил'}</Badge></dd>
-        <dt>Объект</dt><dd className="fwm">{data?.obj || 'Студент #610 — Петрова М. С.'}</dd>
+        <dt>Объект</dt><dd className="fwm">{data?.obj || 'Студент #610 - Петрова М. С.'}</dd>
       </dl>
       <div className="form-section-title" style={{ marginBottom: 10 }}>Изменённые поля · {changes.length}</div>
       <div className="diff-grid">
@@ -1209,8 +1209,8 @@ function FacultyDetailModal({ data, onClose, openModal }) {
         <button className="btn btn-primary" onClick={() => openModal('facultyForm', { faculty: f, onDone })}>{I.pencil}Редактировать</button>
       </>}>
       <dl className="kv" style={{ padding: 0 }}>
-        <dt>Групп</dt><dd className="mono">{f.group_count ?? f.groups ?? '—'}</dd>
-        <dt>Студентов</dt><dd className="mono">{f.student_count ?? f.students ?? '—'}</dd>
+        <dt>Групп</dt><dd className="mono">{f.group_count ?? f.groups ?? '-'}</dd>
+        <dt>Студентов</dt><dd className="mono">{f.student_count ?? f.students ?? '-'}</dd>
       </dl>
     </Modal>
   );
@@ -1233,8 +1233,8 @@ function EmployeeDetailModal({ data, onClose, openModal }) {
           <dt>Должность</dt><dd>{e.pos}</dd>
           <dt>Преподаёт</dt><dd>{e.teacher ? 'Да' : 'Нет'}</dd>
           <dt>Телефон</dt><dd>{e.phone}</dd>
-          <dt>Email</dt><dd>—</dd>
-          <dt>Классное руководство</dt><dd>{e.teacher ? 'ПИ-301' : '—'}</dd>
+          <dt>Email</dt><dd>-</dd>
+          <dt>Классное руководство</dt><dd>{e.teacher ? 'ПИ-301' : '-'}</dd>
           <dt>Предметов</dt><dd>{e.teacher ? '2' : '0'}</dd>
         </dl>
       </div>
@@ -1243,7 +1243,7 @@ function EmployeeDetailModal({ data, onClose, openModal }) {
 }
 
 /* ============================================================
-   OrgFormModal — create / edit organization
+   OrgFormModal - create / edit organization
    ============================================================ */
 function OrgFormModal({ data, onClose }) {
   const org = data?.org;
@@ -1343,7 +1343,7 @@ function ParentAddStudentModal({ data, onClose }) {
         <div className="field field-full">
           <label className="field-label">Студент<span className="req">*</span></label>
           <select className="select" value={studentId} onChange={e => { setStudentId(e.target.value); setErr(''); }}>
-            <option value="">— Выберите студента —</option>
+            <option value="">- Выберите студента -</option>
             {students.map(s => <option key={s.id} value={s.id}>{s.full_name || `${s.last_name} ${s.first_name}`}</option>)}
           </select>
         </div>

@@ -140,7 +140,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
   letter-spacing: -0.01em;
 }
 .brand-cell .logo {
-  width: 28px; height: 28px; border-radius: 50%;
+  width: 28px; height: 28px; border-radius: 6px;
   background: var(--accent); color: #fff;
   display: grid; place-items: center;
   font-weight: 700; font-size: 13px;
@@ -560,7 +560,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
   overflow: hidden;
 }
 .login-side .brand-row { display: flex; align-items: center; gap: 10px; font-weight: 600; }
-.login-side .brand-row .logo { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 700; }
+.login-side .brand-row .logo { width: 32px; height: 32px; border-radius: 8px; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 700; }
 .login-pitch { max-width: 380px; }
 .login-pitch h1 { font-size: 36px; line-height: 1.15; letter-spacing: -0.02em; margin-bottom: 12px; }
 .login-pitch p { color: var(--text-muted); font-size: 15px; }

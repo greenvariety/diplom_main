@@ -1,22 +1,24 @@
-﻿import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { I } from './data.jsx';
-import { useToast, PasswordRules, PasswordStrength, PasswordInput, Field, LoadButton, pwStrength } from './utils.jsx';
+﻿/* global React, AIS_DATA, AIS_UTILS */
+const { I } = window.AIS_DATA;
+const { useState, useEffect, useRef } = React;
+const { useToast, PasswordRules, PasswordStrength, PasswordInput, Field, LoadButton, pwStrength } = window.AIS_UTILS;
 
 /* ============================================================
-   LoginScreen
+   LoginScreen - chips for demo, password show/hide, validation
    ============================================================ */
 function LoginScreen({ onLogin, onRegister, onRecover }) {
   const toast = useToast();
-  const [user, setUser]   = useState('');
-  const [pass, setPass]   = useState('');
+  const [user, setUser]   = useState('owner1');
+  const [pass, setPass]   = useState('demo_1234');
   const [errs, setErrs]   = useState({});
   const [touched, setTouched] = useState({});
+  const userRef = useRef(null);
 
   const validate = (vals) => {
     const e = {};
     if (!vals.user.trim()) e.user = 'Введите логин';
     if (!vals.pass) e.pass = 'Введите пароль';
+    else if (vals.pass.length < 4) e.pass = 'Слишком короткий пароль';
     return e;
   };
 
@@ -24,9 +26,23 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
     setTouched(t => ({ ...t, [field]: true }));
     setErrs(validate({ user, pass }));
   };
+  // After first error, re-validate on every change
   useEffect(() => {
     if (Object.keys(touched).length) setErrs(validate({ user, pass }));
   }, [user, pass]);
+
+  const pickDemo = (login) => {
+    setUser(login);
+    setPass('demo_1234');
+    setTouched({});
+    setErrs({});
+    if (userRef.current) {
+      const el = userRef.current;
+      el.classList.remove('flash');
+      void el.offsetWidth; // restart anim
+      el.classList.add('flash');
+    }
+  };
 
   const submit = async (e) => {
     e && e.preventDefault();
@@ -36,28 +52,21 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
       toast.push('Проверьте поля формы', { kind: 'err' });
       return;
     }
-    try {
-      const res = await axios.post('/api/auth/login/', { username: user, password: pass });
-      localStorage.setItem('access_token', res.data.access);
-      localStorage.setItem('refresh_token', res.data.refresh);
-      toast.push(`Добро пожаловать, ${res.data.user.full_name || user}`, { kind: 'ok' });
-      onLogin && onLogin(res.data.user);
-    } catch (err) {
-      const msg = err.response?.data?.error || 'Ошибка входа';
-      toast.push(msg, { kind: 'err' });
-    }
+    await new Promise(r => setTimeout(r, 700));
+    toast.push(`Добро пожаловать, ${user}`, { kind: 'ok' });
+    onLogin && onLogin(user);
   };
 
   return (
     <div className="login-wrap">
       <div className="login-side">
-        <div className="brand-row"><img src="/logo.png" className="logo" alt="" style={{ objectFit: 'contain' }} />АИСК</div>
+        <div className="brand-row"><div className="logo">У</div>Учёт студентов</div>
         <div className="login-pitch">
           <div style={{ display: 'inline-block', padding: '4px 10px', background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontSize: 11, fontWeight: 500, borderRadius: 999, marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.06em' }}>АИС колледжа · v2.0</div>
-          <h1>Единая система учета студентов и&nbsp;преподавателей.</h1>
-          <p>Замена бумажных журналов и Excel-таблиц. Личные данные, статусы, перевод и отчисление, документы, журнал изменений - всё в одном месте.</p>
+          <h1>Один источник правды о&nbsp;студентах, сотрудниках и&nbsp;группах.</h1>
+          <p>Замена бумажных журналов и Excel-таблиц. Личные данные, статусы, перевод и&nbsp;отчисление, документы, журнал изменений - всё в одном месте.</p>
         </div>
-        <div className="login-foot">© ГБПОУ МКАГ · Дипломная работа · Пушков Н. М. · Группа ИСиП-3-22 · 2026</div>
+        <div className="login-foot">© Колледж · Дипломная работа · 2026</div>
         <div className="login-art"></div>
       </div>
       <div className="login-form-wrap">
@@ -69,6 +78,7 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
             <div className="input-with-icon">
               {I.user}
               <input
+                ref={userRef}
                 className={`input ${touched.user && errs.user ? 'is-error' : ''}`}
                 value={user}
                 onChange={e => setUser(e.target.value)}
@@ -99,6 +109,22 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
             <a href="#" onClick={e => { e.preventDefault(); onRecover && onRecover(); }} style={{ color: 'var(--text-muted)' }}>Восстановить через сид-фразу</a>
           </div>
 
+          <div className="login-tip">
+            <div style={{ color: 'var(--text)', fontWeight: 600, fontSize: 12, marginBottom: 8 }}>Демо-доступы - клик для быстрого входа:</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {[
+                { l: 'owner1',   t: 'Владелец' },
+                { l: 'admin1',   t: 'Админ' },
+                { l: 'teacher1', t: 'Преп.' },
+              ].map(d => (
+                <button type="button" key={d.l} className="demo-chip" onClick={() => pickDemo(d.l)} title={`Войти как ${d.t}`}>
+                  <span>{d.l}</span>
+                  <span className="muted" style={{ fontSize: 10 }}>· {d.t}</span>
+                </button>
+              ))}
+            </div>
+            <div className="muted" style={{ fontSize: 11, marginTop: 8 }}>Пароль для всех: <code>demo_1234</code></div>
+          </div>
         </form>
       </div>
     </div>
@@ -106,7 +132,7 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
 }
 
 /* ============================================================
-   RegisterScreen
+   RegisterScreen - live password rules, strength, step indicator
    ============================================================ */
 function RegisterScreen({ onDone, onBack }) {
   const toast = useToast();
@@ -119,9 +145,7 @@ function RegisterScreen({ onDone, onBack }) {
   const errs = {};
   if (!vals.login.trim()) errs.login = 'Введите логин';
   else if (!/^[a-z0-9_]{3,20}$/.test(vals.login)) errs.login = 'Только латиница, цифры и _, 3–20 символов';
-  if (!vals.name.trim()) errs.name = 'Укажите ФИО';
-  else if (!/^[А-ЯЁа-яё\s\-]+$/.test(vals.name.trim())) errs.name = 'Только кириллица';
-  else if (vals.name.trim().split(/\s+/).filter(Boolean).length !== 3) errs.name = 'Введите фамилию, имя и отчество (3 слова)';
+  if (!vals.name.trim()) errs.name = 'Укажите имя для отображения';
   if (vals.pass) {
     if (vals.pass.length < 8) errs.pass = 'Минимум 8 символов';
     else if (!/\d/.test(vals.pass)) errs.pass = 'Нужна хотя бы одна цифра';
@@ -133,7 +157,7 @@ function RegisterScreen({ onDone, onBack }) {
   const submit = async () => {
     const full = {
       ...(!vals.login.trim() ? { login: 'Введите логин' } : {}),
-      ...(!vals.name.trim() ? { name: 'Введите ФИО' } : {}),
+      ...(!vals.name.trim() ? { name: 'Введите имя' } : {}),
       ...(!vals.pass ? { pass: 'Введите пароль' } : {}),
       ...(vals.pass && vals.pass.length < 8 ? { pass: 'Минимум 8 символов' } : {}),
       ...(vals.pass && !/\d/.test(vals.pass) ? { pass: 'Нужна хотя бы одна цифра' } : {}),
@@ -146,20 +170,9 @@ function RegisterScreen({ onDone, onBack }) {
       toast.push('Исправьте ошибки в форме', { kind: 'err' });
       return;
     }
-    try {
-      const res = await axios.post('/api/auth/register/', {
-        login: vals.login,
-        name: vals.name,
-        pass: vals.pass,
-      });
-      localStorage.setItem('access_token', res.data.access);
-      localStorage.setItem('refresh_token', res.data.refresh);
-      toast.push('Аккаунт создан. Сохраните сид-фразу!', { kind: 'ok' });
-      onDone && onDone(res.data.seed_phrase);
-    } catch (err) {
-      const msg = err.response?.data?.error || 'Ошибка регистрации';
-      toast.push(msg, { kind: 'err' });
-    }
+    await new Promise(r => setTimeout(r, 700));
+    toast.push('Аккаунт создан. Сохраните сид-фразу!', { kind: 'ok' });
+    onDone && onDone();
   };
 
   return (
@@ -167,8 +180,8 @@ function RegisterScreen({ onDone, onBack }) {
       <div className="login-form-wrap screen-fade-in" style={{ padding: '40px 24px' }}>
         <div style={{ width: '100%', maxWidth: 520 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, justifyContent: 'center' }}>
-            <img src="/logo.png" style={{ width: 36, height: 36, objectFit: 'contain', borderRadius: '50%' }} alt="" />
-            <div style={{ fontWeight: 600 }}>АИСК</div>
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700 }}>У</div>
+            <div style={{ fontWeight: 600 }}>Учёт студентов</div>
           </div>
 
           <div className="steps" style={{ justifyContent: 'center' }}>
@@ -179,29 +192,19 @@ function RegisterScreen({ onDone, onBack }) {
 
           <div className="card">
             <div className="card-body" style={{ padding: 28 }}>
-              <h2 style={{ marginBottom: 6 }}>Создание аккаунта владельца</h2>
-              <p className="muted" style={{ marginBottom: 20, fontSize: 13 }}>После регистрации вы получите секретную сид-фразу. Она нужна для восстановления доступа к аккаунту. Запишите её и храните в безопасном месте.</p>
+              <h2 style={{ marginBottom: 6 }}>Регистрация владельца</h2>
+              <p className="muted" style={{ marginBottom: 20, fontSize: 13 }}>Создайте аккаунт. После регистрации вы получите сид-фразу для восстановления пароля - сохраните её в надёжном месте.</p>
 
               <div className="form-grid">
-                <Field
-                  label="Логин" required
-                  error={touched.login && errs.login}
-                  hint={touched.login && vals.login && !errs.login ? 'Доступен только вам' : null}
-                  success={!!(touched.login && vals.login && !errs.login)}
-                >
-                  <input className={`input ${touched.login && errs.login ? 'is-error' : ''}`}
+                <Field label="Логин" required hint="Латиница, цифры и подчёркивание · 3–20 симв." error={touched.login && errs.login}>
+                  <input className={`input ${touched.login && errs.login ? 'is-error' : ''}`} placeholder="owner1"
                     value={vals.login}
                     onChange={e => set('login', e.target.value)}
                     onBlur={() => setTouched(t => ({ ...t, login: 1 }))}
                   />
                 </Field>
-                <Field
-                  label="ФИО" required
-                  error={touched.name && errs.name}
-                  hint={touched.name && vals.name && !errs.name ? 'Отображается в системе' : null}
-                  success={!!(touched.name && vals.name && !errs.name)}
-                >
-                  <input className={`input ${touched.name && errs.name ? 'is-error' : ''}`}
+                <Field label="Имя (отображается в системе)" required error={touched.name && errs.name}>
+                  <input className={`input ${touched.name && errs.name ? 'is-error' : ''}`} placeholder="Иванов Иван Иванович"
                     value={vals.name}
                     onChange={e => set('name', e.target.value)}
                     onBlur={() => setTouched(t => ({ ...t, name: 1 }))}
@@ -250,16 +253,18 @@ function RegisterScreen({ onDone, onBack }) {
 }
 
 /* ============================================================
-   SeedPhraseScreen
+   Seed phrase
    ============================================================ */
-function SeedPhraseScreen({ seedWords = [], onDone }) {
+const SEED_WORDS = ['abandon','ability','able','about','above','absent','absorb','abstract','absurd','abuse','access','accident'];
+
+function SeedPhraseScreen({ onDone }) {
   const toast = useToast();
   const [confirmed, setConfirmed] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const doCopy = async () => {
     try {
-      await navigator.clipboard.writeText(seedWords.join(' '));
+      await navigator.clipboard.writeText(SEED_WORDS.join(' '));
     } catch {}
     setCopied(true);
     toast.push('Сид-фраза скопирована в буфер', { kind: 'ok' });
@@ -271,8 +276,8 @@ function SeedPhraseScreen({ seedWords = [], onDone }) {
       <div className="login-form-wrap screen-fade-in" style={{ padding: '40px 24px' }}>
         <div style={{ width: '100%', maxWidth: 560 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, justifyContent: 'center' }}>
-            <img src="/logo.png" style={{ width: 36, height: 36, objectFit: 'contain', borderRadius: '50%' }} alt="" />
-            <div style={{ fontWeight: 600 }}>АИСК</div>
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700 }}>У</div>
+            <div style={{ fontWeight: 600 }}>Учёт студентов</div>
           </div>
 
           <div className="steps" style={{ justifyContent: 'center' }}>
@@ -283,10 +288,12 @@ function SeedPhraseScreen({ seedWords = [], onDone }) {
 
           <div className="card">
             <div className="card-body" style={{ padding: 28 }}>
-              <h2 style={{ marginBottom: 6 }}>Запишите секретную фразу</h2>
-              <p className="muted" style={{ marginBottom: 20, fontSize: 13 }}>Эти 12 слов показываются один раз. Потеря фразы означает полную потерю доступа к аккаунту.</p>
+              <div className="banner banner-bad" style={{ marginBottom: 20 }}>
+                {I.alert}
+                <div className="banner-body"><strong>Запишите эти 12 слов!</strong> Они показываются только один раз. Без сид-фразы восстановить пароль невозможно.</div>
+              </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                <div></div>
+                <h2>Ваша сид-фраза</h2>
                 <button className="btn btn-secondary btn-sm" onClick={doCopy} style={{ minWidth: 130 }}>
                   {copied
                     ? <>{I.check}Скопировано</>
@@ -295,7 +302,7 @@ function SeedPhraseScreen({ seedWords = [], onDone }) {
                 </button>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 20 }}>
-                {seedWords.map((w, i) => (
+                {SEED_WORDS.map((w, i) => (
                   <div key={i} className="seed-tile">
                     <span className="num">{String(i + 1).padStart(2, '0')}</span>
                     <span className="word">{w}</span>
@@ -304,7 +311,7 @@ function SeedPhraseScreen({ seedWords = [], onDone }) {
               </div>
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, cursor: 'pointer' }}>
                 <input type="checkbox" style={{ marginTop: 2 }} checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />
-                <span>Я сохранил(а) фразу в надёжном месте и принимаю все риски потери доступа.</span>
+                <span>Я записал(а) сид-фразу и понимаю, что без неё восстановление пароля невозможно</span>
               </label>
             </div>
             <div className="modal-foot">
@@ -319,9 +326,9 @@ function SeedPhraseScreen({ seedWords = [], onDone }) {
 }
 
 /* ============================================================
-   RecoverPasswordScreen
+   Recover password
    ============================================================ */
-function RecoverPasswordScreen({ onBack, onDone }) {
+function RecoverPasswordScreen({ onBack }) {
   const toast = useToast();
   const [login, setLogin] = useState('');
   const [words, setWords] = useState(Array(12).fill(''));
@@ -336,20 +343,9 @@ function RecoverPasswordScreen({ onBack, onDone }) {
       toast.push('Заполните логин, все 12 слов и пароль', { kind: 'err' });
       return;
     }
-    try {
-      const res = await axios.post('/api/auth/recover/', {
-        login: login.trim(),
-        seed_words: words,
-        new_password: p1,
-      });
-      localStorage.setItem('access_token', res.data.access);
-      localStorage.setItem('refresh_token', res.data.refresh);
-      toast.push('Пароль успешно изменён', { kind: 'ok' });
-      onDone && onDone();
-    } catch (err) {
-      const msg = err.response?.data?.error || 'Ошибка восстановления';
-      toast.push(msg, { kind: 'err' });
-    }
+    await new Promise(r => setTimeout(r, 800));
+    toast.push('Пароль успешно изменён', { kind: 'ok' });
+    onBack && onBack();
   };
 
   return (
@@ -357,8 +353,8 @@ function RecoverPasswordScreen({ onBack, onDone }) {
       <div className="login-form-wrap screen-fade-in" style={{ padding: '40px 24px' }}>
         <div style={{ width: '100%', maxWidth: 560 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, justifyContent: 'center' }}>
-            <img src="/logo.png" style={{ width: 36, height: 36, objectFit: 'contain', borderRadius: '50%' }} alt="" />
-            <div style={{ fontWeight: 600 }}>АИСК</div>
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700 }}>У</div>
+            <div style={{ fontWeight: 600 }}>Учёт студентов</div>
           </div>
           <div className="card">
             <div className="card-body" style={{ padding: 28 }}>
@@ -405,4 +401,4 @@ function RecoverPasswordScreen({ onBack, onDone }) {
   );
 }
 
-export { LoginScreen, RegisterScreen, SeedPhraseScreen, RecoverPasswordScreen };
+window.AIS_AUTH = { LoginScreen, RegisterScreen, SeedPhraseScreen, RecoverPasswordScreen };

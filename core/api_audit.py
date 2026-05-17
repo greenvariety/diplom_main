@@ -1,4 +1,4 @@
-import json
+﻿import json
 from datetime import timedelta
 from django.utils import timezone
 from django.db.models import Q
@@ -48,8 +48,8 @@ def _compute_changes(old_data_str, new_data_str):
             changes.append({
                 'key': key,
                 'label': FIELD_LABELS.get(key, key),
-                'from': old_val if old_val is not None else '—',
-                'to': new_val if new_val is not None else '—',
+                'from': old_val if old_val is not None else '-',
+                'to': new_val if new_val is not None else '-',
             })
     return changes
 
@@ -57,9 +57,9 @@ def _compute_changes(old_data_str, new_data_str):
 def _serialize(log):
     action_key, action_label, action_cls = ACTION_MAP.get(log.action, ('update', log.action, 'badge-warn'))
     u = log.user
-    user_login = (u.username if u else None) or '—'
-    user_name = (u.display_name or u.username if u else None) or '—'
-    user_role = ROLE_LABELS.get(u.role, u.role or '—') if u else '—'
+    user_login = (u.username if u else None) or '-'
+    user_name = (u.display_name or u.username if u else None) or '-'
+    user_role = ROLE_LABELS.get(u.role, u.role or '-') if u else '-'
     return {
         'id': log.pk,
         'ts': log.created_at.strftime('%d.%m.%Y %H:%M:%S'),

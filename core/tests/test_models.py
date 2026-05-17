@@ -1,4 +1,4 @@
-"""
+﻿"""
 Тесты моделей (без HTTP-запросов).
 """
 from django.test import TestCase
@@ -12,7 +12,7 @@ from .helpers import make_owner, make_institution, make_faculty, make_employee, 
 
 
 # ---------------------------------------------------------------------------
-# 1.1 Group — автогенерация group_number
+# 1.1 Group - автогенерация group_number
 # ---------------------------------------------------------------------------
 
 class GroupNumberAutoGenerationTest(TestCase):
@@ -40,7 +40,7 @@ class GroupNumberAutoGenerationTest(TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 1.2 Group — свойство name
+# 1.2 Group - свойство name
 # ---------------------------------------------------------------------------
 
 class GroupNamePropertyTest(TestCase):
@@ -58,7 +58,7 @@ class GroupNamePropertyTest(TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 1.3 User — свойства ролей
+# 1.3 User - свойства ролей
 # ---------------------------------------------------------------------------
 
 class UserRolePropertiesTest(TestCase):
@@ -84,7 +84,7 @@ class UserRolePropertiesTest(TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 1.4 Document — свойство is_image
+# 1.4 Document - свойство is_image
 # ---------------------------------------------------------------------------
 
 class DocumentIsImageTest(TestCase):
@@ -109,7 +109,7 @@ class DocumentIsImageTest(TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 1.5 Institution — unique_together (owner, code)
+# 1.5 Institution - unique_together (owner, code)
 # ---------------------------------------------------------------------------
 
 class InstitutionUniqueTogetherTest(TestCase):
@@ -128,7 +128,7 @@ class InstitutionUniqueTogetherTest(TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 1.6 GroupSubjectEmployee — unique_together (group, subject)
+# 1.6 GroupSubjectEmployee - unique_together (group, subject)
 # ---------------------------------------------------------------------------
 
 class GroupSubjectEmployeeUniqueTest(TestCase):
@@ -152,7 +152,7 @@ class GroupSubjectEmployeeUniqueTest(TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 1.7 StudentParent — unique_together (student, parent)
+# 1.7 StudentParent - unique_together (student, parent)
 # ---------------------------------------------------------------------------
 
 class StudentParentUniqueTest(TestCase):

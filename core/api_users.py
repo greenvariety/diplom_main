@@ -1,4 +1,4 @@
-from rest_framework.views import APIView
+﻿from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import User, Employee
 from .utils import log_action
@@ -84,7 +84,7 @@ class UsersView(APIView):
         )
         # По умолчанию добавляем текущую организацию в разрешённые
         user.allowed_institutions.add(institution)
-        # Если переданы дополнительные организации — учтём
+        # Если переданы дополнительные организации - учтём
         extra_ids = request.data.get('institution_ids', [])
         if extra_ids:
             from .models import Institution as Inst
@@ -144,7 +144,7 @@ class UserDetailView(APIView):
             ids = request.data['institution_ids'] or []
             allowed = list(Inst.objects.filter(pk__in=ids, owner=request.user))
             user.allowed_institutions.set(allowed)
-            # Если текущая активная организация больше не в разрешённых — сбросить
+            # Если текущая активная организация больше не в разрешённых - сбросить
             if user.institution_id and user.institution_id not in [o.pk for o in allowed]:
                 user.institution = allowed[0] if len(allowed) == 1 else None
 

@@ -1,8 +1,9 @@
-﻿/* ============================================================
+﻿/* global React, AIS_DATA */
+/* ============================================================
    Core utilities: toasts, counters, dropdowns, validation, etc.
    ============================================================ */
-import { useState, useEffect, useRef, useCallback, useMemo, createContext, useContext } from 'react';
-import { I } from './data.jsx';
+const { useState, useEffect, useRef, useCallback, useMemo, createContext, useContext } = React;
+const { I } = window.AIS_DATA;
 
 /* ---------- Toast system ---------- */
 const ToastCtx = createContext({ push: () => {}, remove: () => {} });
@@ -152,7 +153,7 @@ function PasswordInput({ value, onChange, onFocus, onBlur, placeholder, autoComp
         className={`input ${hasError ? 'is-error' : ''} ${className || ''}`}
         type={show ? 'text' : 'password'}
         value={value || ''}
-        placeholder={placeholder || ''}
+        placeholder={placeholder || '••••••••'}
         autoComplete={autoComplete}
         onChange={(e) => onChange && onChange(e.target.value)}
         onFocus={onFocus}
@@ -451,7 +452,7 @@ function SortHeader({ k, sort, onClick, children, width }) {
   );
 }
 
-export {
+window.AIS_UTILS = {
   ToastProvider, useToast,
   useCountUp, StatNumber,
   useDropdown,

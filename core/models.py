@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+﻿from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 
 
@@ -23,7 +23,7 @@ class Institution(models.Model):
         unique_together = [('owner', 'code')]
 
     def __str__(self):
-        return f'{self.code} — {self.name}'
+        return f'{self.code} - {self.name}'
 
 
 # ---------------------------------------------------------------------------
@@ -242,7 +242,7 @@ class StudentParent(models.Model):
         unique_together = [('student', 'parent')]
 
     def __str__(self):
-        return f'{self.student} — {self.parent} ({self.get_relation_type_display()})'
+        return f'{self.student} - {self.parent} ({self.get_relation_type_display()})'
 
 
 # ---------------------------------------------------------------------------
@@ -289,7 +289,7 @@ class GroupSubjectEmployee(models.Model):
         unique_together = [('group', 'subject')]
 
     def __str__(self):
-        return f'{self.group} — {self.subject} — {self.employee}'
+        return f'{self.group} - {self.subject} - {self.employee}'
 
 
 # ---------------------------------------------------------------------------
@@ -472,7 +472,7 @@ class DeleteRequest(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f'{self.object_type} #{self.object_id} — {self.get_status_display()}'
+        return f'{self.object_type} #{self.object_id} - {self.get_status_display()}'
 
 
 # ---------------------------------------------------------------------------
@@ -492,7 +492,7 @@ class FeedbackComment(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f'{self.page_url} — {self.comment[:50]}'
+        return f'{self.page_url} - {self.comment[:50]}'
 
 
 # ---------------------------------------------------------------------------

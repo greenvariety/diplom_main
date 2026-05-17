@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { I, STATUSES } from './data.jsx';
 import { useDropdown, useToast } from './utils.jsx';
 import api from './api.js';
@@ -111,7 +111,7 @@ function TopbarSearch({ onNavigate }) {
 function UserChip({ currentUser, onLogout, openModal }) {
   const { open, setOpen, wrapRef } = useDropdown();
   const toast = useToast();
-  const name = currentUser?.display_name || currentUser?.username || '—';
+  const name = currentUser?.display_name || currentUser?.username || '-';
   const role = currentUser?.role || 'admin';
   return (
     <div ref={wrapRef} className="dd-wrap">
