@@ -301,9 +301,20 @@ function AppShell({ onLogout }) {
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null); // { name, data }
 
-  const loadUser = () => {
-    api.get('/me/').then(r => {
-      setCurrentUser(r.data);
+  const loadUser = (afterSwitch = false) => {
+    api.get('/me/').then(async r => {
+      const user = r.data;
+      if (!user.institution && !afterSwitch) {
+        try {
+          const ep = user.role === 'owner' ? '/organizations/' : '/organizations/allowed/';
+          const orgsRes = await api.get(ep);
+          if (orgsRes.data.length > 0) {
+            await api.post(`/organizations/${orgsRes.data[0].id}/switch/`);
+            return loadUser(true);
+          }
+        } catch {}
+      }
+      setCurrentUser(user);
       setLoading(false);
     }).catch(() => {
       localStorage.removeItem('access_token');

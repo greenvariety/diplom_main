@@ -37,6 +37,8 @@ class Command(BaseCommand):
 
         inst = Institution.objects.create(owner=owner, code='КОЛЛЕДЖ1', name='Колледж №1')
         inst2 = Institution.objects.create(owner=owner, code='КОЛЛЕДЖ2', name='Колледж №2')
+        owner.institution = inst
+        owner.save(update_fields=['institution'])
         self.stdout.write(f'  Организации: {inst.name}, {inst2.name}')
 
         # --- Должности ---
