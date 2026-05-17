@@ -1424,7 +1424,7 @@ function OrgDeleteConfirmModal({ data, onClose }) {
               <input
                 className={`input ${shake && !w ? 'is-error' : ''}`}
                 style={{ fontSize: 12, padding: '6px 8px', fontFamily: 'var(--font-mono)' }}
-                placeholder={`слово ${i + 1}`}
+                placeholder=""
                 value={w}
                 autoComplete="off"
                 onChange={e => { const a = [...words]; a[i] = e.target.value.trim(); setWords(a); }}
