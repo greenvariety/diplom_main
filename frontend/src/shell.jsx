@@ -152,9 +152,6 @@ function UserChip({ currentUser, onLogout, openModal }) {
 const NAV_BY_ROLE = {
   owner: [
     { section: 'Главное', items: [{ key: 'dashboard', label: 'Дашборд', icon: I.dashboard }] },
-    { section: 'Организации', items: [
-      { key: 'org-list', label: 'Мои организации', icon: I.building },
-    ]},
     { section: 'Учебная структура', items: [
       { key: 'faculties', label: 'Факультеты', icon: I.building },
       { key: 'groups',    label: 'Группы',     icon: I.users },
@@ -219,11 +216,17 @@ function Shell({ currentUser, role: roleProp, active, onNavigate, onLogout, open
       <div className="topbar">
         <div className="topbar-left">
           {role === 'owner' || role === 'superadmin' ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-muted)' }}>
+            <button
+              className="btn btn-ghost"
+              style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-muted)', padding: '4px 10px', borderRadius: 6 }}
+              onClick={() => onNavigate && onNavigate('org-picker')}
+              title="Управление организациями"
+            >
               {I.building}
               <span>Организация:</span>
               <strong style={{ color: 'var(--text)' }}>{institutionName || 'Не выбрана'}</strong>
-            </div>
+              {I.chevr}
+            </button>
           ) : (
             <TopbarSearch onNavigate={onNavigate} />
           )}

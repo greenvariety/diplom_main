@@ -5,7 +5,7 @@ import { ToastProvider, useToast, LoadButton } from './utils.jsx';
 import { I } from './data.jsx';
 import { LoginScreen, RegisterScreen, SeedPhraseScreen, RecoverPasswordScreen } from './auth.jsx';
 import { Shell } from './shell.jsx';
-import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, OrganizationList, FacultyList, GroupList, GroupDetail, StudentList, StudentDetail, EmployeeList, EmployeeDetail, PositionList, ParentList, ParentDetail, SubjectList, UserList, DeleteRequests, AuditLog } from './screens.jsx';
+import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, FacultyList, GroupList, GroupDetail, StudentList, StudentDetail, EmployeeList, EmployeeDetail, PositionList, ParentList, ParentDetail, SubjectList, UserList, DeleteRequests, AuditLog } from './screens.jsx';
 import { OrgFormModal, FacultyFormModal, FacultyDetailModal, GroupFormModal, AssignSubjectModal, StudentFormModal, TransferModal, UploadDocModal, ParentFormModal, ParentAddStudentModal, DeleteConfirmModal, EmployeeFormModal, EmployeeAssignSubjectModal, PositionFormModal, SubjectFormModal, UserFormModal, UserSetPasswordModal, ApproveDeleteModal, AuditDiffModal, LogoutModal } from './modals.jsx';
 import api from './api.js';
 
@@ -47,35 +47,35 @@ function AuthFlow({ onAuthenticated }) {
 }
 
 /* ============================================================
-   OrgPickerScreen — выбор / создание организации после логина
+   OrgPickerScreen — выбор / создание / управление организациями
+   Показывается после логина и при клике на название орг в топбаре.
    ============================================================ */
-function OrgPickerScreen({ user, onOrgSelected, onLogout }) {
+function OrgPickerScreen({ user, onOrgSelected, onLogout, onBack }) {
   const toast = useToast();
   const [orgs, setOrgs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editName, setEditName] = useState('');
 
-  useEffect(() => {
-    if (user.role === 'owner') {
-      api.get('/organizations/')
-        .then(r => { setOrgs(r.data); setLoading(false); })
-        .catch(() => setLoading(false));
-    } else {
-      api.get('/organizations/allowed/')
-        .then(r => {
-          const list = r.data;
-          if (list.length === 1) {
-            return api.post(`/organizations/${list[0].id}/switch/`)
-              .then(() => { onOrgSelected(); });
-          }
-          setOrgs(list);
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
-    }
-  }, []);
+  const load = () => {
+    setLoading(true);
+    const endpoint = user.role === 'owner' ? '/organizations/' : '/organizations/allowed/';
+    api.get(endpoint)
+      .then(r => {
+        const list = r.data;
+        if (user.role !== 'owner' && list.length === 1) {
+          return api.post(`/organizations/${list[0].id}/switch/`).then(() => onOrgSelected());
+        }
+        setOrgs(list);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
 
   const pickOrg = async (orgId, orgName) => {
     try {
@@ -101,10 +101,46 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout }) {
     }
   };
 
+  const startEdit = (org) => { setEditingId(org.id); setEditName(org.name); };
+
+  const saveEdit = async (orgId) => {
+    if (!editName.trim()) { toast.push('Введите название', { kind: 'err' }); return; }
+    try {
+      await api.patch(`/organizations/${orgId}/`, { name: editName.trim() });
+      toast.push('Название обновлено', { kind: 'ok' });
+      setEditingId(null);
+      load();
+    } catch (err) {
+      toast.push(err.response?.data?.error || 'Ошибка', { kind: 'err' });
+    }
+  };
+
+  const deleteOrg = async (org) => {
+    if (!window.confirm(`Удалить организацию «${org.name}»?\nВсе данные будут удалены.`)) return;
+    try {
+      await api.delete(`/organizations/${org.id}/`);
+      toast.push('Организация удалена', { kind: 'ok' });
+      setOrgs(prev => prev.filter(o => o.id !== org.id));
+    } catch (err) {
+      toast.push(err.response?.data?.error || 'Ошибка удаления', { kind: 'err' });
+    }
+  };
+
   const brand = (
     <div style={{ textAlign: 'center', marginBottom: 24 }}>
       <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 18, margin: '0 auto 10px' }}>У</div>
       <div style={{ fontWeight: 600, fontSize: 15 }}>Учёт студентов</div>
+    </div>
+  );
+
+  const footer = (
+    <div className="modal-foot" style={{ padding: '10px 16px' }}>
+      {onBack && (
+        <button className="btn btn-secondary btn-sm" onClick={onBack}>{I.back} Назад</button>
+      )}
+      <button className="btn btn-ghost btn-sm" onClick={onLogout} style={{ color: 'var(--text-muted)', fontSize: 12, marginLeft: onBack ? 'auto' : 0 }}>
+        {I.logout} Выйти из аккаунта
+      </button>
     </div>
   );
 
@@ -140,26 +176,17 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout }) {
         <div className="card screen-fade-in" style={{ width: '100%', maxWidth: 480 }}>
           <div className="card-body" style={{ padding: 28 }}>
             <h2 style={{ marginBottom: 6 }}>Выберите организацию</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 20 }}>
-              Выберите организацию для работы.
-            </p>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 20 }}>Выберите организацию для работы.</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {orgs.map(org => (
                 <button
                   key={org.id}
                   onClick={() => pickOrg(org.id, org.name)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
-                    background: 'var(--surface-alt)', border: '1px solid var(--border)',
-                    borderRadius: 8, cursor: 'pointer', textAlign: 'left', width: '100%',
-                    transition: 'border-color .15s, background .15s',
-                  }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: 'var(--surface-alt)', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'border-color .15s, background .15s' }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'var(--accent-soft)'; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface-alt)'; }}
                 >
-                  <div style={{ width: 36, height: 36, borderRadius: 7, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 11, flexShrink: 0 }}>
-                    {org.code}
-                  </div>
+                  <div style={{ width: 36, height: 36, borderRadius: 7, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 11, flexShrink: 0 }}>{org.code}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{org.name}</div>
                   </div>
@@ -168,11 +195,7 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout }) {
               ))}
             </div>
           </div>
-          <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', background: 'var(--surface-alt)' }}>
-            <button className="btn btn-ghost btn-sm" onClick={onLogout} style={{ color: 'var(--text-muted)', fontSize: 12 }}>
-              {I.logout} Выйти из аккаунта
-            </button>
-          </div>
+          {footer}
         </div>
       </div>
     );
@@ -181,49 +204,68 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg)', fontFamily: 'var(--font)', padding: 24 }}>
       {brand}
-      <div className="card screen-fade-in" style={{ width: '100%', maxWidth: 480 }}>
+      <div className="card screen-fade-in" style={{ width: '100%', maxWidth: 520 }}>
         <div className="card-body" style={{ padding: 28 }}>
           <h2 style={{ marginBottom: 6 }}>
-            {orgs.length > 0 ? 'Выберите организацию' : 'Создайте организацию'}
+            {orgs.length > 0 ? 'Мои организации' : 'Создайте организацию'}
           </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: orgs.length > 0 ? 20 : 16 }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: orgs.length > 0 ? 16 : 16 }}>
             {orgs.length > 0
-              ? 'Выберите организацию для работы или создайте новую.'
-              : 'У вас ещё нет организаций. Создайте первую, чтобы начать работу.'}
+              ? 'Выберите организацию для работы, отредактируйте или создайте новую.'
+              : 'У вас ещё нет организаций. Создайте первую.'}
           </p>
 
           {orgs.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
               {orgs.map(org => (
-                <button
-                  key={org.id}
-                  onClick={() => pickOrg(org.id, org.name)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
-                    background: 'var(--surface-alt)', border: '1px solid var(--border)',
-                    borderRadius: 8, cursor: 'pointer', textAlign: 'left', width: '100%',
-                    transition: 'border-color .15s, background .15s',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'var(--accent-soft)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface-alt)'; }}
-                >
-                  <div style={{ width: 36, height: 36, borderRadius: 7, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 11, flexShrink: 0 }}>
-                    {org.code}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{org.name}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>
-                      {org.students} студ. · {org.employees} сотр. · {org.created_at}
+                <div key={org.id}>
+                  {editingId === org.id ? (
+                    <div style={{ background: 'var(--surface-alt)', borderRadius: 8, padding: 12, border: '1px solid var(--accent)' }}>
+                      <div style={{ fontWeight: 600, fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>Редактирование: {org.code}</div>
+                      <input
+                        className="input"
+                        value={editName}
+                        onChange={e => setEditName(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') saveEdit(org.id); if (e.key === 'Escape') setEditingId(null); }}
+                        autoFocus
+                      />
+                      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                        <button className="btn btn-secondary btn-sm" onClick={() => setEditingId(null)}>Отмена</button>
+                        <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={() => saveEdit(org.id)}>{I.check} Сохранить</button>
+                      </div>
                     </div>
-                  </div>
-                  {I.chevr}
-                </button>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: org.active ? 'var(--accent-soft)' : 'var(--surface-alt)', border: `1px solid ${org.active ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 8 }}>
+                      <div style={{ width: 34, height: 34, borderRadius: 6, background: org.active ? 'var(--accent)' : 'var(--surface)', color: org.active ? '#fff' : 'var(--text-muted)', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 10, flexShrink: 0, border: '1px solid var(--border)' }}>
+                        {org.code}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text)' }}>{org.name}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>
+                          {org.students} студ. · {org.employees} сотр. · {org.created_at}
+                          {org.active && <span style={{ color: 'var(--accent)', fontWeight: 600, marginLeft: 6 }}>· активна</span>}
+                        </div>
+                      </div>
+                      <button
+                        className="btn btn-primary btn-sm"
+                        style={{ fontSize: 11, padding: '4px 10px', flexShrink: 0 }}
+                        onClick={() => pickOrg(org.id, org.name)}
+                        disabled={org.active}
+                      >
+                        {org.active ? I.check : I.swap}
+                        {org.active ? 'Текущая' : 'Выбрать'}
+                      </button>
+                      <button className="btn btn-ghost btn-icon btn-sm" onClick={() => startEdit(org)} title="Переименовать">{I.pencil}</button>
+                      <button className="btn btn-ghost btn-icon btn-sm" onClick={() => deleteOrg(org)} title="Удалить" style={{ color: 'var(--bad-fg)' }}>{I.trash}</button>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           )}
 
           {showCreate ? (
-            <div style={{ background: 'var(--surface-alt)', borderRadius: 8, padding: 16, border: '1px solid var(--border)' }}>
+            <div style={{ background: 'var(--surface-alt)', borderRadius: 8, padding: 14, border: '1px solid var(--border)' }}>
               <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 10 }}>Новая организация</div>
               <input
                 className="input"
@@ -241,20 +283,12 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout }) {
               </div>
             </div>
           ) : (
-            <button
-              className="btn btn-primary"
-              onClick={() => setShowCreate(true)}
-              style={{ width: '100%', justifyContent: 'center' }}
-            >
+            <button className="btn btn-primary" onClick={() => setShowCreate(true)} style={{ width: '100%', justifyContent: 'center' }}>
               {I.plus} Создать организацию
             </button>
           )}
         </div>
-        <div className="modal-foot" style={{ padding: '10px 16px' }}>
-          <button className="btn btn-ghost btn-sm" onClick={onLogout} style={{ color: 'var(--text-muted)', fontSize: 12 }}>
-            {I.logout} Выйти из аккаунта
-          </button>
-        </div>
+        {footer}
       </div>
     </div>
   );
@@ -367,7 +401,7 @@ function AppShell({ onLogout }) {
     );
   }
 
-  if (!currentUser.institution) {
+  if (!currentUser.institution && currentUser.role !== 'owner') {
     return <OrgPickerScreen user={currentUser} onOrgSelected={loadUser} onLogout={handleLogout} />;
   }
 
@@ -386,8 +420,15 @@ function AppShell({ onLogout }) {
       return <DashboardOwner {...sharedProps} />;
     }
 
-    if (currentScreen === 'org-list') {
-      return <OrganizationList {...sharedProps} onUserRefresh={loadUser} />;
+    if (currentScreen === 'org-picker') {
+      return (
+        <OrgPickerScreen
+          user={currentUser}
+          onOrgSelected={() => { loadUser(); handleNavigate('dashboard'); }}
+          onLogout={handleLogout}
+          onBack={() => handleNavigate('dashboard')}
+        />
+      );
     }
 
     if (currentScreen === 'faculties') {
