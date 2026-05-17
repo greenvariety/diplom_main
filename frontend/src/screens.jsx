@@ -166,6 +166,10 @@ function OrganizationList({ currentUser, openModal, onNavigate, onUserRefresh })
   }
 
   const handleSwitch = (org) => {
+    if (org.active) {
+      setSelectedOrg(org);
+      return;
+    }
     api.post(`/organizations/${org.id}/switch/`).then(() => {
       setOrgs(prev => prev.map(o => ({ ...o, active: o.id === org.id })));
       onUserRefresh && onUserRefresh();
@@ -225,10 +229,8 @@ function OrganizationList({ currentUser, openModal, onNavigate, onUserRefresh })
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  {!org.active && (
-                    <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={() => handleSwitch(org)}>{I.swap}Перейти</button>
-                  )}
-                  <button className="btn btn-secondary btn-sm" style={org.active ? { flex: 1 } : {}} onClick={() => handleEdit(org)}>{I.pencil}Редактировать</button>
+                  <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={() => handleSwitch(org)}>{I.swap}Перейти</button>
+                  <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} onClick={() => handleEdit(org)}>{I.settings}Настроить</button>
                   {!org.active && (
                     <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDelete(org)} title="Удалить">{I.trash}</button>
                   )}
