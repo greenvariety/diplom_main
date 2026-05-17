@@ -152,7 +152,7 @@ function PasswordInput({ value, onChange, onFocus, onBlur, placeholder, autoComp
         className={`input ${hasError ? 'is-error' : ''} ${className || ''}`}
         type={show ? 'text' : 'password'}
         value={value || ''}
-        placeholder={placeholder || '••••••••'}
+        placeholder={placeholder || ''}
         autoComplete={autoComplete}
         onChange={(e) => onChange && onChange(e.target.value)}
         onFocus={onFocus}

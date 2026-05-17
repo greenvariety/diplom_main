@@ -153,7 +153,7 @@ function RegisterScreen({ onDone, onBack }) {
   else if (!/^[a-z0-9_]{3,20}$/.test(vals.login)) errs.login = 'Только латиница, цифры и _, 3–20 символов';
   if (!vals.name.trim()) errs.name = 'Укажите ФИО';
   else if (!/^[А-ЯЁа-яё\s\-]+$/.test(vals.name.trim())) errs.name = 'Только кириллица';
-  else if (vals.name.trim().split(/\s+/).filter(Boolean).length < 2) errs.name = 'Введите фамилию и имя (минимум 2 слова)';
+  else if (vals.name.trim().split(/\s+/).filter(Boolean).length !== 3) errs.name = 'Введите фамилию, имя и отчество (3 слова)';
   if (vals.pass) {
     if (vals.pass.length < 8) errs.pass = 'Минимум 8 символов';
     else if (!/\d/.test(vals.pass)) errs.pass = 'Нужна хотя бы одна цифра';
@@ -215,14 +215,24 @@ function RegisterScreen({ onDone, onBack }) {
               <p className="muted" style={{ marginBottom: 20, fontSize: 13 }}>После регистрации вы получите секретную сид-фразу. Она нужна для восстановления доступа к аккаунту. Запишите её и храните в безопасном месте.</p>
 
               <div className="form-grid">
-                <Field label="Логин" required error={touched.login && errs.login}>
+                <Field
+                  label="Логин" required
+                  error={touched.login && errs.login}
+                  hint={touched.login && vals.login && !errs.login ? 'Доступен только вам' : null}
+                  success={!!(touched.login && vals.login && !errs.login)}
+                >
                   <input className={`input ${touched.login && errs.login ? 'is-error' : ''}`}
                     value={vals.login}
                     onChange={e => set('login', e.target.value)}
                     onBlur={() => setTouched(t => ({ ...t, login: 1 }))}
                   />
                 </Field>
-                <Field label="ФИО" required error={touched.name && errs.name}>
+                <Field
+                  label="ФИО" required
+                  error={touched.name && errs.name}
+                  hint={touched.name && vals.name && !errs.name ? 'Отображается в системе' : null}
+                  success={!!(touched.name && vals.name && !errs.name)}
+                >
                   <input className={`input ${touched.name && errs.name ? 'is-error' : ''}`}
                     value={vals.name}
                     onChange={e => set('name', e.target.value)}
