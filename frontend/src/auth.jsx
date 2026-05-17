@@ -71,7 +71,14 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
               <input
                 className={`input ${touched.user && errs.user ? 'is-error' : ''}`}
                 value={user}
-                onChange={e => setUser(e.target.value.replace(/[А-ЯЁа-яё]/g, ''))}
+                onChange={e => setUser(e.target.value)}
+                onKeyDown={e => { if (e.key.length === 1 && /[А-ЯЁа-яё]/i.test(e.key)) e.preventDefault(); }}
+                onPaste={e => {
+                  e.preventDefault();
+                  const inp = e.target;
+                  const clean = (e.clipboardData.getData('text') || '').replace(/[А-ЯЁа-яё]/g, '');
+                  setUser(inp.value.slice(0, inp.selectionStart) + clean + inp.value.slice(inp.selectionEnd));
+                }}
                 onBlur={() => onBlur('user')}
                 autoComplete="username"
               />
@@ -205,7 +212,14 @@ function RegisterScreen({ onDone, onBack }) {
                 >
                   <input className={`input ${touched.name && errs.name ? 'is-error' : ''}`}
                     value={vals.name}
-                    onChange={e => set('name', e.target.value.replace(/[A-Za-z]/g, ''))}
+                    onChange={e => set('name', e.target.value)}
+                    onKeyDown={e => { if (e.key.length === 1 && /[A-Za-z]/.test(e.key)) e.preventDefault(); }}
+                    onPaste={e => {
+                      e.preventDefault();
+                      const inp = e.target;
+                      const clean = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, '');
+                      set('name', inp.value.slice(0, inp.selectionStart) + clean + inp.value.slice(inp.selectionEnd));
+                    }}
                     onBlur={() => setTouched(t => ({ ...t, name: 1 }))}
                   />
                 </Field>
