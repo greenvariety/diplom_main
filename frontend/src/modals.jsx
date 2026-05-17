@@ -1407,10 +1407,10 @@ function OrgDeleteConfirmModal({ data, onClose }) {
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <Field label="Пароль" required>
-            <PasswordInput value={p1} onChange={setP1} onPaste={blockPaste} autoComplete="off" placeholder="Введите вручную" hasError={shake && !p1} />
+            <PasswordInput value={p1} onChange={setP1} onPaste={blockPaste} autoComplete="off" hasError={shake && !p1} />
           </Field>
           <Field label="Повторите пароль" required error={p2 && p1 !== p2 ? 'Не совпадает' : null} success={p2 && p1 === p2}>
-            <PasswordInput value={p2} onChange={setP2} onPaste={blockPaste} autoComplete="off" placeholder="Повторите вручную" hasError={shake && (!p2 || p1 !== p2)} />
+            <PasswordInput value={p2} onChange={setP2} onPaste={blockPaste} autoComplete="off" hasError={shake && (!p2 || p1 !== p2)} />
           </Field>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, marginBottom: 8 }}>
