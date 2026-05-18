@@ -11,9 +11,9 @@ class Institution(models.Model):
         'User', on_delete=models.CASCADE, null=True, blank=True,
         related_name='institutions', verbose_name='Владелец'
     )
-    code = models.CharField(max_length=20, verbose_name='Код')
-    name = models.CharField(max_length=255, verbose_name='Полное название')
-    description = models.TextField(blank=True, verbose_name='Описание')
+    code = models.CharField(max_length=50, verbose_name='Код')
+    name = models.CharField(max_length=1000, verbose_name='Полное название')
+    description = models.TextField(max_length=5000, blank=True, verbose_name='Описание')
     photo = models.ImageField(upload_to='institutions/', null=True, blank=True, verbose_name='Фото')
     founded_date = models.DateField(null=True, blank=True, verbose_name='Дата основания')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата добавления в систему')

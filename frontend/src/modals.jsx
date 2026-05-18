@@ -1385,6 +1385,7 @@ function OrgFormModal({ data, onClose }) {
             onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); const next = name + t; setName(next); if (!codeManual) setCode(autoCode(next)); clearErr('name'); }}
             onChange={e => { const next = e.target.value; setName(next); if (!codeManual) setCode(autoCode(next)); clearErr('name'); }}
             onFocus={() => touch('name')}
+            maxLength={1000}
           />
         </Field>
         <Field label="Код организации" hint={touched.code ? 'Если не указать - сгенерируется автоматически' : null}>
@@ -1392,10 +1393,10 @@ function OrgFormModal({ data, onClose }) {
             className="input"
             value={code}
             onBeforeInput={e => { if (e.data && /[A-Za-z\s]/.test(e.data)) e.preventDefault(); }}
-            onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z\s]/g, '').toUpperCase(); setCode(prev => (prev + t).slice(0, 20)); setCodeManual(true); }}
+            onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z\s]/g, '').toUpperCase(); setCode(prev => (prev + t).slice(0, 50)); setCodeManual(true); }}
             onChange={e => { setCode(e.target.value.toUpperCase()); setCodeManual(true); }}
             onFocus={() => touch('code')}
-            maxLength={20}
+            maxLength={50}
           />
         </Field>
         <Field label="Дата основания" required error={errs.date}>
@@ -1412,9 +1413,10 @@ function OrgFormModal({ data, onClose }) {
             rows={4}
             value={description}
             onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }}
-            onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); setDescription(prev => prev + t); }}
+            onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); setDescription(prev => (prev + t).slice(0, 5000)); }}
             onChange={e => setDescription(e.target.value)}
             onFocus={() => touch('description')}
+            maxLength={5000}
             style={{ resize: 'none' }}
           />
         </Field>
