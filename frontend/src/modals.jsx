@@ -1328,98 +1328,78 @@ function OrgFormModal({ data, onClose }) {
         <LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton>
       </>}
     >
-      <div style={{ display: 'flex', gap: 20 }}>
-        {/* Левая колонка — фото */}
-        <div style={{ flexShrink: 0, width: 160 }}>
-          <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', marginBottom: 6 }}>Фото организации</div>
-          <div
-            onClick={() => fileRef.current?.click()}
-            onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={e => { e.preventDefault(); setDragOver(false); handlePhoto(e.dataTransfer.files[0]); }}
-            style={{
-              width: 160, height: 160, borderRadius: 10,
-              border: dragOver ? '2px solid var(--accent)' : '2px dashed var(--border)',
-              background: dragOver ? 'var(--accent-soft)' : 'var(--surface-alt)',
-              cursor: 'pointer', overflow: 'hidden', position: 'relative',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              transition: 'border-color .15s, background .15s',
-            }}
-          >
-            {photoPreview ? (
-              <>
-                <img src={photoPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <button
-                  onClick={removePhoto}
-                  style={{
-                    position: 'absolute', top: 6, right: 6,
-                    width: 22, height: 22, borderRadius: '50%',
-                    background: 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer',
-                    color: '#fff', fontSize: 12, display: 'grid', placeItems: 'center',
-                  }}
-                  title="Удалить фото"
-                >{I.x}</button>
-              </>
-            ) : (
-              <div style={{ textAlign: 'center', padding: 12, pointerEvents: 'none' }}>
-                <div style={{ fontSize: 28, marginBottom: 6, opacity: 0.35 }}>🖼</div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.4 }}>
-                  Нажмите или перетащите фото
-                </div>
-              </div>
-            )}
+      {/* Полоса фото */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 14px', background: 'var(--surface-alt)', borderRadius: 8, marginBottom: 16 }}>
+        <div
+          onClick={() => fileRef.current?.click()}
+          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={e => { e.preventDefault(); setDragOver(false); handlePhoto(e.dataTransfer.files[0]); }}
+          style={{
+            width: 72, height: 72, borderRadius: 8, flexShrink: 0,
+            border: dragOver ? '2px solid var(--accent)' : '2px dashed var(--border)',
+            background: dragOver ? 'var(--accent-soft)' : 'var(--surface)',
+            cursor: 'pointer', overflow: 'hidden', position: 'relative',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'border-color .15s, background .15s',
+          }}
+        >
+          {photoPreview
+            ? <img src={photoPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : <span style={{ fontSize: 24, opacity: 0.3 }}>🖼</span>
+          }
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 500, fontSize: 13, marginBottom: 2 }}>Фото организации</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+            {photoPreview ? 'Нажмите на квадрат, чтобы заменить фото' : 'Нажмите на квадрат или перетащите изображение'}
           </div>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            style={{ display: 'none' }}
-            onChange={e => handlePhoto(e.target.files[0])}
-          />
           {photoPreview && (
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6, textAlign: 'center' }}>
-              Нажмите на фото, чтобы заменить
-            </div>
+            <button
+              onClick={removePhoto}
+              style={{ marginTop: 6, fontSize: 11, color: 'var(--bad-fg)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            >
+              Удалить фото
+            </button>
           )}
         </div>
+        <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handlePhoto(e.target.files[0])} />
+      </div>
 
-        {/* Правая колонка — поля */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <Field label="Название организации" required error={err}>
-            <input
-              className="input"
-              value={name}
-              onChange={e => { setName(e.target.value); setErr(''); }}
-            />
-          </Field>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            <Field label="Код организации" hint="Автоматически, если не указан">
-              <input
-                className="input"
-                value={code}
-                onChange={e => setCode(e.target.value.toUpperCase())}
-                maxLength={20}
-              />
-            </Field>
-            <Field label="Дата основания">
-              <input
-                className="input"
-                type="date"
-                value={foundedDate}
-                onChange={e => setFoundedDate(e.target.value)}
-              />
-            </Field>
-          </div>
-          <Field label="Описание">
-            <textarea
-              className="input"
-              rows={4}
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              style={{ resize: 'vertical' }}
-            />
-          </Field>
-        </div>
+      {/* Поля */}
+      <div className="form-grid">
+        <Field label="Название организации" required error={err} extraClass="field-full">
+          <input
+            className="input"
+            value={name}
+            onChange={e => { setName(e.target.value); setErr(''); }}
+          />
+        </Field>
+        <Field label="Код организации" hint="Автоматически, если не указан">
+          <input
+            className="input"
+            value={code}
+            onChange={e => setCode(e.target.value.toUpperCase())}
+            maxLength={20}
+          />
+        </Field>
+        <Field label="Дата основания">
+          <input
+            className="input"
+            type="date"
+            value={foundedDate}
+            onChange={e => setFoundedDate(e.target.value)}
+          />
+        </Field>
+        <Field label="Описание" extraClass="field-full">
+          <textarea
+            className="input"
+            rows={4}
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            style={{ resize: 'none' }}
+          />
+        </Field>
       </div>
     </Modal>
   );
