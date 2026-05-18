@@ -1284,11 +1284,28 @@ function OrgFormModal({ data, onClose }) {
   const [touched, setTouched] = useState({ name: false, code: false, description: false });
   const touch = (f) => setTouched(t => ({ ...t, [f]: true }));
 
+  const PHOTO_MAX_MB = 5;
+  const PHOTO_MAX_PX = 2000;
+
   const handlePhoto = (file) => {
     if (!file) return;
-    setPhoto(file);
+    if (file.size > PHOTO_MAX_MB * 1024 * 1024) {
+      toast.push(`Фото слишком большое - максимум ${PHOTO_MAX_MB} МБ`, { kind: 'err' });
+      return;
+    }
     const reader = new FileReader();
-    reader.onload = e => setPhotoPreview(e.target.result);
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        if (img.width > PHOTO_MAX_PX || img.height > PHOTO_MAX_PX) {
+          toast.push(`Размер фото превышает ${PHOTO_MAX_PX}x${PHOTO_MAX_PX} пикселей`, { kind: 'err' });
+          return;
+        }
+        setPhoto(file);
+        setPhotoPreview(ev.target.result);
+      };
+      img.src = ev.target.result;
+    };
     reader.readAsDataURL(file);
   };
 
@@ -1322,7 +1339,7 @@ function OrgFormModal({ data, onClose }) {
       }
       onClose && onClose();
     } catch (e) {
-      setErr(e.response?.data?.error || 'Ошибка при сохранении');
+      toast.push(e.response?.data?.error || 'Ошибка при сохранении', { kind: 'err' });
     }
   };
 
@@ -1362,6 +1379,9 @@ function OrgFormModal({ data, onClose }) {
           <div style={{ fontWeight: 500, fontSize: 13, marginBottom: 2 }}>Фото организации</div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
             {photoPreview ? 'Нажмите на квадрат, чтобы заменить фото' : 'Нажмите на квадрат или перетащите изображение'}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 3 }}>
+            Максимум 5 МБ, не более 2000x2000 пикселей
           </div>
           {photoPreview && (
             <button
