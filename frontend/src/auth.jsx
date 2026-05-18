@@ -125,7 +125,7 @@ function RegisterScreen({ onDone, onBack }) {
 
   const errs = {};
   if (!vals.login.trim()) errs.login = 'Введите логин';
-  else if (!/^[a-z0-9_]{3,20}$/.test(vals.login)) errs.login = 'Только латиница, цифры и _, 3–20 символов';
+  else if (!/^[a-z0-9_]{3,20}$/.test(vals.login)) errs.login = 'Только латиница, цифры и _, 3-20 символов';
   if (!vals.name.trim()) errs.name = 'Укажите ФИО';
   else if (!/^[А-ЯЁа-яё\s\-]+$/.test(vals.name.trim())) errs.name = 'Только кириллица';
   else if (vals.name.trim().split(/\s+/).filter(Boolean).length !== 3) errs.name = 'Введите фамилию, имя и отчество (3 слова)';

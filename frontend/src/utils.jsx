@@ -390,7 +390,7 @@ function Pager({ pager, total, sizes = [10, 25, 50, 100] }) {
         <select value={size} onChange={(e) => setSize(parseInt(e.target.value, 10))}>
           {sizes.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
-        <span>· {total === 0 ? '0' : `${start + 1}–${end}`} из {total}</span>
+        <span>· {total === 0 ? '0' : `${start + 1}-${end}`} из {total}</span>
       </div>
       <div className="pager-right">
         <button disabled={page === 0} onClick={() => setPage(0)} aria-label="Первая">«</button>

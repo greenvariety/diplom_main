@@ -1381,7 +1381,7 @@ function OrgFormModal({ data, onClose }) {
             onFocus={() => touch('name')}
           />
         </Field>
-        <Field label="Код организации" hint={touched.code ? 'Если не указать — сгенерируется автоматически' : null}>
+        <Field label="Код организации" hint={touched.code ? 'Если не указать - сгенерируется автоматически' : null}>
           <input
             className="input"
             value={code}
