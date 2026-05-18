@@ -1285,13 +1285,14 @@ function OrgFormModal({ data, onClose }) {
       if (foundedDate) fd.append('founded_date', foundedDate);
       if (photo) fd.append('photo', photo);
       if (isEdit) {
-        await api.patch(`/organizations/${org.id}/`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        const r = await api.patch(`/organizations/${org.id}/`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
         toast.push('Организация обновлена', { kind: 'ok' });
+        onDone && onDone(r.data);
       } else {
-        await api.post('/organizations/', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        const r = await api.post('/organizations/', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
         toast.push('Организация создана', { kind: 'ok' });
+        onDone && onDone(r.data);
       }
-      onDone && onDone();
       onClose && onClose();
     } catch (e) {
       setErr(e.response?.data?.error || 'Ошибка при сохранении');

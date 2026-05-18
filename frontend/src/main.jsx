@@ -54,11 +54,7 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout, onBack }) {
   const toast = useToast();
   const [orgs, setOrgs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showCreate, setShowCreate] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [editName, setEditName] = useState('');
+  const [orgModal, setOrgModal] = useState(null); // null | { org?, onDone }
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const load = () => {
@@ -82,32 +78,26 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout, onBack }) {
     }
   };
 
-  const createOrg = async () => {
-    if (!newName.trim()) { toast.push('Введите название организации', { kind: 'err' }); return; }
-    setSubmitting(true);
-    try {
-      const res = await api.post('/organizations/', { name: newName.trim() });
-      await api.post(`/organizations/${res.data.id}/switch/`);
-      toast.push(`Организация «${res.data.name}» создана`, { kind: 'ok' });
-      onOrgSelected();
-    } catch (err) {
-      toast.push(err.response?.data?.error || 'Ошибка создания', { kind: 'err' });
-      setSubmitting(false);
-    }
+  const openCreate = () => {
+    setOrgModal({
+      org: null,
+      onDone: async (newOrg) => {
+        setOrgModal(null);
+        try {
+          await api.post(`/organizations/${newOrg.id}/switch/`);
+          onOrgSelected();
+        } catch {
+          load();
+        }
+      },
+    });
   };
 
-  const startEdit = (org) => { setEditingId(org.id); setEditName(org.name); };
-
-  const saveEdit = async (orgId) => {
-    if (!editName.trim()) { toast.push('Введите название', { kind: 'err' }); return; }
-    try {
-      await api.patch(`/organizations/${orgId}/`, { name: editName.trim() });
-      toast.push('Название обновлено', { kind: 'ok' });
-      setEditingId(null);
-      load();
-    } catch (err) {
-      toast.push(err.response?.data?.error || 'Ошибка', { kind: 'err' });
-    }
+  const openEdit = (org) => {
+    setOrgModal({
+      org,
+      onDone: () => { setOrgModal(null); load(); },
+    });
   };
 
   const deleteOrg = (org) => { setDeleteTarget(org); };
@@ -204,73 +194,37 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout, onBack }) {
           {orgs.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
               {orgs.map(org => (
-                <div key={org.id}>
-                  {editingId === org.id ? (
-                    <div style={{ background: 'var(--surface-alt)', borderRadius: 8, padding: 12, border: '1px solid var(--accent)' }}>
-                      <div style={{ fontWeight: 600, fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>Редактирование: {org.code}</div>
-                      <input
-                        className="input"
-                        value={editName}
-                        onChange={e => setEditName(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') saveEdit(org.id); if (e.key === 'Escape') setEditingId(null); }}
-                        autoFocus
-                      />
-                      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                        <button className="btn btn-secondary btn-sm" onClick={() => setEditingId(null)}>Отмена</button>
-                        <button className="btn btn-primary btn-sm" onClick={() => saveEdit(org.id)}>{I.check} Сохранить</button>
-                      </div>
+                <div key={org.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: org.active ? 'var(--accent-soft)' : 'var(--surface-alt)', border: `1px solid ${org.active ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 8 }}>
+                  <div style={{ width: 34, height: 34, borderRadius: 6, background: org.active ? 'var(--accent)' : 'var(--surface)', color: org.active ? '#fff' : 'var(--text-muted)', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 10, flexShrink: 0, border: '1px solid var(--border)', overflow: 'hidden' }}>
+                    {org.photo
+                      ? <img src={org.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : org.code}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text)' }}>{org.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>
+                      {org.students} студ. · {org.employees} сотр.{org.founded_date ? ` · Основана: ${org.founded_date}` : ''}
+                      {org.active && <span style={{ color: 'var(--accent)', fontWeight: 600, marginLeft: 6 }}>· активна</span>}
                     </div>
-                  ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: org.active ? 'var(--accent-soft)' : 'var(--surface-alt)', border: `1px solid ${org.active ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 8 }}>
-                      <div style={{ width: 34, height: 34, borderRadius: 6, background: org.active ? 'var(--accent)' : 'var(--surface)', color: org.active ? '#fff' : 'var(--text-muted)', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 10, flexShrink: 0, border: '1px solid var(--border)' }}>
-                        {org.code}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text)' }}>{org.name}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>
-                          {org.students} студ. · {org.employees} сотр. · {org.created_at}
-                          {org.active && <span style={{ color: 'var(--accent)', fontWeight: 600, marginLeft: 6 }}>· активна</span>}
-                        </div>
-                      </div>
-                      <button
-                        className="btn btn-primary btn-sm"
-                        style={{ fontSize: 11, padding: '4px 10px', flexShrink: 0 }}
-                        onClick={() => pickOrg(org.id, org.name, org.active)}
-                      >
-                        {org.active ? I.check : I.swap}
-                        {org.active ? 'Войти' : 'Выбрать'}
-                      </button>
-                      <button className="btn btn-ghost btn-icon btn-sm" onClick={() => startEdit(org)} title="Переименовать">{I.pencil}</button>
-                      <button className="btn btn-ghost btn-icon btn-sm" onClick={() => deleteOrg(org)} title="Удалить организацию" style={{ color: 'var(--bad-fg)' }}>{I.trash}</button>
-                    </div>
-                  )}
+                  </div>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    style={{ fontSize: 11, padding: '4px 10px', flexShrink: 0 }}
+                    onClick={() => pickOrg(org.id, org.name, org.active)}
+                  >
+                    {org.active ? I.check : I.swap}
+                    {org.active ? 'Войти' : 'Выбрать'}
+                  </button>
+                  <button className="btn btn-ghost btn-icon btn-sm" onClick={() => openEdit(org)} title="Редактировать">{I.pencil}</button>
+                  <button className="btn btn-ghost btn-icon btn-sm" onClick={() => deleteOrg(org)} title="Удалить организацию" style={{ color: 'var(--bad-fg)' }}>{I.trash}</button>
                 </div>
               ))}
             </div>
           )}
 
-          {showCreate ? (
-            <div style={{ background: 'var(--surface-alt)', borderRadius: 8, padding: 14, border: '1px solid var(--border)' }}>
-              <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 10 }}>Новая организация</div>
-              <input
-                className="input"
-                value={newName}
-                onChange={e => setNewName(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && !submitting && createOrg()}
-                autoFocus
-              />
-              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                <button className="btn btn-secondary btn-sm" onClick={() => { setShowCreate(false); setNewName(''); }}>Отмена</button>
-                <LoadButton className="btn btn-primary btn-sm" onClick={createOrg}>
-                  {I.check} Создать
-                </LoadButton>
-              </div>
-            </div>
-          ) : (
-            <button className="btn btn-primary" onClick={() => setShowCreate(true)} style={{ width: '100%', justifyContent: 'center' }}>
-              {I.plus} Создать организацию
-            </button>
-          )}
+          <button className="btn btn-primary" onClick={openCreate} style={{ width: '100%', justifyContent: 'center' }}>
+            {I.plus} Создать организацию
+          </button>
         </div>
         {footer}
       </div>
@@ -278,6 +232,12 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout, onBack }) {
         <OrgDeleteConfirmModal
           data={{ org: deleteTarget, onDone: (id) => setOrgs(prev => prev.filter(o => o.id !== id)) }}
           onClose={() => setDeleteTarget(null)}
+        />
+      )}
+      {orgModal && (
+        <OrgFormModal
+          data={{ org: orgModal.org, onDone: orgModal.onDone }}
+          onClose={() => setOrgModal(null)}
         />
       )}
     </div>
