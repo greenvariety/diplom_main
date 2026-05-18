@@ -1393,7 +1393,7 @@ function OrgFormModal({ data, onClose }) {
         </Field>
         <Field label="Описание" extraClass="field-full">
           <textarea
-            className="input"
+            className="textarea"
             rows={4}
             value={description}
             onChange={e => setDescription(e.target.value)}
