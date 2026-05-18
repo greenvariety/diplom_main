@@ -2,9 +2,8 @@ from django.core.management.base import BaseCommand
 from datetime import date
 from core.models import (
     Institution, Faculty, Position, Employee, Group, Student, Parent,
-    StudentParent, Subject, GroupSubjectEmployee, User, SeedPhrase,
+    StudentParent, Subject, GroupSubjectEmployee, User, EmailCode,
 )
-from core.utils import generate_seed_phrase, hash_seed_phrase
 
 
 class Command(BaseCommand):
@@ -23,17 +22,15 @@ class Command(BaseCommand):
         Subject.objects.all().delete()
         User.objects.filter(role__in=['admin', 'teacher']).delete()
         Institution.objects.all().delete()
-        SeedPhrase.objects.all().delete()
+        EmailCode.objects.all().delete()
         User.objects.filter(role='owner').delete()
 
         # --- Owner ---
         owner = User.objects.create_user(
-            username='owner1', password='demo_1234', role='owner', display_name='Владелец Demo'
+            username='owner1', password='demo_1234', role='owner',
+            display_name='Владелец Demo', email='owner1@demo.ru',
         )
-        phrase = generate_seed_phrase()
-        SeedPhrase.objects.create(user=owner, phrase_hash=hash_seed_phrase(phrase))
-        self.stdout.write(f'  Владелец: owner1 / demo_1234')
-        self.stdout.write(f'  Сид-фраза owner1: {phrase}')
+        self.stdout.write(f'  Владелец: owner1 / demo_1234 (email: owner1@demo.ru)')
 
         inst = Institution.objects.create(owner=owner, code='КОЛЛЕДЖ1', name='Колледж №1')
         inst2 = Institution.objects.create(owner=owner, code='КОЛЛЕДЖ2', name='Колледж №2')

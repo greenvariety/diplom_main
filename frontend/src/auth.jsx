@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { I } from './data.jsx';
 import { useToast, PasswordRules, PasswordStrength, PasswordInput, Field, LoadButton, pwStrength } from './utils.jsx';
@@ -103,7 +103,7 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginTop: 10 }}>
             <a href="#" onClick={e => { e.preventDefault(); onRegister && onRegister(); }} style={{ color: 'var(--accent)', fontWeight: 500 }}>Зарегистрироваться</a>
-            <a href="#" onClick={e => { e.preventDefault(); onRecover && onRecover(); }} style={{ color: 'var(--text-muted)' }}>Восстановить через сид-фразу</a>
+            <a href="#" onClick={e => { e.preventDefault(); onRecover && onRecover(); }} style={{ color: 'var(--text-muted)' }}>Забыли пароль?</a>
           </div>
 
         </form>
@@ -117,7 +117,7 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
    ============================================================ */
 function RegisterScreen({ onDone, onBack }) {
   const toast = useToast();
-  const [vals, setVals] = useState({ login: '', name: '', pass: '', pass2: '' });
+  const [vals, setVals] = useState({ login: '', name: '', email: '', pass: '', pass2: '' });
   const [touched, setTouched] = useState({});
   const [pwFocus, setPwFocus] = useState(false);
   const [pw2Touched, setPw2Touched] = useState(false);
@@ -129,6 +129,8 @@ function RegisterScreen({ onDone, onBack }) {
   if (!vals.name.trim()) errs.name = 'Укажите ФИО';
   else if (!/^[А-ЯЁа-яё\s\-]+$/.test(vals.name.trim())) errs.name = 'Только кириллица';
   else if (vals.name.trim().split(/\s+/).filter(Boolean).length !== 3) errs.name = 'Введите фамилию, имя и отчество (3 слова)';
+  if (!vals.email.trim()) errs.email = 'Введите email';
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(vals.email.trim())) errs.email = 'Некорректный email';
   if (vals.pass) {
     if (vals.pass.length < 8) errs.pass = 'Минимум 8 символов';
     else if (!/\d/.test(vals.pass)) errs.pass = 'Нужна хотя бы одна цифра';
@@ -142,16 +144,13 @@ function RegisterScreen({ onDone, onBack }) {
     const full = {
       ...(!vals.login.trim() ? { login: 'Введите логин' } : {}),
       ...(!vals.name.trim() ? { name: 'Введите ФИО' } : {}),
+      ...(!vals.email.trim() ? { email: 'Введите email' } : {}),
       ...(!vals.pass ? { pass: 'Введите пароль' } : {}),
-      ...(vals.pass && vals.pass.length < 8 ? { pass: 'Минимум 8 символов' } : {}),
-      ...(vals.pass && !/\d/.test(vals.pass) ? { pass: 'Нужна хотя бы одна цифра' } : {}),
-      ...(vals.pass && !/[A-Za-z]/.test(vals.pass) ? { pass: 'Нужна хотя бы одна латинская буква' } : {}),
-      ...(vals.pass && !/[_\-!@#$%^&*+.,;:?]/.test(vals.pass) ? { pass: 'Нужен спецсимвол' } : {}),
       ...(!vals.pass2 ? { pass2: 'Повторите пароль' } : {}),
       ...(vals.pass && vals.pass2 && vals.pass !== vals.pass2 ? { pass2: 'Пароли не совпадают' } : {}),
     };
-    setTouched({ login: 1, name: 1, pass: 1, pass2: 1 });
-    if (Object.keys(full).length) {
+    setTouched({ login: 1, name: 1, email: 1, pass: 1, pass2: 1 });
+    if (Object.keys(full).length || Object.keys(errs).length) {
       toast.push('Исправьте ошибки в форме', { kind: 'err' });
       return;
     }
@@ -159,12 +158,11 @@ function RegisterScreen({ onDone, onBack }) {
       const res = await axios.post('/api/auth/register/', {
         login: vals.login,
         name: vals.name,
+        email: vals.email,
         pass: vals.pass,
       });
-      localStorage.setItem('access_token', res.data.access);
-      localStorage.setItem('refresh_token', res.data.refresh);
-      toast.push('Аккаунт создан. Сохраните сид-фразу!', { kind: 'ok' });
-      onDone && onDone(res.data.seed_phrase);
+      toast.push('Код отправлен на почту', { kind: 'ok' });
+      onDone && onDone({ maskedEmail: res.data.masked_email, login: vals.login });
     } catch (err) {
       const msg = err.response?.data?.error || 'Ошибка регистрации';
       toast.push(msg, { kind: 'err' });
@@ -183,13 +181,13 @@ function RegisterScreen({ onDone, onBack }) {
           <div className="steps" style={{ justifyContent: 'center' }}>
             <div className="step is-active"><div className="step-num">1</div>Данные аккаунта</div>
             <div className="step-bar"></div>
-            <div className="step"><div className="step-num">2</div>Сид-фраза</div>
+            <div className="step"><div className="step-num">2</div>Подтверждение Email</div>
           </div>
 
           <div className="card">
             <div className="card-body" style={{ padding: 28 }}>
               <h2 style={{ marginBottom: 6 }}>Создание аккаунта владельца</h2>
-              <p className="muted" style={{ marginBottom: 20, fontSize: 13 }}>После регистрации вы получите секретную сид-фразу. Она нужна для восстановления доступа к аккаунту. Запишите её и храните в безопасном месте.</p>
+              <p className="muted" style={{ marginBottom: 20, fontSize: 13 }}>После заполнения формы мы отправим 6-значный код на вашу почту для подтверждения.</p>
 
               <div className="form-grid">
                 <Field
@@ -225,6 +223,25 @@ function RegisterScreen({ onDone, onBack }) {
                 </Field>
 
                 <div className="field field-full">
+                  <label className="field-label">Email<span className="req">*</span></label>
+                  <input
+                    className={`input ${touched.email && errs.email ? 'is-error' : ''}`}
+                    type="email"
+                    value={vals.email}
+                    onChange={e => set('email', e.target.value)}
+                    onBlur={() => setTouched(t => ({ ...t, email: 1 }))}
+                    placeholder="example@mail.ru"
+                    autoComplete="email"
+                  />
+                  {touched.email && errs.email && (
+                    <div className="field-error">{I.alert}{errs.email}</div>
+                  )}
+                  {touched.email && vals.email && !errs.email && (
+                    <div className="field-hint">На этот адрес придёт код подтверждения</div>
+                  )}
+                </div>
+
+                <div className="field field-full">
                   <label className="field-label">Пароль<span className="req">*</span></label>
                   <PasswordInput
                     value={vals.pass}
@@ -256,7 +273,7 @@ function RegisterScreen({ onDone, onBack }) {
             <div className="modal-foot">
               <button className="btn btn-secondary" onClick={() => onBack && onBack()}>{I.back}Войти</button>
               <div style={{ flex: 1 }}></div>
-              <LoadButton className="btn btn-primary" onClick={submit}>Зарегистрироваться {I.chevr}</LoadButton>
+              <LoadButton className="btn btn-primary" onClick={submit}>Далее {I.chevr}</LoadButton>
             </div>
           </div>
         </div>
@@ -266,26 +283,42 @@ function RegisterScreen({ onDone, onBack }) {
 }
 
 /* ============================================================
-   SeedPhraseScreen
+   EmailVerifyScreen
    ============================================================ */
-function SeedPhraseScreen({ seedWords = [], onDone }) {
+function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
   const toast = useToast();
-  const [confirmed, setConfirmed] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [code, setCode] = useState('');
+  const [touched, setTouched] = useState(false);
 
-  const doCopy = async () => {
+  const submit = async () => {
+    setTouched(true);
+    if (code.trim().length !== 6) {
+      toast.push('Введите 6-значный код', { kind: 'err' });
+      return;
+    }
     try {
-      await navigator.clipboard.writeText(seedWords.join(' '));
-    } catch {}
-    setCopied(true);
-    toast.push('Сид-фраза скопирована в буфер', { kind: 'ok' });
-    setTimeout(() => setCopied(false), 2000);
+      const res = await axios.post('/api/auth/verify-email/', {
+        login,
+        code: code.trim().toUpperCase(),
+      });
+      localStorage.setItem('access_token', res.data.access);
+      localStorage.setItem('refresh_token', res.data.refresh);
+      toast.push('Регистрация завершена!', { kind: 'ok' });
+      onDone && onDone(res.data.user);
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Неверный код';
+      toast.push(msg, { kind: 'err' });
+    }
+  };
+
+  const resend = async () => {
+    toast.push('Для повторной отправки вернитесь на шаг регистрации', { kind: 'warn' });
   };
 
   return (
     <div className="login-wrap" style={{ gridTemplateColumns: '1fr' }}>
       <div className="login-form-wrap screen-fade-in" style={{ padding: '40px 24px' }}>
-        <div style={{ width: '100%', maxWidth: 560 }}>
+        <div style={{ width: '100%', maxWidth: 520 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, justifyContent: 'center' }}>
             <img src="/logo.png" style={{ width: 36, height: 36, objectFit: 'contain', borderRadius: '50%' }} alt="" />
             <div style={{ fontWeight: 600 }}>АИСК</div>
@@ -294,38 +327,39 @@ function SeedPhraseScreen({ seedWords = [], onDone }) {
           <div className="steps" style={{ justifyContent: 'center' }}>
             <div className="step is-done"><div className="step-num">{I.check}</div>Данные аккаунта</div>
             <div className="step-bar"></div>
-            <div className="step is-active"><div className="step-num">2</div>Сид-фраза</div>
+            <div className="step is-active"><div className="step-num">2</div>Подтверждение Email</div>
           </div>
 
           <div className="card">
             <div className="card-body" style={{ padding: 28 }}>
-              <h2 style={{ marginBottom: 6 }}>Запишите секретную фразу</h2>
-              <p className="muted" style={{ marginBottom: 20, fontSize: 13 }}>Эти 12 слов показываются один раз. Потеря фразы означает полную потерю доступа к аккаунту.</p>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                <div></div>
-                <button className="btn btn-secondary btn-sm" onClick={doCopy} style={{ minWidth: 130 }}>
-                  {copied
-                    ? <>{I.check}Скопировано</>
-                    : <><svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Скопировать</>
-                  }
-                </button>
+              <h2 style={{ marginBottom: 6 }}>Подтвердите email</h2>
+              <p className="muted" style={{ marginBottom: 20, fontSize: 13 }}>
+                Мы отправили 6-значный код на адрес <strong>{maskedEmail}</strong>. Введите его ниже. Код действителен 15 минут.
+              </p>
+
+              <Field label="Код подтверждения" required error={touched && code.trim().length !== 6 && code !== '' ? 'Код должен содержать 6 символов' : null}>
+                <input
+                  className={`input ${touched && code.trim().length !== 6 && code !== '' ? 'is-error' : ''}`}
+                  value={code}
+                  onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
+                  placeholder="XXXXXX"
+                  style={{ fontFamily: 'var(--font-mono)', fontSize: 22, letterSpacing: '0.25em', textAlign: 'center', maxWidth: 200 }}
+                  autoComplete="one-time-code"
+                  autoFocus
+                />
+              </Field>
+
+              <div style={{ marginTop: 12, fontSize: 13, color: 'var(--text-muted)' }}>
+                Не пришёл код?{' '}
+                <a href="#" onClick={e => { e.preventDefault(); onBack && onBack(); }} style={{ color: 'var(--accent)' }}>
+                  Вернуться и отправить снова
+                </a>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 20 }}>
-                {seedWords.map((w, i) => (
-                  <div key={i} className="seed-tile">
-                    <span className="num">{String(i + 1).padStart(2, '0')}</span>
-                    <span className="word">{w}</span>
-                  </div>
-                ))}
-              </div>
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, cursor: 'pointer' }}>
-                <input type="checkbox" style={{ marginTop: 2 }} checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />
-                <span>Я сохранил(а) фразу в надёжном месте и принимаю все риски потери доступа.</span>
-              </label>
             </div>
             <div className="modal-foot">
+              <button className="btn btn-secondary" onClick={() => onBack && onBack()}>{I.back}Назад</button>
               <div style={{ flex: 1 }}></div>
-              <button className="btn btn-primary" disabled={!confirmed} onClick={() => { toast.push('Регистрация завершена', { kind: 'ok' }); onDone && onDone(); }} style={{ opacity: confirmed ? 1 : 0.55, transition: 'opacity .2s' }}>Продолжить {I.chevr}</button>
+              <LoadButton className="btn btn-primary" onClick={submit}>{I.check}Подтвердить</LoadButton>
             </div>
           </div>
         </div>
@@ -335,27 +369,45 @@ function SeedPhraseScreen({ seedWords = [], onDone }) {
 }
 
 /* ============================================================
-   RecoverPasswordScreen
+   RecoverPasswordScreen - 2 шага: запрос кода + ввод кода
    ============================================================ */
 function RecoverPasswordScreen({ onBack, onDone }) {
   const toast = useToast();
+  const [step, setStep] = useState(1);
   const [login, setLogin] = useState('');
-  const [words, setWords] = useState(Array(12).fill(''));
+  const [maskedEmail, setMaskedEmail] = useState('');
+  const [code, setCode] = useState('');
   const [p1, setP1] = useState('');
   const [p2, setP2] = useState('');
   const [touched, setTouched] = useState({});
-  const filled = words.filter(Boolean).length;
+
+  const sendCode = async () => {
+    setTouched({ all: 1 });
+    if (!login.trim()) {
+      toast.push('Введите логин', { kind: 'err' });
+      return;
+    }
+    try {
+      const res = await axios.post('/api/auth/recover/send-code/', { login: login.trim() });
+      setMaskedEmail(res.data.masked_email);
+      setStep(2);
+      toast.push('Код отправлен на почту', { kind: 'ok' });
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Ошибка отправки кода';
+      toast.push(msg, { kind: 'err' });
+    }
+  };
 
   const submit = async () => {
     setTouched({ all: 1 });
-    if (!login.trim() || filled < 12 || pwStrength(p1) < 3 || p1 !== p2) {
-      toast.push('Заполните логин, все 12 слов и пароль', { kind: 'err' });
+    if (code.trim().length !== 6 || pwStrength(p1) < 3 || p1 !== p2) {
+      toast.push('Заполните код и пароль', { kind: 'err' });
       return;
     }
     try {
       const res = await axios.post('/api/auth/recover/', {
         login: login.trim(),
-        seed_words: words,
+        code: code.trim().toUpperCase(),
         new_password: p1,
       });
       localStorage.setItem('access_token', res.data.access);
@@ -371,54 +423,82 @@ function RecoverPasswordScreen({ onBack, onDone }) {
   return (
     <div className="login-wrap" style={{ gridTemplateColumns: '1fr' }}>
       <div className="login-form-wrap screen-fade-in" style={{ padding: '40px 24px' }}>
-        <div style={{ width: '100%', maxWidth: 560 }}>
+        <div style={{ width: '100%', maxWidth: 520 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, justifyContent: 'center' }}>
             <img src="/logo.png" style={{ width: 36, height: 36, objectFit: 'contain', borderRadius: '50%' }} alt="" />
             <div style={{ fontWeight: 600 }}>АИСК</div>
           </div>
-          <div className="card">
-            <div className="card-body" style={{ padding: 28 }}>
-              <h2 style={{ marginBottom: 6 }}>Восстановление пароля</h2>
-              <p className="muted" style={{ marginBottom: 20, fontSize: 13 }}>Введите логин и все 12 слов вашей сид-фразы, затем задайте новый пароль.</p>
 
-              <Field label="Логин" required error={touched.all && !login.trim() ? 'Введите логин' : null}>
-                <input className={`input ${touched.all && !login.trim() ? 'is-error' : ''}`} value={login} onChange={e => setLogin(e.target.value)} />
-              </Field>
+          {step === 1 ? (
+            <div className="card">
+              <div className="card-body" style={{ padding: 28 }}>
+                <h2 style={{ marginBottom: 6 }}>Восстановление пароля</h2>
+                <p className="muted" style={{ marginBottom: 20, fontSize: 13 }}>Введите ваш логин. Мы отправим код восстановления на привязанный email.</p>
 
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, marginBottom: 8 }}>
-                <div className="form-section-title" style={{ margin: 0 }}>Сид-фраза</div>
-                <span className="muted" style={{ fontSize: 12 }}>{filled} / 12 введено</span>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, marginBottom: 16 }}>
-                {words.map((w, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 11, color: 'var(--text-faint)', minWidth: 20, fontFamily: 'var(--font-mono)' }}>{String(i + 1).padStart(2, '0')}.</span>
-                    <input className={`input ${touched.all && !w ? 'is-error' : ''}`} style={{ fontSize: 12, padding: '6px 8px', fontFamily: 'var(--font-mono)' }} value={w}
-                      onChange={e => { const a = [...words]; a[i] = e.target.value.trim(); setWords(a); }}
-                    />
-                  </div>
-                ))}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <Field label="Новый пароль" required>
-                  <PasswordInput value={p1} onChange={setP1} hasError={touched.all && pwStrength(p1) < 3} />
-                  {p1 && <PasswordStrength value={p1} />}
-                </Field>
-                <Field label="Повторите" required error={touched.all && p1 !== p2 ? 'Не совпадает' : null} success={p2 && p1 === p2}>
-                  <PasswordInput value={p2} onChange={setP2} hasError={touched.all && (p1 !== p2)} />
+                <Field label="Логин" required error={touched.all && !login.trim() ? 'Введите логин' : null}>
+                  <input
+                    className={`input ${touched.all && !login.trim() ? 'is-error' : ''}`}
+                    value={login}
+                    onChange={e => setLogin(e.target.value)}
+                    onKeyDown={e => { if (e.key.length === 1 && /[А-ЯЁа-яё]/i.test(e.key)) e.preventDefault(); }}
+                    autoFocus
+                  />
                 </Field>
               </div>
+              <div className="modal-foot">
+                <button className="btn btn-secondary" onClick={() => onBack && onBack()}>{I.back}Войти</button>
+                <div style={{ flex: 1 }}></div>
+                <LoadButton className="btn btn-primary" onClick={sendCode}>Получить код {I.chevr}</LoadButton>
+              </div>
             </div>
-            <div className="modal-foot">
-              <button className="btn btn-secondary" onClick={() => onBack && onBack()}>{I.back}Войти</button>
-              <div style={{ flex: 1 }}></div>
-              <LoadButton className="btn btn-primary" onClick={submit}>{I.check}Сменить пароль</LoadButton>
+          ) : (
+            <div className="card">
+              <div className="card-body" style={{ padding: 28 }}>
+                <h2 style={{ marginBottom: 6 }}>Введите код и новый пароль</h2>
+                <p className="muted" style={{ marginBottom: 20, fontSize: 13 }}>
+                  Код отправлен на <strong>{maskedEmail}</strong>. Введите его и задайте новый пароль.
+                </p>
+
+                <Field label="Код из письма" required>
+                  <input
+                    className={`input ${touched.all && code.trim().length !== 6 ? 'is-error' : ''}`}
+                    value={code}
+                    onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
+                    placeholder="XXXXXX"
+                    style={{ fontFamily: 'var(--font-mono)', fontSize: 20, letterSpacing: '0.2em', textAlign: 'center', maxWidth: 180 }}
+                    autoComplete="one-time-code"
+                    autoFocus
+                  />
+                </Field>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 16 }}>
+                  <Field label="Новый пароль" required>
+                    <PasswordInput value={p1} onChange={setP1} hasError={touched.all && pwStrength(p1) < 3} />
+                    {p1 && <PasswordStrength value={p1} />}
+                  </Field>
+                  <Field label="Повторите" required error={touched.all && p1 !== p2 ? 'Не совпадает' : null} success={p2 && p1 === p2}>
+                    <PasswordInput value={p2} onChange={setP2} hasError={touched.all && (p1 !== p2)} />
+                  </Field>
+                </div>
+
+                <div style={{ marginTop: 12, fontSize: 13, color: 'var(--text-muted)' }}>
+                  Не пришёл код?{' '}
+                  <a href="#" onClick={e => { e.preventDefault(); setStep(1); setCode(''); }} style={{ color: 'var(--accent)' }}>
+                    Отправить снова
+                  </a>
+                </div>
+              </div>
+              <div className="modal-foot">
+                <button className="btn btn-secondary" onClick={() => setStep(1)}>{I.back}Назад</button>
+                <div style={{ flex: 1 }}></div>
+                <LoadButton className="btn btn-primary" onClick={submit}>{I.check}Сменить пароль</LoadButton>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-export { LoginScreen, RegisterScreen, SeedPhraseScreen, RecoverPasswordScreen };
+export { LoginScreen, RegisterScreen, EmailVerifyScreen, RecoverPasswordScreen };

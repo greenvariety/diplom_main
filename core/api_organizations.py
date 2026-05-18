@@ -1,9 +1,13 @@
+import json
 import re
-from rest_framework.views import APIView
-from rest_framework.response import Response
+from datetime import timedelta
 
-from .models import Institution, Student, Employee, SeedPhrase
-from .utils import log_action, verify_seed_phrase
+from django.utils import timezone
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .models import EmailCode, Institution, Student, Employee
+from .utils import generate_email_code, log_action, mask_email, send_verification_email
 
 
 def _org_data(org, active_id):
@@ -136,26 +140,68 @@ class OrganizationDetailView(APIView):
         if not org:
             return Response({'error': 'Не найдено'}, status=404)
 
-        password = request.data.get('password', '')
-        seed_words = request.data.get('seed_words', [])
+        code = (request.data.get('code') or '').strip().upper()
+        if not code:
+            return Response({'error': 'Введите код подтверждения'}, status=400)
 
-        if not password:
-            return Response({'error': 'Введите пароль'}, status=400)
-        if not request.user.check_password(password):
-            return Response({'error': 'Неверный пароль'}, status=400)
-        if len(seed_words) != 12:
-            return Response({'error': 'Введите все 12 слов сид-фразы'}, status=400)
-
-        phrase = ' '.join(seed_words)
         try:
-            if not verify_seed_phrase(phrase, request.user.seed_phrase.phrase_hash):
-                return Response({'error': 'Неверная сид-фраза'}, status=400)
-        except SeedPhrase.DoesNotExist:
-            return Response({'error': 'Сид-фраза не найдена'}, status=400)
+            ec = EmailCode.objects.get(
+                login=request.user.username,
+                code=code,
+                purpose='delete_org',
+                used=False,
+            )
+        except EmailCode.DoesNotExist:
+            return Response({'error': 'Неверный код'}, status=400)
+
+        if timezone.now() > ec.expires_at:
+            ec.delete()
+            return Response({'error': 'Код истёк. Запросите новый'}, status=400)
+
+        payload = json.loads(ec.payload) if ec.payload else {}
+        if payload.get('org_id') != org.pk:
+            return Response({'error': 'Неверный код'}, status=400)
+
+        ec.used = True
+        ec.save(update_fields=['used'])
 
         log_action(request.user, 'deleted', org, old_data={'name': org.name, 'code': org.code}, institution=org)
         org.delete()
         return Response({'ok': True})
+
+
+class SendOrgDeleteCodeView(APIView):
+    def post(self, request, pk):
+        err = _owner_only(request)
+        if err:
+            return err
+        try:
+            org = Institution.objects.get(pk=pk, owner=request.user)
+        except Institution.DoesNotExist:
+            return Response({'error': 'Не найдено'}, status=404)
+
+        if not request.user.email:
+            return Response({'error': 'К аккаунту не привязан email'}, status=400)
+
+        EmailCode.objects.filter(
+            login=request.user.username,
+            purpose='delete_org',
+            used=False,
+        ).delete()
+
+        code = generate_email_code()
+        EmailCode.objects.create(
+            email=request.user.email,
+            login=request.user.username,
+            code=code,
+            purpose='delete_org',
+            payload=json.dumps({'org_id': org.pk}),
+            expires_at=timezone.now() + timedelta(minutes=15),
+        )
+
+        send_verification_email(request.user.email, code, purpose='delete_org')
+
+        return Response({'masked_email': mask_email(request.user.email)})
 
 
 class OrganizationSwitchView(APIView):

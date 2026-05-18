@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './styles.css';
 import { ToastProvider, useToast, LoadButton } from './utils.jsx';
 import { I } from './data.jsx';
-import { LoginScreen, RegisterScreen, SeedPhraseScreen, RecoverPasswordScreen } from './auth.jsx';
+import { LoginScreen, RegisterScreen, EmailVerifyScreen, RecoverPasswordScreen } from './auth.jsx';
 import { Shell } from './shell.jsx';
 import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, FacultyList, GroupList, GroupDetail, StudentList, StudentDetail, EmployeeList, EmployeeDetail, PositionList, ParentList, ParentDetail, SubjectList, UserList, DeleteRequests, AuditLog } from './screens.jsx';
 import { OrgFormModal, FacultyFormModal, FacultyDetailModal, GroupFormModal, AssignSubjectModal, StudentFormModal, TransferModal, UploadDocModal, ParentFormModal, ParentAddStudentModal, DeleteConfirmModal, EmployeeFormModal, EmployeeAssignSubjectModal, PositionFormModal, SubjectFormModal, UserFormModal, UserSetPasswordModal, ApproveDeleteModal, AuditDiffModal, LogoutModal, OrgDeleteConfirmModal } from './modals.jsx';
@@ -11,21 +11,23 @@ import api from './api.js';
 
 function AuthFlow({ onAuthenticated }) {
   const [screen, setScreen] = useState('login');
-  const [seedWords, setSeedWords] = useState([]);
+  const [verifyData, setVerifyData] = useState(null);
 
   if (screen === 'register') {
     return (
       <RegisterScreen
-        onDone={(words) => { setSeedWords(words); setScreen('seed'); }}
+        onDone={(data) => { setVerifyData(data); setScreen('verify-email'); }}
         onBack={() => setScreen('login')}
       />
     );
   }
-  if (screen === 'seed') {
+  if (screen === 'verify-email') {
     return (
-      <SeedPhraseScreen
-        seedWords={seedWords}
+      <EmailVerifyScreen
+        maskedEmail={verifyData?.maskedEmail}
+        login={verifyData?.login}
         onDone={() => onAuthenticated()}
+        onBack={() => setScreen('register')}
       />
     );
   }

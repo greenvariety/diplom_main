@@ -7,8 +7,8 @@ from core.models import (
 )
 
 
-def make_owner(username='owner', password='pass123'):
-    user = User.objects.create_user(username=username, password=password, role='owner')
+def make_owner(username='owner', password='pass123', email=''):
+    user = User.objects.create_user(username=username, password=password, role='owner', email=email)
     return user
 
 

@@ -1505,79 +1505,85 @@ function ParentAddStudentModal({ data, onClose }) {
 function OrgDeleteConfirmModal({ data, onClose }) {
   const { org, onDone } = data || {};
   const toast = useToast();
-  const [p1, setP1] = useState('');
-  const [p2, setP2] = useState('');
-  const [words, setWords] = useState(Array(12).fill(''));
+  const [step, setStep] = useState(1);
+  const [maskedEmail, setMaskedEmail] = useState('');
+  const [code, setCode] = useState('');
   const [shake, setShake] = useState(false);
 
-  const blockPaste = (e) => e.preventDefault();
-  const filled = words.filter(Boolean).length;
-  const canSubmit = p1 && p1 === p2 && filled === 12;
+  const sendCode = async () => {
+    try {
+      const res = await api.post(`/organizations/${org.id}/send-delete-code/`);
+      setMaskedEmail(res.data.masked_email);
+      setStep(2);
+      toast.push('Код отправлен на почту', { kind: 'ok' });
+    } catch (e) {
+      toast.push(e.response?.data?.error || 'Ошибка отправки кода', { kind: 'err' });
+    }
+  };
 
   const submit = async () => {
-    if (!canSubmit) {
+    if (code.trim().length !== 6) {
       setShake(true);
       setTimeout(() => setShake(false), 400);
-      const noPass = !p1;
-      const noSeed = filled === 0;
-      if (noPass && noSeed) toast.push('Введите пароль и сид-фразу', { kind: 'err' });
-      else if (noPass) toast.push('Введите пароль', { kind: 'err' });
-      else if (p1 !== p2) toast.push('Пароли не совпадают', { kind: 'err' });
-      else if (noSeed) toast.push('Введите сид-фразу', { kind: 'err' });
-      else toast.push('Введите все 12 слов сид-фразы', { kind: 'err' });
+      toast.push('Введите 6-значный код', { kind: 'err' });
       return;
     }
     try {
-      await api.delete(`/organizations/${org.id}/`, { data: { password: p1, seed_words: words } });
+      await api.delete(`/organizations/${org.id}/`, { data: { code: code.trim().toUpperCase() } });
       toast.push('Организация удалена', { kind: 'ok' });
       onDone && onDone(org.id);
       onClose();
     } catch (e) {
+      setShake(true);
+      setTimeout(() => setShake(false), 400);
       toast.push(e.response?.data?.error || 'Ошибка удаления', { kind: 'err' });
     }
   };
 
-  return (
-    <Modal title="Удалить организацию?" kind="danger" onClose={onClose} allowOverlayClose={false}
-      footer={<>
-        <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
-        <LoadButton className={`btn btn-danger-solid ${shake ? 'shake' : ''}`} onClick={submit}>{I.trash}Удалить навсегда</LoadButton>
-      </>}>
-      <div className={shake ? 'shake' : ''}>
-        <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', marginBottom: 16 }}>
+  if (step === 1) {
+    return (
+      <Modal title="Удалить организацию?" kind="danger" onClose={onClose} allowOverlayClose={false}
+        footer={<>
+          <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
+          <LoadButton className="btn btn-danger-solid" onClick={sendCode}>Отправить код на почту</LoadButton>
+        </>}>
+        <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
           <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--bad-bg)', color: 'var(--bad-fg)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>{I.alert}</div>
           <div>
             <p style={{ marginBottom: 4 }}>Будет удалена организация <strong>{org?.name}</strong>.</p>
-            <p className="muted" style={{ fontSize: 13 }}>Все данные организации, будут удалены безвозвратно. Это действие нельзя отменить!</p>
+            <p className="muted" style={{ fontSize: 13 }}>Все данные организации будут удалены безвозвратно. Для подтверждения мы отправим код на ваш email.</p>
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <Field label="Пароль" required>
-            <PasswordInput value={p1} onChange={setP1} onPaste={blockPaste} autoComplete="off" hasError={shake && !p1} />
-          </Field>
-          <Field label="Повторите пароль" required error={p2 && p1 !== p2 ? 'Не совпадает' : null} success={p2 && p1 === p2}>
-            <PasswordInput value={p2} onChange={setP2} onPaste={blockPaste} autoComplete="off" hasError={shake && (!p2 || p1 !== p2)} />
-          </Field>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, marginBottom: 8 }}>
-          <div className="form-section-title" style={{ margin: 0 }}>Сид-фраза</div>
-          <span className="muted" style={{ fontSize: 12 }}>{filled} / 12 введено</span>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
-          {words.map((w, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 11, color: 'var(--text-faint)', minWidth: 20, fontFamily: 'var(--font-mono)' }}>{String(i + 1).padStart(2, '0')}.</span>
-              <input
-                className={`input ${shake && !w ? 'is-error' : ''}`}
-                style={{ fontSize: 12, padding: '6px 8px', fontFamily: 'var(--font-mono)' }}
-                placeholder=""
-                value={w}
-                autoComplete="off"
-                onChange={e => { const a = [...words]; a[i] = e.target.value.trim(); setWords(a); }}
-                onPaste={blockPaste}
-              />
-            </div>
-          ))}
+      </Modal>
+    );
+  }
+
+  return (
+    <Modal title="Подтвердите удаление" kind="danger" onClose={onClose} allowOverlayClose={false}
+      footer={<>
+        <button className="btn btn-secondary" onClick={() => { setStep(1); setCode(''); }}>Назад</button>
+        <LoadButton className={`btn btn-danger-solid ${shake ? 'shake' : ''}`} onClick={submit}>{I.trash}Удалить навсегда</LoadButton>
+      </>}>
+      <div className={shake ? 'shake' : ''}>
+        <p className="muted" style={{ fontSize: 13, marginBottom: 16 }}>
+          Код подтверждения отправлен на <strong>{maskedEmail}</strong>. Введите его ниже.
+        </p>
+        <Field label="Код подтверждения" required>
+          <input
+            className={`input ${shake && code.trim().length !== 6 ? 'is-error' : ''}`}
+            value={code}
+            onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
+            placeholder="XXXXXX"
+            style={{ fontFamily: 'var(--font-mono)', fontSize: 20, letterSpacing: '0.2em', textAlign: 'center', maxWidth: 180 }}
+            autoComplete="one-time-code"
+            autoFocus
+          />
+        </Field>
+        <div style={{ marginTop: 10, fontSize: 13, color: 'var(--text-muted)' }}>
+          Не пришёл код?{' '}
+          <a href="#" onClick={e => { e.preventDefault(); sendCode(); }} style={{ color: 'var(--accent)' }}>
+            Отправить повторно
+          </a>
         </div>
       </div>
     </Modal>

@@ -80,22 +80,23 @@ class RegisterTest(TestCase):
     def setUp(self):
         self.client = APIClient()
 
-    def test_register_success(self):
+    def test_register_sends_code_and_returns_masked_email(self):
         resp = self.client.post('/api/auth/register/', {
             'login': 'newuser',
             'name': 'Новый Пользователь',
-            'pass': 'secure123',
+            'email': 'new@example.com',
+            'pass': 'Secure123_',
         }, format='json')
         self.assertEqual(resp.status_code, 200)
-        self.assertIn('access', resp.data)
-        self.assertIn('seed_phrase', resp.data)
+        self.assertIn('masked_email', resp.data)
 
     def test_register_duplicate_username_returns_400(self):
         make_owner(username='existinguser')
         resp = self.client.post('/api/auth/register/', {
             'login': 'existinguser',
             'name': 'Дубликат',
-            'pass': 'secure123',
+            'email': 'dup@example.com',
+            'pass': 'Secure123_',
         }, format='json')
         self.assertEqual(resp.status_code, 400)
         self.assertIn('error', resp.data)
@@ -104,6 +105,15 @@ class RegisterTest(TestCase):
         resp = self.client.post('/api/auth/register/', {
             'login': '',
             'name': 'Имя',
-            'pass': 'secure123',
+            'email': 'test@example.com',
+            'pass': 'Secure123_',
+        }, format='json')
+        self.assertEqual(resp.status_code, 400)
+
+    def test_register_missing_email_returns_400(self):
+        resp = self.client.post('/api/auth/register/', {
+            'login': 'someuser',
+            'name': 'Имя',
+            'pass': 'Secure123_',
         }, format='json')
         self.assertEqual(resp.status_code, 400)

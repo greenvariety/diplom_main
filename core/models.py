@@ -367,6 +367,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     username = models.CharField(max_length=150, unique=True, verbose_name='Логин')
     display_name = models.CharField(max_length=150, blank=True, verbose_name='Имя')
+    email = models.EmailField(blank=True, default='', verbose_name='Email')
     role = models.CharField(
         max_length=20, choices=ROLE_CHOICES, default='teacher', verbose_name='Роль'
     )
@@ -416,23 +417,32 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 # ---------------------------------------------------------------------------
-# SeedPhrase
+# EmailCode
 # ---------------------------------------------------------------------------
 
-class SeedPhrase(models.Model):
-    user = models.OneToOneField(
-        User, on_delete=models.CASCADE, related_name='seed_phrase',
-        verbose_name='Пользователь'
-    )
-    phrase_hash = models.CharField(max_length=255, verbose_name='Хэш фразы')
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+class EmailCode(models.Model):
+    PURPOSE_CHOICES = [
+        ('register', 'Регистрация'),
+        ('recover', 'Восстановление пароля'),
+        ('delete_org', 'Удаление организации'),
+    ]
+
+    email = models.EmailField(verbose_name='Email')
+    login = models.CharField(max_length=150, blank=True, default='', verbose_name='Логин')
+    code = models.CharField(max_length=6, verbose_name='Код')
+    purpose = models.CharField(max_length=20, choices=PURPOSE_CHOICES, verbose_name='Цель')
+    payload = models.TextField(blank=True, default='', verbose_name='Данные (JSON)')
+    expires_at = models.DateTimeField(verbose_name='Истекает')
+    used = models.BooleanField(default=False, verbose_name='Использован')
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = 'Сид-фраза'
-        verbose_name_plural = 'Сид-фразы'
+        verbose_name = 'Email-код'
+        verbose_name_plural = 'Email-коды'
+        ordering = ['-created_at']
 
     def __str__(self):
-        return f'SeedPhrase({self.user.username})'
+        return f'EmailCode({self.purpose}, {self.email}, {self.code})'
 
 
 # ---------------------------------------------------------------------------

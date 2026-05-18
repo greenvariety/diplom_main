@@ -4,15 +4,25 @@
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import Institution, SeedPhrase
-from core.utils import generate_seed_phrase, hash_seed_phrase
+from core.models import Institution, EmailCode
+from django.utils import timezone
+from datetime import timedelta
 from .helpers import make_owner, make_institution, make_admin, make_teacher
 
 
-def make_seed(owner):
-    phrase = generate_seed_phrase()
-    SeedPhrase.objects.create(user=owner, phrase_hash=hash_seed_phrase(phrase))
-    return phrase.split()
+def make_delete_code(owner, org):
+    """Создаёт валидный email-код для удаления организации."""
+    import json
+    code = 'TST123'
+    EmailCode.objects.create(
+        email=owner.email or 'test@test.ru',
+        login=owner.username,
+        code=code,
+        purpose='delete_org',
+        payload=json.dumps({'org_id': org.pk}),
+        expires_at=timezone.now() + timedelta(minutes=15),
+    )
+    return code
 
 
 class OwnerOrgsTest(TestCase):
@@ -87,7 +97,6 @@ class CreateOrganizationTest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.owner = make_owner()
-        # Нет ни одной организации ещё
 
     def test_owner_can_create_org(self):
         self.client.force_authenticate(user=self.owner)
@@ -152,65 +161,39 @@ class SwitchOrganizationTest(TestCase):
 class DeleteOrganizationTest(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.owner = make_owner(username='del_owner', password='Secret123')
+        self.owner = make_owner(username='del_owner', password='Secret123', email='del@test.ru')
         self.org = make_institution(self.owner)
-        self.words = make_seed(self.owner)
         self.client.force_authenticate(user=self.owner)
 
-    def _delete(self, password='Secret123', words=None):
+    def _delete(self, code='TST123'):
         return self.client.delete(
             f'/api/organizations/{self.org.pk}/',
-            {'password': password, 'seed_words': words or self.words},
+            {'code': code},
             format='json',
         )
 
-    def test_owner_can_delete_active_org(self):
-        resp = self._delete()
+    def test_owner_can_delete_org_with_valid_code(self):
+        code = make_delete_code(self.owner, self.org)
+        resp = self._delete(code=code)
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(Institution.objects.filter(pk=self.org.pk).exists())
 
-    def test_owner_can_delete_only_org(self):
-        self.assertEqual(Institution.objects.filter(owner=self.owner).count(), 1)
-        resp = self._delete()
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(Institution.objects.filter(owner=self.owner).count(), 0)
-
-    def test_delete_without_password_returns_400(self):
-        resp = self._delete(password='')
+    def test_delete_without_code_returns_400(self):
+        resp = self._delete(code='')
         self.assertEqual(resp.status_code, 400)
-        self.assertIn('пароль', resp.data['error'].lower())
 
-    def test_delete_wrong_password_returns_400(self):
-        resp = self._delete(password='WrongPass')
-        self.assertEqual(resp.status_code, 400)
-        self.assertIn('пароль', resp.data['error'].lower())
-
-    def test_delete_wrong_seed_returns_400(self):
-        bad_words = ['wrong'] * 12
-        resp = self._delete(words=bad_words)
-        self.assertEqual(resp.status_code, 400)
-        self.assertIn('сид', resp.data['error'].lower())
-
-    def test_delete_incomplete_seed_returns_400(self):
-        resp = self._delete(words=self.words[:6])
+    def test_delete_wrong_code_returns_400(self):
+        make_delete_code(self.owner, self.org)
+        resp = self._delete(code='WRONG1')
         self.assertEqual(resp.status_code, 400)
 
     def test_non_owner_cannot_delete_org(self):
         owner2 = make_owner(username='owner2', password='pass')
         org2 = make_institution(owner2, code='ORG2', name='Орг2')
-        admin = make_admin(institution=self.org)
-        self.client.force_authenticate(user=admin)
-        resp = self._delete()
-        self.assertEqual(resp.status_code, 403)
-
-    def test_owner_cannot_delete_another_owners_org(self):
-        owner2 = make_owner(username='owner2', password='pass')
-        org2 = make_institution(owner2, code='ORG2', name='Орг2')
-        words2 = make_seed(owner2)
-        self.client.force_authenticate(user=self.owner)
+        self.client.force_authenticate(user=owner2)
         resp = self.client.delete(
-            f'/api/organizations/{org2.pk}/',
-            {'password': 'Secret123', 'seed_words': self.words},
+            f'/api/organizations/{self.org.pk}/',
+            {'code': 'TST123'},
             format='json',
         )
         self.assertEqual(resp.status_code, 404)
