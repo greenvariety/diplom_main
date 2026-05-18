@@ -1266,7 +1266,7 @@ function OrgFormModal({ data, onClose }) {
   const [codeManual, setCodeManual] = useState(isEdit);
   const [description, setDescription] = useState(org?.description || '');
 
-  const autoCode = (n) => n.trim().split(/\s+/).filter(w => w.length >= 2).map(w => w[0].toUpperCase()).join('').slice(0, 20);
+  const autoCode = (n) => n.trim().split(/\s+/).filter(w => w.length >= 2 && /^[А-ЯЁа-яё]/.test(w)).map(w => w[0].toUpperCase()).join('').slice(0, 20);
   const [foundedDate, setFoundedDate] = useState(
     org?.founded_date
       ? (() => {
