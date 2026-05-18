@@ -125,7 +125,8 @@ function RegisterScreen({ onDone, onBack }) {
 
   const errs = {};
   if (!vals.login.trim()) errs.login = 'Введите логин';
-  else if (!/^[a-z0-9_]{3,20}$/.test(vals.login)) errs.login = 'Только латиница, цифры и _, 3-20 символов';
+  else if (vals.login.length < 3) errs.login = 'Минимум 3 символа';
+  else if (vals.login.length > 20) errs.login = 'Максимум 20 символов';
   if (!vals.name.trim()) errs.name = 'Укажите ФИО';
   else if (!/^[А-ЯЁа-яё\s\-]+$/.test(vals.name.trim())) errs.name = 'Только кириллица';
   else if (vals.name.trim().split(/\s+/).filter(Boolean).length !== 3) errs.name = 'Введите фамилию, имя и отчество (3 слова)';
@@ -198,7 +199,8 @@ function RegisterScreen({ onDone, onBack }) {
                 >
                   <input className={`input ${touched.login && errs.login ? 'is-error' : ''}`}
                     value={vals.login}
-                    onChange={e => set('login', e.target.value)}
+                    onChange={e => set('login', e.target.value.replace(/[А-ЯЁа-яё]/gi, ''))}
+                    onKeyDown={e => { if (e.key.length === 1 && /[А-ЯЁа-яё]/i.test(e.key)) e.preventDefault(); }}
                     onBlur={() => setTouched(t => ({ ...t, login: 1 }))}
                   />
                 </Field>
