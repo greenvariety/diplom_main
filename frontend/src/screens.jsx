@@ -210,12 +210,14 @@ function OrganizationList({ currentUser, openModal, onNavigate, onUserRefresh })
               )}
               <div className="card-body" style={{ padding: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 8, background: org.active ? 'var(--accent)' : 'var(--surface-alt)', color: org.active ? '#fff' : 'var(--text-muted)', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 12, flexShrink: 0, border: '1px solid var(--border)' }}>
-                    {org.code}
+                  <div style={{ width: 40, height: 40, borderRadius: 8, background: org.active ? 'var(--accent)' : 'var(--surface-alt)', color: org.active ? '#fff' : 'var(--text-muted)', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 12, flexShrink: 0, border: '1px solid var(--border)', overflow: 'hidden' }}>
+                    {org.photo
+                      ? <img src={org.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} />
+                      : org.code}
                   </div>
                   <div>
                     <div className="fwm" style={{ fontSize: 14 }}>{org.name}</div>
-                    <div className="muted" style={{ fontSize: 11 }}>Код: {org.code} · {org.created_at}</div>
+                    <div className="muted" style={{ fontSize: 11 }}>Код: {org.code}{org.founded_date ? ` · Основана: ${org.founded_date}` : ''}</div>
                   </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>

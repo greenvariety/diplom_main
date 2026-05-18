@@ -1262,17 +1262,33 @@ function OrgFormModal({ data, onClose }) {
   const toast = useToast();
   const [name, setName] = useState(org?.name || '');
   const [code, setCode] = useState(org?.code || '');
+  const [description, setDescription] = useState(org?.description || '');
+  const [foundedDate, setFoundedDate] = useState(
+    org?.founded_date
+      ? (() => {
+          const parts = org.founded_date.split('.');
+          return parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : org.founded_date;
+        })()
+      : ''
+  );
+  const [photo, setPhoto] = useState(null);
   const [err, setErr] = useState('');
 
   const save = async () => {
     if (!name.trim()) { setErr('Введите название организации'); return; }
     setErr('');
     try {
+      const fd = new FormData();
+      fd.append('name', name.trim());
+      if (code.trim()) fd.append('code', code.trim());
+      fd.append('description', description.trim());
+      if (foundedDate) fd.append('founded_date', foundedDate);
+      if (photo) fd.append('photo', photo);
       if (isEdit) {
-        await api.patch(`/organizations/${org.id}/`, { name: name.trim(), code: code.trim() || undefined });
+        await api.patch(`/organizations/${org.id}/`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
         toast.push('Организация обновлена', { kind: 'ok' });
       } else {
-        await api.post('/organizations/', { name: name.trim(), code: code.trim() || undefined });
+        await api.post('/organizations/', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
         toast.push('Организация создана', { kind: 'ok' });
       }
       onDone && onDone();
@@ -1285,7 +1301,7 @@ function OrgFormModal({ data, onClose }) {
   return (
     <Modal
       title={isEdit ? 'Редактировать организацию' : 'Новая организация'}
-      sub={isEdit ? `Код: ${org.code}` : 'Заполните название учебного заведения'}
+      sub={isEdit ? `Код: ${org.code}` : 'Заполните данные учебного заведения'}
       onClose={onClose}
       footer={<>
         <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
@@ -1306,6 +1322,36 @@ function OrgFormModal({ data, onClose }) {
             value={code}
             onChange={e => setCode(e.target.value.toUpperCase())}
             maxLength={20}
+          />
+        </Field>
+        <Field label="Дата основания" hint="Когда фактически было основано учебное заведение">
+          <input
+            className="input"
+            type="date"
+            value={foundedDate}
+            onChange={e => setFoundedDate(e.target.value)}
+          />
+        </Field>
+        <Field label="Фото">
+          <input
+            className="input"
+            type="file"
+            accept="image/*"
+            onChange={e => setPhoto(e.target.files[0] || null)}
+          />
+          {org?.photo && !photo && (
+            <div style={{ marginTop: 6, fontSize: 12, color: 'var(--text-muted)' }}>
+              Текущее фото сохранено. Загрузите новое, чтобы заменить.
+            </div>
+          )}
+        </Field>
+        <Field label="Описание" extraClass="field-full">
+          <textarea
+            className="input"
+            rows={3}
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            style={{ resize: 'vertical' }}
           />
         </Field>
       </div>

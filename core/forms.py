@@ -138,12 +138,19 @@ class RecoverPasswordForm(forms.Form):
 class OrganizationForm(forms.ModelForm):
     class Meta:
         model = Institution
-        fields = ['code', 'name', 'notes']
-        labels = {'code': 'Код', 'name': 'Полное название', 'notes': 'Заметки'}
+        fields = ['code', 'name', 'description', 'photo', 'founded_date']
+        labels = {
+            'code': 'Код',
+            'name': 'Полное название',
+            'description': 'Описание',
+            'photo': 'Фото',
+            'founded_date': 'Дата основания',
+        }
         widgets = {
             'code': forms.TextInput(attrs={'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'founded_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
 
     def clean_code(self):

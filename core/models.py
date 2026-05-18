@@ -13,8 +13,10 @@ class Institution(models.Model):
     )
     code = models.CharField(max_length=20, verbose_name='Код')
     name = models.CharField(max_length=255, verbose_name='Полное название')
-    notes = models.TextField(blank=True, verbose_name='Заметки')
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+    description = models.TextField(blank=True, verbose_name='Описание')
+    photo = models.ImageField(upload_to='institutions/', null=True, blank=True, verbose_name='Фото')
+    founded_date = models.DateField(null=True, blank=True, verbose_name='Дата основания')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата добавления в систему')
 
     class Meta:
         verbose_name = 'Учебное заведение'

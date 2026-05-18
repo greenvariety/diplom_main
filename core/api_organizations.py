@@ -11,12 +11,26 @@ def _org_data(org, active_id):
         'id': org.pk,
         'code': org.code,
         'name': org.name,
-        'notes': org.notes,
+        'description': org.description,
+        'photo': org.photo.url if org.photo else None,
+        'founded_date': org.founded_date.strftime('%d.%m.%Y') if org.founded_date else None,
         'created_at': org.created_at.strftime('%d.%m.%Y'),
         'active': org.pk == active_id,
         'students': Student.objects.filter(faculty__institution=org).count(),
         'employees': Employee.objects.filter(institution=org).count(),
     }
+
+
+def _parse_date(raw):
+    if not raw:
+        return None
+    from datetime import datetime
+    for fmt in ('%d.%m.%Y', '%Y-%m-%d'):
+        try:
+            return datetime.strptime(raw, fmt).date()
+        except ValueError:
+            pass
+    return None
 
 
 def _owner_only(request):
@@ -54,7 +68,17 @@ class OrganizationsView(APIView):
             while Institution.objects.filter(owner=request.user, code=f'{code}{n}').exists():
                 n += 1
             code = f'{code}{n}'
-        org = Institution.objects.create(owner=request.user, code=code, name=name)
+        description = (request.data.get('description', '') or '').strip()
+        founded_date_raw = (request.data.get('founded_date', '') or '').strip()
+        founded_date = _parse_date(founded_date_raw)
+        photo = request.FILES.get('photo')
+        org = Institution.objects.create(
+            owner=request.user, code=code, name=name,
+            description=description, founded_date=founded_date,
+        )
+        if photo:
+            org.photo = photo
+            org.save(update_fields=['photo'])
         log_action(request.user, 'created', org, new_data={'name': name, 'code': code}, institution=org)
         return Response(_org_data(org, request.user.institution_id), status=201)
 
@@ -78,11 +102,20 @@ class OrganizationDetailView(APIView):
             return Response({'error': 'Введите название'}, status=400)
         old_data = {'name': org.name}
         org.name = name
-        notes = request.data.get('notes', None)
-        if notes is not None:
-            org.notes = notes
-        fields = ['name', 'notes'] if notes is not None else ['name']
-        org.save(update_fields=fields)
+        update_fields = ['name']
+        description = request.data.get('description', None)
+        if description is not None:
+            org.description = description.strip() if isinstance(description, str) else description
+            update_fields.append('description')
+        founded_date_raw = request.data.get('founded_date', None)
+        if founded_date_raw is not None:
+            org.founded_date = _parse_date(str(founded_date_raw)) if founded_date_raw else None
+            update_fields.append('founded_date')
+        photo = request.FILES.get('photo')
+        if photo:
+            org.photo = photo
+            update_fields.append('photo')
+        org.save(update_fields=update_fields)
         log_action(request.user, 'updated', org, old_data=old_data, new_data={'name': org.name}, institution=org)
         return Response(_org_data(org, request.user.institution_id))
 
