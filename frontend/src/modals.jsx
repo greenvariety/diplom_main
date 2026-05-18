@@ -1317,8 +1317,9 @@ function OrgFormModal({ data, onClose }) {
   };
 
   const save = async () => {
+    const today = new Date().toISOString().split('T')[0];
     const nameErr = !name.trim() ? 'Введите название' : '';
-    const dateErr = !foundedDate ? 'Укажите дату основания' : '';
+    const dateErr = !foundedDate ? 'Укажите дату основания' : foundedDate > today ? 'Дата не может быть в будущем' : '';
     if (nameErr || dateErr) { setErrs({ name: nameErr, date: dateErr }); return; }
     setErrs({ name: '', date: '' });
     try {
@@ -1424,6 +1425,7 @@ function OrgFormModal({ data, onClose }) {
             className="input"
             type="date"
             value={foundedDate}
+            max={new Date().toISOString().split('T')[0]}
             onChange={e => { setFoundedDate(e.target.value); clearErr('date'); }}
           />
         </Field>
