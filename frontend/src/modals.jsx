@@ -1263,7 +1263,10 @@ function OrgFormModal({ data, onClose }) {
   const fileRef = useRef(null);
   const [name, setName] = useState(org?.name || '');
   const [code, setCode] = useState(org?.code || '');
+  const [codeManual, setCodeManual] = useState(isEdit);
   const [description, setDescription] = useState(org?.description || '');
+
+  const autoCode = (n) => n.trim().split(/\s+/).filter(w => w.length >= 2).map(w => w[0].toUpperCase()).join('').slice(0, 20);
   const [foundedDate, setFoundedDate] = useState(
     org?.founded_date
       ? (() => {
@@ -1379,8 +1382,8 @@ function OrgFormModal({ data, onClose }) {
             className="input"
             value={name}
             onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }}
-            onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); setName(prev => prev + t); clearErr('name'); }}
-            onChange={e => { setName(e.target.value); clearErr('name'); }}
+            onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); const next = name + t; setName(next); if (!codeManual) setCode(autoCode(next)); clearErr('name'); }}
+            onChange={e => { const next = e.target.value; setName(next); if (!codeManual) setCode(autoCode(next)); clearErr('name'); }}
             onFocus={() => touch('name')}
           />
         </Field>
@@ -1389,8 +1392,8 @@ function OrgFormModal({ data, onClose }) {
             className="input"
             value={code}
             onBeforeInput={e => { if (e.data && /[A-Za-z\s]/.test(e.data)) e.preventDefault(); }}
-            onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z\s]/g, '').toUpperCase(); setCode(prev => (prev + t).slice(0, 20)); }}
-            onChange={e => setCode(e.target.value.toUpperCase())}
+            onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z\s]/g, '').toUpperCase(); setCode(prev => (prev + t).slice(0, 20)); setCodeManual(true); }}
+            onChange={e => { setCode(e.target.value.toUpperCase()); setCodeManual(true); }}
             onFocus={() => touch('code')}
             maxLength={20}
           />
