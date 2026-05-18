@@ -1276,6 +1276,8 @@ function OrgFormModal({ data, onClose }) {
   const [photoPreview, setPhotoPreview] = useState(org?.photo || null);
   const [dragOver, setDragOver] = useState(false);
   const [err, setErr] = useState('');
+  const [touched, setTouched] = useState({ name: false, code: false, description: false });
+  const touch = (f) => setTouched(t => ({ ...t, [f]: true }));
 
   const handlePhoto = (file) => {
     if (!file) return;
@@ -1294,13 +1296,14 @@ function OrgFormModal({ data, onClose }) {
 
   const save = async () => {
     if (!name.trim()) { setErr('Введите название организации'); return; }
+    if (!foundedDate) { setErr('Укажите дату основания'); return; }
     setErr('');
     try {
       const fd = new FormData();
       fd.append('name', name.trim());
       if (code.trim()) fd.append('code', code.trim());
       fd.append('description', description.trim());
-      if (foundedDate) fd.append('founded_date', foundedDate);
+      fd.append('founded_date', foundedDate);
       if (photo) fd.append('photo', photo);
       if (isEdit) {
         const r = await api.patch(`/organizations/${org.id}/`, fd);
@@ -1368,26 +1371,28 @@ function OrgFormModal({ data, onClose }) {
 
       {/* Поля */}
       <div className="form-grid">
-        <Field label="Название организации" required error={err} hint={!err ? 'Обязательное поле' : null} extraClass="field-full">
+        <Field label="Название организации" required error={err} hint={touched.name && !err ? 'Обязательное поле' : null} extraClass="field-full">
           <input
             className="input"
             value={name}
             onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }}
             onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); setName(prev => prev + t); setErr(''); }}
             onChange={e => { setName(e.target.value); setErr(''); }}
+            onFocus={() => touch('name')}
           />
         </Field>
-        <Field label="Код организации" hint="Если не указать — сгенерируется автоматически">
+        <Field label="Код организации" hint={touched.code ? 'Если не указать — сгенерируется автоматически' : null}>
           <input
             className="input"
             value={code}
             onBeforeInput={e => { if (e.data && /[A-Za-z\s]/.test(e.data)) e.preventDefault(); }}
             onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z\s]/g, '').toUpperCase(); setCode(prev => (prev + t).slice(0, 20)); }}
             onChange={e => setCode(e.target.value.toUpperCase())}
+            onFocus={() => touch('code')}
             maxLength={20}
           />
         </Field>
-        <Field label="Дата основания" hint="Необязательное поле">
+        <Field label="Дата основания" required>
           <input
             className="input"
             type="date"
@@ -1395,7 +1400,7 @@ function OrgFormModal({ data, onClose }) {
             onChange={e => setFoundedDate(e.target.value)}
           />
         </Field>
-        <Field label="Описание" hint="Необязательное поле" extraClass="field-full">
+        <Field label="Описание" hint={touched.description ? 'Необязательное поле' : null} extraClass="field-full">
           <textarea
             className="textarea"
             rows={4}
@@ -1403,6 +1408,7 @@ function OrgFormModal({ data, onClose }) {
             onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }}
             onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); setDescription(prev => prev + t); }}
             onChange={e => setDescription(e.target.value)}
+            onFocus={() => touch('description')}
             style={{ resize: 'none' }}
           />
         </Field>
