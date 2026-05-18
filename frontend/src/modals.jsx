@@ -1303,11 +1303,11 @@ function OrgFormModal({ data, onClose }) {
       if (foundedDate) fd.append('founded_date', foundedDate);
       if (photo) fd.append('photo', photo);
       if (isEdit) {
-        const r = await api.patch(`/organizations/${org.id}/`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        const r = await api.patch(`/organizations/${org.id}/`, fd);
         toast.push('Организация обновлена', { kind: 'ok' });
         onDone && onDone(r.data);
       } else {
-        const r = await api.post('/organizations/', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        const r = await api.post('/organizations/', fd);
         toast.push('Организация создана', { kind: 'ok' });
         onDone && onDone(r.data);
       }
@@ -1372,14 +1372,14 @@ function OrgFormModal({ data, onClose }) {
           <input
             className="input"
             value={name}
-            onChange={e => { setName(e.target.value); setErr(''); }}
+            onChange={e => { setName(e.target.value.replace(/[A-Za-z]/g, '')); setErr(''); }}
           />
         </Field>
         <Field label="Код организации" hint="Автоматически, если не указан">
           <input
             className="input"
             value={code}
-            onChange={e => setCode(e.target.value.toUpperCase())}
+            onChange={e => setCode(e.target.value.replace(/[A-Za-z\s]/g, '').toUpperCase())}
             maxLength={20}
           />
         </Field>
@@ -1396,7 +1396,7 @@ function OrgFormModal({ data, onClose }) {
             className="textarea"
             rows={4}
             value={description}
-            onChange={e => setDescription(e.target.value)}
+            onChange={e => setDescription(e.target.value.replace(/[A-Za-z]/g, ''))}
             style={{ resize: 'none' }}
           />
         </Field>

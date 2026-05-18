@@ -100,9 +100,18 @@ class OrganizationDetailView(APIView):
         name = request.data.get('name', '').strip()
         if not name:
             return Response({'error': 'Введите название'}, status=400)
-        old_data = {'name': org.name}
+        old_data = {'name': org.name, 'code': org.code}
         org.name = name
         update_fields = ['name']
+        new_code = request.data.get('code', '').strip().upper()
+        if new_code and new_code != org.code:
+            if Institution.objects.filter(owner=request.user, code=new_code).exclude(pk=org.pk).exists():
+                n = 2
+                while Institution.objects.filter(owner=request.user, code=f'{new_code}{n}').exists():
+                    n += 1
+                new_code = f'{new_code}{n}'
+            org.code = new_code
+            update_fields.append('code')
         description = request.data.get('description', None)
         if description is not None:
             org.description = description.strip() if isinstance(description, str) else description
@@ -116,7 +125,7 @@ class OrganizationDetailView(APIView):
             org.photo = photo
             update_fields.append('photo')
         org.save(update_fields=update_fields)
-        log_action(request.user, 'updated', org, old_data=old_data, new_data={'name': org.name}, institution=org)
+        log_action(request.user, 'updated', org, old_data=old_data, new_data={'name': org.name, 'code': org.code}, institution=org)
         return Response(_org_data(org, request.user.institution_id))
 
     def delete(self, request, pk):
