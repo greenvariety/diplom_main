@@ -126,7 +126,15 @@ function StudentFormModal({ data, onClose }) {
 
   const save = async () => {
     setTouched({ last_name: 1, first_name: 1, email: 1, faculty_id: 1 });
-    if (Object.keys(errs).length) { toast.push('Проверьте обязательные поля', { kind: 'err' }); return; }
+    if (Object.keys(errs).length) {
+      const missing = [];
+      if (errs.last_name) missing.push('фамилию');
+      if (errs.first_name) missing.push('имя');
+      if (errs.faculty_id) missing.push('факультет');
+      if (errs.email) missing.push('корректный email');
+      toast.push(`Введите: ${missing.join(', ')}`, { kind: 'err' });
+      return;
+    }
     setErr('');
     try {
       const payload = {
@@ -865,7 +873,9 @@ function DeleteConfirmModal({ data, onClose }) {
     if (!confirmed || !reason.trim()) {
       setShake(true);
       setTimeout(() => setShake(false), 400);
-      toast.push(!reason.trim() ? 'Укажите причину удаления' : 'Подтвердите действие', { kind: 'err' });
+      if (!reason.trim() && !confirmed) toast.push('Укажите причину удаления и подтвердите действие', { kind: 'err' });
+      else if (!reason.trim()) toast.push('Укажите причину удаления', { kind: 'err' });
+      else toast.push('Подтвердите действие', { kind: 'err' });
       return;
     }
     try {
@@ -1374,8 +1384,12 @@ function OrgDeleteConfirmModal({ data, onClose }) {
     if (!canSubmit) {
       setShake(true);
       setTimeout(() => setShake(false), 400);
-      if (!p1) toast.push('Введите пароль', { kind: 'err' });
+      const noPass = !p1;
+      const noSeed = filled === 0;
+      if (noPass && noSeed) toast.push('Введите пароль и сид-фразу', { kind: 'err' });
+      else if (noPass) toast.push('Введите пароль', { kind: 'err' });
       else if (p1 !== p2) toast.push('Пароли не совпадают', { kind: 'err' });
+      else if (noSeed) toast.push('Введите сид-фразу', { kind: 'err' });
       else toast.push('Введите все 12 слов сид-фразы', { kind: 'err' });
       return;
     }
