@@ -1368,7 +1368,7 @@ function OrgFormModal({ data, onClose }) {
 
       {/* Поля */}
       <div className="form-grid">
-        <Field label="Название организации" required error={err} extraClass="field-full">
+        <Field label="Название организации" required error={err} hint={!err ? 'Обязательное поле' : null} extraClass="field-full">
           <input
             className="input"
             value={name}
@@ -1377,7 +1377,7 @@ function OrgFormModal({ data, onClose }) {
             onChange={e => { setName(e.target.value); setErr(''); }}
           />
         </Field>
-        <Field label="Код организации">
+        <Field label="Код организации" hint="Если не указать — сгенерируется автоматически">
           <input
             className="input"
             value={code}
@@ -1387,7 +1387,7 @@ function OrgFormModal({ data, onClose }) {
             maxLength={20}
           />
         </Field>
-        <Field label="Дата основания">
+        <Field label="Дата основания" hint="Необязательное поле">
           <input
             className="input"
             type="date"
@@ -1395,7 +1395,7 @@ function OrgFormModal({ data, onClose }) {
             onChange={e => setFoundedDate(e.target.value)}
           />
         </Field>
-        <Field label="Описание" extraClass="field-full">
+        <Field label="Описание" hint="Необязательное поле" extraClass="field-full">
           <textarea
             className="textarea"
             rows={4}
