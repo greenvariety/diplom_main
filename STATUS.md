@@ -494,6 +494,25 @@
 
 ---
 
+## PLAN задача 5 выполнена — Валидация кириллицы во всех текстовых полях
+
+**Что сделано:**
+
+В `core/forms.py` добавлены два валидатора:
+- `validate_cyrillic` — разрешает только кириллицу, пробелы и дефисы (для ФИО, названий).
+- `validate_cyrillic_code` — разрешает только кириллицу без пробелов (для кодов).
+
+Валидация применена к:
+- `FacultyForm`: `full_name` → только кириллица; `short_name` → кириллица без пробелов.
+- `OrganizationForm`: `name` → только кириллица; `code` → кириллица без пробелов.
+- `StudentForm`, `EmployeeForm`, `ParentForm`: все поля `last_name`, `first_name`, `middle_name`.
+- `PositionForm`, `SubjectForm`: поле `name`.
+- `UserCreateForm`, `UserEditForm`: `display_name` → кириллица; `username` → без кириллицы.
+- `DocumentForm`: поле `name`.
+- `OwnerRegisterForm.clean_display_name` переписан через `validate_cyrillic`.
+
+---
+
 ## PLAN задача 7 выполнена — Организации это не вкладка + владелец без требования орг
 
 **Что сделано:**

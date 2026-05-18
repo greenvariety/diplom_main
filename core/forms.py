@@ -22,6 +22,21 @@ def validate_password_strength(value):
         raise forms.ValidationError('Пароль должен содержать хотя бы один спецсимвол (_ или -).')
 
 
+def validate_cyrillic(value):
+    """Только кириллица, пробелы и дефисы."""
+    if value and not re.fullmatch(r'[А-ЯЁа-яё\s\-]+', value):
+        raise forms.ValidationError('Допускается только кириллица.')
+
+
+def validate_cyrillic_code(value):
+    """Только кириллица без пробелов."""
+    if value:
+        if re.search(r'\s', value):
+            raise forms.ValidationError('Код не должен содержать пробелы.')
+        if not re.fullmatch(r'[А-ЯЁа-яё]+', value):
+            raise forms.ValidationError('Код должен содержать только кириллицу.')
+
+
 class LoginForm(AuthenticationForm):
     username = forms.CharField(label='Логин', widget=forms.TextInput(attrs={'class': 'form-control', 'autofocus': True}))
     password = forms.CharField(label='Пароль', widget=forms.PasswordInput(attrs={'class': 'form-control'}))
@@ -60,8 +75,7 @@ class OwnerRegisterForm(forms.Form):
 
     def clean_display_name(self):
         name = self.cleaned_data['display_name']
-        if re.search(r'[A-Za-z]', name):
-            raise forms.ValidationError('ФИО должно содержать только кириллицу.')
+        validate_cyrillic(name)
         return name
 
     def clean(self):
@@ -132,6 +146,16 @@ class OrganizationForm(forms.ModelForm):
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
+    def clean_code(self):
+        value = self.cleaned_data.get('code', '')
+        validate_cyrillic_code(value)
+        return value
+
+    def clean_name(self):
+        value = self.cleaned_data.get('name', '')
+        validate_cyrillic(value)
+        return value
+
 
 # ---------------------------------------------------------------------------
 # Faculty
@@ -156,6 +180,16 @@ class FacultyForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['created_at'].required = False
 
+    def clean_full_name(self):
+        value = self.cleaned_data.get('full_name', '')
+        validate_cyrillic(value)
+        return value
+
+    def clean_short_name(self):
+        value = self.cleaned_data.get('short_name', '')
+        validate_cyrillic_code(value)
+        return value
+
 
 # ---------------------------------------------------------------------------
 # Position
@@ -167,6 +201,11 @@ class PositionForm(forms.ModelForm):
         fields = ['name']
         labels = {'name': 'Название должности'}
         widgets = {'name': forms.TextInput(attrs={'class': 'form-control'})}
+
+    def clean_name(self):
+        value = self.cleaned_data.get('name', '')
+        validate_cyrillic(value)
+        return value
 
 
 # ---------------------------------------------------------------------------
@@ -252,6 +291,21 @@ class StudentForm(forms.ModelForm):
         else:
             self.fields['group'].queryset = Group.objects.select_related('faculty')
 
+    def clean_last_name(self):
+        value = self.cleaned_data.get('last_name', '')
+        validate_cyrillic(value)
+        return value
+
+    def clean_first_name(self):
+        value = self.cleaned_data.get('first_name', '')
+        validate_cyrillic(value)
+        return value
+
+    def clean_middle_name(self):
+        value = self.cleaned_data.get('middle_name', '')
+        validate_cyrillic(value)
+        return value
+
 
 class StudentFilterForm(forms.Form):
     search = forms.CharField(
@@ -336,6 +390,21 @@ class ParentForm(forms.ModelForm):
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
         }
 
+    def clean_last_name(self):
+        value = self.cleaned_data.get('last_name', '')
+        validate_cyrillic(value)
+        return value
+
+    def clean_first_name(self):
+        value = self.cleaned_data.get('first_name', '')
+        validate_cyrillic(value)
+        return value
+
+    def clean_middle_name(self):
+        value = self.cleaned_data.get('middle_name', '')
+        validate_cyrillic(value)
+        return value
+
 
 class StudentParentForm(forms.ModelForm):
     class Meta:
@@ -387,6 +456,21 @@ class EmployeeForm(forms.ModelForm):
         else:
             self.fields['position'].queryset = Position.objects.all()
 
+    def clean_last_name(self):
+        value = self.cleaned_data.get('last_name', '')
+        validate_cyrillic(value)
+        return value
+
+    def clean_first_name(self):
+        value = self.cleaned_data.get('first_name', '')
+        validate_cyrillic(value)
+        return value
+
+    def clean_middle_name(self):
+        value = self.cleaned_data.get('middle_name', '')
+        validate_cyrillic(value)
+        return value
+
 
 # ---------------------------------------------------------------------------
 # Subject
@@ -398,6 +482,11 @@ class SubjectForm(forms.ModelForm):
         fields = ['name']
         labels = {'name': 'Название предмета'}
         widgets = {'name': forms.TextInput(attrs={'class': 'form-control'})}
+
+    def clean_name(self):
+        value = self.cleaned_data.get('name', '')
+        validate_cyrillic(value)
+        return value
 
 
 # ---------------------------------------------------------------------------
@@ -471,6 +560,11 @@ class DocumentForm(forms.Form):
         widget=forms.ClearableFileInput(attrs={'class': 'form-control', 'multiple': True}),
     )
 
+    def clean_name(self):
+        value = self.cleaned_data.get('name', '')
+        validate_cyrillic(value)
+        return value
+
 
 # ---------------------------------------------------------------------------
 # User management
@@ -513,6 +607,17 @@ class UserCreateForm(forms.ModelForm):
         else:
             self.fields['employee'].queryset = Employee.objects.all()
 
+    def clean_username(self):
+        username = self.cleaned_data.get('username', '')
+        if re.search(r'[А-ЯЁа-яё]', username):
+            raise forms.ValidationError('Логин может содержать только латинские буквы, цифры и знаки _ и -.')
+        return username
+
+    def clean_display_name(self):
+        value = self.cleaned_data.get('display_name', '')
+        validate_cyrillic(value)
+        return value
+
     def clean(self):
         cleaned = super().clean()
         p1 = cleaned.get('password')
@@ -552,12 +657,19 @@ class UserEditForm(forms.ModelForm):
 
     def clean_username(self):
         username = self.cleaned_data['username']
+        if re.search(r'[А-ЯЁа-яё]', username):
+            raise forms.ValidationError('Логин может содержать только латинские буквы, цифры и знаки _ и -.')
         qs = User.objects.filter(username=username)
         if self.instance.pk:
             qs = qs.exclude(pk=self.instance.pk)
         if qs.exists():
             raise forms.ValidationError('Этот логин уже занят.')
         return username
+
+    def clean_display_name(self):
+        value = self.cleaned_data.get('display_name', '')
+        validate_cyrillic(value)
+        return value
 
 
 class PasswordChangeCustomForm(forms.Form):
