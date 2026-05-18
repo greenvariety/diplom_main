@@ -1372,14 +1372,18 @@ function OrgFormModal({ data, onClose }) {
           <input
             className="input"
             value={name}
-            onChange={e => { setName(e.target.value.replace(/[A-Za-z]/g, '')); setErr(''); }}
+            onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }}
+            onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); setName(prev => prev + t); setErr(''); }}
+            onChange={e => { setName(e.target.value); setErr(''); }}
           />
         </Field>
-        <Field label="Код организации" hint="Автоматически, если не указан">
+        <Field label="Код организации">
           <input
             className="input"
             value={code}
-            onChange={e => setCode(e.target.value.replace(/[A-Za-z\s]/g, '').toUpperCase())}
+            onBeforeInput={e => { if (e.data && /[A-Za-z\s]/.test(e.data)) e.preventDefault(); }}
+            onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z\s]/g, '').toUpperCase(); setCode(prev => (prev + t).slice(0, 20)); }}
+            onChange={e => setCode(e.target.value.toUpperCase())}
             maxLength={20}
           />
         </Field>
@@ -1396,7 +1400,9 @@ function OrgFormModal({ data, onClose }) {
             className="textarea"
             rows={4}
             value={description}
-            onChange={e => setDescription(e.target.value.replace(/[A-Za-z]/g, ''))}
+            onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }}
+            onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); setDescription(prev => prev + t); }}
+            onChange={e => setDescription(e.target.value)}
             style={{ resize: 'none' }}
           />
         </Field>
