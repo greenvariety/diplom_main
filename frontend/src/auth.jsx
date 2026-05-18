@@ -81,6 +81,7 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
                 }}
                 onBlur={() => onBlur('user')}
                 autoComplete="username"
+                maxLength={150}
               />
             </div>
           </Field>
@@ -126,7 +127,6 @@ function RegisterScreen({ onDone, onBack }) {
   const errs = {};
   if (!vals.login.trim()) errs.login = 'Введите логин';
   else if (vals.login.length < 3) errs.login = 'Минимум 3 символа';
-  else if (vals.login.length > 20) errs.login = 'Максимум 20 символов';
   if (!vals.name.trim()) errs.name = 'Укажите ФИО';
   else if (!/^[А-ЯЁа-яё\s\-]+$/.test(vals.name.trim())) errs.name = 'Только кириллица';
   else if (vals.name.trim().split(/\s+/).filter(Boolean).length !== 3) errs.name = 'Введите фамилию, имя и отчество (3 слова)';
@@ -202,6 +202,7 @@ function RegisterScreen({ onDone, onBack }) {
                     onChange={e => set('login', e.target.value.replace(/[А-ЯЁа-яё]/gi, ''))}
                     onKeyDown={e => { if (e.key.length === 1 && /[А-ЯЁа-яё]/i.test(e.key)) e.preventDefault(); }}
                     onBlur={() => setTouched(t => ({ ...t, login: 1 }))}
+                    maxLength={20}
                   />
                 </Field>
                 <Field
@@ -221,6 +222,7 @@ function RegisterScreen({ onDone, onBack }) {
                       set('name', inp.value.slice(0, inp.selectionStart) + clean + inp.value.slice(inp.selectionEnd));
                     }}
                     onBlur={() => setTouched(t => ({ ...t, name: 1 }))}
+                    maxLength={150}
                   />
                 </Field>
 
@@ -232,7 +234,6 @@ function RegisterScreen({ onDone, onBack }) {
                     value={vals.email}
                     onChange={e => set('email', e.target.value)}
                     onBlur={() => setTouched(t => ({ ...t, email: 1 }))}
-                    placeholder="example@mail.ru"
                     autoComplete="email"
                   />
                   {touched.email && errs.email && (
@@ -344,9 +345,9 @@ function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
                   className={`input ${touched && code.trim().length !== 6 && code !== '' ? 'is-error' : ''}`}
                   value={code}
                   onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
-                  placeholder="XXXXXX"
                   style={{ fontFamily: 'var(--font-mono)', fontSize: 22, letterSpacing: '0.25em', textAlign: 'center', maxWidth: 200 }}
                   autoComplete="one-time-code"
+                  maxLength={6}
                   autoFocus
                 />
               </Field>
@@ -443,6 +444,7 @@ function RecoverPasswordScreen({ onBack, onDone }) {
                     value={login}
                     onChange={e => setLogin(e.target.value)}
                     onKeyDown={e => { if (e.key.length === 1 && /[А-ЯЁа-яё]/i.test(e.key)) e.preventDefault(); }}
+                    maxLength={150}
                     autoFocus
                   />
                 </Field>
@@ -466,9 +468,9 @@ function RecoverPasswordScreen({ onBack, onDone }) {
                     className={`input ${touched.all && code.trim().length !== 6 ? 'is-error' : ''}`}
                     value={code}
                     onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
-                    placeholder="XXXXXX"
                     style={{ fontFamily: 'var(--font-mono)', fontSize: 20, letterSpacing: '0.2em', textAlign: 'center', maxWidth: 180 }}
                     autoComplete="one-time-code"
+                    maxLength={6}
                     autoFocus
                   />
                 </Field>

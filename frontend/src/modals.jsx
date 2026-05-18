@@ -177,12 +177,12 @@ function StudentFormModal({ data, onClose }) {
         <div className="form-section-title">Личные данные</div>
         <div className="form-grid">
           <Field label="Фамилия" required error={touched.last_name && errs.last_name}>
-            <input className={`input ${touched.last_name && errs.last_name ? 'is-error' : ''}`} value={vals.last_name} onChange={e => set('last_name', e.target.value)} onBlur={() => setTouched(t => ({ ...t, last_name: 1 }))} />
+            <input className={`input ${touched.last_name && errs.last_name ? 'is-error' : ''}`} value={vals.last_name} onChange={e => set('last_name', e.target.value)} onBlur={() => setTouched(t => ({ ...t, last_name: 1 }))} maxLength={100} />
           </Field>
           <Field label="Имя" required error={touched.first_name && errs.first_name}>
-            <input className={`input ${touched.first_name && errs.first_name ? 'is-error' : ''}`} value={vals.first_name} onChange={e => set('first_name', e.target.value)} onBlur={() => setTouched(t => ({ ...t, first_name: 1 }))} />
+            <input className={`input ${touched.first_name && errs.first_name ? 'is-error' : ''}`} value={vals.first_name} onChange={e => set('first_name', e.target.value)} onBlur={() => setTouched(t => ({ ...t, first_name: 1 }))} maxLength={100} />
           </Field>
-          <Field label="Отчество"><input className="input" value={vals.middle_name} onChange={e => set('middle_name', e.target.value)} /></Field>
+          <Field label="Отчество"><input className="input" value={vals.middle_name} onChange={e => set('middle_name', e.target.value)} maxLength={100} /></Field>
           <Field label="Дата рождения"><input className="input" type="date" value={vals.birth_date || ''} onChange={e => set('birth_date', e.target.value)} /></Field>
         </div>
       </div>
@@ -190,7 +190,7 @@ function StudentFormModal({ data, onClose }) {
       <div className="form-section">
         <div className="form-section-title">Контакты</div>
         <div className="form-grid">
-          <Field label="Телефон"><input className="input" value={vals.phone} onChange={e => set('phone', e.target.value)} /></Field>
+          <Field label="Телефон"><input className="input" value={vals.phone} onChange={e => set('phone', e.target.value)} maxLength={20} /></Field>
           <Field label="Email" error={touched.email && errs.email}>
             <input className={`input ${touched.email && errs.email ? 'is-error' : ''}`} value={vals.email} onChange={e => set('email', e.target.value)} onBlur={() => setTouched(t => ({ ...t, email: 1 }))} />
           </Field>
@@ -286,13 +286,13 @@ function EmployeeFormModal({ data, onClose }) {
         <div className="form-section-title">Личные данные</div>
         <div className="form-grid">
           <Field label="Фамилия" required error={err && !lastName.trim() ? err : ''}>
-            <input className="input" value={lastName} onChange={e => { setLastName(e.target.value); setErr(''); }} />
+            <input className="input" value={lastName} onChange={e => { setLastName(e.target.value); setErr(''); }} maxLength={100} />
           </Field>
           <Field label="Имя" required>
-            <input className="input" value={firstName} onChange={e => { setFirstName(e.target.value); setErr(''); }} />
+            <input className="input" value={firstName} onChange={e => { setFirstName(e.target.value); setErr(''); }} maxLength={100} />
           </Field>
           <Field label="Отчество">
-            <input className="input" value={middleName} onChange={e => setMiddleName(e.target.value)} />
+            <input className="input" value={middleName} onChange={e => setMiddleName(e.target.value)} maxLength={100} />
           </Field>
           <Field label="Дата рождения">
             <input className="input" type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} />
@@ -303,7 +303,7 @@ function EmployeeFormModal({ data, onClose }) {
         <div className="form-section-title">Контакты</div>
         <div className="form-grid">
           <Field label="Телефон">
-            <input className="input" value={phone} onChange={e => setPhone(e.target.value)} />
+            <input className="input" value={phone} onChange={e => setPhone(e.target.value)} maxLength={20} />
           </Field>
           <Field label="Email">
             <input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} />
@@ -487,7 +487,7 @@ function FacultyFormModal({ data, onClose }) {
           <input className="input" value={shortName} onChange={e => { setShortName(e.target.value.toUpperCase()); setErr(''); }} maxLength={50} />
         </Field>
         <Field label="Полное название" required>
-          <input className="input" value={fullName} onChange={e => { setFullName(e.target.value); setErr(''); }} />
+          <input className="input" value={fullName} onChange={e => { setFullName(e.target.value); setErr(''); }} maxLength={255} />
         </Field>
         {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
       </div>
@@ -544,9 +544,9 @@ function ParentFormModal({ data, onClose }) {
         <LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton>
       </>}>
       <div className="form-grid">
-        <Field label="Фамилия" required><input className="input" value={lastName} onChange={e => { setLastName(e.target.value); setErr(''); }} /></Field>
-        <Field label="Имя" required><input className="input" value={firstName} onChange={e => { setFirstName(e.target.value); setErr(''); }} /></Field>
-        <Field label="Отчество"><input className="input" value={middleName} onChange={e => setMiddleName(e.target.value)} /></Field>
+        <Field label="Фамилия" required><input className="input" value={lastName} onChange={e => { setLastName(e.target.value); setErr(''); }} maxLength={100} /></Field>
+        <Field label="Имя" required><input className="input" value={firstName} onChange={e => { setFirstName(e.target.value); setErr(''); }} maxLength={100} /></Field>
+        <Field label="Отчество"><input className="input" value={middleName} onChange={e => setMiddleName(e.target.value)} maxLength={100} /></Field>
         {isStudentContext && !isEdit && (
           <Field label="Связь" required>
             <select className="select" value={relationType} onChange={e => setRelationType(e.target.value)}>
@@ -556,7 +556,7 @@ function ParentFormModal({ data, onClose }) {
             </select>
           </Field>
         )}
-        <Field label="Телефон"><input className="input" value={phone} onChange={e => setPhone(e.target.value)} /></Field>
+        <Field label="Телефон"><input className="input" value={phone} onChange={e => setPhone(e.target.value)} maxLength={20} /></Field>
         <Field label="Email"><input className="input" value={email} onChange={e => setEmail(e.target.value)} /></Field>
         {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
       </div>
@@ -595,7 +595,7 @@ function SubjectFormModal({ data, onClose }) {
       footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton></>}>
       <div className="form-grid">
         <Field label="Название" required error={err}>
-          <input className="input" value={name} onChange={e => { setName(e.target.value); setErr(''); }} />
+          <input className="input" value={name} onChange={e => { setName(e.target.value); setErr(''); }} maxLength={255} />
         </Field>
       </div>
     </Modal>
@@ -633,7 +633,7 @@ function PositionFormModal({ data, onClose }) {
       footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton></>}>
       <div className="form-grid">
         <Field label="Название" required error={err}>
-          <input className="input" value={name} onChange={e => { setName(e.target.value); setErr(''); }} />
+          <input className="input" value={name} onChange={e => { setName(e.target.value); setErr(''); }} maxLength={255} />
         </Field>
       </div>
     </Modal>
@@ -716,11 +716,11 @@ function UserFormModal({ data, onClose }) {
       <div className="form-grid">
         {!isEdit && (
           <Field label="Логин" required>
-            <input className="input" value={username} onChange={e => setUsername(e.target.value)} />
+            <input className="input" value={username} onChange={e => setUsername(e.target.value)} maxLength={150} />
           </Field>
         )}
         <Field label="ФИО">
-          <input className="input" value={displayName} onChange={e => setDisplayName(e.target.value)} />
+          <input className="input" value={displayName} onChange={e => setDisplayName(e.target.value)} maxLength={150} />
         </Field>
         <Field label="Роль" required>
           <select className="select" value={role} onChange={e => setRole(e.target.value)}>
@@ -870,11 +870,12 @@ function DeleteConfirmModal({ data, onClose }) {
   const ref = useRef(null);
 
   const submit = async () => {
-    if (!confirmed || !reason.trim()) {
+    if (!confirmed || !reason.trim() || reason.length > 1000) {
       setShake(true);
       setTimeout(() => setShake(false), 400);
       if (!reason.trim() && !confirmed) toast.push('Укажите причину удаления и подтвердите действие', { kind: 'err' });
       else if (!reason.trim()) toast.push('Укажите причину удаления', { kind: 'err' });
+      else if (reason.length > 1000) toast.push('Причина не должна превышать 1000 символов', { kind: 'err' });
       else toast.push('Подтвердите действие', { kind: 'err' });
       return;
     }
@@ -906,7 +907,9 @@ function DeleteConfirmModal({ data, onClose }) {
         </div>
         <div className="field" style={{ marginTop: 16 }}>
           <label className="field-label">Причина удаления<span className="req">*</span></label>
-          <textarea className={`textarea ${shake && !reason.trim() ? 'is-error' : ''}`} value={reason} onChange={e => setReason(e.target.value)} />
+          <textarea className={`textarea ${(shake && !reason.trim()) || reason.length > 1000 ? 'is-error' : ''}`} value={reason} onChange={e => setReason(e.target.value)} />
+          {reason.length > 1000 && <div className="field-error">{I.alert}Максимум 1000 символов</div>}
+          <div style={{ fontSize: 11, color: reason.length > 1000 ? 'var(--bad-fg)' : 'var(--text-muted)', textAlign: 'right', marginTop: 2 }}>{reason.length} / 1000</div>
         </div>
         <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 12, fontSize: 13, cursor: 'pointer' }}>
           <input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} style={{ marginTop: 2 }} />
@@ -1002,7 +1005,7 @@ function UploadDocModal({ data, onClose }) {
         <input type="file" style={{ display: 'none' }} accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={e => { const f = e.target.files?.[0]; if (f) { setFile(f); setName(f.name); } }} />
       </label>
       <Field label="Название документа">
-        <input className="input" value={name} onChange={e => setName(e.target.value)} />
+        <input className="input" value={name} onChange={e => setName(e.target.value)} maxLength={255} />
       </Field>
       <Field label="Тип документа">
         <select className="select" value={docType} onChange={e => setDocType(e.target.value)}>
@@ -1321,6 +1324,7 @@ function OrgFormModal({ data, onClose }) {
     const nameErr = !name.trim() ? 'Введите название' : '';
     const dateErr = !foundedDate ? 'Укажите дату основания' : foundedDate > today ? 'Дата не может быть в будущем' : '';
     if (nameErr || dateErr) { setErrs({ name: nameErr, date: dateErr }); return; }
+    if (description.length > 5000) { toast.push('Описание не должно превышать 5000 символов', { kind: 'err' }); return; }
     setErrs({ name: '', date: '' });
     try {
       const fd = new FormData();
@@ -1431,16 +1435,17 @@ function OrgFormModal({ data, onClose }) {
         </Field>
         <Field label="Описание" hint={touched.description ? 'Необязательное поле' : null} extraClass="field-full">
           <textarea
-            className="textarea"
+            className={`textarea ${description.length > 5000 ? 'is-error' : ''}`}
             rows={4}
             value={description}
             onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }}
-            onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); setDescription(prev => (prev + t).slice(0, 5000)); }}
+            onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); setDescription(prev => prev + t); }}
             onChange={e => setDescription(e.target.value)}
             onFocus={() => touch('description')}
-            maxLength={5000}
             style={{ resize: 'none' }}
           />
+          {description.length > 5000 && <div className="field-error">{I.alert}Максимум 5000 символов</div>}
+          <div style={{ fontSize: 11, color: description.length > 5000 ? 'var(--bad-fg)' : 'var(--text-muted)', textAlign: 'right', marginTop: 2 }}>{description.length} / 5000</div>
         </Field>
       </div>
     </Modal>
@@ -1573,9 +1578,9 @@ function OrgDeleteConfirmModal({ data, onClose }) {
             className={`input ${shake && code.trim().length !== 6 ? 'is-error' : ''}`}
             value={code}
             onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
-            placeholder="XXXXXX"
             style={{ fontFamily: 'var(--font-mono)', fontSize: 20, letterSpacing: '0.2em', textAlign: 'center', maxWidth: 180 }}
             autoComplete="one-time-code"
+            maxLength={6}
             autoFocus
           />
         </Field>
