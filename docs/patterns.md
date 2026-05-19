@@ -67,6 +67,39 @@ obj.delete()
 - `student-list`, `student-detail`, `student-add`, `student-edit`, `student-delete-request`
 - В шаблонах: `{% url 'student-detail' pk=student.pk %}`
 
+## Ошибки полей ввода (React-фронтенд)
+
+**Правило:** каждое обязательное поле при ошибке показывает красную рамку + красный текст под полем. Оба исчезают через 15-20 секунд автоматически — дополнительного кода для этого не нужно.
+
+Шаблон:
+
+```jsx
+<Field label="Название поля" required error={условие ? 'Текст ошибки' : null}>
+  <input className={`input ${условие ? 'is-error' : ''}`} ... />
+</Field>
+```
+
+- Для `<select>` - класс `select` вместо `input`
+- Для `<textarea>` - класс `textarea` вместо `input`
+- `Field` сам рендерит текст ошибки через `FadingError` (из `utils.jsx`) - отдельно добавлять не нужно
+- CSS через `:has()` убирает рамку синхронно с текстом - ничего доделывать не нужно
+
+**С touched (валидация при blur):**
+```jsx
+<Field label="Имя" required error={touched.name && errs.name}>
+  <input className={`input ${touched.name && errs.name ? 'is-error' : ''}`}
+    onBlur={() => setTouched(t => ({ ...t, name: 1 }))} ... />
+</Field>
+```
+
+**С err (валидация при сабмите):**
+```jsx
+<Field label="Название" required error={err && !name.trim() ? err : null}>
+  <input className={`input ${err && !name.trim() ? 'is-error' : ''}`}
+    onChange={e => { setName(e.target.value); setErr(''); }} ... />
+</Field>
+```
+
 ## Фильтрация данных для преподавателя
 
 Преподаватель видит только свои группы. Шаблон фильтрации:
