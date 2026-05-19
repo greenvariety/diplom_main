@@ -182,8 +182,8 @@ function FadingError({ error, style }) {
     if (error) {
       setFading(false);
       setHidden(false);
-      timerRef.current = setTimeout(() => setFading(true), 12000);
-      hideRef.current = setTimeout(() => setHidden(true), 15000);
+      timerRef.current = setTimeout(() => setFading(true), 15000);
+      hideRef.current = setTimeout(() => setHidden(true), 20000);
     } else {
       setFading(false);
       setHidden(false);

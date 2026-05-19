@@ -788,7 +788,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
   display: flex; align-items: center; gap: 4px;
   font-size: 11.5px; color: var(--bad-fg); margin-top: 4px;
   animation: error-in .15s ease;
-  transition: opacity 3s ease;
+  transition: opacity 5s ease;
 }
 .field-error.is-fading { opacity: 0; }
 .field-error .icon { width: 12px; height: 12px; }
