@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { I } from './data.jsx';
 import { useToast, PasswordRules, PasswordStrength, PasswordInput, Field, LoadButton, pwStrength } from './utils.jsx';
@@ -286,11 +286,107 @@ function RegisterScreen({ onDone, onBack }) {
 }
 
 /* ============================================================
+   CodeInput - 6 ячеек для ввода кода (только A-Z и 0-9)
+   ============================================================ */
+function CodeInput({ onChange, hasError, autoFocus }) {
+  const refs = useRef([]);
+  const [cells, setCells] = useState(['', '', '', '', '', '']);
+
+  const focusAt = (i) => {
+    const el = refs.current[i];
+    if (el) { el.focus(); el.select(); }
+  };
+
+  const handleFocus = (idx) => {
+    const firstEmpty = cells.findIndex(c => !c);
+    if (firstEmpty !== -1 && firstEmpty < idx) {
+      setTimeout(() => focusAt(firstEmpty), 0);
+    }
+  };
+
+  const handleKeyDown = (idx, e) => {
+    if (e.key === 'Backspace') {
+      e.preventDefault();
+      const arr = [...cells];
+      if (arr[idx]) {
+        arr[idx] = '';
+        setCells(arr);
+        onChange(arr.join(''));
+      } else if (idx > 0) {
+        arr[idx - 1] = '';
+        setCells(arr);
+        onChange(arr.join(''));
+        focusAt(idx - 1);
+      }
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      if (idx > 0) focusAt(idx - 1);
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      if (idx < 5) focusAt(idx + 1);
+    }
+  };
+
+  const handleChange = (idx, e) => {
+    const clean = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (!clean) return;
+    const arr = [...cells];
+    arr[idx] = clean[clean.length - 1];
+    setCells(arr);
+    onChange(arr.join(''));
+    if (idx < 5) focusAt(idx + 1);
+  };
+
+  const handlePaste = (idx, e) => {
+    e.preventDefault();
+    const pasted = (e.clipboardData.getData('text') || '')
+      .toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6 - idx);
+    if (!pasted) return;
+    const arr = [...cells];
+    pasted.split('').forEach((c, i) => { if (idx + i < 6) arr[idx + i] = c; });
+    setCells(arr);
+    onChange(arr.join(''));
+    focusAt(Math.min(idx + pasted.length, 5));
+  };
+
+  return (
+    <div style={{ display: 'flex', gap: 8 }}>
+      {cells.map((ch, idx) => (
+        <input
+          key={idx}
+          ref={el => { refs.current[idx] = el; }}
+          type="text"
+          inputMode="text"
+          autoComplete={idx === 0 ? 'one-time-code' : 'off'}
+          autoFocus={autoFocus && idx === 0}
+          maxLength={2}
+          value={ch}
+          className={`input${hasError ? ' is-error' : ''}`}
+          style={{
+            width: 44, height: 52,
+            textAlign: 'center',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 22,
+            fontWeight: 600,
+            padding: 0,
+          }}
+          onChange={e => handleChange(idx, e)}
+          onKeyDown={e => handleKeyDown(idx, e)}
+          onPaste={e => handlePaste(idx, e)}
+          onFocus={() => handleFocus(idx)}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ============================================================
    EmailVerifyScreen
    ============================================================ */
 function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
   const toast = useToast();
   const [code, setCode] = useState('');
+  const [codeKey, setCodeKey] = useState(0);
   const [touched, setTouched] = useState(false);
   const [cooldown, setCooldown] = useState(60);
   const [resending, setResending] = useState(false);
@@ -330,6 +426,7 @@ function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
       toast.push('Новый код отправлен на почту', { kind: 'ok' });
       setCooldown(60);
       setCode('');
+      setCodeKey(k => k + 1);
     } catch (err) {
       const retryAfter = err.response?.data?.retry_after;
       if (retryAfter) setCooldown(retryAfter);
@@ -362,16 +459,8 @@ function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
                 Мы отправили 6-значный код на адрес <strong>{maskedEmail}</strong>. Введите его ниже. Код действителен 10 минут.
               </p>
 
-              <Field label="Код подтверждения" required error={touched && code.trim().length !== 6 && code !== '' ? 'Код должен содержать 6 символов' : null}>
-                <input
-                  className={`input ${touched && code.trim().length !== 6 && code !== '' ? 'is-error' : ''}`}
-                  value={code}
-                  onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
-                  style={{ fontFamily: 'var(--font-mono)', fontSize: 22, letterSpacing: '0.25em', textAlign: 'center', maxWidth: 200 }}
-                  autoComplete="one-time-code"
-                  maxLength={6}
-                  autoFocus
-                />
+              <Field label="Код подтверждения" required error={touched && code.length < 6 && code.length > 0 ? 'Введите все 6 символов' : null}>
+                <CodeInput key={codeKey} onChange={setCode} hasError={touched && code.length < 6 && code.length > 0} autoFocus />
               </Field>
 
               <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 12, fontSize: 13 }}>
@@ -493,15 +582,7 @@ function RecoverPasswordScreen({ onBack, onDone }) {
                 </p>
 
                 <Field label="Код из письма" required>
-                  <input
-                    className={`input ${touched.all && code.trim().length !== 6 ? 'is-error' : ''}`}
-                    value={code}
-                    onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
-                    style={{ fontFamily: 'var(--font-mono)', fontSize: 20, letterSpacing: '0.2em', textAlign: 'center', maxWidth: 180 }}
-                    autoComplete="one-time-code"
-                    maxLength={6}
-                    autoFocus
-                  />
+                  <CodeInput onChange={setCode} hasError={touched.all && code.length !== 6} autoFocus />
                 </Field>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 16 }}>
