@@ -116,12 +116,14 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
 /* ============================================================
    RegisterScreen
    ============================================================ */
-function RegisterScreen({ onDone, onBack }) {
+function RegisterScreen({ onDone, onBack, onTerms }) {
   const toast = useToast();
   const [vals, setVals] = useState({ login: '', name: '', email: '', pass: '', pass2: '' });
   const [touched, setTouched] = useState({});
   const [pwFocus, setPwFocus] = useState(false);
   const [pw2Touched, setPw2Touched] = useState(false);
+  const [agree, setAgree] = useState(false);
+  const [agreeTouched, setAgreeTouched] = useState(false);
   const set = (k, v) => setVals(s => ({ ...s, [k]: v }));
 
   const errs = {};
@@ -151,6 +153,11 @@ function RegisterScreen({ onDone, onBack }) {
       ...(vals.pass && vals.pass2 && vals.pass !== vals.pass2 ? { pass2: 'Пароли не совпадают' } : {}),
     };
     setTouched({ login: 1, name: 1, email: 1, pass: 1, pass2: 1 });
+    setAgreeTouched(true);
+    if (!agree) {
+      toast.push('Необходимо принять пользовательское соглашение', { kind: 'err' });
+      return;
+    }
     if (Object.keys(full).length || Object.keys(errs).length) {
       toast.push('Исправьте ошибки в форме', { kind: 'err' });
       return;
@@ -271,6 +278,30 @@ function RegisterScreen({ onDone, onBack }) {
                   </div>}
                   {pw2Touched && errs.pass2 && <div className="field-error">{I.alert}{errs.pass2}</div>}
                 </div>
+              </div>
+
+              <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, cursor: 'pointer', color: 'var(--text)' }}>
+                  <input
+                    type="checkbox"
+                    checked={agree}
+                    onChange={e => { setAgree(e.target.checked); setAgreeTouched(true); }}
+                    style={{ marginTop: 2, flexShrink: 0, width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--accent)' }}
+                  />
+                  <span>
+                    Я ознакомился(-лась) и согласен(-на) с{' '}
+                    <a
+                      href="#"
+                      onClick={e => { e.preventDefault(); onTerms && onTerms(); }}
+                      style={{ color: 'var(--accent)', fontWeight: 500 }}
+                    >
+                      пользовательским соглашением
+                    </a>
+                  </span>
+                </label>
+                {agreeTouched && !agree && (
+                  <div className="field-error" style={{ marginTop: 6 }}>{I.alert}Необходимо принять соглашение для регистрации</div>
+                )}
               </div>
             </div>
             <div className="modal-foot">
@@ -615,4 +646,116 @@ function RecoverPasswordScreen({ onBack, onDone }) {
   );
 }
 
-export { LoginScreen, RegisterScreen, EmailVerifyScreen, RecoverPasswordScreen };
+/* ============================================================
+   TermsScreen - пользовательское соглашение
+   ============================================================ */
+function TermsScreen({ onBack }) {
+  return (
+    <div className="login-wrap" style={{ gridTemplateColumns: '1fr' }}>
+      <div className="login-form-wrap screen-fade-in" style={{ padding: '40px 24px', alignItems: 'flex-start', justifyContent: 'flex-start' }}>
+        <div style={{ width: '100%', maxWidth: 680, margin: '0 auto' }}>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, justifyContent: 'center' }}>
+            <img src="/logo.png" style={{ width: 36, height: 36, objectFit: 'contain', borderRadius: '50%' }} alt="" />
+            <div style={{ fontWeight: 600 }}>АИСК</div>
+          </div>
+
+          <div className="card">
+            <div className="card-body" style={{ padding: 28 }}>
+              <h2 style={{ marginBottom: 4 }}>Пользовательское соглашение</h2>
+              <p className="muted" style={{ fontSize: 12, marginBottom: 24 }}>
+                АИС «Учёт студентов» (АИСК) - версия 2.0 - действует с 2026 года
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20, fontSize: 14, lineHeight: 1.7, color: 'var(--text)' }}>
+
+                <section>
+                  <div style={{ fontWeight: 600, marginBottom: 6, color: 'var(--text)', fontSize: 15 }}>1. Предмет соглашения</div>
+                  <p style={{ margin: 0, color: 'var(--text-muted)' }}>
+                    Настоящее пользовательское соглашение регулирует условия использования автоматизированной
+                    информационной системы «Учёт студентов» (далее - Система), предназначенной для ведения
+                    учёта студентов, сотрудников, групп и документов учебных заведений.
+                  </p>
+                </section>
+
+                <section>
+                  <div style={{ fontWeight: 600, marginBottom: 6, color: 'var(--text)', fontSize: 15 }}>2. Пользователи Системы</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, color: 'var(--text-muted)' }}>
+                    <div><strong style={{ color: 'var(--text)' }}>Владелец</strong> - физическое лицо, создающее аккаунт и управляющее одной или несколькими организациями в Системе.</div>
+                    <div><strong style={{ color: 'var(--text)' }}>Администратор</strong> - сотрудник учебного заведения, которому Владелец предоставил расширенный доступ.</div>
+                    <div><strong style={{ color: 'var(--text)' }}>Преподаватель</strong> - сотрудник учебного заведения с ограниченным доступом к данным своих групп.</div>
+                  </div>
+                </section>
+
+                <section>
+                  <div style={{ fontWeight: 600, marginBottom: 6, color: 'var(--text)', fontSize: 15 }}>3. Персональные данные</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, color: 'var(--text-muted)' }}>
+                    <div>3.1. При регистрации Владелец предоставляет: логин, ФИО и адрес электронной почты.</div>
+                    <div>3.2. Данные хранятся на сервере, размещённом Владельцем организации, и не передаются третьим лицам.</div>
+                    <div>3.3. Адрес электронной почты используется исключительно для подтверждения аккаунта, восстановления пароля и удаления организации.</div>
+                    <div>3.4. Данные студентов, сотрудников и опекунов, вносимые в Систему, являются ответственностью Владельца и обрабатываются в соответствии с законодательством РФ о персональных данных.</div>
+                  </div>
+                </section>
+
+                <section>
+                  <div style={{ fontWeight: 600, marginBottom: 6, color: 'var(--text)', fontSize: 15 }}>4. Обязанности Пользователя</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, color: 'var(--text-muted)' }}>
+                    <div>4.1. Пользователь обязан обеспечивать конфиденциальность своих учётных данных (логина и пароля).</div>
+                    <div>4.2. Запрещается передавать доступ к аккаунту третьим лицам без соответствующего оформления через Систему.</div>
+                    <div>4.3. Пользователь несёт полную ответственность за все действия, совершённые с его аккаунта.</div>
+                    <div>4.4. Запрещается использовать Систему в целях, нарушающих законодательство Российской Федерации.</div>
+                    <div>4.5. Запрещается вносить заведомо ложные сведения о студентах, сотрудниках и иных лицах.</div>
+                  </div>
+                </section>
+
+                <section>
+                  <div style={{ fontWeight: 600, marginBottom: 6, color: 'var(--text)', fontSize: 15 }}>5. Права администрации</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, color: 'var(--text-muted)' }}>
+                    <div>5.1. Администрация вправе заблокировать или удалить аккаунт при нарушении настоящего соглашения.</div>
+                    <div>5.2. Администрация вправе вносить изменения в функциональность Системы без предварительного уведомления.</div>
+                  </div>
+                </section>
+
+                <section>
+                  <div style={{ fontWeight: 600, marginBottom: 6, color: 'var(--text)', fontSize: 15 }}>6. Ограничение ответственности</div>
+                  <p style={{ margin: 0, color: 'var(--text-muted)' }}>
+                    Система предоставляется «как есть». Администрация не несёт ответственности за возможные
+                    технические сбои, потерю данных по причинам, не зависящим от Системы, а также за
+                    корректность данных, внесённых Пользователями.
+                  </p>
+                </section>
+
+                <section>
+                  <div style={{ fontWeight: 600, marginBottom: 6, color: 'var(--text)', fontSize: 15 }}>7. Срок действия и расторжение</div>
+                  <p style={{ margin: 0, color: 'var(--text-muted)' }}>
+                    Соглашение вступает в силу с момента завершения регистрации и действует бессрочно.
+                    Пользователь вправе в любой момент прекратить использование Системы, удалив свой аккаунт
+                    и все связанные с ним организации.
+                  </p>
+                </section>
+
+                <section>
+                  <div style={{ fontWeight: 600, marginBottom: 6, color: 'var(--text)', fontSize: 15 }}>8. Применимое право</div>
+                  <p style={{ margin: 0, color: 'var(--text-muted)' }}>
+                    Настоящее соглашение составлено и регулируется законодательством Российской Федерации.
+                    Все споры разрешаются в судебном порядке по месту нахождения администрации Системы.
+                  </p>
+                </section>
+
+              </div>
+            </div>
+            <div className="modal-foot">
+              <button className="btn btn-secondary" onClick={() => onBack && onBack()}>{I.back}Вернуться к регистрации</button>
+            </div>
+          </div>
+
+          <div style={{ textAlign: 'center', marginTop: 16, fontSize: 12, color: 'var(--text-faint)' }}>
+            ГБПОУ МКАГ - Дипломная работа - Пушков Н. М. - Группа ИСиП-3-22 - 2026
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export { LoginScreen, RegisterScreen, EmailVerifyScreen, RecoverPasswordScreen, TermsScreen };
