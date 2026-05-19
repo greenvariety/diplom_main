@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { I } from './data.jsx';
 import { useToast, PasswordRules, PasswordStrength, PasswordInput, FadingError, Field, LoadButton, pwStrength } from './utils.jsx';
@@ -372,31 +372,35 @@ function CodeInput({ onChange, hasError, autoFocus }) {
   };
 
   return (
-    <div style={{ display: 'flex', gap: 8 }}>
+    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
       {cells.map((ch, idx) => (
-        <input
-          key={idx}
-          ref={el => { refs.current[idx] = el; }}
-          type="text"
-          inputMode="text"
-          autoComplete={idx === 0 ? 'one-time-code' : 'off'}
-          autoFocus={autoFocus && idx === 0}
-          maxLength={2}
-          value={ch}
-          className={`input${hasError ? ' is-error' : ''}`}
-          style={{
-            width: 44, height: 52,
-            textAlign: 'center',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 22,
-            fontWeight: 600,
-            padding: 0,
-          }}
-          onChange={e => handleChange(idx, e)}
-          onKeyDown={e => handleKeyDown(idx, e)}
-          onPaste={e => handlePaste(idx, e)}
-          onFocus={() => handleFocus(idx)}
-        />
+        <React.Fragment key={idx}>
+          {idx === 3 && (
+            <span style={{ fontSize: 24, fontWeight: 300, color: 'var(--text-muted)', userSelect: 'none', marginInline: 2 }}>-</span>
+          )}
+          <input
+            ref={el => { refs.current[idx] = el; }}
+            type="text"
+            inputMode="text"
+            autoComplete={idx === 0 ? 'one-time-code' : 'off'}
+            autoFocus={autoFocus && idx === 0}
+            maxLength={2}
+            value={ch}
+            className={`input${hasError ? ' is-error' : ''}`}
+            style={{
+              width: 44, height: 52,
+              textAlign: 'center',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 22,
+              fontWeight: 600,
+              padding: 0,
+            }}
+            onChange={e => handleChange(idx, e)}
+            onKeyDown={e => handleKeyDown(idx, e)}
+            onPaste={e => handlePaste(idx, e)}
+            onFocus={() => handleFocus(idx)}
+          />
+        </React.Fragment>
       ))}
     </div>
   );
@@ -484,7 +488,7 @@ function EmailVerifyScreen({ maskedEmail, login, debugCode, onDone, onBack }) {
 
               {debugCode && (
                 <div style={{ background: 'var(--warn-bg, #fffbeb)', border: '1px solid var(--warn-border, #fcd34d)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: 'var(--warn-text, #92400e)' }}>
-                  <strong>Режим разработки:</strong> email не настроен. Ваш код: <strong style={{ fontFamily: 'var(--font-mono)', fontSize: 16, letterSpacing: 2 }}>{debugCode}</strong>
+                  <strong>Режим разработки:</strong> email не настроен. Ваш код: <strong style={{ fontFamily: 'var(--font-mono)', fontSize: 16, letterSpacing: 2 }}>{debugCode.length === 6 ? `${debugCode.slice(0,3)}-${debugCode.slice(3)}` : debugCode}</strong>
                 </div>
               )}
 

@@ -172,7 +172,7 @@ class VerifyEmailView(APIView):
 
     def post(self, request):
         login = request.data.get('login', '').strip()
-        code = request.data.get('code', '').strip().upper()
+        code = request.data.get('code', '').strip().upper().replace('-', '')
 
         if not login or not code:
             return Response({'error': 'Введите логин и код'}, status=400)
@@ -274,7 +274,7 @@ class RecoverView(APIView):
 
     def post(self, request):
         login = request.data.get('login', '').strip()
-        code = request.data.get('code', '').strip().upper()
+        code = request.data.get('code', '').strip().upper().replace('-', '')
         new_password = request.data.get('new_password', '')
 
         if not login:
