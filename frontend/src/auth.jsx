@@ -148,7 +148,6 @@ function RegisterScreen({ onDone, onBack, onTerms }) {
     setPw2Touched(true);
     setSubmitAttempted(true);
     if (Object.keys(errs).length) {
-      toast.push('Исправьте ошибки в форме', { kind: 'err' });
       return;
     }
     if (!agree) {
