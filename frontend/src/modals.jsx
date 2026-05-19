@@ -286,7 +286,7 @@ function EmployeeFormModal({ data, onClose }) {
         <div className="form-section-title">Личные данные</div>
         <div className="form-grid">
           <Field label="Фамилия" required error={err && !lastName.trim() ? err : ''}>
-            <input className="input" value={lastName} onChange={e => { setLastName(e.target.value); setErr(''); }} maxLength={100} />
+            <input className={`input ${err && !lastName.trim() ? 'is-error' : ''}`} value={lastName} onChange={e => { setLastName(e.target.value); setErr(''); }} maxLength={100} />
           </Field>
           <Field label="Имя" required>
             <input className="input" value={firstName} onChange={e => { setFirstName(e.target.value); setErr(''); }} maxLength={100} />
@@ -426,14 +426,14 @@ function GroupFormModal({ data, onClose }) {
         <LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton>
       </>}>
       <div className="form-grid">
-        <Field label="Факультет" required>
-          <select className="select" value={facultyId} onChange={e => { setFacultyId(e.target.value); setErr(''); }}>
+        <Field label="Факультет" required error={err && !facultyId ? err : null}>
+          <select className={`select ${err && !facultyId ? 'is-error' : ''}`} value={facultyId} onChange={e => { setFacultyId(e.target.value); setErr(''); }}>
             <option value="">- Выберите факультет -</option>
             {faculties.map(f => <option key={f.id} value={f.id}>{f.short_name} - {f.full_name}</option>)}
           </select>
         </Field>
-        <Field label="Год начала" required>
-          <input className="input" type="number" value={year} onChange={e => { setYear(e.target.value); setErr(''); }} min={2000} max={2099} />
+        <Field label="Год начала" required error={err && facultyId && !year ? err : null}>
+          <input className={`input ${err && facultyId && !year ? 'is-error' : ''}`} type="number" value={year} onChange={e => { setYear(e.target.value); setErr(''); }} min={2000} max={2099} />
         </Field>
         <div className="field field-full">
           <label className="field-label">Классный руководитель</label>
@@ -442,7 +442,7 @@ function GroupFormModal({ data, onClose }) {
             {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
           </select>
         </div>
-        {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
+        {err && facultyId && year && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
       </div>
     </Modal>
   );
@@ -483,13 +483,13 @@ function FacultyFormModal({ data, onClose }) {
         <LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton>
       </>}>
       <div className="form-grid">
-        <Field label="Код (аббревиатура)" required>
-          <input className="input" value={shortName} onChange={e => { setShortName(e.target.value.toUpperCase()); setErr(''); }} maxLength={50} />
+        <Field label="Код (аббревиатура)" required error={err && !shortName.trim() ? err : null}>
+          <input className={`input ${err && !shortName.trim() ? 'is-error' : ''}`} value={shortName} onChange={e => { setShortName(e.target.value.toUpperCase()); setErr(''); }} maxLength={50} />
         </Field>
-        <Field label="Полное название" required>
-          <input className="input" value={fullName} onChange={e => { setFullName(e.target.value); setErr(''); }} maxLength={255} />
+        <Field label="Полное название" required error={err && shortName.trim() && !fullName.trim() ? err : null}>
+          <input className={`input ${err && shortName.trim() && !fullName.trim() ? 'is-error' : ''}`} value={fullName} onChange={e => { setFullName(e.target.value); setErr(''); }} maxLength={255} />
         </Field>
-        {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
+        {err && shortName.trim() && fullName.trim() && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
       </div>
     </Modal>
   );
@@ -544,8 +544,8 @@ function ParentFormModal({ data, onClose }) {
         <LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton>
       </>}>
       <div className="form-grid">
-        <Field label="Фамилия" required><input className="input" value={lastName} onChange={e => { setLastName(e.target.value); setErr(''); }} maxLength={100} /></Field>
-        <Field label="Имя" required><input className="input" value={firstName} onChange={e => { setFirstName(e.target.value); setErr(''); }} maxLength={100} /></Field>
+        <Field label="Фамилия" required error={err && !lastName.trim() ? err : null}><input className={`input ${err && !lastName.trim() ? 'is-error' : ''}`} value={lastName} onChange={e => { setLastName(e.target.value); setErr(''); }} maxLength={100} /></Field>
+        <Field label="Имя" required error={err && lastName.trim() && !firstName.trim() ? err : null}><input className={`input ${err && lastName.trim() && !firstName.trim() ? 'is-error' : ''}`} value={firstName} onChange={e => { setFirstName(e.target.value); setErr(''); }} maxLength={100} /></Field>
         <Field label="Отчество"><input className="input" value={middleName} onChange={e => setMiddleName(e.target.value)} maxLength={100} /></Field>
         {isStudentContext && !isEdit && (
           <Field label="Связь" required>
@@ -558,7 +558,7 @@ function ParentFormModal({ data, onClose }) {
         )}
         <Field label="Телефон"><input className="input" value={phone} onChange={e => setPhone(e.target.value)} maxLength={20} /></Field>
         <Field label="Email"><input className="input" value={email} onChange={e => setEmail(e.target.value)} /></Field>
-        {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
+        {err && lastName.trim() && firstName.trim() && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
       </div>
     </Modal>
   );
@@ -595,7 +595,7 @@ function SubjectFormModal({ data, onClose }) {
       footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton></>}>
       <div className="form-grid">
         <Field label="Название" required error={err}>
-          <input className="input" value={name} onChange={e => { setName(e.target.value); setErr(''); }} maxLength={255} />
+          <input className={`input ${err && !name.trim() ? 'is-error' : ''}`} value={name} onChange={e => { setName(e.target.value); setErr(''); }} maxLength={255} />
         </Field>
       </div>
     </Modal>
@@ -633,7 +633,7 @@ function PositionFormModal({ data, onClose }) {
       footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton></>}>
       <div className="form-grid">
         <Field label="Название" required error={err}>
-          <input className="input" value={name} onChange={e => { setName(e.target.value); setErr(''); }} maxLength={255} />
+          <input className={`input ${err && !name.trim() ? 'is-error' : ''}`} value={name} onChange={e => { setName(e.target.value); setErr(''); }} maxLength={255} />
         </Field>
       </div>
     </Modal>
@@ -715,8 +715,8 @@ function UserFormModal({ data, onClose }) {
     >
       <div className="form-grid">
         {!isEdit && (
-          <Field label="Логин" required>
-            <input className="input" value={username} onChange={e => setUsername(e.target.value)} maxLength={150} />
+          <Field label="Логин" required error={err && !username.trim() ? err : null}>
+            <input className={`input ${err && !username.trim() ? 'is-error' : ''}`} value={username} onChange={e => { setUsername(e.target.value); setErr(''); }} maxLength={150} />
           </Field>
         )}
         <Field label="ФИО">
@@ -728,11 +728,11 @@ function UserFormModal({ data, onClose }) {
           </select>
         </Field>
         {!isEdit && <>
-          <Field label="Пароль" required>
-            <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value.replace(/[^\x00-\x7F]/g, ''))} />
+          <Field label="Пароль" required error={err && !password ? err : null}>
+            <input className={`input ${err && !password ? 'is-error' : ''}`} type="password" value={password} onChange={e => { setPassword(e.target.value.replace(/[^\x00-\x7F]/g, '')); setErr(''); }} />
           </Field>
-          <Field label="Повторите" required>
-            <input className="input" type="password" value={password2} onChange={e => setPassword2(e.target.value.replace(/[^\x00-\x7F]/g, ''))} />
+          <Field label="Повторите" required error={err && password && password !== password2 ? err : null}>
+            <input className={`input ${err && password && password !== password2 ? 'is-error' : ''}`} type="password" value={password2} onChange={e => { setPassword2(e.target.value.replace(/[^\x00-\x7F]/g, '')); setErr(''); }} />
           </Field>
         </>}
         <div className="field field-full">
@@ -765,7 +765,7 @@ function UserFormModal({ data, onClose }) {
           )}
         </div>
       </div>
-      {err && <div style={{ color: 'var(--bad-fg)', fontSize: 13, marginTop: 8 }}>{err}</div>}
+      {err && username.trim() && (isEdit || (password && password === password2)) && <div style={{ color: 'var(--bad-fg)', fontSize: 13, marginTop: 8 }}>{err}</div>}
     </Modal>
   );
 }
@@ -798,14 +798,14 @@ function UserSetPasswordModal({ data, onClose }) {
       footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>{I.shield}Сменить</LoadButton></>}
     >
       <div className="form-grid">
-        <Field label="Новый пароль" required>
-          <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value.replace(/[^\x00-\x7F]/g, ''))} />
+        <Field label="Новый пароль" required error={err && !password ? err : null}>
+          <input className={`input ${err && !password ? 'is-error' : ''}`} type="password" value={password} onChange={e => { setPassword(e.target.value.replace(/[^\x00-\x7F]/g, '')); setErr(''); }} />
         </Field>
-        <Field label="Повторите" required>
-          <input className="input" type="password" value={password2} onChange={e => setPassword2(e.target.value.replace(/[^\x00-\x7F]/g, ''))} />
+        <Field label="Повторите" required error={err && password && password !== password2 ? err : null}>
+          <input className={`input ${err && password && password !== password2 ? 'is-error' : ''}`} type="password" value={password2} onChange={e => { setPassword2(e.target.value.replace(/[^\x00-\x7F]/g, '')); setErr(''); }} />
         </Field>
       </div>
-      {err && <div style={{ color: 'var(--bad-fg)', fontSize: 13, marginTop: 8 }}>{err}</div>}
+      {err && password && password === password2 && <div style={{ color: 'var(--bad-fg)', fontSize: 13, marginTop: 8 }}>{err}</div>}
     </Modal>
   );
 }
@@ -1404,7 +1404,7 @@ function OrgFormModal({ data, onClose }) {
       <div className="form-grid">
         <Field label="Название организации" required error={errs.name} hint={touched.name && !errs.name ? 'Обязательное поле' : null} extraClass="field-full">
           <input
-            className="input"
+            className={`input ${errs.name ? 'is-error' : ''}`}
             value={name}
             onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }}
             onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); const next = name + t; setName(next); if (!codeManual) setCode(autoCode(next)); clearErr('name'); }}
@@ -1426,7 +1426,7 @@ function OrgFormModal({ data, onClose }) {
         </Field>
         <Field label="Дата основания" required error={errs.date}>
           <input
-            className="input"
+            className={`input ${errs.date ? 'is-error' : ''}`}
             type="date"
             value={foundedDate}
             max={new Date().toISOString().split('T')[0]}

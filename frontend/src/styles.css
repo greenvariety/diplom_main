@@ -792,7 +792,9 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 }
 .field-error.is-fading { opacity: 0; }
 .field-error .icon { width: 12px; height: 12px; }
-.field:not(:has(.field-error:not(.is-fading))) .input.is-error {
+.field:not(:has(.field-error:not(.is-fading))) .input.is-error,
+.field:not(:has(.field-error:not(.is-fading))) .select.is-error,
+.field:not(:has(.field-error:not(.is-fading))) .textarea.is-error {
   border-color: var(--border);
   box-shadow: none;
   transition: border-color 5s ease, box-shadow 5s ease;
