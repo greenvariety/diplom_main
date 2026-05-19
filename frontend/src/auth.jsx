@@ -239,9 +239,6 @@ function RegisterScreen({ onDone, onBack, onTerms }) {
                   {touched.email && errs.email && (
                     <div className="field-error">{I.alert}{errs.email}</div>
                   )}
-                  {touched.email && vals.email && !errs.email && (
-                    <div className="field-hint">На этот адрес придёт код подтверждения</div>
-                  )}
                 </div>
 
                 <div className="field field-full">
@@ -299,7 +296,7 @@ function RegisterScreen({ onDone, onBack, onTerms }) {
               </div>
             </div>
             <div className="modal-foot">
-              <button className="btn btn-secondary" onClick={() => onBack && onBack()}>{I.back}Войти</button>
+              <button className="btn btn-secondary" onClick={() => onBack && onBack()}>{I.back}Назад ко входу</button>
               <div style={{ flex: 1 }}></div>
               <LoadButton className="btn btn-primary" onClick={submit}>Далее {I.chevr}</LoadButton>
             </div>
