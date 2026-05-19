@@ -116,7 +116,7 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
 /* ============================================================
    RegisterScreen
    ============================================================ */
-function RegisterScreen({ onDone, onBack, onTerms }) {
+function RegisterScreen({ onDone, onBack }) {
   const toast = useToast();
   const [vals, setVals] = useState({ login: '', name: '', email: '', pass: '', pass2: '' });
   const [touched, setTouched] = useState({});
@@ -124,7 +124,12 @@ function RegisterScreen({ onDone, onBack, onTerms }) {
   const [pw2Touched, setPw2Touched] = useState(false);
   const [agree, setAgree] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
   const set = (k, v) => setVals(s => ({ ...s, [k]: v }));
+
+  if (showTerms) {
+    return <TermsScreen onBack={() => setShowTerms(false)} />;
+  }
 
   const errs = {};
   if (!vals.login.trim()) errs.login = 'Введите логин';
@@ -281,7 +286,7 @@ function RegisterScreen({ onDone, onBack, onTerms }) {
                     Я ознакомился(-лась) и согласен(-на) с{' '}
                     <a
                       href="#"
-                      onClick={e => { e.preventDefault(); onTerms && onTerms(); }}
+                      onClick={e => { e.preventDefault(); setShowTerms(true); }}
                       style={{ color: 'var(--accent)', fontWeight: 500 }}
                     >
                       пользовательским соглашением
