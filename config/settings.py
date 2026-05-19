@@ -1,8 +1,19 @@
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-72#$5bjbp3epwzkx3h_to(s0o5h^9^@7yzzzvu&674ucyj33ez'
+# Загрузка .env (без внешних пакетов)
+_env_file = BASE_DIR / '.env'
+if _env_file.exists():
+    with open(_env_file, encoding='utf-8') as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if _line and not _line.startswith('#') and '=' in _line:
+                _k, _, _v = _line.partition('=')
+                os.environ.setdefault(_k.strip(), _v.strip())
+
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-72#$5bjbp3epwzkx3h_to(s0o5h^9^@7yzzzvu&674ucyj33ez')
 
 DEBUG = True
 
@@ -97,6 +108,16 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
 }
 
-# Email - выводит письма в консоль (для разработки)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'АИСК <noreply@aisc.ru>'
+# Email — SMTP если заданы переменные из .env, иначе консоль (для разработки без .env)
+_email_user = os.environ.get('EMAIL_HOST_USER', '')
+if _email_user:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'smtp.gmail.com'
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+    EMAIL_HOST_USER = _email_user
+    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+    DEFAULT_FROM_EMAIL = f'АИСК <{_email_user}>'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    DEFAULT_FROM_EMAIL = 'АИСК <noreply@aisc.ru>'

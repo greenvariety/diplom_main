@@ -79,7 +79,10 @@ class RegisterView(APIView):
             expires_at=timezone.now() + timedelta(minutes=15),
         )
 
-        send_verification_email(email, code, purpose='register')
+        sent = send_verification_email(email, code, purpose='register')
+        if not sent:
+            EmailCode.objects.filter(login=username, purpose='register', used=False).delete()
+            return Response({'error': 'Не удалось отправить письмо. Проверьте email или попробуйте позже'}, status=500)
 
         return Response({'masked_email': mask_email(email)})
 
@@ -167,7 +170,10 @@ class SendRecoverCodeView(APIView):
             expires_at=timezone.now() + timedelta(minutes=15),
         )
 
-        send_verification_email(user.email, code, purpose='recover')
+        sent = send_verification_email(user.email, code, purpose='recover')
+        if not sent:
+            EmailCode.objects.filter(login=login, purpose='recover', used=False).delete()
+            return Response({'error': 'Не удалось отправить письмо. Проверьте email или попробуйте позже'}, status=500)
 
         return Response({'masked_email': mask_email(user.email)})
 

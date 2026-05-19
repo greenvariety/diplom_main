@@ -199,7 +199,10 @@ class SendOrgDeleteCodeView(APIView):
             expires_at=timezone.now() + timedelta(minutes=15),
         )
 
-        send_verification_email(request.user.email, code, purpose='delete_org')
+        sent = send_verification_email(request.user.email, code, purpose='delete_org')
+        if not sent:
+            EmailCode.objects.filter(login=request.user.username, purpose='delete_org', used=False).delete()
+            return Response({'error': 'Не удалось отправить письмо. Проверьте email или попробуйте позже'}, status=500)
 
         return Response({'masked_email': mask_email(request.user.email)})
 
