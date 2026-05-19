@@ -1,4 +1,5 @@
 import json
+import logging
 import random
 import string
 
@@ -7,6 +8,8 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -46,7 +49,8 @@ def send_verification_email(email, code, purpose='register'):
             fail_silently=False,
         )
         return True
-    except Exception:
+    except Exception as e:
+        logger.error('send_verification_email failed to=%s purpose=%s: %s', email, purpose, e)
         return False
 
 

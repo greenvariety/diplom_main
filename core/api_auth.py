@@ -1,6 +1,7 @@
 import json
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
 from django.utils import timezone
@@ -113,6 +114,8 @@ class RegisterView(APIView):
 
         sent = send_verification_email(email, code, purpose='register')
         if not sent:
+            if settings.DEBUG:
+                return Response({'masked_email': mask_email(email), 'debug_code': code})
             EmailCode.objects.filter(login=username, purpose='register', used=False).delete()
             return Response({'error': 'Не удалось отправить письмо. Проверьте email или попробуйте позже'}, status=500)
 
@@ -156,6 +159,8 @@ class ResendRegisterCodeView(APIView):
 
         sent = send_verification_email(email, code, purpose='register')
         if not sent:
+            if settings.DEBUG:
+                return Response({'masked_email': mask_email(email), 'retry_after': _RESEND_COOLDOWN, 'debug_code': code})
             EmailCode.objects.filter(login=login, purpose='register', used=False).delete()
             return Response({'error': 'Не удалось отправить письмо. Попробуйте позже'}, status=500)
 

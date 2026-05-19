@@ -26,6 +26,7 @@ function AuthFlow({ onAuthenticated }) {
       <EmailVerifyScreen
         maskedEmail={verifyData?.maskedEmail}
         login={verifyData?.login}
+        debugCode={verifyData?.debugCode}
         onDone={() => onAuthenticated()}
         onBack={() => setScreen('register')}
       />

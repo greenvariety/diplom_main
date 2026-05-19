@@ -165,8 +165,9 @@ function RegisterScreen({ onDone, onBack }) {
         email: vals.email,
         pass: vals.pass,
       });
-      toast.push('Код отправлен на почту', { kind: 'ok' });
-      onDone && onDone({ maskedEmail: res.data.masked_email, login: vals.login });
+      const msg = res.data.debug_code ? 'Email не настроен - код показан на экране' : 'Код отправлен на почту';
+      toast.push(msg, { kind: 'ok' });
+      onDone && onDone({ maskedEmail: res.data.masked_email, login: vals.login, debugCode: res.data.debug_code });
     } catch (err) {
       const msg = err.response?.data?.error || 'Ошибка регистрации';
       toast.push(msg, { kind: 'err' });
@@ -404,7 +405,7 @@ function CodeInput({ onChange, hasError, autoFocus }) {
 /* ============================================================
    EmailVerifyScreen
    ============================================================ */
-function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
+function EmailVerifyScreen({ maskedEmail, login, debugCode, onDone, onBack }) {
   const toast = useToast();
   const [code, setCode] = useState('');
   const [codeKey, setCodeKey] = useState(0);
@@ -479,6 +480,12 @@ function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
               <p className="muted" style={{ marginBottom: 20, fontSize: 13 }}>
                 Мы отправили 6-значный код на адрес <strong>{maskedEmail}</strong>. Введите его ниже. Код действителен 10 минут.
               </p>
+
+              {debugCode && (
+                <div style={{ background: 'var(--warn-bg, #fffbeb)', border: '1px solid var(--warn-border, #fcd34d)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: 'var(--warn-text, #92400e)' }}>
+                  <strong>Режим разработки:</strong> email не настроен. Ваш код: <strong style={{ fontFamily: 'var(--font-mono)', fontSize: 16, letterSpacing: 2 }}>{debugCode}</strong>
+                </div>
+              )}
 
               <Field label="Код подтверждения" required error={touched && code.length < 6 && code.length > 0 ? 'Введите все 6 символов' : null}>
                 <CodeInput key={codeKey} onChange={setCode} hasError={touched && code.length < 6 && code.length > 0} autoFocus />
