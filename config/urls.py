@@ -5,7 +5,7 @@ from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 from core.views import serve_frontend
 from rest_framework_simplejwt.views import TokenRefreshView
-from core.api_auth import LoginView, RegisterView, LogoutView, RecoverView, VerifyEmailView, SendRecoverCodeView
+from core.api_auth import LoginView, RegisterView, LogoutView, RecoverView, VerifyEmailView, SendRecoverCodeView, ResendRegisterCodeView
 from core.api_main import MeView, DashboardView
 from core.api_organizations import OrganizationsView, OrganizationDetailView, OrganizationSwitchView, AllowedOrganizationsView, SendOrgDeleteCodeView
 from core.api_faculties import FacultiesView, FacultyDetailView, FacultyDeleteRequestView
@@ -36,6 +36,7 @@ urlpatterns = [
     path('api/auth/login/', LoginView.as_view()),
     path('api/auth/register/', RegisterView.as_view()),
     path('api/auth/verify-email/', VerifyEmailView.as_view()),
+    path('api/auth/resend-register-code/', ResendRegisterCodeView.as_view()),
     path('api/auth/refresh/', TokenRefreshView.as_view()),
     path('api/auth/logout/', LogoutView.as_view()),
     path('api/auth/recover/send-code/', SendRecoverCodeView.as_view()),

@@ -434,6 +434,7 @@ class EmailCode(models.Model):
     payload = models.TextField(blank=True, default='', verbose_name='Данные (JSON)')
     expires_at = models.DateTimeField(verbose_name='Истекает')
     used = models.BooleanField(default=False, verbose_name='Использован')
+    attempts = models.IntegerField(default=0, verbose_name='Неверных попыток')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

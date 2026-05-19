@@ -12,6 +12,34 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User, EmailCode
 from .utils import generate_email_code, mask_email, send_verification_email
 
+_CODE_TTL = 10           # минут
+_RESEND_COOLDOWN = 60    # секунд
+_MAX_CODES_HOUR = 5      # кодов за час до бана
+_MAX_ATTEMPTS = 20       # неверных попыток на один код
+
+
+def _register_rate_check(login):
+    """Возвращает Response с ошибкой или None если всё ок."""
+    one_hour_ago = timezone.now() - timedelta(hours=1)
+    count = EmailCode.objects.filter(
+        login=login, purpose='register', created_at__gte=one_hour_ago
+    ).count()
+    if count >= _MAX_CODES_HOUR:
+        return Response({'error': 'Слишком много попыток. Попробуйте позже'}, status=429)
+
+    latest = EmailCode.objects.filter(
+        login=login, purpose='register'
+    ).order_by('-created_at').first()
+    if latest:
+        elapsed = (timezone.now() - latest.created_at).total_seconds()
+        if elapsed < _RESEND_COOLDOWN:
+            remaining = int(_RESEND_COOLDOWN - elapsed) + 1
+            return Response(
+                {'error': f'Подождите {remaining} сек. перед повторной отправкой', 'retry_after': remaining},
+                status=429,
+            )
+    return None
+
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
@@ -59,9 +87,13 @@ class RegisterView(APIView):
         if User.objects.filter(username=username).exists():
             return Response({'error': 'Пользователь с таким логином уже существует'}, status=400)
 
-        # Удаляем старые pending-коды для этого логина/email
-        EmailCode.objects.filter(login=username, purpose='register', used=False).delete()
-        EmailCode.objects.filter(email=email, purpose='register', used=False).delete()
+        err = _register_rate_check(username)
+        if err:
+            return err
+
+        # Помечаем старые pending-коды как использованные (чтобы не запутывать)
+        EmailCode.objects.filter(login=username, purpose='register', used=False).update(used=True)
+        EmailCode.objects.filter(email=email, purpose='register', used=False).update(used=True)
 
         code = generate_email_code()
         payload = json.dumps({
@@ -76,7 +108,7 @@ class RegisterView(APIView):
             code=code,
             purpose='register',
             payload=payload,
-            expires_at=timezone.now() + timedelta(minutes=15),
+            expires_at=timezone.now() + timedelta(minutes=_CODE_TTL),
         )
 
         sent = send_verification_email(email, code, purpose='register')
@@ -85,6 +117,49 @@ class RegisterView(APIView):
             return Response({'error': 'Не удалось отправить письмо. Проверьте email или попробуйте позже'}, status=500)
 
         return Response({'masked_email': mask_email(email)})
+
+
+class ResendRegisterCodeView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        login = request.data.get('login', '').strip()
+        if not login:
+            return Response({'error': 'Логин не передан'}, status=400)
+
+        pending = EmailCode.objects.filter(
+            login=login, purpose='register', used=False
+        ).order_by('-created_at').first()
+        if not pending:
+            return Response({'error': 'Сессия регистрации не найдена. Начните заново'}, status=400)
+
+        err = _register_rate_check(login)
+        if err:
+            return err
+
+        data = json.loads(pending.payload)
+        email = data['email']
+
+        # Инвалидируем текущий код
+        pending.used = True
+        pending.save(update_fields=['used'])
+
+        code = generate_email_code()
+        EmailCode.objects.create(
+            email=email,
+            login=login,
+            code=code,
+            purpose='register',
+            payload=pending.payload,
+            expires_at=timezone.now() + timedelta(minutes=_CODE_TTL),
+        )
+
+        sent = send_verification_email(email, code, purpose='register')
+        if not sent:
+            EmailCode.objects.filter(login=login, purpose='register', used=False).delete()
+            return Response({'error': 'Не удалось отправить письмо. Попробуйте позже'}, status=500)
+
+        return Response({'masked_email': mask_email(email), 'retry_after': _RESEND_COOLDOWN})
 
 
 class VerifyEmailView(APIView):
@@ -97,19 +172,30 @@ class VerifyEmailView(APIView):
         if not login or not code:
             return Response({'error': 'Введите логин и код'}, status=400)
 
-        try:
-            ec = EmailCode.objects.get(login=login, code=code, purpose='register', used=False)
-        except EmailCode.DoesNotExist:
+        ec = EmailCode.objects.filter(
+            login=login, purpose='register', used=False
+        ).order_by('-created_at').first()
+
+        if not ec:
+            return Response({'error': 'Неверный код'}, status=400)
+
+        # Слишком много неверных попыток — код мёртв
+        if ec.attempts >= _MAX_ATTEMPTS:
             return Response({'error': 'Неверный код'}, status=400)
 
         if timezone.now() > ec.expires_at:
-            ec.delete()
-            return Response({'error': 'Код истёк. Зарегистрируйтесь заново'}, status=400)
+            return Response({'error': 'Код истёк. Запросите новый'}, status=400)
+
+        if ec.code != code:
+            ec.attempts += 1
+            ec.save(update_fields=['attempts'])
+            return Response({'error': 'Неверный код'}, status=400)
 
         data = json.loads(ec.payload)
 
         if User.objects.filter(username=data['login']).exists():
-            ec.delete()
+            ec.used = True
+            ec.save(update_fields=['used'])
             return Response({'error': 'Пользователь с таким логином уже существует'}, status=400)
 
         user = User(
@@ -167,7 +253,7 @@ class SendRecoverCodeView(APIView):
             login=login,
             code=code,
             purpose='recover',
-            expires_at=timezone.now() + timedelta(minutes=15),
+            expires_at=timezone.now() + timedelta(minutes=_CODE_TTL),
         )
 
         sent = send_verification_email(user.email, code, purpose='recover')

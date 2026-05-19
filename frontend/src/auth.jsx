@@ -292,6 +292,14 @@ function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
   const toast = useToast();
   const [code, setCode] = useState('');
   const [touched, setTouched] = useState(false);
+  const [cooldown, setCooldown] = useState(60);
+  const [resending, setResending] = useState(false);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown(s => Math.max(0, s - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
 
   const submit = async () => {
     setTouched(true);
@@ -315,7 +323,21 @@ function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
   };
 
   const resend = async () => {
-    toast.push('Для повторной отправки вернитесь на шаг регистрации', { kind: 'warn' });
+    if (cooldown > 0 || resending) return;
+    setResending(true);
+    try {
+      await axios.post('/api/auth/resend-register-code/', { login });
+      toast.push('Новый код отправлен на почту', { kind: 'ok' });
+      setCooldown(60);
+      setCode('');
+    } catch (err) {
+      const retryAfter = err.response?.data?.retry_after;
+      if (retryAfter) setCooldown(retryAfter);
+      const msg = err.response?.data?.error || 'Ошибка отправки';
+      toast.push(msg, { kind: 'err' });
+    } finally {
+      setResending(false);
+    }
   };
 
   return (
@@ -337,7 +359,7 @@ function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
             <div className="card-body" style={{ padding: 28 }}>
               <h2 style={{ marginBottom: 6 }}>Подтвердите email</h2>
               <p className="muted" style={{ marginBottom: 20, fontSize: 13 }}>
-                Мы отправили 6-значный код на адрес <strong>{maskedEmail}</strong>. Введите его ниже. Код действителен 15 минут.
+                Мы отправили 6-значный код на адрес <strong>{maskedEmail}</strong>. Введите его ниже. Код действителен 10 минут.
               </p>
 
               <Field label="Код подтверждения" required error={touched && code.trim().length !== 6 && code !== '' ? 'Код должен содержать 6 символов' : null}>
@@ -352,11 +374,18 @@ function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
                 />
               </Field>
 
-              <div style={{ marginTop: 12, fontSize: 13, color: 'var(--text-muted)' }}>
-                Не пришёл код?{' '}
-                <a href="#" onClick={e => { e.preventDefault(); onBack && onBack(); }} style={{ color: 'var(--accent)' }}>
-                  Вернуться и отправить снова
-                </a>
+              <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 12, fontSize: 13 }}>
+                <span style={{ color: 'var(--text-muted)' }}>Не пришёл код?</span>
+                <button
+                  className="btn btn-secondary"
+                  style={{ padding: '4px 12px', fontSize: 13, minWidth: 160 }}
+                  disabled={cooldown > 0 || resending}
+                  onClick={resend}
+                >
+                  {cooldown > 0
+                    ? `Отправить снова (${cooldown} сек.)`
+                    : resending ? 'Отправляем...' : 'Отправить снова'}
+                </button>
               </div>
             </div>
             <div className="modal-foot">
