@@ -3,9 +3,9 @@ import logging
 import random
 import string
 
+import resend as resend_client
 from functools import wraps
 from django.conf import settings
-from django.core.mail import send_mail
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect
 
@@ -30,27 +30,33 @@ def mask_email(email):
 
 
 def send_verification_email(email, code, purpose='register'):
+    api_key = getattr(settings, 'RESEND_API_KEY', '')
+    if not api_key:
+        logger.error('send_verification_email: RESEND_API_KEY not set, printing to console')
+        print(f'[EMAIL] to={email} purpose={purpose} code={code}')
+        return False
+
     subjects = {
         'register': 'Код подтверждения регистрации - АИСК',
         'recover': 'Код восстановления пароля - АИСК',
         'delete_org': 'Код подтверждения удаления организации - АИСК',
     }
-    bodies = {
-        'register': f'Ваш код подтверждения регистрации: {code}\n\nКод действителен 15 минут.',
-        'recover': f'Ваш код восстановления пароля: {code}\n\nКод действителен 15 минут.',
-        'delete_org': f'Код подтверждения удаления организации: {code}\n\nКод действителен 15 минут.',
+    html_bodies = {
+        'register': f'<p>Ваш код подтверждения регистрации:</p><h2 style="letter-spacing:4px;font-family:monospace">{code}</h2><p>Код действителен 10 минут.</p>',
+        'recover': f'<p>Ваш код восстановления пароля:</p><h2 style="letter-spacing:4px;font-family:monospace">{code}</h2><p>Код действителен 10 минут.</p>',
+        'delete_org': f'<p>Код подтверждения удаления организации:</p><h2 style="letter-spacing:4px;font-family:monospace">{code}</h2><p>Код действителен 10 минут.</p>',
     }
     try:
-        send_mail(
-            subject=subjects.get(purpose, 'Код подтверждения - АИСК'),
-            message=bodies.get(purpose, f'Ваш код: {code}\n\nКод действителен 15 минут.'),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@aisc.ru'),
-            recipient_list=[email],
-            fail_silently=False,
-        )
+        resend_client.api_key = api_key
+        resend_client.Emails.send({
+            'from': 'АИСК <onboarding@resend.dev>',
+            'to': [email],
+            'subject': subjects.get(purpose, 'Код подтверждения - АИСК'),
+            'html': html_bodies.get(purpose, f'<p>Ваш код:</p><h2 style="letter-spacing:4px;font-family:monospace">{code}</h2><p>Код действителен 10 минут.</p>'),
+        })
         return True
     except Exception as e:
-        logger.error('send_verification_email failed to=%s purpose=%s: %s', email, purpose, e)
+        logger.error('send_verification_email (resend) failed to=%s purpose=%s: %s', email, purpose, e)
         return False
 
 

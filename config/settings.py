@@ -108,20 +108,10 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
 }
 
-# Email — SMTP если заданы переменные из .env, иначе консоль (для разработки без .env)
-_email_user = os.environ.get('EMAIL_HOST_USER', '')
-if _email_user:
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = 'smtp.gmail.com'
-    EMAIL_PORT = 465
-    EMAIL_USE_SSL = True
-    EMAIL_USE_TLS = False
-    EMAIL_HOST_USER = _email_user
-    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-    DEFAULT_FROM_EMAIL = f'АИСК <{_email_user}>'
-else:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-    DEFAULT_FROM_EMAIL = 'АИСК <noreply@aisc.ru>'
+# Email — Resend API если задан ключ, иначе консоль
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'АИСК <noreply@aisc.ru>'
 
 LOGGING = {
     'version': 1,
