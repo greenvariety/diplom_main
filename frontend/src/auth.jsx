@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { I } from './data.jsx';
-import { useToast, PasswordRules, PasswordStrength, PasswordInput, Field, LoadButton, pwStrength } from './utils.jsx';
+import { useToast, PasswordRules, PasswordStrength, PasswordInput, FadingError, Field, LoadButton, pwStrength } from './utils.jsx';
 
 /* ============================================================
    LoginScreen
@@ -239,9 +239,7 @@ function RegisterScreen({ onDone, onBack }) {
                     onBlur={() => setTouched(t => ({ ...t, email: 1 }))}
                     autoComplete="email"
                   />
-                  {touched.email && errs.email && (
-                    <div className="field-error">{I.alert}{errs.email}</div>
-                  )}
+                  <FadingError error={touched.email && errs.email ? errs.email : null} />
                 </div>
 
                 <div className="field field-full">
@@ -253,7 +251,7 @@ function RegisterScreen({ onDone, onBack }) {
                     onBlur={() => { setPwFocus(false); setTouched(t => ({ ...t, pass: 1 })); }}
                     hasError={touched.pass && !!errs.pass}
                   />
-                  {touched.pass && !vals.pass && <div className="field-error">{I.alert}{errs.pass}</div>}
+                  <FadingError error={touched.pass && !vals.pass ? errs.pass : null} />
                   <PasswordRules value={vals.pass} show={pwFocus || !!vals.pass} />
                   {vals.pass && <PasswordStrength value={vals.pass} />}
                 </div>
@@ -270,7 +268,7 @@ function RegisterScreen({ onDone, onBack }) {
                     <span className="pw-mark"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
                     Пароли совпадают
                   </div>}
-                  {(pw2Touched || touched.pass2) && errs.pass2 && <div className="field-error">{I.alert}{errs.pass2}</div>}
+                  <FadingError error={(pw2Touched || touched.pass2) && errs.pass2 ? errs.pass2 : null} />
                 </div>
               </div>
 
@@ -293,9 +291,7 @@ function RegisterScreen({ onDone, onBack }) {
                     </a>
                   </span>
                 </label>
-                {submitAttempted && !agree && (
-                  <div className="field-error" style={{ marginTop: 6 }}>{I.alert}Необходимо принять соглашение для регистрации</div>
-                )}
+                <FadingError error={submitAttempted && !agree ? 'Необходимо принять соглашение для регистрации' : null} style={{ marginTop: 6 }} />
               </div>
             </div>
             <div className="modal-foot">

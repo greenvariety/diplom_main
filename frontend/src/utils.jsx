@@ -169,6 +169,39 @@ function PasswordInput({ value, onChange, onFocus, onBlur, onPaste, placeholder,
   );
 }
 
+/* ---------- Fading error message ---------- */
+function FadingError({ error, style }) {
+  const [fading, setFading] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const timerRef = useRef(null);
+  const hideRef = useRef(null);
+
+  useEffect(() => {
+    clearTimeout(timerRef.current);
+    clearTimeout(hideRef.current);
+    if (error) {
+      setFading(false);
+      setHidden(false);
+      timerRef.current = setTimeout(() => setFading(true), 12000);
+      hideRef.current = setTimeout(() => setHidden(true), 15000);
+    } else {
+      setFading(false);
+      setHidden(false);
+    }
+    return () => {
+      clearTimeout(timerRef.current);
+      clearTimeout(hideRef.current);
+    };
+  }, [error]);
+
+  if (!error || hidden) return null;
+  return (
+    <div className={`field-error${fading ? ' is-fading' : ''}`} style={style}>
+      {I.alert}{error}
+    </div>
+  );
+}
+
 /* ---------- Field wrapper ---------- */
 function Field({ label, required, error, success, children, hint }) {
   return (
@@ -178,7 +211,7 @@ function Field({ label, required, error, success, children, hint }) {
         {children}
         {success && !error && <span className="field-success">{I.check}</span>}
       </div>
-      {error && <div className="field-error">{I.alert}{error}</div>}
+      <FadingError error={error} />
       {hint && !error && <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>{hint}</div>}
     </div>
   );
@@ -458,6 +491,6 @@ export {
   useCountUp, StatNumber,
   useDropdown,
   PasswordRules, PasswordStrength, PasswordInput, pwStrength,
-  Field, EmptyState, SkeletonRows, LoadButton, ScreenTransition,
+  FadingError, Field, EmptyState, SkeletonRows, LoadButton, ScreenTransition,
   Combobox, Pager, usePager, useSortable, SortHeader,
 };

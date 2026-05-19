@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState, useRef } from 'react';
 import { STATUSES, STUDENTS, GROUPS, FACULTIES, EMPLOYEES, I } from './data.jsx';
 import { Badge, Avatar } from './shell.jsx';
-import { useToast, Field, LoadButton, Combobox, PasswordInput } from './utils.jsx';
+import { useToast, FadingError, Field, LoadButton, Combobox, PasswordInput } from './utils.jsx';
 import api from './api.js';
 
 /* ============================================================
@@ -908,7 +908,7 @@ function DeleteConfirmModal({ data, onClose }) {
         <div className="field" style={{ marginTop: 16 }}>
           <label className="field-label">Причина удаления<span className="req">*</span></label>
           <textarea className={`textarea ${(shake && !reason.trim()) || reason.length > 1000 ? 'is-error' : ''}`} value={reason} onChange={e => setReason(e.target.value)} />
-          {reason.length > 1000 && <div className="field-error">{I.alert}Максимум 1000 символов</div>}
+          <FadingError error={reason.length > 1000 ? 'Максимум 1000 символов' : null} />
           <div style={{ fontSize: 11, color: reason.length > 1000 ? 'var(--bad-fg)' : 'var(--text-muted)', textAlign: 'right', marginTop: 2 }}>{reason.length} / 1000</div>
         </div>
         <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 12, fontSize: 13, cursor: 'pointer' }}>
@@ -1444,7 +1444,7 @@ function OrgFormModal({ data, onClose }) {
             onFocus={() => touch('description')}
             style={{ resize: 'none' }}
           />
-          {description.length > 5000 && <div className="field-error">{I.alert}Максимум 5000 символов</div>}
+          <FadingError error={description.length > 5000 ? 'Максимум 5000 символов' : null} />
           <div style={{ fontSize: 11, color: description.length > 5000 ? 'var(--bad-fg)' : 'var(--text-muted)', textAlign: 'right', marginTop: 2 }}>{description.length} / 5000</div>
         </Field>
       </div>
