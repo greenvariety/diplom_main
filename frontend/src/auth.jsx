@@ -152,7 +152,6 @@ function RegisterScreen({ onDone, onBack, onTerms }) {
       return;
     }
     if (!agree) {
-      toast.push('Необходимо принять пользовательское соглашение', { kind: 'err' });
       return;
     }
     try {
@@ -296,7 +295,7 @@ function RegisterScreen({ onDone, onBack, onTerms }) {
               </div>
             </div>
             <div className="modal-foot">
-              <button className="btn btn-secondary" onClick={() => onBack && onBack()}>{I.back}Назад ко входу</button>
+              <button className="btn btn-secondary" onClick={() => onBack && onBack()}>{I.back}Назад</button>
               <div style={{ flex: 1 }}></div>
               <LoadButton className="btn btn-primary" onClick={submit}>Далее {I.chevr}</LoadButton>
             </div>
