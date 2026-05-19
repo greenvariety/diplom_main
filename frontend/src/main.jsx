@@ -12,11 +12,13 @@ import api from './api.js';
 function AuthFlow({ onAuthenticated }) {
   const [screen, setScreen] = useState('login');
   const [verifyData, setVerifyData] = useState(null);
+  const [savedRegisterVals, setSavedRegisterVals] = useState(null);
 
   if (screen === 'register') {
     return (
       <RegisterScreen
-        onDone={(data) => { setVerifyData(data); setScreen('verify-email'); }}
+        initialVals={savedRegisterVals}
+        onDone={(data) => { setSavedRegisterVals(data.formVals); setVerifyData(data); setScreen('verify-email'); }}
         onBack={() => setScreen('login')}
       />
     );

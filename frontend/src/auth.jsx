@@ -116,9 +116,9 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
 /* ============================================================
    RegisterScreen
    ============================================================ */
-function RegisterScreen({ onDone, onBack }) {
+function RegisterScreen({ onDone, onBack, initialVals }) {
   const toast = useToast();
-  const [vals, setVals] = useState({ login: '', name: '', email: '', pass: '', pass2: '' });
+  const [vals, setVals] = useState(initialVals || { login: '', name: '', email: '', pass: '', pass2: '' });
   const [touched, setTouched] = useState({});
   const [pwFocus, setPwFocus] = useState(false);
   const [pw2Touched, setPw2Touched] = useState(false);
@@ -167,7 +167,7 @@ function RegisterScreen({ onDone, onBack }) {
       });
       const msg = res.data.debug_code ? 'Email не настроен - код показан на экране' : 'Код отправлен на почту';
       toast.push(msg, { kind: 'ok' });
-      onDone && onDone({ maskedEmail: res.data.masked_email, login: vals.login, debugCode: res.data.debug_code });
+      onDone && onDone({ maskedEmail: res.data.masked_email, login: vals.login, debugCode: res.data.debug_code, formVals: vals });
     } catch (err) {
       const msg = err.response?.data?.error || 'Ошибка регистрации';
       toast.push(msg, { kind: 'err' });
@@ -409,7 +409,7 @@ function EmailVerifyScreen({ maskedEmail, login, debugCode, onDone, onBack }) {
   const toast = useToast();
   const [code, setCode] = useState('');
   const [codeKey, setCodeKey] = useState(0);
-  const [touched, setTouched] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [cooldown, setCooldown] = useState(60);
   const [resending, setResending] = useState(false);
 
@@ -420,7 +420,7 @@ function EmailVerifyScreen({ maskedEmail, login, debugCode, onDone, onBack }) {
   }, [cooldown]);
 
   const submit = async () => {
-    setTouched(true);
+    setSubmitted(true);
     if (code.trim().length !== 6) {
       toast.push('Введите 6-значный код', { kind: 'err' });
       return;
@@ -449,6 +449,7 @@ function EmailVerifyScreen({ maskedEmail, login, debugCode, onDone, onBack }) {
       setCooldown(60);
       setCode('');
       setCodeKey(k => k + 1);
+      setSubmitted(false);
     } catch (err) {
       const retryAfter = err.response?.data?.retry_after;
       if (retryAfter) setCooldown(retryAfter);
@@ -487,8 +488,8 @@ function EmailVerifyScreen({ maskedEmail, login, debugCode, onDone, onBack }) {
                 </div>
               )}
 
-              <Field label="Код подтверждения" required error={touched && code.length < 6 && code.length > 0 ? 'Введите все 6 символов' : null}>
-                <CodeInput key={codeKey} onChange={setCode} hasError={touched && code.length < 6 && code.length > 0} autoFocus />
+              <Field label="Код подтверждения" required error={submitted && code.length !== 6 ? 'Введите все 6 символов' : null}>
+                <CodeInput key={codeKey} onChange={(v) => { setCode(v); if (submitted) setSubmitted(false); }} hasError={submitted && code.length !== 6} autoFocus />
               </Field>
 
               <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 12, fontSize: 13 }}>
