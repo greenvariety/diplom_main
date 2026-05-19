@@ -123,7 +123,7 @@ function RegisterScreen({ onDone, onBack, onTerms }) {
   const [pwFocus, setPwFocus] = useState(false);
   const [pw2Touched, setPw2Touched] = useState(false);
   const [agree, setAgree] = useState(false);
-  const [agreeTouched, setAgreeTouched] = useState(false);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   const set = (k, v) => setVals(s => ({ ...s, [k]: v }));
 
   const errs = {};
@@ -134,32 +134,25 @@ function RegisterScreen({ onDone, onBack, onTerms }) {
   else if (vals.name.trim().split(/\s+/).filter(Boolean).length !== 3) errs.name = 'Введите фамилию, имя и отчество (3 слова)';
   if (!vals.email.trim()) errs.email = 'Введите email';
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(vals.email.trim())) errs.email = 'Некорректный email';
-  if (vals.pass) {
-    if (vals.pass.length < 8) errs.pass = 'Минимум 8 символов';
-    else if (!/\d/.test(vals.pass)) errs.pass = 'Нужна хотя бы одна цифра';
-    else if (!/[A-Za-z]/.test(vals.pass)) errs.pass = 'Нужна хотя бы одна латинская буква';
-    else if (!/[_\-!@#$%^&*+.,;:?]/.test(vals.pass)) errs.pass = 'Нужен хотя бы один спецсимвол';
-  }
-  if (vals.pass2 && vals.pass !== vals.pass2) errs.pass2 = 'Пароли не совпадают';
+  if (!vals.pass) errs.pass = 'Введите пароль';
+  else if (vals.pass.length < 8) errs.pass = 'Минимум 8 символов';
+  else if (!/\d/.test(vals.pass)) errs.pass = 'Нужна хотя бы одна цифра';
+  else if (!/[A-Za-z]/.test(vals.pass)) errs.pass = 'Нужна хотя бы одна латинская буква';
+  else if (!/[_\-!@#$%^&*+.,;:?]/.test(vals.pass)) errs.pass = 'Нужен хотя бы один спецсимвол';
+  if (!vals.pass2) errs.pass2 = 'Повторите пароль';
+  else if (vals.pass && vals.pass !== vals.pass2) errs.pass2 = 'Пароли не совпадают';
   const pass2OK = vals.pass2 && vals.pass && vals.pass === vals.pass2;
 
   const submit = async () => {
-    const full = {
-      ...(!vals.login.trim() ? { login: 'Введите логин' } : {}),
-      ...(!vals.name.trim() ? { name: 'Введите ФИО' } : {}),
-      ...(!vals.email.trim() ? { email: 'Введите email' } : {}),
-      ...(!vals.pass ? { pass: 'Введите пароль' } : {}),
-      ...(!vals.pass2 ? { pass2: 'Повторите пароль' } : {}),
-      ...(vals.pass && vals.pass2 && vals.pass !== vals.pass2 ? { pass2: 'Пароли не совпадают' } : {}),
-    };
     setTouched({ login: 1, name: 1, email: 1, pass: 1, pass2: 1 });
-    setAgreeTouched(true);
-    if (!agree) {
-      toast.push('Необходимо принять пользовательское соглашение', { kind: 'err' });
+    setPw2Touched(true);
+    setSubmitAttempted(true);
+    if (Object.keys(errs).length) {
+      toast.push('Исправьте ошибки в форме', { kind: 'err' });
       return;
     }
-    if (Object.keys(full).length || Object.keys(errs).length) {
-      toast.push('Исправьте ошибки в форме', { kind: 'err' });
+    if (!agree) {
+      toast.push('Необходимо принять пользовательское соглашение', { kind: 'err' });
       return;
     }
     try {
@@ -260,6 +253,7 @@ function RegisterScreen({ onDone, onBack, onTerms }) {
                     onBlur={() => { setPwFocus(false); setTouched(t => ({ ...t, pass: 1 })); }}
                     hasError={touched.pass && !!errs.pass}
                   />
+                  {touched.pass && !vals.pass && <div className="field-error">{I.alert}{errs.pass}</div>}
                   <PasswordRules value={vals.pass} show={pwFocus || !!vals.pass} />
                   {vals.pass && <PasswordStrength value={vals.pass} />}
                 </div>
@@ -270,13 +264,13 @@ function RegisterScreen({ onDone, onBack, onTerms }) {
                     value={vals.pass2}
                     onChange={(v) => { set('pass2', v); setPw2Touched(true); }}
                     onBlur={() => setTouched(t => ({ ...t, pass2: 1 }))}
-                    hasError={pw2Touched && !!errs.pass2}
+                    hasError={(pw2Touched || touched.pass2) && !!errs.pass2}
                   />
-                  {pw2Touched && pass2OK && <div className="pw-rule ok" style={{ marginTop: 6, fontSize: 12 }}>
+                  {(pw2Touched || touched.pass2) && pass2OK && <div className="pw-rule ok" style={{ marginTop: 6, fontSize: 12 }}>
                     <span className="pw-mark"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
                     Пароли совпадают
                   </div>}
-                  {pw2Touched && errs.pass2 && <div className="field-error">{I.alert}{errs.pass2}</div>}
+                  {(pw2Touched || touched.pass2) && errs.pass2 && <div className="field-error">{I.alert}{errs.pass2}</div>}
                 </div>
               </div>
 
@@ -285,7 +279,7 @@ function RegisterScreen({ onDone, onBack, onTerms }) {
                   <input
                     type="checkbox"
                     checked={agree}
-                    onChange={e => { setAgree(e.target.checked); setAgreeTouched(true); }}
+                    onChange={e => setAgree(e.target.checked)}
                     style={{ marginTop: 2, flexShrink: 0, width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--accent)' }}
                   />
                   <span>
@@ -299,7 +293,7 @@ function RegisterScreen({ onDone, onBack, onTerms }) {
                     </a>
                   </span>
                 </label>
-                {agreeTouched && !agree && (
+                {submitAttempted && !agree && (
                   <div className="field-error" style={{ marginTop: 6 }}>{I.alert}Необходимо принять соглашение для регистрации</div>
                 )}
               </div>
