@@ -792,6 +792,11 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 }
 .field-error.is-fading { opacity: 0; }
 .field-error .icon { width: 12px; height: 12px; }
+.field:not(:has(.field-error:not(.is-fading))) .input.is-error {
+  border-color: var(--border);
+  box-shadow: none;
+  transition: border-color 5s ease, box-shadow 5s ease;
+}
 @keyframes error-in { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: translateY(0); } }
 .field-success {
   position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
