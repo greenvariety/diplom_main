@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { I } from './data.jsx';
-import { useToast, PasswordRules, PasswordStrength, PasswordInput, FadingError, Field, LoadButton, pwStrength } from './utils.jsx';
+import { PasswordRules, PasswordStrength, PasswordInput, FadingError, Field, LoadButton, pwStrength } from './utils.jsx';
 
 /* ============================================================
    LoginScreen
    ============================================================ */
 function LoginScreen({ onLogin, onRegister, onRecover }) {
-  const toast = useToast();
   const [user, setUser]   = useState('');
   const [pass, setPass]   = useState('');
   const [errs, setErrs]   = useState({});
   const [touched, setTouched] = useState({});
+  const [loginError, setLoginError] = useState('');
 
   const validate = (vals) => {
     const e = {};
@@ -33,18 +33,16 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
     const v = validate({ user, pass });
     setErrs(v); setTouched({ user: 1, pass: 1 });
     if (Object.keys(v).length) {
-      toast.push('Проверьте поля формы', { kind: 'err' });
       return;
     }
     try {
       const res = await axios.post('/api/auth/login/', { username: user, password: pass });
       localStorage.setItem('access_token', res.data.access);
       localStorage.setItem('refresh_token', res.data.refresh);
-      toast.push(`Добро пожаловать, ${res.data.user.full_name || user}`, { kind: 'ok' });
       onLogin && onLogin(res.data.user);
     } catch (err) {
       const msg = err.response?.data?.error || 'Ошибка входа';
-      toast.push(msg, { kind: 'err' });
+      setLoginError(msg);
     }
   };
 
@@ -71,7 +69,7 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
               <input
                 className={`input ${touched.user && errs.user ? 'is-error' : ''}`}
                 value={user}
-                onChange={e => setUser(e.target.value)}
+                onChange={e => { setUser(e.target.value); if (loginError) setLoginError(''); }}
                 onKeyDown={e => { if (e.key.length === 1 && /[А-ЯЁа-яё]/i.test(e.key)) e.preventDefault(); }}
                 onPaste={e => {
                   e.preventDefault();
@@ -89,7 +87,7 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
           <Field label="Пароль" error={touched.pass && errs.pass}>
             <PasswordInput
               value={pass}
-              onChange={setPass}
+              onChange={v => { setPass(v); if (loginError) setLoginError(''); }}
               onBlur={() => onBlur('pass')}
               hasError={touched.pass && !!errs.pass}
               autoComplete="current-password"
@@ -100,6 +98,7 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
             <input type="checkbox" defaultChecked /> Запомнить меня на этом устройстве
           </label>
 
+          {loginError && <div className="field-error" style={{ marginTop: 4 }}>{loginError}</div>}
           <LoadButton className="btn login-btn" type="submit" onClick={submit}>Войти</LoadButton>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginTop: 10 }}>
@@ -117,7 +116,6 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
    RegisterScreen
    ============================================================ */
 function RegisterScreen({ onDone, onBack, initialVals }) {
-  const toast = useToast();
   const [vals, setVals] = useState(initialVals || { login: '', name: '', email: '', pass: '', pass2: '' });
   const [touched, setTouched] = useState({});
   const [pwFocus, setPwFocus] = useState(false);
@@ -126,6 +124,7 @@ function RegisterScreen({ onDone, onBack, initialVals }) {
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [serverErrs, setServerErrs] = useState({});
+  const [submitError, setSubmitError] = useState('');
   const set = (k, v) => setVals(s => ({ ...s, [k]: v }));
 
   const checkField = async (field, value) => {
@@ -177,7 +176,6 @@ function RegisterScreen({ onDone, onBack, initialVals }) {
         email: vals.email,
         pass: vals.pass,
       });
-      toast.push('Код отправлен на почту', { kind: 'ok' });
       onDone && onDone({ maskedEmail: res.data.masked_email, login: vals.login, formVals: vals });
     } catch (err) {
       const data = err.response?.data;
@@ -188,7 +186,7 @@ function RegisterScreen({ onDone, onBack, initialVals }) {
         setServerErrs(s => ({ ...s, email: data.error }));
         setTouched(t => ({ ...t, email: 1 }));
       } else {
-        toast.push(data?.error || 'Ошибка регистрации', { kind: 'err' });
+        setSubmitError(data?.error || 'Ошибка регистрации');
       }
     }
   };
@@ -325,6 +323,7 @@ function RegisterScreen({ onDone, onBack, initialVals }) {
                 </label>
                 <FadingError error={submitAttempted && !agree ? 'Необходимо принять соглашение для регистрации' : null} style={{ marginTop: 6 }} />
               </div>
+              {submitError && <div className="field-error" style={{ marginTop: 12 }}>{submitError}</div>}
             </div>
             <div className="modal-foot">
               <button className="btn btn-secondary" onClick={() => onBack && onBack()}>{I.back}Назад</button>
@@ -441,7 +440,6 @@ function CodeInput({ onChange, hasError, autoFocus }) {
    EmailVerifyScreen
    ============================================================ */
 function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
-  const toast = useToast();
   const [code, setCode] = useState('');
   const [codeKey, setCodeKey] = useState(0);
   const [submitted, setSubmitted] = useState(false);
@@ -459,7 +457,7 @@ function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
   const submit = async () => {
     setSubmitted(true);
     if (code.trim().length !== 6) {
-      toast.push('Введите 6-значный код', { kind: 'err' });
+      setCodeError('Введите все 6 символов');
       return;
     }
     try {
@@ -469,16 +467,11 @@ function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
       });
       localStorage.setItem('access_token', res.data.access);
       localStorage.setItem('refresh_token', res.data.refresh);
-      toast.push('Регистрация завершена!', { kind: 'ok' });
       onDone && onDone(res.data.user);
     } catch (err) {
       const data = err.response?.data;
       const msg = data?.error || 'Неверный код';
-      if (data?.need_resend) {
-        setCodeError(msg);
-      } else {
-        toast.push(msg, { kind: 'err' });
-      }
+      setCodeError(msg);
     }
   };
 
@@ -487,7 +480,6 @@ function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
     setResending(true);
     try {
       await axios.post('/api/auth/resend-register-code/', { login });
-      toast.push('Новый код отправлен на почту', { kind: 'ok' });
       setCooldown(60);
       setCode('');
       setCodeKey(k => k + 1);
@@ -496,13 +488,9 @@ function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
     } catch (err) {
       const retryAfter = err.response?.data?.retry_after;
       const msg = err.response?.data?.error || 'Ошибка отправки';
-      if (err.response?.status === 429) {
-        setIsBlocked(true);
-        setCodeError(msg);
-      } else {
-        if (retryAfter) setCooldown(retryAfter);
-        toast.push(msg, { kind: 'err' });
-      }
+      if (err.response?.status === 429) setIsBlocked(true);
+      if (retryAfter) setCooldown(retryAfter);
+      setCodeError(msg);
     } finally {
       setResending(false);
     }
@@ -569,7 +557,6 @@ function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
    RecoverPasswordScreen - 2 шага: запрос кода + ввод кода
    ============================================================ */
 function RecoverPasswordScreen({ onBack, onDone }) {
-  const toast = useToast();
   const [step, setStep] = useState(1);
   const [login, setLogin] = useState('');
   const [maskedEmail, setMaskedEmail] = useState('');
@@ -577,28 +564,29 @@ function RecoverPasswordScreen({ onBack, onDone }) {
   const [p1, setP1] = useState('');
   const [p2, setP2] = useState('');
   const [touched, setTouched] = useState({});
+  const [sendError, setSendError] = useState('');
+  const [recoverError, setRecoverError] = useState('');
 
   const sendCode = async () => {
     setTouched({ all: 1 });
     if (!login.trim()) {
-      toast.push('Введите логин', { kind: 'err' });
+      setSendError('Введите логин');
       return;
     }
     try {
       const res = await axios.post('/api/auth/recover/send-code/', { login: login.trim() });
       setMaskedEmail(res.data.masked_email);
       setStep(2);
-      toast.push('Код отправлен на почту', { kind: 'ok' });
     } catch (err) {
       const msg = err.response?.data?.error || 'Ошибка отправки кода';
-      toast.push(msg, { kind: 'err' });
+      setSendError(msg);
     }
   };
 
   const submit = async () => {
     setTouched({ all: 1 });
     if (code.trim().length !== 6 || pwStrength(p1) < 3 || p1 !== p2) {
-      toast.push('Заполните код и пароль', { kind: 'err' });
+      setRecoverError('Заполните код и пароль корректно');
       return;
     }
     try {
@@ -609,11 +597,10 @@ function RecoverPasswordScreen({ onBack, onDone }) {
       });
       localStorage.setItem('access_token', res.data.access);
       localStorage.setItem('refresh_token', res.data.refresh);
-      toast.push('Пароль успешно изменён', { kind: 'ok' });
       onDone && onDone();
     } catch (err) {
       const msg = err.response?.data?.error || 'Ошибка восстановления';
-      toast.push(msg, { kind: 'err' });
+      setRecoverError(msg);
     }
   };
 
@@ -636,12 +623,13 @@ function RecoverPasswordScreen({ onBack, onDone }) {
                   <input
                     className={`input ${touched.all && !login.trim() ? 'is-error' : ''}`}
                     value={login}
-                    onChange={e => setLogin(e.target.value)}
+                    onChange={e => { setLogin(e.target.value); if (sendError) setSendError(''); }}
                     onKeyDown={e => { if (e.key.length === 1 && /[А-ЯЁа-яё]/i.test(e.key)) e.preventDefault(); }}
                     maxLength={150}
                     autoFocus
                   />
                 </Field>
+                {sendError && <div className="field-error" style={{ marginTop: 8 }}>{sendError}</div>}
               </div>
               <div className="modal-foot">
                 <button className="btn btn-secondary" onClick={() => onBack && onBack()}>{I.back}Войти</button>
@@ -673,10 +661,11 @@ function RecoverPasswordScreen({ onBack, onDone }) {
 
                 <div style={{ marginTop: 12, fontSize: 13, color: 'var(--text-muted)' }}>
                   Не пришёл код?{' '}
-                  <a href="#" onClick={e => { e.preventDefault(); setStep(1); setCode(''); }} style={{ color: 'var(--accent)' }}>
+                  <a href="#" onClick={e => { e.preventDefault(); setStep(1); setCode(''); setRecoverError(''); }} style={{ color: 'var(--accent)' }}>
                     Отправить снова
                   </a>
                 </div>
+                {recoverError && <div className="field-error" style={{ marginTop: 8 }}>{recoverError}</div>}
               </div>
               <div className="modal-foot">
                 <button className="btn btn-secondary" onClick={() => setStep(1)}>{I.back}Назад</button>

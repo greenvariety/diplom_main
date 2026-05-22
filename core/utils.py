@@ -209,8 +209,10 @@ def _build_email_html(code, purpose):
 
 def send_verification_email(email, code, purpose='register'):
     if not settings.EMAIL_HOST_USER:
-        logger.error('send_verification_email: EMAIL_HOST_USER not set')
-        print(f'[EMAIL] to={email} purpose={purpose} code={_fmt_code(code)}')
+        logger.warning('send_verification_email: EMAIL_HOST_USER not set')
+        if settings.DEBUG:
+            print(f'\n[EMAIL-DEV] to={email} purpose={purpose} code={_fmt_code(code)}\n')
+            return True
         return False
 
     try:
@@ -226,6 +228,9 @@ def send_verification_email(email, code, purpose='register'):
         return True
     except Exception as e:
         logger.error('send_verification_email (gmail) failed to=%s purpose=%s: %s', email, purpose, e)
+        if settings.DEBUG:
+            print(f'\n[EMAIL-DEV] SMTP failed, code for {email} ({purpose}): {_fmt_code(code)}\n')
+            return True
         return False
 
 
