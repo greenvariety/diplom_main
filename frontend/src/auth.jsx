@@ -522,7 +522,7 @@ function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
                 <CodeInput key={codeKey} onChange={(v) => { setCode(v); if (submitted) setSubmitted(false); if (codeError && !isBlocked) setCodeError(''); }} hasError={submitted && code.length !== 6} autoFocus />
               </Field>
               {codeError && (
-                <div style={{ color: 'var(--error)', fontSize: 13, marginTop: 4 }}>{codeError}</div>
+                <div className="field-error" style={{ marginTop: 4 }}>{codeError}</div>
               )}
 
               <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 12, fontSize: 13 }}>
