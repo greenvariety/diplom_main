@@ -158,15 +158,13 @@ function RegisterScreen({ onDone, onBack, initialVals }) {
   else if (!/[_\-!@#$%^&*+.,;:?]/.test(vals.pass)) errs.pass = 'Нужен хотя бы один спецсимвол';
   if (!vals.pass2) errs.pass2 = 'Повторите пароль';
   else if (vals.pass && vals.pass !== vals.pass2) errs.pass2 = 'Пароли не совпадают';
-  if (serverErrs.login && !errs.login) errs.login = serverErrs.login;
-  if (serverErrs.email && !errs.email) errs.email = serverErrs.email;
   const pass2OK = vals.pass2 && vals.pass && vals.pass === vals.pass2;
 
   const submit = async () => {
     setTouched({ login: 1, name: 1, email: 1, pass: 1, pass2: 1 });
     setPw2Touched(true);
     setSubmitAttempted(true);
-    if (Object.keys(errs).length) {
+    if (Object.keys(errs).length || serverErrs.login || serverErrs.email) {
       return;
     }
     if (!agree) {
@@ -216,24 +214,27 @@ function RegisterScreen({ onDone, onBack, initialVals }) {
               <p className="muted" style={{ marginBottom: 20, fontSize: 13 }}>После заполнения формы мы отправим 6-значный код на вашу почту для подтверждения.</p>
 
               <div className="form-grid">
-                <Field
-                  label="Логин" required
-                  error={touched.login && errs.login}
-                  hint={touched.login && vals.login && !errs.login ? 'Доступен только вам' : null}
-                  success={!!(touched.login && vals.login && !errs.login)}
-                >
-                  <input className={`input ${touched.login && errs.login ? 'is-error' : ''}`}
-                    value={vals.login}
-                    onChange={e => { set('login', e.target.value.replace(/[^A-Za-z0-9_.\-]/g, '')); setServerErrs(s => ({ ...s, login: null })); }}
-                    onKeyDown={e => { if (e.key.length === 1 && !/[A-Za-z0-9_.\-]/.test(e.key)) e.preventDefault(); }}
-                    onBlur={() => {
-                      setTouched(t => ({ ...t, login: 1 }));
-                      const v = vals.login.trim();
-                      if (v.length >= 3 && /^[A-Za-z0-9_.\-]+$/.test(v)) checkField('login', v);
-                    }}
-                    maxLength={20}
-                  />
-                </Field>
+                <div>
+                  <Field
+                    label="Логин" required
+                    error={touched.login && errs.login}
+                    hint={touched.login && vals.login && !errs.login && !serverErrs.login ? 'Доступен только вам' : null}
+                    success={!!(touched.login && vals.login && !errs.login && !serverErrs.login)}
+                  >
+                    <input className={`input ${(touched.login && errs.login) || serverErrs.login ? 'is-error' : ''}`}
+                      value={vals.login}
+                      onChange={e => { set('login', e.target.value.replace(/[^A-Za-z0-9_.\-]/g, '')); setServerErrs(s => ({ ...s, login: null })); }}
+                      onKeyDown={e => { if (e.key.length === 1 && !/[A-Za-z0-9_.\-]/.test(e.key)) e.preventDefault(); }}
+                      onBlur={() => {
+                        setTouched(t => ({ ...t, login: 1 }));
+                        const v = vals.login.trim();
+                        if (v.length >= 3 && /^[A-Za-z0-9_.\-]+$/.test(v)) checkField('login', v);
+                      }}
+                      maxLength={20}
+                    />
+                  </Field>
+                  {serverErrs.login && <div className="field-error">{serverErrs.login}</div>}
+                </div>
                 <Field
                   label="ФИО" required
                   error={touched.name && errs.name}
@@ -258,7 +259,7 @@ function RegisterScreen({ onDone, onBack, initialVals }) {
                 <div className="field field-full">
                   <label className="field-label">Email<span className="req">*</span></label>
                   <input
-                    className={`input ${touched.email && errs.email ? 'is-error' : ''}`}
+                    className={`input ${(touched.email && errs.email) || serverErrs.email ? 'is-error' : ''}`}
                     type="email"
                     value={vals.email}
                     onChange={e => { set('email', e.target.value); setServerErrs(s => ({ ...s, email: null })); }}
@@ -270,6 +271,7 @@ function RegisterScreen({ onDone, onBack, initialVals }) {
                     autoComplete="email"
                   />
                   <FadingError error={touched.email && errs.email ? errs.email : null} />
+                  {serverErrs.email && <div className="field-error">{serverErrs.email}</div>}
                 </div>
 
                 <div className="field field-full">
