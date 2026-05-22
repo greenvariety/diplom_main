@@ -134,8 +134,9 @@ function RegisterScreen({ onDone, onBack, initialVals }) {
   const errs = {};
   if (!vals.login.trim()) errs.login = 'Введите логин';
   else if (vals.login.length < 3) errs.login = 'Минимум 3 символа';
+  else if (!/^[A-Za-z0-9_.\-]+$/.test(vals.login.trim())) errs.login = 'Только латиница, цифры и символы _ . -';
   if (!vals.name.trim()) errs.name = 'Укажите ФИО';
-  else if (!/^[А-ЯЁа-яё\s\-]+$/.test(vals.name.trim())) errs.name = 'Только кириллица';
+  else if (!/^[А-ЯЁа-яё\s]+$/.test(vals.name.trim())) errs.name = 'Только кириллица, без спецсимволов';
   else if (vals.name.trim().split(/\s+/).filter(Boolean).length !== 3) errs.name = 'Введите фамилию, имя и отчество (3 слова)';
   if (!vals.email.trim()) errs.email = 'Введите email';
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(vals.email.trim())) errs.email = 'Некорректный email';
@@ -165,9 +166,8 @@ function RegisterScreen({ onDone, onBack, initialVals }) {
         email: vals.email,
         pass: vals.pass,
       });
-      const msg = res.data.debug_code ? 'Email не настроен - код показан на экране' : 'Код отправлен на почту';
-      toast.push(msg, { kind: 'ok' });
-      onDone && onDone({ maskedEmail: res.data.masked_email, login: vals.login, debugCode: res.data.debug_code, formVals: vals });
+      toast.push('Код отправлен на почту', { kind: 'ok' });
+      onDone && onDone({ maskedEmail: res.data.masked_email, login: vals.login, formVals: vals });
     } catch (err) {
       const msg = err.response?.data?.error || 'Ошибка регистрации';
       toast.push(msg, { kind: 'err' });
@@ -203,8 +203,8 @@ function RegisterScreen({ onDone, onBack, initialVals }) {
                 >
                   <input className={`input ${touched.login && errs.login ? 'is-error' : ''}`}
                     value={vals.login}
-                    onChange={e => set('login', e.target.value.replace(/[А-ЯЁа-яё]/gi, ''))}
-                    onKeyDown={e => { if (e.key.length === 1 && /[А-ЯЁа-яё]/i.test(e.key)) e.preventDefault(); }}
+                    onChange={e => set('login', e.target.value.replace(/[^A-Za-z0-9_.\-]/g, ''))}
+                    onKeyDown={e => { if (e.key.length === 1 && !/[A-Za-z0-9_.\-]/.test(e.key)) e.preventDefault(); }}
                     onBlur={() => setTouched(t => ({ ...t, login: 1 }))}
                     maxLength={20}
                   />
@@ -217,12 +217,12 @@ function RegisterScreen({ onDone, onBack, initialVals }) {
                 >
                   <input className={`input ${touched.name && errs.name ? 'is-error' : ''}`}
                     value={vals.name}
-                    onChange={e => set('name', e.target.value)}
-                    onKeyDown={e => { if (e.key.length === 1 && /[A-Za-z]/.test(e.key)) e.preventDefault(); }}
+                    onChange={e => set('name', e.target.value.replace(/[^А-ЯЁа-яё\s]/g, ''))}
+                    onKeyDown={e => { if (e.key.length === 1 && !/[А-ЯЁа-яё\s]/.test(e.key)) e.preventDefault(); }}
                     onPaste={e => {
                       e.preventDefault();
                       const inp = e.target;
-                      const clean = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, '');
+                      const clean = (e.clipboardData.getData('text') || '').replace(/[^А-ЯЁа-яё\s]/g, '');
                       set('name', inp.value.slice(0, inp.selectionStart) + clean + inp.value.slice(inp.selectionEnd));
                     }}
                     onBlur={() => setTouched(t => ({ ...t, name: 1 }))}
@@ -409,7 +409,7 @@ function CodeInput({ onChange, hasError, autoFocus }) {
 /* ============================================================
    EmailVerifyScreen
    ============================================================ */
-function EmailVerifyScreen({ maskedEmail, login, debugCode, onDone, onBack }) {
+function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
   const toast = useToast();
   const [code, setCode] = useState('');
   const [codeKey, setCodeKey] = useState(0);
@@ -485,12 +485,6 @@ function EmailVerifyScreen({ maskedEmail, login, debugCode, onDone, onBack }) {
               <p className="muted" style={{ marginBottom: 20, fontSize: 13 }}>
                 Мы отправили 6-значный код на адрес <strong>{maskedEmail}</strong>. Введите его ниже. Код действителен 10 минут.
               </p>
-
-              {debugCode && (
-                <div style={{ background: 'var(--warn-bg, #fffbeb)', border: '1px solid var(--warn-border, #fcd34d)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: 'var(--warn-text, #92400e)' }}>
-                  <strong>Режим разработки:</strong> email не настроен. Ваш код: <strong style={{ fontFamily: 'var(--font-mono)', fontSize: 16, letterSpacing: 2 }}>{debugCode.length === 6 ? `${debugCode.slice(0,3)}-${debugCode.slice(3)}` : debugCode}</strong>
-                </div>
-              )}
 
               <Field label="Код подтверждения" required error={submitted && code.length !== 6 ? 'Введите все 6 символов' : null}>
                 <CodeInput key={codeKey} onChange={(v) => { setCode(v); if (submitted) setSubmitted(false); }} hasError={submitted && code.length !== 6} autoFocus />
