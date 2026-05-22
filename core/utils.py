@@ -1,5 +1,8 @@
+import base64
+import io
 import json
 import logging
+import os
 import random
 import string
 
@@ -47,8 +50,30 @@ _EMAIL_ACTIONS = {
 }
 
 
+def _get_logo_base64():
+    try:
+        from PIL import Image
+        logo_path = os.path.join(settings.BASE_DIR, 'logo.png')
+        img = Image.open(logo_path).convert('RGBA')
+        img.thumbnail((120, 120), Image.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, format='PNG', optimize=True)
+        return base64.b64encode(buf.getvalue()).decode()
+    except Exception:
+        return None
+
+
 def _build_email_html(code, purpose):
     display_code = _fmt_code(code)
+    logo_b64 = _get_logo_base64()
+    logo_html = (
+        f'<img src="data:image/png;base64,{logo_b64}" width="56" height="56" '
+        f'style="border-radius:50%; display:block; margin:0 auto 14px;" alt="АИСК"/>'
+        if logo_b64 else
+        '<div style="width:56px; height:56px; border-radius:50%; background:rgba(255,255,255,0.2); '
+        'display:inline-flex; align-items:center; justify-content:center; font-size:17px; '
+        'font-weight:bold; color:#fff; margin-bottom:14px;">АК</div>'
+    )
     return f'''<!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -66,7 +91,7 @@ def _build_email_html(code, purpose):
           <!-- ХЕДЕР -->
           <tr>
             <td style="background:#2b5351; border-radius:12px 12px 0 0; padding:36px 32px 28px; text-align:center;">
-              <div style="width:56px; height:56px; border-radius:50%; background:rgba(255,255,255,0.2); display:inline-flex; align-items:center; justify-content:center; font-size:17px; font-weight:bold; color:#fff; margin-bottom:14px;">АК</div>
+              {logo_html}
               <p style="margin:0; font-size:13px; font-weight:bold; color:rgba(255,255,255,0.85); letter-spacing:0.1em; text-transform:uppercase;">Код подтверждения</p>
             </td>
           </tr>
