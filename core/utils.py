@@ -3,7 +3,6 @@ import logging
 import random
 import string
 
-import resend as resend_client
 from functools import wraps
 from django.conf import settings
 from django.http import HttpResponseForbidden
@@ -50,63 +49,158 @@ _EMAIL_ACTIONS = {
 
 def _build_email_html(code, purpose):
     display_code = _fmt_code(code)
-    action = _EMAIL_ACTIONS.get(purpose, 'подтверждения')
     return f'''<!DOCTYPE html>
 <html lang="ru">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f4f6f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f9;padding:40px 16px">
-    <tr><td align="center">
-      <table width="480" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Код подтверждения - АИСК</title>
+</head>
+<body style="margin:0; padding:0; background:#f0f0f0; font-family: Arial, sans-serif;">
 
-        <!-- шапка с аватаром -->
-        <tr><td style="background:#2563eb;padding:28px 32px;text-align:center">
-          <div style="display:inline-flex;align-items:center;gap:12px">
-            <div style="width:44px;height:44px;background:#ffffff;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:#2563eb;line-height:44px;text-align:center">АК</div>
-            <span style="color:#ffffff;font-size:20px;font-weight:700;vertical-align:middle">АИСК</span>
-          </div>
-          <div style="color:#bfdbfe;font-size:12px;margin-top:4px">АИС колледжа - v2.0</div>
-        </td></tr>
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0; padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table width="520" cellpadding="0" cellspacing="0" style="max-width:520px; width:100%;">
 
-        <!-- тело -->
-        <tr><td style="padding:36px 32px">
-          <p style="margin:0 0 8px;font-size:15px;color:#374151">Ваш код {action}:</p>
-          <div style="background:#f0f4ff;border:2px dashed #93c5fd;border-radius:10px;padding:20px;text-align:center;margin:16px 0">
-            <span style="font-size:36px;font-weight:700;letter-spacing:10px;color:#1d4ed8;font-family:'Courier New',monospace">{display_code}</span>
-          </div>
-          <p style="margin:0;font-size:13px;color:#6b7280">Код действителен <strong>10 минут</strong>. Не передавайте его никому.</p>
-        </td></tr>
+          <!-- ХЕДЕР -->
+          <tr>
+            <td style="background:#2b5351; border-radius:12px 12px 0 0; padding:36px 32px 28px; text-align:center;">
+              <div style="width:56px; height:56px; border-radius:50%; background:rgba(255,255,255,0.2); display:inline-flex; align-items:center; justify-content:center; font-size:17px; font-weight:bold; color:#fff; margin-bottom:14px;">АК</div>
+              <p style="margin:0; font-size:13px; font-weight:bold; color:rgba(255,255,255,0.85); letter-spacing:0.1em; text-transform:uppercase;">Код подтверждения</p>
+            </td>
+          </tr>
 
-        <!-- подвал -->
-        <tr><td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 32px;text-align:center">
-          <p style="margin:0;font-size:11px;color:#9ca3af">ГБПОУ МКАГ - Дипломная работа - Пушков Н. М. - 2026</p>
-        </td></tr>
+          <!-- ТЕЛО -->
+          <tr>
+            <td style="background:#ffffff; border-radius:0 0 12px 12px; overflow:hidden;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
 
-      </table>
-    </td></tr>
+                  <!-- ЛЕВЫЙ ОРНАМЕНТ -->
+                  <td width="32" style="background:#ffffff; padding:0;">
+                    <svg width="32" height="200" viewBox="0 0 32 200" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <pattern id="px" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
+                          <rect width="32" height="32" fill="white"/>
+                          <rect x="4" y="0" width="4" height="4" fill="#2b5351"/>
+                          <rect x="12" y="0" width="4" height="4" fill="#2b5351"/>
+                          <rect x="20" y="0" width="4" height="4" fill="#2b5351"/>
+                          <rect x="28" y="0" width="4" height="4" fill="#2b5351"/>
+                          <rect x="0" y="4" width="4" height="4" fill="#2b5351"/>
+                          <rect x="8" y="4" width="4" height="4" fill="#2b5351"/>
+                          <rect x="16" y="4" width="4" height="4" fill="#2b5351"/>
+                          <rect x="24" y="4" width="4" height="4" fill="#2b5351"/>
+                          <rect x="4" y="8" width="4" height="4" fill="#2b5351"/>
+                          <rect x="12" y="8" width="4" height="4" fill="#2b5351"/>
+                          <rect x="20" y="8" width="4" height="4" fill="#2b5351"/>
+                          <rect x="28" y="8" width="4" height="4" fill="#2b5351"/>
+                          <rect x="0" y="12" width="4" height="4" fill="#2b5351"/>
+                          <rect x="8" y="12" width="4" height="4" fill="#2b5351"/>
+                          <rect x="16" y="12" width="4" height="4" fill="#2b5351"/>
+                          <rect x="24" y="12" width="4" height="4" fill="#2b5351"/>
+                          <rect x="4" y="16" width="8" height="8" fill="#2b5351"/>
+                          <rect x="20" y="16" width="8" height="8" fill="#2b5351"/>
+                          <rect x="0" y="20" width="4" height="4" fill="#2b5351"/>
+                          <rect x="16" y="20" width="4" height="4" fill="#2b5351"/>
+                          <rect x="4" y="24" width="8" height="8" fill="#2b5351"/>
+                          <rect x="20" y="24" width="8" height="8" fill="#2b5351"/>
+                          <rect x="0" y="28" width="4" height="4" fill="#2b5351"/>
+                          <rect x="16" y="28" width="4" height="4" fill="#2b5351"/>
+                        </pattern>
+                      </defs>
+                      <rect width="32" height="200" fill="url(#px)"/>
+                    </svg>
+                  </td>
+
+                  <!-- КОНТЕНТ -->
+                  <td style="padding:36px 20px;">
+
+                    <!-- БЛОК С КОДОМ -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+                      <tr>
+                        <td style="background:#f7faf9; border:1.5px dashed #2b5351; border-radius:10px; padding:28px; text-align:center;">
+                          <span style="font-size:34px; font-weight:bold; color:#2b5351; letter-spacing:0.2em; font-family:monospace;">{display_code}</span>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- ПОДПИСЬ -->
+                    <p style="margin:0; font-size:13px; color:#888; line-height:1.7;">
+                      Код действителен <strong style="color:#444;">10 минут</strong>. Не передавайте его никому.
+                    </p>
+
+                  </td>
+
+                  <!-- ПРАВЫЙ ОРНАМЕНТ -->
+                  <td width="32" style="background:#ffffff; padding:0;">
+                    <svg width="32" height="200" viewBox="0 0 32 200" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <pattern id="px2" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
+                          <rect width="32" height="32" fill="white"/>
+                          <rect x="4" y="0" width="4" height="4" fill="#2b5351"/>
+                          <rect x="12" y="0" width="4" height="4" fill="#2b5351"/>
+                          <rect x="20" y="0" width="4" height="4" fill="#2b5351"/>
+                          <rect x="28" y="0" width="4" height="4" fill="#2b5351"/>
+                          <rect x="0" y="4" width="4" height="4" fill="#2b5351"/>
+                          <rect x="8" y="4" width="4" height="4" fill="#2b5351"/>
+                          <rect x="16" y="4" width="4" height="4" fill="#2b5351"/>
+                          <rect x="24" y="4" width="4" height="4" fill="#2b5351"/>
+                          <rect x="4" y="8" width="4" height="4" fill="#2b5351"/>
+                          <rect x="12" y="8" width="4" height="4" fill="#2b5351"/>
+                          <rect x="20" y="8" width="4" height="4" fill="#2b5351"/>
+                          <rect x="28" y="8" width="4" height="4" fill="#2b5351"/>
+                          <rect x="0" y="12" width="4" height="4" fill="#2b5351"/>
+                          <rect x="8" y="12" width="4" height="4" fill="#2b5351"/>
+                          <rect x="16" y="12" width="4" height="4" fill="#2b5351"/>
+                          <rect x="24" y="12" width="4" height="4" fill="#2b5351"/>
+                          <rect x="4" y="16" width="8" height="8" fill="#2b5351"/>
+                          <rect x="20" y="16" width="8" height="8" fill="#2b5351"/>
+                          <rect x="0" y="20" width="4" height="4" fill="#2b5351"/>
+                          <rect x="16" y="20" width="4" height="4" fill="#2b5351"/>
+                          <rect x="4" y="24" width="8" height="8" fill="#2b5351"/>
+                          <rect x="20" y="24" width="8" height="8" fill="#2b5351"/>
+                          <rect x="0" y="28" width="4" height="4" fill="#2b5351"/>
+                          <rect x="16" y="28" width="4" height="4" fill="#2b5351"/>
+                        </pattern>
+                      </defs>
+                      <rect width="32" height="200" fill="url(#px2)"/>
+                    </svg>
+                  </td>
+
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
   </table>
+
 </body>
 </html>'''
 
 
 def send_verification_email(email, code, purpose='register'):
-    api_key = getattr(settings, 'RESEND_API_KEY', '')
-    if not api_key:
-        logger.error('send_verification_email: RESEND_API_KEY not set, printing to console')
+    if not settings.EMAIL_HOST_USER:
+        logger.error('send_verification_email: EMAIL_HOST_USER not set')
         print(f'[EMAIL] to={email} purpose={purpose} code={_fmt_code(code)}')
         return False
 
     try:
-        resend_client.api_key = api_key
-        resend_client.Emails.send({
-            'from': 'АИСК <onboarding@resend.dev>',
-            'to': [email],
-            'subject': _EMAIL_SUBJECTS.get(purpose, 'Код подтверждения - АИСК'),
-            'html': _build_email_html(code, purpose),
-        })
+        from django.core.mail import send_mail
+        send_mail(
+            subject=_EMAIL_SUBJECTS.get(purpose, 'Код подтверждения - АИСК'),
+            message=f'Ваш код: {_fmt_code(code)}',
+            from_email=f'АИСК <{settings.EMAIL_HOST_USER}>',
+            recipient_list=[email],
+            html_message=_build_email_html(code, purpose),
+            fail_silently=False,
+        )
         return True
     except Exception as e:
-        logger.error('send_verification_email (resend) failed to=%s purpose=%s: %s', email, purpose, e)
+        logger.error('send_verification_email (gmail) failed to=%s purpose=%s: %s', email, purpose, e)
         return False
 
 
