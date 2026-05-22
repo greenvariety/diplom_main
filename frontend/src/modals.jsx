@@ -455,7 +455,10 @@ function FacultyFormModal({ data, onClose }) {
   const toast = useToast();
   const [fullName, setFullName] = useState(faculty?.full_name || '');
   const [shortName, setShortName] = useState(faculty?.short_name || '');
+  const [codeManual, setCodeManual] = useState(isEdit);
   const [err, setErr] = useState('');
+
+  const autoCode = (n) => n.trim().split(/\s+/).filter(w => w.length >= 2 && /^[А-ЯЁа-яё]/.test(w)).map(w => w[0].toUpperCase()).join('').slice(0, 50);
 
   const save = async () => {
     if (!fullName.trim()) { setErr('Введите полное название'); return; }
@@ -483,11 +486,11 @@ function FacultyFormModal({ data, onClose }) {
         <LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton>
       </>}>
       <div className="form-grid">
-        <Field label="Код (аббревиатура)" required error={err && !shortName.trim() ? err : null}>
-          <input className={`input ${err && !shortName.trim() ? 'is-error' : ''}`} value={shortName} onChange={e => { setShortName(e.target.value.toUpperCase()); setErr(''); }} maxLength={50} />
+        <Field label="Полное название" required error={err && !fullName.trim() ? err : null}>
+          <input className={`input ${err && !fullName.trim() ? 'is-error' : ''}`} value={fullName} onChange={e => { const next = e.target.value; setFullName(next); if (!codeManual) setShortName(autoCode(next)); setErr(''); }} maxLength={255} />
         </Field>
-        <Field label="Полное название" required error={err && shortName.trim() && !fullName.trim() ? err : null}>
-          <input className={`input ${err && shortName.trim() && !fullName.trim() ? 'is-error' : ''}`} value={fullName} onChange={e => { setFullName(e.target.value); setErr(''); }} maxLength={255} />
+        <Field label="Код (аббревиатура)" required error={err && fullName.trim() && !shortName.trim() ? err : null} hint={!isEdit && !codeManual ? 'Формируется автоматически по названию' : null}>
+          <input className={`input ${err && fullName.trim() && !shortName.trim() ? 'is-error' : ''}`} value={shortName} onChange={e => { setShortName(e.target.value.toUpperCase()); setCodeManual(true); setErr(''); }} maxLength={50} />
         </Field>
         {err && shortName.trim() && fullName.trim() && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
       </div>
