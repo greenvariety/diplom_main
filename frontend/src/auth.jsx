@@ -69,7 +69,7 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
               <input
                 className={`input ${touched.user && errs.user ? 'is-error' : ''}`}
                 value={user}
-                onChange={e => { setUser(e.target.value); if (loginError) setLoginError(''); }}
+                onChange={e => { setUser(e.target.value.replace(/[А-ЯЁа-яё]/g, '')); if (loginError) setLoginError(''); }}
                 onKeyDown={e => { if (e.key.length === 1 && /[А-ЯЁа-яё]/i.test(e.key)) e.preventDefault(); }}
                 onPaste={e => {
                   e.preventDefault();
