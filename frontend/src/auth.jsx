@@ -471,6 +471,7 @@ function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
     } catch (err) {
       const data = err.response?.data;
       const msg = data?.error || 'Неверный код';
+      if (err.response?.status === 429) setIsBlocked(true);
       setCodeError(msg);
     }
   };

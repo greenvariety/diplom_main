@@ -19,17 +19,17 @@ _LOCKOUT_MINUTES = 15    # минут блокировки после исчер
 _MAX_ATTEMPTS = 5        # неверных попыток на один код
 
 
-def _register_rate_check(login):
+def _register_rate_check(email):
     """Возвращает Response с ошибкой или None если всё ок."""
     window_ago = timezone.now() - timedelta(minutes=_LOCKOUT_MINUTES)
     count = EmailCode.objects.filter(
-        login=login, purpose='register', created_at__gte=window_ago
+        email=email, purpose='register', created_at__gte=window_ago
     ).count()
     if count >= _MAX_CODES_WINDOW:
         return Response({'error': 'Запросы истекли. Повторите через 15 минут'}, status=429)
 
     latest = EmailCode.objects.filter(
-        login=login, purpose='register'
+        email=email, purpose='register'
     ).order_by('-created_at').first()
     if latest:
         elapsed = (timezone.now() - latest.created_at).total_seconds()
@@ -90,7 +90,7 @@ class RegisterView(APIView):
         if User.objects.filter(email=email).exists():
             return Response({'error': 'Этот email уже зарегистрирован', 'field': 'email'}, status=400)
 
-        err = _register_rate_check(username)
+        err = _register_rate_check(email)
         if err:
             return err
 
@@ -136,12 +136,12 @@ class ResendRegisterCodeView(APIView):
         if not pending:
             return Response({'error': 'Сессия регистрации не найдена. Начните заново'}, status=400)
 
-        err = _register_rate_check(login)
-        if err:
-            return err
-
         data = json.loads(pending.payload)
         email = data['email']
+
+        err = _register_rate_check(email)
+        if err:
+            return err
 
         # Инвалидируем текущий код
         pending.used = True
@@ -182,8 +182,16 @@ class VerifyEmailView(APIView):
         if not ec:
             return Response({'error': 'Неверный код'}, status=400)
 
+        window_ago = timezone.now() - timedelta(minutes=_LOCKOUT_MINUTES)
+        codes_in_window = EmailCode.objects.filter(
+            email=ec.email, purpose='register', created_at__gte=window_ago
+        ).count()
+        is_last_code = codes_in_window >= _MAX_CODES_WINDOW
+
         # Слишком много неверных попыток — код мёртв
         if ec.attempts >= _MAX_ATTEMPTS:
+            if is_last_code:
+                return Response({'error': 'Запросы истекли. Повторите через 15 минут'}, status=429)
             return Response({'error': 'Превышено число попыток. Запросите новый код', 'need_resend': True}, status=400)
 
         if timezone.now() > ec.expires_at:
@@ -192,6 +200,8 @@ class VerifyEmailView(APIView):
         if ec.code != code:
             ec.attempts += 1
             ec.save(update_fields=['attempts'])
+            if is_last_code and ec.attempts >= _MAX_ATTEMPTS:
+                return Response({'error': 'Запросы истекли. Повторите через 15 минут'}, status=429)
             return Response({'error': 'Неверный код'}, status=400)
 
         data = json.loads(ec.payload)
