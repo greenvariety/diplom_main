@@ -1,7 +1,6 @@
 import json
 from datetime import timedelta
 
-from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
 from django.utils import timezone
@@ -15,18 +14,19 @@ from .utils import generate_email_code, mask_email, send_verification_email
 
 _CODE_TTL = 10           # минут
 _RESEND_COOLDOWN = 60    # секунд
-_MAX_CODES_HOUR = 5      # кодов за час до бана
-_MAX_ATTEMPTS = 20       # неверных попыток на один код
+_MAX_CODES_WINDOW = 5    # кодов за 15 минут до блокировки
+_LOCKOUT_MINUTES = 15    # минут блокировки после исчерпания кодов
+_MAX_ATTEMPTS = 5        # неверных попыток на один код
 
 
 def _register_rate_check(login):
     """Возвращает Response с ошибкой или None если всё ок."""
-    one_hour_ago = timezone.now() - timedelta(hours=1)
+    window_ago = timezone.now() - timedelta(minutes=_LOCKOUT_MINUTES)
     count = EmailCode.objects.filter(
-        login=login, purpose='register', created_at__gte=one_hour_ago
+        login=login, purpose='register', created_at__gte=window_ago
     ).count()
-    if count >= _MAX_CODES_HOUR:
-        return Response({'error': 'Слишком много попыток. Попробуйте позже'}, status=429)
+    if count >= _MAX_CODES_WINDOW:
+        return Response({'error': 'Запросы истекли. Повторите через 15 минут'}, status=429)
 
     latest = EmailCode.objects.filter(
         login=login, purpose='register'
@@ -86,7 +86,9 @@ class RegisterView(APIView):
         if not password:
             return Response({'error': 'Введите пароль'}, status=400)
         if User.objects.filter(username=username).exists():
-            return Response({'error': 'Пользователь с таким логином уже существует'}, status=400)
+            return Response({'error': 'Логин уже занят. Выберите другой', 'field': 'login'}, status=400)
+        if User.objects.filter(email=email).exists():
+            return Response({'error': 'Этот email уже зарегистрирован', 'field': 'email'}, status=400)
 
         err = _register_rate_check(username)
         if err:
@@ -114,8 +116,6 @@ class RegisterView(APIView):
 
         sent = send_verification_email(email, code, purpose='register')
         if not sent:
-            if settings.DEBUG:
-                return Response({'masked_email': mask_email(email), 'debug_code': code})
             EmailCode.objects.filter(login=username, purpose='register', used=False).delete()
             return Response({'error': 'Не удалось отправить письмо. Проверьте email или попробуйте позже'}, status=500)
 
@@ -159,8 +159,6 @@ class ResendRegisterCodeView(APIView):
 
         sent = send_verification_email(email, code, purpose='register')
         if not sent:
-            if settings.DEBUG:
-                return Response({'masked_email': mask_email(email), 'retry_after': _RESEND_COOLDOWN, 'debug_code': code})
             EmailCode.objects.filter(login=login, purpose='register', used=False).delete()
             return Response({'error': 'Не удалось отправить письмо. Попробуйте позже'}, status=500)
 
@@ -186,7 +184,7 @@ class VerifyEmailView(APIView):
 
         # Слишком много неверных попыток — код мёртв
         if ec.attempts >= _MAX_ATTEMPTS:
-            return Response({'error': 'Неверный код'}, status=400)
+            return Response({'error': 'Превышено число попыток. Запросите новый код', 'need_resend': True}, status=400)
 
         if timezone.now() > ec.expires_at:
             return Response({'error': 'Код истёк. Запросите новый'}, status=400)
@@ -227,6 +225,23 @@ class VerifyEmailView(APIView):
                 'institution': None,
             }
         })
+
+
+class CheckAvailabilityView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        field = request.data.get('field', '')
+        value = request.data.get('value', '').strip()
+        if field == 'login':
+            taken = User.objects.filter(username=value).exists()
+            error = 'Логин уже занят. Выберите другой' if taken else None
+        elif field == 'email':
+            taken = User.objects.filter(email=value.lower()).exists()
+            error = 'Этот email уже зарегистрирован' if taken else None
+        else:
+            return Response({'error': 'Неизвестное поле'}, status=400)
+        return Response({'taken': taken, 'error': error})
 
 
 class LogoutView(APIView):

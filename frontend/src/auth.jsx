@@ -125,7 +125,18 @@ function RegisterScreen({ onDone, onBack, initialVals }) {
   const [agree, setAgree] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
+  const [serverErrs, setServerErrs] = useState({});
   const set = (k, v) => setVals(s => ({ ...s, [k]: v }));
+
+  const checkField = async (field, value) => {
+    if (!value) return;
+    try {
+      const r = await axios.post('/api/auth/check-availability/', { field, value });
+      if (r.data.taken) {
+        setServerErrs(s => ({ ...s, [field]: r.data.error }));
+      }
+    } catch {}
+  };
 
   if (showTerms) {
     return <TermsScreen onBack={() => setShowTerms(false)} />;
@@ -147,6 +158,8 @@ function RegisterScreen({ onDone, onBack, initialVals }) {
   else if (!/[_\-!@#$%^&*+.,;:?]/.test(vals.pass)) errs.pass = 'Нужен хотя бы один спецсимвол';
   if (!vals.pass2) errs.pass2 = 'Повторите пароль';
   else if (vals.pass && vals.pass !== vals.pass2) errs.pass2 = 'Пароли не совпадают';
+  if (serverErrs.login && !errs.login) errs.login = serverErrs.login;
+  if (serverErrs.email && !errs.email) errs.email = serverErrs.email;
   const pass2OK = vals.pass2 && vals.pass && vals.pass === vals.pass2;
 
   const submit = async () => {
@@ -169,8 +182,16 @@ function RegisterScreen({ onDone, onBack, initialVals }) {
       toast.push('Код отправлен на почту', { kind: 'ok' });
       onDone && onDone({ maskedEmail: res.data.masked_email, login: vals.login, formVals: vals });
     } catch (err) {
-      const msg = err.response?.data?.error || 'Ошибка регистрации';
-      toast.push(msg, { kind: 'err' });
+      const data = err.response?.data;
+      if (data?.field === 'login') {
+        setServerErrs(s => ({ ...s, login: data.error }));
+        setTouched(t => ({ ...t, login: 1 }));
+      } else if (data?.field === 'email') {
+        setServerErrs(s => ({ ...s, email: data.error }));
+        setTouched(t => ({ ...t, email: 1 }));
+      } else {
+        toast.push(data?.error || 'Ошибка регистрации', { kind: 'err' });
+      }
     }
   };
 
@@ -203,9 +224,13 @@ function RegisterScreen({ onDone, onBack, initialVals }) {
                 >
                   <input className={`input ${touched.login && errs.login ? 'is-error' : ''}`}
                     value={vals.login}
-                    onChange={e => set('login', e.target.value.replace(/[^A-Za-z0-9_.\-]/g, ''))}
+                    onChange={e => { set('login', e.target.value.replace(/[^A-Za-z0-9_.\-]/g, '')); setServerErrs(s => ({ ...s, login: null })); }}
                     onKeyDown={e => { if (e.key.length === 1 && !/[A-Za-z0-9_.\-]/.test(e.key)) e.preventDefault(); }}
-                    onBlur={() => setTouched(t => ({ ...t, login: 1 }))}
+                    onBlur={() => {
+                      setTouched(t => ({ ...t, login: 1 }));
+                      const v = vals.login.trim();
+                      if (v.length >= 3 && /^[A-Za-z0-9_.\-]+$/.test(v)) checkField('login', v);
+                    }}
                     maxLength={20}
                   />
                 </Field>
@@ -236,8 +261,12 @@ function RegisterScreen({ onDone, onBack, initialVals }) {
                     className={`input ${touched.email && errs.email ? 'is-error' : ''}`}
                     type="email"
                     value={vals.email}
-                    onChange={e => set('email', e.target.value)}
-                    onBlur={() => setTouched(t => ({ ...t, email: 1 }))}
+                    onChange={e => { set('email', e.target.value); setServerErrs(s => ({ ...s, email: null })); }}
+                    onBlur={() => {
+                      setTouched(t => ({ ...t, email: 1 }));
+                      const v = vals.email.trim();
+                      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) checkField('email', v.toLowerCase());
+                    }}
                     autoComplete="email"
                   />
                   <FadingError error={touched.email && errs.email ? errs.email : null} />
@@ -416,6 +445,8 @@ function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
   const [submitted, setSubmitted] = useState(false);
   const [cooldown, setCooldown] = useState(60);
   const [resending, setResending] = useState(false);
+  const [codeError, setCodeError] = useState('');
+  const [isBlocked, setIsBlocked] = useState(false);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -439,8 +470,13 @@ function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
       toast.push('Регистрация завершена!', { kind: 'ok' });
       onDone && onDone(res.data.user);
     } catch (err) {
-      const msg = err.response?.data?.error || 'Неверный код';
-      toast.push(msg, { kind: 'err' });
+      const data = err.response?.data;
+      const msg = data?.error || 'Неверный код';
+      if (data?.need_resend) {
+        setCodeError(msg);
+      } else {
+        toast.push(msg, { kind: 'err' });
+      }
     }
   };
 
@@ -454,11 +490,17 @@ function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
       setCode('');
       setCodeKey(k => k + 1);
       setSubmitted(false);
+      setCodeError('');
     } catch (err) {
       const retryAfter = err.response?.data?.retry_after;
-      if (retryAfter) setCooldown(retryAfter);
       const msg = err.response?.data?.error || 'Ошибка отправки';
-      toast.push(msg, { kind: 'err' });
+      if (err.response?.status === 429) {
+        setIsBlocked(true);
+        setCodeError(msg);
+      } else {
+        if (retryAfter) setCooldown(retryAfter);
+        toast.push(msg, { kind: 'err' });
+      }
     } finally {
       setResending(false);
     }
@@ -487,20 +529,25 @@ function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
               </p>
 
               <Field label="Код подтверждения" required error={submitted && code.length !== 6 ? 'Введите все 6 символов' : null}>
-                <CodeInput key={codeKey} onChange={(v) => { setCode(v); if (submitted) setSubmitted(false); }} hasError={submitted && code.length !== 6} autoFocus />
+                <CodeInput key={codeKey} onChange={(v) => { setCode(v); if (submitted) setSubmitted(false); if (codeError && !isBlocked) setCodeError(''); }} hasError={submitted && code.length !== 6} autoFocus />
               </Field>
+              {codeError && (
+                <div style={{ color: 'var(--error)', fontSize: 13, marginTop: 4 }}>{codeError}</div>
+              )}
 
               <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 12, fontSize: 13 }}>
                 <span style={{ color: 'var(--text-muted)' }}>Не пришёл код?</span>
                 <button
                   className="btn btn-secondary"
                   style={{ padding: '4px 12px', fontSize: 13, minWidth: 160 }}
-                  disabled={cooldown > 0 || resending}
+                  disabled={cooldown > 0 || resending || isBlocked}
                   onClick={resend}
                 >
-                  {cooldown > 0
-                    ? `Отправить снова (${cooldown} сек.)`
-                    : resending ? 'Отправляем...' : 'Отправить снова'}
+                  {isBlocked
+                    ? 'Недоступно'
+                    : cooldown > 0
+                      ? `Отправить снова (${cooldown} сек.)`
+                      : resending ? 'Отправляем...' : 'Отправить снова'}
                 </button>
               </div>
             </div>
