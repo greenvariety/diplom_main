@@ -1,22 +1,22 @@
 ---
 name: patterns
-description: Правила написания кода — декораторы, аудит, формы, шаблоны
+description: Правила написания кода — декораторы, аудит, API-паттерны, React-поля
 type: project
 ---
 
 # Паттерны кода
 
-## Декораторы доступа
+## Декораторы доступа (для Django-вьюх)
 
-Все защищённые вьюхи используют декораторы из `core/utils.py`:
+Используются только для Django-вьюх (не для DRF APIView) из `core/utils.py`:
 
 ```python
-@login_required        # любой авторизованный
-@admin_required        # роль admin или superadmin
-@superadmin_required   # только superadmin
+@owner_required       # только role == 'owner'
+@admin_required       # role in ('owner', 'admin')
+@superadmin_required  # алиас owner_required
 ```
 
-Порядок: декоратор ставится непосредственно над `def`.
+В DRF APIView роль проверяется напрямую через `request.user.is_owner` / `request.user.is_admin`.
 
 ## Аудит изменений
 
@@ -26,12 +26,13 @@ type: project
 from .utils import log_action, model_to_dict_safe
 
 # Создание
-obj = form.save()
+obj = MyModel.objects.create(...)
 log_action(request.user, 'created', obj, new_data=model_to_dict_safe(obj))
 
 # Обновление — сохранить old_data ДО save()
 old_data = model_to_dict_safe(instance)
-instance = form.save()
+# ... изменения ...
+instance.save()
 log_action(request.user, 'updated', instance, old_data=old_data, new_data=model_to_dict_safe(instance))
 
 # Удаление
@@ -40,32 +41,54 @@ log_action(request.user, 'deleted', obj, old_data=old_data)
 obj.delete()
 ```
 
+## Фильтрация по организации (institution)
+
+Все DRF-вьюхи фильтруют данные по текущей организации пользователя:
+
+```python
+from .utils import get_current_institution
+
+institution = get_current_institution(request)
+queryset = Faculty.objects.filter(institution=institution)
+```
+
+`get_current_institution` для `owner` берёт `institution_id` из сессии; для `admin`/`teacher` — из `request.user.institution`.
+
 ## Удаление объектов
 
 Двухуровневый процесс:
-1. **Администратор** → создаёт `DeleteRequest` с причиной.
-2. **Суперадминистратор** → одобряет через `direct_delete` или `delete_request_approve`, вводит свой пароль для подтверждения (`DELETE_CONFIRMATION_PASSWORD` не используется — проверяется реальный пароль пользователя через `request.user.check_password(entered)`).
+1. **Администратор** → POST на `/api/<сущность>/<id>/delete-request/` с причиной.
+2. **Владелец (owner)** → POST на `/api/delete-requests/<id>/approve/` с подтверждением пароля.
 
-Суперадмин может удалять напрямую (минует создание заявки, редиректится на `direct-delete`).
+Owner может также удалять напрямую через DELETE `/api/<сущность>/<id>/`.
 
-## Формы
+## DRF APIView паттерн
 
-- Все формы — `django.forms.ModelForm` или `django.forms.Form`.
-- Рендеринг через `{% crispy form %}` (crispy-bootstrap5).
-- Файлы: формы с файлами принимают `request.FILES` → передаются вторым аргументом в `Form(request.POST, request.FILES)`.
+```python
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
-## Шаблоны
+class ExampleView(APIView):
+    def get(self, request):
+        institution = get_current_institution(request)
+        items = MyModel.objects.filter(institution=institution)
+        return Response([{'id': i.pk, 'name': i.name} for i in items])
 
-- `base.html` — базовый шаблон с navbar и блоком `{% block content %}`.
-- `base_login.html` — для страницы входа (без navbar).
-- Все шаблоны приложения в `templates/core/`.
-- Сообщения пользователю через `messages.success(request, '...')` / `messages.error(...)`.
+    def post(self, request):
+        if not request.user.is_admin:
+            return Response({'error': 'Нет доступа'}, status=403)
+        # ... создание ...
+```
 
-## URL-имена
+## API-маршруты (именование)
 
-Формат: `{сущность}-{действие}`, например:
-- `student-list`, `student-detail`, `student-add`, `student-edit`, `student-delete-request`
-- В шаблонах: `{% url 'student-detail' pk=student.pk %}`
+Формат: `/api/{сущность}/` и `/api/{сущность}/{pk}/`, например:
+- `GET /api/faculties/` — список
+- `POST /api/faculties/` — создать
+- `GET /api/faculties/1/` — детали
+- `PATCH /api/faculties/1/` — обновить
+- `DELETE /api/faculties/1/` — удалить (owner)
+- `POST /api/faculties/1/delete-request/` — заявка на удаление (admin)
 
 ## Ошибки полей ввода (React-фронтенд)
 
@@ -81,8 +104,8 @@ obj.delete()
 
 - Для `<select>` - класс `select` вместо `input`
 - Для `<textarea>` - класс `textarea` вместо `input`
-- `Field` сам рендерит текст ошибки через `FadingError` (из `utils.jsx`) - отдельно добавлять не нужно
-- CSS через `:has()` убирает рамку синхронно с текстом - ничего доделывать не нужно
+- `Field` сам рендерит текст ошибки через `FadingError` (из `utils.jsx`) — отдельно добавлять не нужно
+- CSS через `:has()` убирает рамку синхронно с текстом — ничего доделывать не нужно
 
 **С touched (валидация при blur):**
 ```jsx
@@ -105,9 +128,9 @@ obj.delete()
 Преподаватель видит только свои группы. Шаблон фильтрации:
 
 ```python
-if user.is_teacher_role and user.employee:
+if request.user.is_teacher_role and request.user.employee:
     allowed_groups = Group.objects.filter(
-        Q(headteacher=user.employee) | Q(subject_assignments__employee=user.employee)
+        Q(headteacher=request.user.employee) | Q(subject_assignments__employee=request.user.employee)
     ).distinct()
     queryset = queryset.filter(group__in=allowed_groups)
 ```

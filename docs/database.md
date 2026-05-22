@@ -11,31 +11,47 @@ type: project
 
 ## Модели
 
+### Institution (Учебное заведение)
+| Поле | Тип | Описание |
+|---|---|---|
+| id | PK | Авто |
+| owner | FK → User | Владелец (роль owner), `CASCADE` |
+| code | CharField(50) | Короткий код организации |
+| name | CharField(1000) | Полное название |
+| description | TextField(5000) | Описание (необязательно) |
+| photo | ImageField | `upload_to='institutions/'`, необязательно |
+| founded_date | DateField | Дата основания, необязательно |
+| created_at | DateTimeField | `auto_now_add=True` |
+
+Ограничение: `unique_together = [('owner', 'code')]`
+
 ### Faculty (Факультет)
 | Поле | Тип | Описание |
 |---|---|---|
 | id | PK | Авто |
+| institution | FK → Institution | `CASCADE`, необязательно |
 | full_name | CharField(255) | Полное название |
 | short_name | CharField(50) | Аббревиатура |
-| created_at | DateField | Дата создания факультета |
+| created_at | DateField | Дата создания факультета, необязательно |
 
 ### Position (Должность)
 | Поле | Тип | Описание |
 |---|---|---|
 | id | PK | |
+| institution | FK → Institution | `CASCADE`, необязательно |
 | name | CharField(255) | Название |
-| is_teacher | BooleanField | Является ли преподавательской |
 
 ### Employee (Сотрудник)
 | Поле | Тип | Описание |
 |---|---|---|
 | id | PK | |
-| last_name, first_name, middle_name | CharField | ФИО |
-| birth_date | DateField | |
+| institution | FK → Institution | `CASCADE`, необязательно |
+| last_name, first_name, middle_name | CharField(100) | ФИО |
+| birth_date | DateField | Необязательно |
 | phone | CharField(20) | |
 | email | EmailField | |
 | photo | ImageField | `upload_to='employees/'` |
-| position | FK → Position | `on_delete=PROTECT` |
+| position | FK → Position | `on_delete=PROTECT`, необязательно |
 
 ### Group (Группа)
 | Поле | Тип | Описание |
@@ -52,7 +68,7 @@ type: project
 | Поле | Тип | Описание |
 |---|---|---|
 | id | PK | |
-| last_name, first_name, middle_name | CharField | |
+| last_name, first_name, middle_name | CharField(100) | |
 | birth_date | DateField | |
 | phone, email | CharField/EmailField | |
 | photo | ImageField | `upload_to='students/'` |
@@ -64,7 +80,8 @@ type: project
 | Поле | Тип | Описание |
 |---|---|---|
 | id | PK | |
-| last_name, first_name, middle_name | CharField | |
+| institution | FK → Institution | `CASCADE`, необязательно |
+| last_name, first_name, middle_name | CharField(100) | |
 | birth_date, phone, email | | |
 | photo | ImageField | `upload_to='parents/'` |
 
@@ -74,7 +91,7 @@ type: project
 | id | PK | |
 | student | FK → Student | `CASCADE` |
 | parent | FK → Parent | `CASCADE` |
-| relation_type | CharField | mother / father / guardian |
+| relation_type | CharField(20) | mother / father / guardian |
 
 Ограничение: `unique_together = [('student', 'parent')]`
 
@@ -82,6 +99,7 @@ type: project
 | Поле | Тип | Описание |
 |---|---|---|
 | id | PK | |
+| institution | FK → Institution | `CASCADE`, необязательно |
 | name | CharField(255) | |
 
 ### GroupSubjectEmployee (Предмет в группе)
@@ -111,12 +129,36 @@ type: project
 |---|---|---|
 | id | PK | |
 | username | CharField(150) | Уникальный логин |
-| role | CharField(20) | superadmin / admin / teacher |
+| display_name | CharField(150) | Отображаемое имя |
+| email | EmailField | Email пользователя |
+| role | CharField(20) | owner / admin / teacher |
+| institution | FK → Institution | Текущая организация пользователя, `SET_NULL` |
+| allowed_institutions | M2M → Institution | Организации с доступом (для non-owner) |
 | employee | OneToOneField → Employee | Привязка к сотруднику, `SET_NULL` |
 | is_active | BooleanField | |
 | is_staff | BooleanField | Для Django Admin |
 
 Кастомная модель: `AUTH_USER_MODEL = 'core.User'`
+
+Свойства:
+- `is_owner` — `role == 'owner'`
+- `is_superadmin` — алиас `is_owner` (для совместимости)
+- `is_admin` — `role in ('owner', 'admin')`
+- `is_teacher_role` — `role == 'teacher'`
+
+### EmailCode (Email-код подтверждения)
+| Поле | Тип | Описание |
+|---|---|---|
+| id | PK | |
+| email | EmailField | Получатель |
+| login | CharField(150) | Логин (для регистрации/восстановления) |
+| code | CharField(6) | 6-символьный код (хранится без дефиса: ABCDEF) |
+| purpose | CharField(20) | register / recover / delete_org |
+| payload | TextField | JSON с данными (для регистрации — данные аккаунта) |
+| expires_at | DateTimeField | Время истечения (10 минут от создания) |
+| used | BooleanField | Использован |
+| attempts | IntegerField | Количество неверных попыток |
+| created_at | DateTimeField | `auto_now_add=True` |
 
 ### DeleteRequest (Заявка на удаление)
 | Поле | Тип | Описание |
@@ -134,6 +176,7 @@ type: project
 |---|---|---|
 | id | PK | |
 | user | FK → User | `SET_NULL` |
+| institution | FK → Institution | `SET_NULL`, необязательно |
 | action | CharField(20) | created / updated / deleted |
 | object_type | CharField(50) | Имя модели |
 | object_id | IntegerField | |
@@ -154,6 +197,7 @@ type: project
 ## Медиафайлы
 
 Хранятся локально в `media/`:
+- `media/institutions/` — фото организаций
 - `media/employees/` — фото сотрудников
 - `media/students/` — фото студентов
 - `media/parents/` — фото опекунов

@@ -1,89 +1,110 @@
 ---
 name: ux-guidelines
-description: Гайд по дизайну интерфейса — шаблоны, сообщения, Bootstrap
+description: Гайд по дизайну React-интерфейса — компоненты, сообщения, паттерны
 type: project
 ---
 
 # UX-гайдлайны
 
-## Базовые шаблоны
+## Структура frontend/src/
 
-- `base.html` — для всех авторизованных страниц (с навбаром).
-- `base_login.html` — только для `/login/`, без навбара.
+| Файл | Что содержит |
+|---|---|
+| `main.jsx` | Точка входа, AuthFlow, OrgPickerScreen, роутинг экранов |
+| `auth.jsx` | LoginScreen, RegisterScreen, EmailVerifyScreen, RecoverPasswordScreen |
+| `shell.jsx` | Shell — навигационная оболочка (sidebar + topbar) |
+| `screens.jsx` | Все основные экраны (списки, детали) |
+| `modals.jsx` | Все модальные формы |
+| `utils.jsx` | Field, FadingError, LoadButton, useToast, PasswordInput и др. |
+| `data.jsx` | Иконки (I), справочные данные |
+| `api.js` | Axios-клиент с JWT + автообновление токена |
+| `styles.css` | Дизайн-система (CSS-переменные, классы) |
 
-Все страницы расширяют один из двух:
-```html
-{% extends 'base.html' %}
-{% block content %}
-...
-{% endblock %}
+## Сообщения пользователю (Toast)
+
+Используется `useToast` из `utils.jsx`:
+
+```jsx
+const toast = useToast();
+toast.push('Сотрудник добавлен.', { kind: 'ok' });
+toast.push('Неверный пароль.', { kind: 'err' });
 ```
 
-## Сообщения пользователю
+Тексты — на русском, без технических деталей. Только дефис `-`, никаких длинных тире `—`.
 
-Используются Django messages, отображаются в `base.html`:
+## Поля ввода — компонент Field
 
-```python
-messages.success(request, 'Сотрудник добавлен.')
-messages.error(request, 'Неверный пароль.')
+```jsx
+import { Field } from './utils.jsx';
+
+<Field label="Название" required error={touched.name && errs.name}>
+  <input
+    className={`input ${touched.name && errs.name ? 'is-error' : ''}`}
+    value={name}
+    onChange={e => setName(e.target.value)}
+    onBlur={() => setTouched(t => ({ ...t, name: 1 }))}
+    maxLength={255}
+  />
+</Field>
 ```
 
-Тексты сообщений — на русском, без технических деталей.
+- `label` — подпись над полем (вместо placeholder)
+- `error` — строка ошибки или `null`/`false`
+- `required` — добавляет визуальную метку
+- CSS-классы: `input` для `<input>`, `select` для `<select>`, `textarea` для `<textarea>`
+- Класс `is-error` добавляет красную рамку
 
-## Формы
+## Ограничения длины полей
 
-Все формы рендерятся через crispy-forms:
-```html
-{% load crispy_forms_tags %}
-{% crispy form %}
-```
+- **Короткие поля** (имена, коды, телефон и т.п.) — ставить `maxLength={N}` прямо на `<input>`. Пользователь просто не может написать больше.
+- **Длинные поля** (`<textarea>`) — НЕ ставить `maxLength`. Показывать счётчик `X / MAX символов` и ошибку при превышении.
 
-Bootstrap 5 применяется автоматически. Кастомные стили — минимально, только через Bootstrap-классы.
-
-## Таблицы
-
-Стандартная Bootstrap-таблица:
-```html
-<table class="table table-hover table-striped">
-```
-
-Поиск — `<input type="text" name="q">` в GET-форме над таблицей.
-
-## Навигация по сущностям
-
-Каждая сущность имеет:
-1. **Список** (`-list`) — таблица с поиском + кнопка «Добавить».
-2. **Детальная** (`-detail`) — карточка с данными + связанные сущности + кнопки действий.
-3. **Форма** (`-form`) — одна форма и для создания, и для редактирования (`title` различает).
-
-## Тексты кнопок и заголовков
+## Кнопки и тексты
 
 | Действие | Текст |
 |---|---|
 | Создание | «Добавить {сущность}» |
-| Редактирование | «Редактировать {сущность}» |
-| Удаление | «Удалить» (открывает форму заявки или подтверждения) |
-| Возврат | «Назад к списку» |
-| Сохранение | «Сохранить» |
+| Редактирование | «Редактировать» / «Сохранить» |
+| Удаление | «Удалить» |
+| Возврат | «Назад» |
+| Отмена | «Отмена» |
 
-Все тексты — на русском, в именительном или дательном падеже по контексту.
+Все тексты — на русском. Только дефис `-`, никаких `—` или `–`.  
+Не добавлять `placeholder` на `<input>` и `<textarea>`.
 
-## Права в шаблонах
+## Кнопка с лоадером (LoadButton)
 
-Видимость кнопок управляется через `request.user`:
+```jsx
+import { LoadButton } from './utils.jsx';
 
-```html
-{% if request.user.is_admin %}
-  <a href="{% url 'student-add' %}">Добавить студента</a>
-{% endif %}
+<LoadButton loading={loading} onClick={handleSubmit}>
+  Сохранить
+</LoadButton>
+```
 
-{% if request.user.is_superadmin %}
-  <a href="{% url 'audit-log' %}">Журнал</a>
-{% endif %}
+## Навигационные экраны
+
+Поток после входа:
+1. `LoginScreen` (или `RegisterScreen` → `EmailVerifyScreen`)
+2. `OrgPickerScreen` — выбор/создание организации (для owner)
+3. `Shell` с боковым меню + текущий экран из `screens.jsx`
+
+## Права в интерфейсе
+
+Видимость кнопок управляется через `user.role`:
+
+```jsx
+{user.role !== 'teacher' && (
+  <button onClick={openAddForm}>Добавить студента</button>
+)}
+{user.role === 'owner' && (
+  <button onClick={openAuditLog}>Журнал</button>
+)}
 ```
 
 ## Дашборд
 
-- Для разных ролей показывается разный контент (три отдельных блока в `dashboard.html`).
-- Статистика — карточки Bootstrap с числами.
-- Последние логи — таблица из 10 записей.
+Для разных ролей отображаются разные компоненты:
+- `DashboardOwner` — статистика + последние логи + счётчик заявок на удаление
+- `DashboardAdmin` — общая статистика
+- `DashboardTeacher` — свои группы и предметы
