@@ -51,6 +51,15 @@ class GroupsView(APIView):
         if not year:
             return Response({'error': 'Укажите год начала'}, status=400)
         try:
+            year_int = int(year)
+        except (TypeError, ValueError):
+            return Response({'error': 'Некорректный год'}, status=400)
+        if institution.founded_date and year_int < institution.founded_date.year:
+            return Response(
+                {'error': f'Год начала не может быть раньше года основания организации ({institution.founded_date.year})'},
+                status=400,
+            )
+        try:
             faculty = Faculty.objects.get(pk=faculty_id, institution=institution)
         except Faculty.DoesNotExist:
             return Response({'error': 'Факультет не найден'}, status=404)
@@ -60,7 +69,7 @@ class GroupsView(APIView):
                 headteacher = Employee.objects.get(pk=headteacher_id, institution=institution)
             except Employee.DoesNotExist:
                 pass
-        group = Group.objects.create(faculty=faculty, year=int(year), headteacher=headteacher)
+        group = Group.objects.create(faculty=faculty, year=year_int, headteacher=headteacher)
         log_action(request.user, 'created', group,
                    new_data={'name': group.name, 'year': group.year},
                    institution=institution)
@@ -119,7 +128,16 @@ class GroupDetailView(APIView):
             except Faculty.DoesNotExist:
                 return Response({'error': 'Факультет не найден'}, status=404)
         if 'year' in request.data:
-            group.year = request.data['year']
+            try:
+                new_year = int(request.data['year'])
+            except (TypeError, ValueError):
+                return Response({'error': 'Некорректный год'}, status=400)
+            if institution.founded_date and new_year < institution.founded_date.year:
+                return Response(
+                    {'error': f'Год начала не может быть раньше года основания организации ({institution.founded_date.year})'},
+                    status=400,
+                )
+            group.year = new_year
         if 'headteacher_id' in request.data:
             hid = request.data['headteacher_id']
             if hid:
