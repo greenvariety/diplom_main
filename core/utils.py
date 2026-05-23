@@ -66,15 +66,10 @@ def _get_logo_base64():
 def _build_email_html(code, purpose):
     display_code = _fmt_code(code)
     logo_b64 = _get_logo_base64()
-    if logo_b64:
-        avatar_html = (
-            f'<img src="data:image/png;base64,{logo_b64}" width="56" height="56" '
-            f'style="border-radius:50%; display:block;" alt="АИСК"/>'
-        )
-    else:
-        avatar_html = (
-            '<span style="font-size:17px; font-weight:bold; color:#ffffff; font-family:Arial;">АК</span>'
-        )
+    avatar_html = (
+        f'<img src="data:image/png;base64,{logo_b64}" width="56" height="56" '
+        f'style="border-radius:50%; display:block;" alt="АИСК"/>'
+    )
     return f'''<!DOCTYPE html>
 <html lang="ru">
 <head>
