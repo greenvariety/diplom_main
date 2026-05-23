@@ -574,6 +574,8 @@ function RecoverPasswordScreen({ onBack, onDone }) {
   const [cooldown, setCooldown] = useState(0);
   const [resending, setResending] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [recentlyChanged, setRecentlyChanged] = useState(false);
+  const [recentlyChangedMsg, setRecentlyChangedMsg] = useState('');
 
   const p1Err = !p1 ? 'Введите пароль'
     : p1.length < 8 ? 'Минимум 8 символов'
@@ -601,8 +603,15 @@ function RecoverPasswordScreen({ onBack, onDone }) {
       setCooldown(60);
       setStep(2);
     } catch (err) {
-      const msg = err.response?.data?.error || 'Ошибка отправки кода';
-      setSendError(msg);
+      const data = err.response?.data;
+      if (err.response?.status === 429 && data?.recently_changed) {
+        setRecentlyChanged(true);
+        setRecentlyChangedMsg(data.error);
+        setMaskedEmail('');
+        setStep(2);
+        return;
+      }
+      setSendError(data?.error || 'Ошибка отправки кода');
     }
   };
 
@@ -616,8 +625,14 @@ function RecoverPasswordScreen({ onBack, onDone }) {
       setCodeKey(k => k + 1);
       setRecoverError('');
     } catch (err) {
-      const retryAfter = err.response?.data?.retry_after;
-      const msg = err.response?.data?.error || 'Ошибка отправки';
+      const data = err.response?.data;
+      if (err.response?.status === 429 && data?.recently_changed) {
+        setRecentlyChanged(true);
+        setRecentlyChangedMsg(data.error);
+        return;
+      }
+      const retryAfter = data?.retry_after;
+      const msg = data?.error || 'Ошибка отправки';
       if (err.response?.status === 429) setIsBlocked(true);
       if (retryAfter) setCooldown(retryAfter);
       setRecoverError(msg);
@@ -644,6 +659,7 @@ function RecoverPasswordScreen({ onBack, onDone }) {
       onDone && onDone();
     } catch (err) {
       const msg = err.response?.data?.error || 'Ошибка восстановления';
+      if (err.response?.status === 429) setIsBlocked(true);
       setRecoverError(msg);
     }
   };
@@ -658,6 +674,7 @@ function RecoverPasswordScreen({ onBack, onDone }) {
           </div>
 
           {step === 1 ? (
+            /* шаг 1 */
             <div className="card">
               <div className="card-body" style={{ padding: 28 }}>
                 <h2 style={{ marginBottom: 6 }}>Восстановление пароля</h2>
@@ -681,7 +698,21 @@ function RecoverPasswordScreen({ onBack, onDone }) {
                 <LoadButton className="btn btn-primary" onClick={sendCode}>Получить код {I.chevr}</LoadButton>
               </div>
             </div>
+          ) : recentlyChanged ? (
+            /* шаг 2 — недавно меняли пароль */
+            <div className="card">
+              <div className="card-body" style={{ padding: 28 }}>
+                <h2 style={{ marginBottom: 6 }}>Восстановление пароля</h2>
+                <div className="field-error" style={{ marginTop: 12, padding: '14px 16px', borderRadius: 8, fontSize: 14, lineHeight: 1.6 }}>
+                  {recentlyChangedMsg}
+                </div>
+              </div>
+              <div className="modal-foot">
+                <button className="btn btn-secondary" onClick={() => { setStep(1); setRecentlyChanged(false); setRecentlyChangedMsg(''); setSendError(''); }}>{I.back}Назад</button>
+              </div>
+            </div>
           ) : (
+            /* шаг 2 — обычная форма */
             <div className="card">
               <div className="card-body" style={{ padding: 28 }}>
                 <h2 style={{ marginBottom: 6 }}>Введите код и новый пароль</h2>
@@ -742,7 +773,7 @@ function RecoverPasswordScreen({ onBack, onDone }) {
                 {recoverError && <div className="field-error" style={{ marginTop: 8 }}>{recoverError}</div>}
               </div>
               <div className="modal-foot">
-                <button className="btn btn-secondary" onClick={() => setStep(1)}>{I.back}Назад</button>
+                <button className="btn btn-secondary" onClick={() => { setStep(1); setRecentlyChanged(false); setRecentlyChangedMsg(''); }}>{I.back}Назад</button>
                 <div style={{ flex: 1 }}></div>
                 <LoadButton className="btn btn-primary" onClick={submit}>{I.check}Сменить пароль</LoadButton>
               </div>

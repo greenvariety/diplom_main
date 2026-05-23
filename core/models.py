@@ -386,6 +386,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    password_changed_at = models.DateTimeField(null=True, blank=True, verbose_name='Пароль изменён')
 
     objects = UserManager()
 

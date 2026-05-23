@@ -260,6 +260,29 @@ class LogoutView(APIView):
         return Response({'ok': True})
 
 
+def _recover_rate_check(email):
+    """Возвращает Response с ошибкой или None если всё ок."""
+    window_ago = timezone.now() - timedelta(minutes=_LOCKOUT_MINUTES)
+    count = EmailCode.objects.filter(
+        email=email, purpose='recover', created_at__gte=window_ago
+    ).count()
+    if count >= _MAX_CODES_WINDOW:
+        return Response({'error': 'Запросы истекли. Повторите через 15 минут'}, status=429)
+
+    latest = EmailCode.objects.filter(
+        email=email, purpose='recover'
+    ).order_by('-created_at').first()
+    if latest:
+        elapsed = (timezone.now() - latest.created_at).total_seconds()
+        if elapsed < _RESEND_COOLDOWN:
+            remaining = int(_RESEND_COOLDOWN - elapsed) + 1
+            return Response(
+                {'error': f'Подождите {remaining} сек. перед повторной отправкой', 'retry_after': remaining},
+                status=429,
+            )
+    return None
+
+
 class SendRecoverCodeView(APIView):
     permission_classes = [AllowAny]
 
@@ -276,7 +299,21 @@ class SendRecoverCodeView(APIView):
         if not user.email:
             return Response({'error': 'К аккаунту не привязан email. Обратитесь к администратору'}, status=400)
 
-        EmailCode.objects.filter(login=login, purpose='recover', used=False).delete()
+        # Блокировка на 10 минут после успешной смены пароля
+        if user.password_changed_at:
+            elapsed = (timezone.now() - user.password_changed_at).total_seconds()
+            if elapsed < _CODE_TTL * 60:
+                remaining_min = int((_CODE_TTL * 60 - elapsed) / 60) + 1
+                return Response({
+                    'error': f'Вы недавно сменили пароль. Попробуйте через {remaining_min} мин.',
+                    'recently_changed': True,
+                }, status=429)
+
+        err = _recover_rate_check(user.email)
+        if err:
+            return err
+
+        EmailCode.objects.filter(login=login, purpose='recover', used=False).update(used=True)
 
         code = generate_email_code()
         EmailCode.objects.create(
@@ -319,20 +356,43 @@ class RecoverView(APIView):
             return Response({'error': 'Пароль должен содержать хотя бы один спецсимвол'}, status=400)
 
         try:
-            ec = EmailCode.objects.get(login=login, code=code, purpose='recover', used=False)
-        except EmailCode.DoesNotExist:
-            return Response({'error': 'Неверный код'}, status=400)
-
-        if timezone.now() > ec.expires_at:
-            ec.delete()
-            return Response({'error': 'Код истёк. Запросите новый'}, status=400)
-
-        try:
             user = User.objects.get(username=login, role='owner')
         except User.DoesNotExist:
             return Response({'error': 'Пользователь не найден'}, status=400)
 
+        ec = EmailCode.objects.filter(
+            login=login, purpose='recover', used=False
+        ).order_by('-created_at').first()
+
+        if not ec:
+            return Response({'error': 'Неверный код'}, status=400)
+
+        window_ago = timezone.now() - timedelta(minutes=_LOCKOUT_MINUTES)
+        codes_in_window = EmailCode.objects.filter(
+            email=user.email, purpose='recover', created_at__gte=window_ago
+        ).count()
+        is_last_code = codes_in_window >= _MAX_CODES_WINDOW
+
+        if ec.attempts >= _MAX_ATTEMPTS:
+            if is_last_code:
+                return Response({'error': 'Запросы истекли. Повторите через 15 минут'}, status=429)
+            return Response({'error': 'Превышено число попыток. Запросите новый код', 'need_resend': True}, status=400)
+
+        if timezone.now() > ec.expires_at:
+            return Response({'error': 'Код истёк. Запросите новый'}, status=400)
+
+        if ec.code != code:
+            ec.attempts += 1
+            ec.save(update_fields=['attempts'])
+            if is_last_code and ec.attempts >= _MAX_ATTEMPTS:
+                return Response({'error': 'Запросы истекли. Повторите через 15 минут'}, status=429)
+            return Response({'error': 'Неверный код'}, status=400)
+
+        if user.check_password(new_password):
+            return Response({'error': 'Новый пароль совпадает со старым'}, status=400)
+
         user.set_password(new_password)
+        user.password_changed_at = timezone.now()
         user.save()
 
         ec.used = True
