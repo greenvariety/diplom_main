@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import timedelta
 
 from django.contrib.auth import authenticate
@@ -308,6 +309,14 @@ class RecoverView(APIView):
             return Response({'error': 'Введите код'}, status=400)
         if not new_password:
             return Response({'error': 'Введите новый пароль'}, status=400)
+        if len(new_password) < 8:
+            return Response({'error': 'Пароль должен содержать минимум 8 символов'}, status=400)
+        if not re.search(r'\d', new_password):
+            return Response({'error': 'Пароль должен содержать хотя бы одну цифру'}, status=400)
+        if not re.search(r'[A-Za-z]', new_password):
+            return Response({'error': 'Пароль должен содержать хотя бы одну латинскую букву'}, status=400)
+        if not re.search(r'[_\-!@#$%^&*+.,;:?]', new_password):
+            return Response({'error': 'Пароль должен содержать хотя бы один спецсимвол'}, status=400)
 
         try:
             ec = EmailCode.objects.get(login=login, code=code, purpose='recover', used=False)
