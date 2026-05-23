@@ -58,125 +58,61 @@ def _build_email_html(code, purpose):
 </head>
 <body style="margin:0; padding:0; background:#f0f0f0; font-family: Arial, sans-serif;">
 
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0; padding:32px 0;">
-    <tr>
-      <td align="center">
-        <table width="520" cellpadding="0" cellspacing="0" style="max-width:520px; width:100%;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f0f0f0; padding:32px 0;">
+  <tr>
+    <td align="center">
+      <table width="520" cellpadding="0" cellspacing="0" border="0" style="max-width:520px; width:100%; border-radius:12px; overflow:hidden;">
 
-          <!-- ХЕДЕР -->
-          <tr>
-            <td style="background:#2b5351; border-radius:12px 12px 0 0; padding:36px 32px 28px; text-align:center;">
-              <div style="width:56px; height:56px; border-radius:50%; background:rgba(255,255,255,0.2); display:inline-flex; align-items:center; justify-content:center; font-size:17px; font-weight:bold; color:#fff; margin-bottom:14px;">АК</div>
-              <p style="margin:0; font-size:13px; font-weight:bold; color:rgba(255,255,255,0.85); letter-spacing:0.1em; text-transform:uppercase;">Код подтверждения</p>
-            </td>
-          </tr>
+        <!-- ХЕДЕР -->
+        <tr>
+          <td style="background:#2b5351; padding:36px 32px 28px; text-align:center;">
+            <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin-bottom:14px;">
+              <tr>
+                <td style="width:56px; height:56px; border-radius:50%; background:rgba(255,255,255,0.2); text-align:center; vertical-align:middle; font-size:17px; font-weight:bold; color:#ffffff; font-family:Arial;">АК</td>
+              </tr>
+            </table>
+            <p style="margin:0; font-size:13px; font-weight:bold; color:rgba(255,255,255,0.85); letter-spacing:4px; text-transform:uppercase; font-family:Arial;">КОД ПОДТВЕРЖДЕНИЯ</p>
+          </td>
+        </tr>
 
-          <!-- ТЕЛО -->
-          <tr>
-            <td style="background:#ffffff; border-radius:0 0 12px 12px; overflow:hidden;">
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
+        <!-- ТЕЛО -->
+        <tr>
+          <td style="background:#ffffff; padding:0;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
 
-                  <!-- ЛЕВЫЙ ОРНАМЕНТ -->
-                  <td width="32" style="background:#ffffff; padding:0;">
-                    <svg width="32" height="200" viewBox="0 0 32 200" xmlns="http://www.w3.org/2000/svg">
-                      <defs>
-                        <pattern id="px" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
-                          <rect width="32" height="32" fill="white"/>
-                          <rect x="4" y="0" width="4" height="4" fill="#2b5351"/>
-                          <rect x="12" y="0" width="4" height="4" fill="#2b5351"/>
-                          <rect x="20" y="0" width="4" height="4" fill="#2b5351"/>
-                          <rect x="28" y="0" width="4" height="4" fill="#2b5351"/>
-                          <rect x="0" y="4" width="4" height="4" fill="#2b5351"/>
-                          <rect x="8" y="4" width="4" height="4" fill="#2b5351"/>
-                          <rect x="16" y="4" width="4" height="4" fill="#2b5351"/>
-                          <rect x="24" y="4" width="4" height="4" fill="#2b5351"/>
-                          <rect x="4" y="8" width="4" height="4" fill="#2b5351"/>
-                          <rect x="12" y="8" width="4" height="4" fill="#2b5351"/>
-                          <rect x="20" y="8" width="4" height="4" fill="#2b5351"/>
-                          <rect x="28" y="8" width="4" height="4" fill="#2b5351"/>
-                          <rect x="0" y="12" width="4" height="4" fill="#2b5351"/>
-                          <rect x="8" y="12" width="4" height="4" fill="#2b5351"/>
-                          <rect x="16" y="12" width="4" height="4" fill="#2b5351"/>
-                          <rect x="24" y="12" width="4" height="4" fill="#2b5351"/>
-                          <rect x="4" y="16" width="8" height="8" fill="#2b5351"/>
-                          <rect x="20" y="16" width="8" height="8" fill="#2b5351"/>
-                          <rect x="0" y="20" width="4" height="4" fill="#2b5351"/>
-                          <rect x="16" y="20" width="4" height="4" fill="#2b5351"/>
-                          <rect x="4" y="24" width="8" height="8" fill="#2b5351"/>
-                          <rect x="20" y="24" width="8" height="8" fill="#2b5351"/>
-                          <rect x="0" y="28" width="4" height="4" fill="#2b5351"/>
-                          <rect x="16" y="28" width="4" height="4" fill="#2b5351"/>
-                        </pattern>
-                      </defs>
-                      <rect width="32" height="200" fill="url(#px)"/>
-                    </svg>
-                  </td>
+                <!-- ЛЕВЫЙ ОРНАМЕНТ -->
+                <td width="32" style="width:32px; background-color:#ffffff; background-image:linear-gradient(45deg, #2b5351 25%, transparent 25%),linear-gradient(-45deg, #2b5351 25%, transparent 25%),linear-gradient(45deg, transparent 75%, #2b5351 75%),linear-gradient(-45deg, transparent 75%, #2b5351 75%); background-size:8px 8px; background-position:0 0, 0 4px, 4px -4px, -4px 0px;">&nbsp;</td>
 
-                  <!-- КОНТЕНТ -->
-                  <td style="padding:36px 20px;">
+                <!-- КОНТЕНТ -->
+                <td style="background:#ffffff; padding:36px 24px;">
 
-                    <!-- БЛОК С КОДОМ -->
-                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
-                      <tr>
-                        <td style="background:#f7faf9; border:1.5px dashed #2b5351; border-radius:10px; padding:28px; text-align:center;">
-                          <span style="font-size:34px; font-weight:bold; color:#2b5351; letter-spacing:0.2em; font-family:monospace;">{display_code}</span>
-                        </td>
-                      </tr>
-                    </table>
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+                    <tr>
+                      <td style="border:2px dashed #2b5351; border-radius:10px; background:#f7faf9; padding:28px; text-align:center;">
+                        <span style="font-size:34px; font-weight:bold; color:#2b5351; letter-spacing:8px; font-family:Courier New, monospace;">{display_code}</span>
+                      </td>
+                    </tr>
+                  </table>
 
-                    <!-- ПОДПИСЬ -->
-                    <p style="margin:0; font-size:13px; color:#888; line-height:1.7;">
-                      Код действителен <strong style="color:#444;">10 минут</strong>. Не передавайте его никому.
-                    </p>
+                  <p style="margin:0; font-size:13px; color:#888888; line-height:1.7; font-family:Arial;">
+                    Код действителен <strong style="color:#444444;">10 минут</strong>. Не передавайте его никому.
+                  </p>
 
-                  </td>
+                </td>
 
-                  <!-- ПРАВЫЙ ОРНАМЕНТ -->
-                  <td width="32" style="background:#ffffff; padding:0;">
-                    <svg width="32" height="200" viewBox="0 0 32 200" xmlns="http://www.w3.org/2000/svg">
-                      <defs>
-                        <pattern id="px2" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
-                          <rect width="32" height="32" fill="white"/>
-                          <rect x="4" y="0" width="4" height="4" fill="#2b5351"/>
-                          <rect x="12" y="0" width="4" height="4" fill="#2b5351"/>
-                          <rect x="20" y="0" width="4" height="4" fill="#2b5351"/>
-                          <rect x="28" y="0" width="4" height="4" fill="#2b5351"/>
-                          <rect x="0" y="4" width="4" height="4" fill="#2b5351"/>
-                          <rect x="8" y="4" width="4" height="4" fill="#2b5351"/>
-                          <rect x="16" y="4" width="4" height="4" fill="#2b5351"/>
-                          <rect x="24" y="4" width="4" height="4" fill="#2b5351"/>
-                          <rect x="4" y="8" width="4" height="4" fill="#2b5351"/>
-                          <rect x="12" y="8" width="4" height="4" fill="#2b5351"/>
-                          <rect x="20" y="8" width="4" height="4" fill="#2b5351"/>
-                          <rect x="28" y="8" width="4" height="4" fill="#2b5351"/>
-                          <rect x="0" y="12" width="4" height="4" fill="#2b5351"/>
-                          <rect x="8" y="12" width="4" height="4" fill="#2b5351"/>
-                          <rect x="16" y="12" width="4" height="4" fill="#2b5351"/>
-                          <rect x="24" y="12" width="4" height="4" fill="#2b5351"/>
-                          <rect x="4" y="16" width="8" height="8" fill="#2b5351"/>
-                          <rect x="20" y="16" width="8" height="8" fill="#2b5351"/>
-                          <rect x="0" y="20" width="4" height="4" fill="#2b5351"/>
-                          <rect x="16" y="20" width="4" height="4" fill="#2b5351"/>
-                          <rect x="4" y="24" width="8" height="8" fill="#2b5351"/>
-                          <rect x="20" y="24" width="8" height="8" fill="#2b5351"/>
-                          <rect x="0" y="28" width="4" height="4" fill="#2b5351"/>
-                          <rect x="16" y="28" width="4" height="4" fill="#2b5351"/>
-                        </pattern>
-                      </defs>
-                      <rect width="32" height="200" fill="url(#px2)"/>
-                    </svg>
-                  </td>
+                <!-- ПРАВЫЙ ОРНАМЕНТ -->
+                <td width="32" style="width:32px; background-color:#ffffff; background-image:linear-gradient(45deg, #2b5351 25%, transparent 25%),linear-gradient(-45deg, #2b5351 25%, transparent 25%),linear-gradient(45deg, transparent 75%, #2b5351 75%),linear-gradient(-45deg, transparent 75%, #2b5351 75%); background-size:8px 8px; background-position:0 0, 0 4px, 4px -4px, -4px 0px;">&nbsp;</td>
 
-                </tr>
-              </table>
-            </td>
-          </tr>
+              </tr>
+            </table>
+          </td>
+        </tr>
 
-        </table>
-      </td>
-    </tr>
-  </table>
+      </table>
+    </td>
+  </tr>
+</table>
 
 </body>
 </html>'''
