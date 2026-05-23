@@ -1,5 +1,8 @@
+import base64
+import io
 import json
 import logging
+import os
 import random
 import string
 
@@ -47,8 +50,31 @@ _EMAIL_ACTIONS = {
 }
 
 
+def _get_logo_base64():
+    try:
+        from PIL import Image
+        logo_path = os.path.join(settings.BASE_DIR, 'logo.png')
+        img = Image.open(logo_path).convert('RGBA')
+        img.thumbnail((120, 120), Image.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, format='PNG', optimize=True)
+        return base64.b64encode(buf.getvalue()).decode()
+    except Exception:
+        return None
+
+
 def _build_email_html(code, purpose):
     display_code = _fmt_code(code)
+    logo_b64 = _get_logo_base64()
+    if logo_b64:
+        avatar_html = (
+            f'<img src="data:image/png;base64,{logo_b64}" width="56" height="56" '
+            f'style="border-radius:50%; display:block;" alt="АИСК"/>'
+        )
+    else:
+        avatar_html = (
+            '<span style="font-size:17px; font-weight:bold; color:#ffffff; font-family:Arial;">АК</span>'
+        )
     return f'''<!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -68,7 +94,7 @@ def _build_email_html(code, purpose):
           <td style="background:#2b5351; padding:36px 32px 28px; text-align:center;">
             <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin-bottom:14px;">
               <tr>
-                <td style="width:56px; height:56px; border-radius:50%; background:rgba(255,255,255,0.2); text-align:center; vertical-align:middle; font-size:17px; font-weight:bold; color:#ffffff; font-family:Arial;">АК</td>
+                <td style="width:56px; height:56px; border-radius:50%; background:rgba(255,255,255,0.2); text-align:center; vertical-align:middle;">{avatar_html}</td>
               </tr>
             </table>
             <p style="margin:0; font-size:13px; font-weight:bold; color:rgba(255,255,255,0.85); letter-spacing:4px; text-transform:uppercase; font-family:Arial;">КОД ПОДТВЕРЖДЕНИЯ</p>
