@@ -18,6 +18,7 @@ def _employee_data(e):
         'email': e.email,
         'position_id': e.position_id,
         'position_name': e.position.name if e.position_id else None,
+        'photo': e.photo.url if e.photo else None,
     }
 
 
@@ -110,6 +111,10 @@ class EmployeesView(APIView):
             email=(request.data.get('email') or '').strip(),
             position=position,
         )
+        photo = request.FILES.get('photo')
+        if photo:
+            employee.photo = photo
+            employee.save(update_fields=['photo'])
         log_action(request.user, 'created', employee,
                    new_data={'full_name': str(employee)},
                    institution=institution)
@@ -192,6 +197,10 @@ class EmployeeDetailView(APIView):
                     return Response({'error': 'Должность не найдена'}, status=404)
             else:
                 employee.position = None
+
+        photo = request.FILES.get('photo')
+        if photo:
+            employee.photo = photo
 
         employee.save()
         log_action(request.user, 'updated', employee,

@@ -21,6 +21,7 @@ def _student_data(s):
         'faculty_short': s.faculty.short_name if s.faculty_id else '',
         'group_id': s.group_id,
         'group_name': s.group.name if s.group_id else '',
+        'photo': s.photo.url if s.photo else None,
     }
 
 
@@ -128,6 +129,10 @@ class StudentsView(APIView):
             faculty=faculty,
             group=group,
         )
+        photo = request.FILES.get('photo')
+        if photo:
+            student.photo = photo
+            student.save(update_fields=['photo'])
         log_action(request.user, 'created', student,
                    new_data={'full_name': str(student), 'status': student.status},
                    institution=institution)
@@ -222,6 +227,10 @@ class StudentDetailView(APIView):
                     student.group = None
             else:
                 student.group = None
+
+        photo = request.FILES.get('photo')
+        if photo:
+            student.photo = photo
 
         student.save()
         log_action(request.user, 'updated', student,
@@ -323,6 +332,10 @@ class StudentParentsView(APIView):
                 phone=(request.data.get('phone') or '').strip(),
                 email=(request.data.get('email') or '').strip(),
             )
+            photo = request.FILES.get('photo')
+            if photo:
+                parent.photo = photo
+                parent.save(update_fields=['photo'])
             log_action(request.user, 'created', parent,
                        new_data={'full_name': str(parent)},
                        institution=institution)

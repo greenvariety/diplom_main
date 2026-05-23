@@ -733,7 +733,10 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
         <div>
           <div className="card">
             <div className="card-body" style={{ textAlign: 'center', padding: 24 }}>
-              <Avatar name={`${student.last_name} ${student.first_name}`} size="lg" className="avatar-zoomy" />
+              {student.photo
+                ? <img src={student.photo} alt="" style={{ width: 96, height: 96, borderRadius: 16, objectFit: 'cover' }} className="avatar-zoomy" />
+                : <Avatar name={`${student.last_name} ${student.first_name}`} size="lg" className="avatar-zoomy" />
+              }
               <h3 style={{ marginTop: 14, marginBottom: 6 }}>{student.last_name} {student.first_name}</h3>
               <div className="muted" style={{ fontSize: 13, marginBottom: 12 }}>{student.middle_name}</div>
               <StatusDropdown value={student.status} onChange={handleStatusChange} />
@@ -1006,7 +1009,10 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
         <div className="card">
           <div className="card-body" style={{ textAlign: 'center', padding: 24 }}>
-            <Avatar name={employee.full_name} size="lg" className="avatar-zoomy" />
+            {employee.photo
+              ? <img src={employee.photo} alt="" style={{ width: 96, height: 96, borderRadius: 16, objectFit: 'cover' }} className="avatar-zoomy" />
+              : <Avatar name={employee.full_name} size="lg" className="avatar-zoomy" />
+            }
             <h3 style={{ marginTop: 14, marginBottom: 6 }}>{employee.last_name} {employee.first_name}</h3>
             <div className="muted" style={{ fontSize: 13, marginBottom: 12 }}>{employee.middle_name}</div>
             {employee.position_name && (
@@ -1750,7 +1756,10 @@ function ParentDetail({ currentUser, openModal, onNavigate, parentId }) {
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
         <div className="card">
           <div className="card-body" style={{ textAlign: 'center', padding: 24 }}>
-            <Avatar name={parent.full_name} size="lg" className="avatar-zoomy" />
+            {parent.photo
+              ? <img src={parent.photo} alt="" style={{ width: 96, height: 96, borderRadius: 16, objectFit: 'cover' }} className="avatar-zoomy" />
+              : <Avatar name={parent.full_name} size="lg" className="avatar-zoomy" />
+            }
             <h3 style={{ marginTop: 14, marginBottom: 6 }}>{parent.last_name} {parent.first_name}</h3>
             <div className="muted" style={{ fontSize: 13 }}>{parent.middle_name}</div>
           </div>

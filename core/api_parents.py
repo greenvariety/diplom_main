@@ -16,6 +16,7 @@ def _parent_data(p):
         'birth_date': p.birth_date.isoformat() if p.birth_date else None,
         'phone': p.phone,
         'email': p.email,
+        'photo': p.photo.url if p.photo else None,
     }
 
 
@@ -94,6 +95,10 @@ class ParentsView(APIView):
             phone=(request.data.get('phone') or '').strip(),
             email=(request.data.get('email') or '').strip(),
         )
+        photo = request.FILES.get('photo')
+        if photo:
+            parent.photo = photo
+            parent.save(update_fields=['photo'])
         log_action(request.user, 'created', parent,
                    new_data={'full_name': str(parent)},
                    institution=institution)
@@ -138,6 +143,10 @@ class ParentDetailView(APIView):
                 setattr(parent, field, (request.data[field] or '').strip())
         if 'birth_date' in request.data:
             parent.birth_date = request.data['birth_date'] or None
+
+        photo = request.FILES.get('photo')
+        if photo:
+            parent.photo = photo
 
         parent.save()
         log_action(request.user, 'updated', parent,

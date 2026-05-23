@@ -88,6 +88,7 @@ function StudentFormModal({ data, onClose }) {
   const { student, onDone } = data || {};
   const isEdit = !!student;
   const toast = useToast();
+  const fileRef = useRef(null);
   const [faculties, setFaculties] = useState([]);
   const [groups, setGroups] = useState([]);
   const [vals, setVals] = useState({
@@ -102,6 +103,9 @@ function StudentFormModal({ data, onClose }) {
     status: student?.status || 'pending_review',
   });
   const [touched, setTouched] = useState({});
+  const [photo, setPhoto] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(student?.photo || null);
+  const [dragOver, setDragOver] = useState(false);
   const [err, setErr] = useState('');
   const set = (k, v) => setVals(s => ({ ...s, [k]: v }));
 
@@ -124,6 +128,29 @@ function StudentFormModal({ data, onClose }) {
   if (vals.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(vals.email)) errs.email = 'Некорректный email';
   if (!vals.faculty_id) errs.faculty_id = 'Выберите факультет';
 
+  const handlePhoto = (file) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.push('Фото слишком большое - максимум 5 МБ', { kind: 'err' }); return; }
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        if (img.width > 2000 || img.height > 2000) { toast.push('Размер фото превышает 2000x2000 пикселей', { kind: 'err' }); return; }
+        setPhoto(file);
+        setPhotoPreview(ev.target.result);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removePhoto = (e) => {
+    e.stopPropagation();
+    setPhoto(null);
+    setPhotoPreview(null);
+    if (fileRef.current) fileRef.current.value = '';
+  };
+
   const save = async () => {
     setTouched({ last_name: 1, first_name: 1, email: 1, faculty_id: 1 });
     if (Object.keys(errs).length) {
@@ -137,22 +164,22 @@ function StudentFormModal({ data, onClose }) {
     }
     setErr('');
     try {
-      const payload = {
-        last_name: vals.last_name.trim(),
-        first_name: vals.first_name.trim(),
-        middle_name: vals.middle_name.trim(),
-        birth_date: vals.birth_date || null,
-        phone: vals.phone.trim(),
-        email: vals.email.trim(),
-        status: vals.status,
-        faculty_id: parseInt(vals.faculty_id),
-        group_id: vals.group_id ? parseInt(vals.group_id) : null,
-      };
+      const fd = new FormData();
+      fd.append('last_name', vals.last_name.trim());
+      fd.append('first_name', vals.first_name.trim());
+      fd.append('middle_name', vals.middle_name.trim());
+      fd.append('birth_date', vals.birth_date || '');
+      fd.append('phone', vals.phone.trim());
+      fd.append('email', vals.email.trim());
+      fd.append('status', vals.status);
+      fd.append('faculty_id', vals.faculty_id);
+      fd.append('group_id', vals.group_id || '');
+      if (photo) fd.append('photo', photo);
       if (isEdit) {
-        await api.patch(`/students/${student.id}/`, payload);
+        await api.patch(`/students/${student.id}/`, fd);
         toast.push(`Студент ${vals.last_name} обновлён`, { kind: 'ok' });
       } else {
-        await api.post('/students/', payload);
+        await api.post('/students/', fd);
         toast.push(`Студент ${vals.last_name} добавлен`, { kind: 'ok' });
       }
       onDone && onDone();
@@ -173,6 +200,27 @@ function StudentFormModal({ data, onClose }) {
         <LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton>
       </>}
     >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 14px', background: 'var(--surface-alt)', borderRadius: 8, marginBottom: 16 }}>
+        <div
+          onClick={() => fileRef.current?.click()}
+          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={e => { e.preventDefault(); setDragOver(false); handlePhoto(e.dataTransfer.files[0]); }}
+          style={{ width: 72, height: 72, borderRadius: 8, flexShrink: 0, border: dragOver ? '2px solid var(--accent)' : '2px dashed var(--border)', background: dragOver ? 'var(--accent-soft)' : 'var(--surface)', cursor: 'pointer', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'border-color .15s, background .15s' }}
+        >
+          {photoPreview
+            ? <img src={photoPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : <span style={{ fontSize: 24, opacity: 0.3 }}>🖼</span>
+          }
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 500, fontSize: 13, marginBottom: 2 }}>Фото студента</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{photoPreview ? 'Нажмите на квадрат, чтобы заменить фото' : 'Нажмите на квадрат или перетащите изображение'}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 3 }}>Максимум 5 МБ, не более 2000x2000 пикселей</div>
+          {photoPreview && <button onClick={removePhoto} style={{ marginTop: 6, fontSize: 11, color: 'var(--bad-fg)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Удалить фото</button>}
+        </div>
+        <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handlePhoto(e.target.files[0])} />
+      </div>
       <div className="form-section">
         <div className="form-section-title">Личные данные</div>
         <div className="form-grid">
@@ -234,6 +282,7 @@ function EmployeeFormModal({ data, onClose }) {
   const onDone = data?.onDone;
   const isEdit = !!employee;
   const toast = useToast();
+  const fileRef = useRef(null);
   const [positions, setPositions] = useState([]);
   const [lastName, setLastName] = useState(employee?.last_name || '');
   const [firstName, setFirstName] = useState(employee?.first_name || '');
@@ -242,31 +291,57 @@ function EmployeeFormModal({ data, onClose }) {
   const [phone, setPhone] = useState(employee?.phone || '');
   const [email, setEmail] = useState(employee?.email || '');
   const [positionId, setPositionId] = useState(employee?.position_id?.toString() || '');
+  const [photo, setPhoto] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(employee?.photo || null);
+  const [dragOver, setDragOver] = useState(false);
   const [err, setErr] = useState('');
 
   useEffect(() => {
     api.get('/positions/').then(r => setPositions(r.data)).catch(() => {});
   }, []);
 
+  const handlePhoto = (file) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.push('Фото слишком большое - максимум 5 МБ', { kind: 'err' }); return; }
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        if (img.width > 2000 || img.height > 2000) { toast.push('Размер фото превышает 2000x2000 пикселей', { kind: 'err' }); return; }
+        setPhoto(file);
+        setPhotoPreview(ev.target.result);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removePhoto = (e) => {
+    e.stopPropagation();
+    setPhoto(null);
+    setPhotoPreview(null);
+    if (fileRef.current) fileRef.current.value = '';
+  };
+
   const save = async () => {
     if (!lastName.trim()) { setErr('Введите фамилию'); return; }
     if (!firstName.trim()) { setErr('Введите имя'); return; }
     setErr('');
     try {
-      const payload = {
-        last_name: lastName.trim(),
-        first_name: firstName.trim(),
-        middle_name: middleName.trim(),
-        birth_date: birthDate || null,
-        phone: phone.trim(),
-        email: email.trim(),
-        position_id: positionId ? parseInt(positionId) : null,
-      };
+      const fd = new FormData();
+      fd.append('last_name', lastName.trim());
+      fd.append('first_name', firstName.trim());
+      fd.append('middle_name', middleName.trim());
+      fd.append('birth_date', birthDate || '');
+      fd.append('phone', phone.trim());
+      fd.append('email', email.trim());
+      fd.append('position_id', positionId || '');
+      if (photo) fd.append('photo', photo);
       if (isEdit) {
-        await api.patch(`/employees/${employee.id}/`, payload);
+        await api.patch(`/employees/${employee.id}/`, fd);
         toast.push('Сотрудник обновлён', { kind: 'ok' });
       } else {
-        await api.post('/employees/', payload);
+        await api.post('/employees/', fd);
         toast.push('Сотрудник добавлен', { kind: 'ok' });
       }
       onDone && onDone();
@@ -282,6 +357,27 @@ function EmployeeFormModal({ data, onClose }) {
         <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
         <LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton>
       </>}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 14px', background: 'var(--surface-alt)', borderRadius: 8, marginBottom: 16 }}>
+        <div
+          onClick={() => fileRef.current?.click()}
+          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={e => { e.preventDefault(); setDragOver(false); handlePhoto(e.dataTransfer.files[0]); }}
+          style={{ width: 72, height: 72, borderRadius: 8, flexShrink: 0, border: dragOver ? '2px solid var(--accent)' : '2px dashed var(--border)', background: dragOver ? 'var(--accent-soft)' : 'var(--surface)', cursor: 'pointer', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'border-color .15s, background .15s' }}
+        >
+          {photoPreview
+            ? <img src={photoPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : <span style={{ fontSize: 24, opacity: 0.3 }}>🖼</span>
+          }
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 500, fontSize: 13, marginBottom: 2 }}>Фото сотрудника</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{photoPreview ? 'Нажмите на квадрат, чтобы заменить фото' : 'Нажмите на квадрат или перетащите изображение'}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 3 }}>Максимум 5 МБ, не более 2000x2000 пикселей</div>
+          {photoPreview && <button onClick={removePhoto} style={{ marginTop: 6, fontSize: 11, color: 'var(--bad-fg)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Удалить фото</button>}
+        </div>
+        <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handlePhoto(e.target.files[0])} />
+      </div>
       <div className="form-section">
         <div className="form-section-title">Личные данные</div>
         <div className="form-grid">
@@ -503,34 +599,62 @@ function ParentFormModal({ data, onClose }) {
   const isEdit = !!parent;
   const isStudentContext = !!studentId;
   const toast = useToast();
+  const fileRef = useRef(null);
   const [lastName, setLastName] = useState(parent?.last_name || '');
   const [firstName, setFirstName] = useState(parent?.first_name || '');
   const [middleName, setMiddleName] = useState(parent?.middle_name || '');
   const [phone, setPhone] = useState(parent?.phone || '');
   const [email, setEmail] = useState(parent?.email || '');
   const [relationType, setRelationType] = useState('guardian');
+  const [photo, setPhoto] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(parent?.photo || null);
+  const [dragOver, setDragOver] = useState(false);
   const [err, setErr] = useState('');
+
+  const handlePhoto = (file) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.push('Фото слишком большое - максимум 5 МБ', { kind: 'err' }); return; }
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        if (img.width > 2000 || img.height > 2000) { toast.push('Размер фото превышает 2000x2000 пикселей', { kind: 'err' }); return; }
+        setPhoto(file);
+        setPhotoPreview(ev.target.result);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removePhoto = (e) => {
+    e.stopPropagation();
+    setPhoto(null);
+    setPhotoPreview(null);
+    if (fileRef.current) fileRef.current.value = '';
+  };
 
   const save = async () => {
     if (!lastName.trim()) { setErr('Введите фамилию'); return; }
     if (!firstName.trim()) { setErr('Введите имя'); return; }
     setErr('');
-    const payload = {
-      last_name: lastName.trim(),
-      first_name: firstName.trim(),
-      middle_name: middleName.trim(),
-      phone: phone.trim(),
-      email: email.trim(),
-    };
     try {
+      const fd = new FormData();
+      fd.append('last_name', lastName.trim());
+      fd.append('first_name', firstName.trim());
+      fd.append('middle_name', middleName.trim());
+      fd.append('phone', phone.trim());
+      fd.append('email', email.trim());
+      if (photo) fd.append('photo', photo);
       if (isEdit) {
-        await api.patch(`/parents/${parent.id}/`, payload);
+        await api.patch(`/parents/${parent.id}/`, fd);
         toast.push('Опекун обновлён', { kind: 'ok' });
       } else if (isStudentContext) {
-        await api.post(`/students/${studentId}/parents/`, { ...payload, relation_type: relationType });
+        fd.append('relation_type', relationType);
+        await api.post(`/students/${studentId}/parents/`, fd);
         toast.push('Опекун добавлен', { kind: 'ok' });
       } else {
-        await api.post('/parents/', payload);
+        await api.post('/parents/', fd);
         toast.push('Опекун добавлен', { kind: 'ok' });
       }
       onDone && onDone();
@@ -546,6 +670,27 @@ function ParentFormModal({ data, onClose }) {
         <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
         <LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton>
       </>}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 14px', background: 'var(--surface-alt)', borderRadius: 8, marginBottom: 16 }}>
+        <div
+          onClick={() => fileRef.current?.click()}
+          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={e => { e.preventDefault(); setDragOver(false); handlePhoto(e.dataTransfer.files[0]); }}
+          style={{ width: 72, height: 72, borderRadius: 8, flexShrink: 0, border: dragOver ? '2px solid var(--accent)' : '2px dashed var(--border)', background: dragOver ? 'var(--accent-soft)' : 'var(--surface)', cursor: 'pointer', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'border-color .15s, background .15s' }}
+        >
+          {photoPreview
+            ? <img src={photoPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : <span style={{ fontSize: 24, opacity: 0.3 }}>🖼</span>
+          }
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 500, fontSize: 13, marginBottom: 2 }}>Фото опекуна</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{photoPreview ? 'Нажмите на квадрат, чтобы заменить фото' : 'Нажмите на квадрат или перетащите изображение'}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 3 }}>Максимум 5 МБ, не более 2000x2000 пикселей</div>
+          {photoPreview && <button onClick={removePhoto} style={{ marginTop: 6, fontSize: 11, color: 'var(--bad-fg)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Удалить фото</button>}
+        </div>
+        <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handlePhoto(e.target.files[0])} />
+      </div>
       <div className="form-grid">
         <Field label="Фамилия" required error={err && !lastName.trim() ? err : null}><input className={`input ${err && !lastName.trim() ? 'is-error' : ''}`} value={lastName} onChange={e => { setLastName(e.target.value); setErr(''); }} maxLength={100} /></Field>
         <Field label="Имя" required error={err && lastName.trim() && !firstName.trim() ? err : null}><input className={`input ${err && lastName.trim() && !firstName.trim() ? 'is-error' : ''}`} value={firstName} onChange={e => { setFirstName(e.target.value); setErr(''); }} maxLength={100} /></Field>
