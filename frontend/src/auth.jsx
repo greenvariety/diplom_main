@@ -562,11 +562,32 @@ function RecoverPasswordScreen({ onBack, onDone }) {
   const [login, setLogin] = useState('');
   const [maskedEmail, setMaskedEmail] = useState('');
   const [code, setCode] = useState('');
+  const [codeKey, setCodeKey] = useState(0);
   const [p1, setP1] = useState('');
   const [p2, setP2] = useState('');
   const [touched, setTouched] = useState({});
+  const [pwFocus, setPwFocus] = useState(false);
+  const [p1Touched, setP1Touched] = useState(false);
+  const [pw2Touched, setPw2Touched] = useState(false);
   const [sendError, setSendError] = useState('');
   const [recoverError, setRecoverError] = useState('');
+  const [cooldown, setCooldown] = useState(0);
+  const [resending, setResending] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+
+  const p1Err = !p1 ? 'Введите пароль'
+    : p1.length < 8 ? 'Минимум 8 символов'
+    : !/\d/.test(p1) ? 'Нужна хотя бы одна цифра'
+    : !/[A-Za-z]/.test(p1) ? 'Нужна хотя бы одна латинская буква'
+    : !/[_\-!@#$%^&*+.,;:?]/.test(p1) ? 'Нужен хотя бы один спецсимвол'
+    : null;
+  const p2Err = !p2 ? 'Повторите пароль' : p1 !== p2 ? 'Пароли не совпадают' : null;
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown(s => Math.max(0, s - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
 
   const sendCode = async () => {
     setTouched({ all: 1 });
@@ -577,6 +598,7 @@ function RecoverPasswordScreen({ onBack, onDone }) {
     try {
       const res = await axios.post('/api/auth/recover/send-code/', { login: login.trim() });
       setMaskedEmail(res.data.masked_email);
+      setCooldown(60);
       setStep(2);
     } catch (err) {
       const msg = err.response?.data?.error || 'Ошибка отправки кода';
@@ -584,10 +606,31 @@ function RecoverPasswordScreen({ onBack, onDone }) {
     }
   };
 
+  const resend = async () => {
+    if (cooldown > 0 || resending) return;
+    setResending(true);
+    try {
+      await axios.post('/api/auth/recover/send-code/', { login: login.trim() });
+      setCooldown(60);
+      setCode('');
+      setCodeKey(k => k + 1);
+      setRecoverError('');
+    } catch (err) {
+      const retryAfter = err.response?.data?.retry_after;
+      const msg = err.response?.data?.error || 'Ошибка отправки';
+      if (err.response?.status === 429) setIsBlocked(true);
+      if (retryAfter) setCooldown(retryAfter);
+      setRecoverError(msg);
+    } finally {
+      setResending(false);
+    }
+  };
+
   const submit = async () => {
     setTouched({ all: 1 });
-    if (code.trim().length !== 6 || pwStrength(p1) < 3 || p1 !== p2) {
-      setRecoverError('Заполните код и пароль корректно');
+    setP1Touched(true);
+    setPw2Touched(true);
+    if (code.trim().length !== 6 || p1Err || p2Err) {
       return;
     }
     try {
@@ -633,7 +676,7 @@ function RecoverPasswordScreen({ onBack, onDone }) {
                 {sendError && <div className="field-error" style={{ marginTop: 8 }}>{sendError}</div>}
               </div>
               <div className="modal-foot">
-                <button className="btn btn-secondary" onClick={() => onBack && onBack()}>{I.back}Войти</button>
+                <button className="btn btn-secondary" onClick={() => onBack && onBack()}>{I.back}Назад</button>
                 <div style={{ flex: 1 }}></div>
                 <LoadButton className="btn btn-primary" onClick={sendCode}>Получить код {I.chevr}</LoadButton>
               </div>
@@ -647,24 +690,54 @@ function RecoverPasswordScreen({ onBack, onDone }) {
                 </p>
 
                 <Field label="Код из письма" required>
-                  <CodeInput onChange={setCode} hasError={touched.all && code.length !== 6} autoFocus />
+                  <CodeInput key={codeKey} onChange={setCode} hasError={touched.all && code.length !== 6} autoFocus />
                 </Field>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 16 }}>
-                  <Field label="Новый пароль" required>
-                    <PasswordInput value={p1} onChange={setP1} hasError={touched.all && pwStrength(p1) < 3} />
-                    {p1 && <PasswordStrength value={p1} />}
-                  </Field>
-                  <Field label="Повторите" required error={touched.all && p1 !== p2 ? 'Не совпадает' : null} success={p2 && p1 === p2}>
-                    <PasswordInput value={p2} onChange={setP2} hasError={touched.all && (p1 !== p2)} />
-                  </Field>
+                <div className="field field-full" style={{ marginTop: 16 }}>
+                  <label className="field-label">Новый пароль<span className="req">*</span></label>
+                  <PasswordInput
+                    value={p1}
+                    onChange={(v) => setP1(v)}
+                    onFocus={() => setPwFocus(true)}
+                    onBlur={() => { setPwFocus(false); setP1Touched(true); }}
+                    hasError={(p1Touched || touched.all) && !!p1Err}
+                  />
+                  <FadingError error={(p1Touched || touched.all) && !p1 ? p1Err : null} />
+                  <PasswordRules value={p1} show={pwFocus || !!p1} />
+                  {p1 && <PasswordStrength value={p1} />}
                 </div>
 
-                <div style={{ marginTop: 12, fontSize: 13, color: 'var(--text-muted)' }}>
-                  Не пришёл код?{' '}
-                  <a href="#" onClick={e => { e.preventDefault(); setStep(1); setCode(''); setRecoverError(''); }} style={{ color: 'var(--accent)' }}>
-                    Отправить снова
-                  </a>
+                <div className="field field-full">
+                  <label className="field-label">Повторите пароль<span className="req">*</span></label>
+                  <PasswordInput
+                    value={p2}
+                    onChange={(v) => { setP2(v); setPw2Touched(true); }}
+                    onBlur={() => setPw2Touched(true)}
+                    hasError={(pw2Touched || touched.all) && !!p2Err}
+                  />
+                  {(pw2Touched || touched.all) && p2 && p1 === p2 && (
+                    <div className="pw-rule ok" style={{ marginTop: 6, fontSize: 12 }}>
+                      <span className="pw-mark"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+                      Пароли совпадают
+                    </div>
+                  )}
+                  <FadingError error={(pw2Touched || touched.all) && p2Err ? p2Err : null} />
+                </div>
+
+                <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 12, fontSize: 13 }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Не пришёл код?</span>
+                  <button
+                    className="btn btn-secondary"
+                    style={{ padding: '4px 12px', fontSize: 13, minWidth: 160 }}
+                    disabled={cooldown > 0 || resending || isBlocked}
+                    onClick={resend}
+                  >
+                    {isBlocked
+                      ? 'Недоступно'
+                      : cooldown > 0
+                        ? `Отправить снова (${cooldown} сек.)`
+                        : resending ? 'Отправляем...' : 'Отправить снова'}
+                  </button>
                 </div>
                 {recoverError && <div className="field-error" style={{ marginTop: 8 }}>{recoverError}</div>}
               </div>
