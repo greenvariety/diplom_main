@@ -54,7 +54,7 @@ class StudentsView(APIView):
             return Response({'results': [], 'count': 0, 'num_pages': 0, 'page': 1})
 
         qs = Student.objects.filter(faculty__institution=institution).select_related('faculty', 'group').annotate(
-            parent_count=Count('parents'),
+            parent_count=Count('student_parents'),
             has_pending_delreq=Exists(DeleteRequest.objects.filter(object_type='Student', object_id=OuterRef('pk'), status='pending')),
             has_note=Exists(RecordNote.objects.filter(object_type='Student', object_id=OuterRef('pk'), is_resolved=False)),
         )
