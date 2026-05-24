@@ -1,8 +1,8 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.paginator import Paginator
-from django.db.models import Q
-from .models import Employee, Position, GroupSubjectEmployee, Subject, Group, Document, DeleteRequest
+from django.db.models import Q, Exists, OuterRef
+from .models import Employee, Position, GroupSubjectEmployee, Subject, Group, Document, DeleteRequest, RecordNote
 from .utils import log_action
 
 
@@ -20,6 +20,9 @@ def _employee_data(e):
         'position_name': e.position.name if e.position_id else None,
         'photo': e.photo.url if e.photo else None,
         'is_flagged': e.is_flagged,
+        'warn_incomplete': e.position_id is None,
+        'has_pending_delreq': getattr(e, 'has_pending_delreq', False),
+        'has_note': getattr(e, 'has_note', False),
     }
 
 
@@ -47,7 +50,10 @@ class EmployeesView(APIView):
                 return Response({'results': [], 'count': 0, 'num_pages': 0, 'page': 1})
             return Response([])
 
-        qs = Employee.objects.filter(institution=institution).select_related('position')
+        qs = Employee.objects.filter(institution=institution).select_related('position').annotate(
+            has_pending_delreq=Exists(DeleteRequest.objects.filter(object_type='Employee', object_id=OuterRef('pk'), status='pending')),
+            has_note=Exists(RecordNote.objects.filter(object_type='Employee', object_id=OuterRef('pk'), is_resolved=False)),
+        )
 
         search = request.query_params.get('search', '').strip()
         if search:

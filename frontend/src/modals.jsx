@@ -1929,6 +1929,126 @@ function OwnerDirectDeleteModal({ data, onClose }) {
   );
 }
 
+/* ============================================================
+   NoteModal - добавить / просмотреть / закрыть вопрос по записи
+   ============================================================ */
+function NoteModal({ data, onClose }) {
+  const { objectType, objectId, onDone, currentUserRole } = data || {};
+  const toast = useToast();
+  const [note, setNote] = useState(null);
+  const [question, setQuestion] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState('');
+
+  useEffect(() => {
+    if (!objectType || !objectId) { setLoading(false); return; }
+    api.get(`/notes/?object_type=${objectType}&object_id=${objectId}&resolved=false`)
+      .then(r => { setNote(r.data[0] || null); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const submit = async () => {
+    if (!question.trim()) { setErr('Введите вопрос'); return; }
+    if (question.length > 2000) { setErr('Максимум 2000 символов'); return; }
+    setErr('');
+    try {
+      await api.post('/notes/', { object_type: objectType, object_id: objectId, question: question.trim() });
+      toast.push('Вопрос добавлен', { kind: 'ok' });
+      onDone && onDone();
+      onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка');
+    }
+  };
+
+  const resolve = async () => {
+    try {
+      await api.post(`/notes/${note.id}/resolve/`);
+      toast.push('Вопрос закрыт', { kind: 'ok' });
+      onDone && onDone();
+      onClose();
+    } catch (e) {
+      toast.push(e.response?.data?.error || 'Ошибка', { kind: 'err' });
+    }
+  };
+
+  const remove = async () => {
+    try {
+      await api.delete(`/notes/${note.id}/`);
+      toast.push('Вопрос удалён', { kind: 'ok' });
+      onDone && onDone();
+      onClose();
+    } catch (e) {
+      toast.push(e.response?.data?.error || 'Ошибка', { kind: 'err' });
+    }
+  };
+
+  if (loading) {
+    return (
+      <Modal title="Вопрос по записи" onClose={onClose} footer={<button className="btn btn-secondary" onClick={onClose}>Закрыть</button>}>
+        <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Загрузка…</div>
+      </Modal>
+    );
+  }
+
+  if (note) {
+    return (
+      <Modal title="Вопрос по записи" onClose={onClose}
+        footer={<>
+          {currentUserRole === 'owner' && (
+            <LoadButton className="btn btn-primary" onClick={resolve}>{I.check}Закрыть вопрос</LoadButton>
+          )}
+          <button className="btn btn-danger" onClick={remove}>{I.trash}Удалить</button>
+          <div style={{ flex: 1 }} />
+          <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
+        </>}>
+        <div className="banner banner-warn" style={{ marginBottom: 16 }}>
+          {I.alert}
+          <div className="banner-body">
+            <div style={{ fontWeight: 500, marginBottom: 4 }}>Открытый вопрос</div>
+            <div style={{ fontSize: 13 }}>{note.question}</div>
+          </div>
+        </div>
+        <dl className="kv" style={{ padding: 0 }}>
+          <dt>Автор</dt><dd className="fwm">{note.created_by_name}</dd>
+          <dt>Дата</dt><dd className="mono">{note.created_at}</dd>
+        </dl>
+        {currentUserRole !== 'owner' && (
+          <p className="muted" style={{ fontSize: 13, marginTop: 12 }}>Суперадминистратор увидит этот вопрос и сможет его закрыть.</p>
+        )}
+      </Modal>
+    );
+  }
+
+  return (
+    <Modal title="Добавить вопрос" onClose={onClose}
+      footer={<>
+        <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
+        <LoadButton className="btn btn-primary" onClick={submit}>{I.check}Отправить</LoadButton>
+      </>}>
+      <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>
+        Опишите проблему или вопрос. Суперадминистратор увидит его рядом с записью и сможет ответить.
+      </p>
+      <div className="field">
+        <label className="field-label">Вопрос <span className="req">*</span></label>
+        <textarea
+          className={`textarea ${err ? 'is-error' : ''}`}
+          rows={4}
+          value={question}
+          onChange={e => { setQuestion(e.target.value); setErr(''); }}
+          style={{ resize: 'none' }}
+        />
+        {question.length > 0 && (
+          <div style={{ fontSize: 11, color: question.length > 2000 ? 'var(--bad-fg)' : 'var(--text-muted)', textAlign: 'right', marginTop: 2 }}>
+            {question.length} / 2000
+          </div>
+        )}
+        {err && <div style={{ color: 'var(--bad-fg)', fontSize: 12, marginTop: 4 }}>{err}</div>}
+      </div>
+    </Modal>
+  );
+}
+
 export {
   StudentFormModal, EmployeeFormModal, GroupFormModal, FacultyFormModal,
   ParentFormModal, ParentAddStudentModal, SubjectFormModal, PositionFormModal, UserFormModal, UserSetPasswordModal,
@@ -1936,4 +2056,5 @@ export {
   AssignSubjectModal, EmployeeAssignSubjectModal, AuditDiffModal, LogoutModal,
   StudentDetailModal, GroupDetailModal, FacultyDetailModal, EmployeeDetailModal,
   OrgFormModal, OrgDeleteConfirmModal, OwnerDirectDeleteModal,
+  NoteModal,
 };

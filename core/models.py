@@ -515,6 +515,39 @@ class FeedbackComment(models.Model):
 
 
 # ---------------------------------------------------------------------------
+# RecordNote (вопрос к записи — ставит admin, закрывает owner)
+# ---------------------------------------------------------------------------
+
+class RecordNote(models.Model):
+    institution = models.ForeignKey(
+        Institution, on_delete=models.CASCADE,
+        related_name='record_notes', verbose_name='Учебное заведение'
+    )
+    object_type = models.CharField(max_length=50, verbose_name='Тип объекта')  # Student, Employee, Group …
+    object_id = models.IntegerField(verbose_name='ID объекта')
+    question = models.TextField(max_length=2000, verbose_name='Вопрос')
+    is_resolved = models.BooleanField(default=False, verbose_name='Закрыт')
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True,
+        related_name='notes_created', verbose_name='Автор'
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+    resolved_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='notes_resolved', verbose_name='Закрыл'
+    )
+    resolved_at = models.DateTimeField(null=True, blank=True, verbose_name='Дата закрытия')
+
+    class Meta:
+        verbose_name = 'Вопрос по записи'
+        verbose_name_plural = 'Вопросы по записям'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.object_type} #{self.object_id} - {self.question[:50]}'
+
+
+# ---------------------------------------------------------------------------
 # AuditLog
 # ---------------------------------------------------------------------------
 

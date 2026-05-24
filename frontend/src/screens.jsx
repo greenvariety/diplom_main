@@ -647,6 +647,14 @@ function StudentList({ currentUser, openModal, onNavigate }) {
                           {s.parent_count === 0 && (
                             <span title="Нет опекунов - требуется дозаполнение" style={{ marginLeft: 6, color: 'var(--warn-fg, #f59e0b)', fontSize: 14 }}>!</span>
                           )}
+                          {s.has_pending_delreq && (
+                            <span title="Подана заявка на удаление" style={{ marginLeft: 4, color: 'var(--bad-fg)', fontSize: 13, opacity: 0.8 }}>{I.trash}</span>
+                          )}
+                          {s.has_note && currentUser?.role !== 'teacher' && (
+                            <button className="btn btn-ghost btn-icon btn-sm" style={{ marginLeft: 2, color: 'var(--accent)', padding: '0 2px', fontSize: 13, fontWeight: 700 }}
+                              onClick={e => { e.stopPropagation(); openModal('recordNote', { objectType: 'Student', objectId: s.id, onDone: load }); }}
+                              title="Есть открытый вопрос">?</button>
+                          )}
                         </td>
                         <td onClick={e => e.stopPropagation()}>
                           <StatusDropdown value={s.status} onChange={v => handleStatusChange(s.id, v)} />
@@ -654,7 +662,15 @@ function StudentList({ currentUser, openModal, onNavigate }) {
                         <td>{s.faculty_short}</td>
                         <td>{s.group_name || <span className="muted">-</span>}</td>
                         <td className="muted">{s.phone}</td>
-                        <td onClick={e => e.stopPropagation()}>
+                        <td onClick={e => e.stopPropagation()} style={{ whiteSpace: 'nowrap' }}>
+                          {currentUser?.role !== 'teacher' && !s.has_note && (
+                            <button className="btn btn-ghost btn-icon btn-sm"
+                              style={{ color: 'var(--text-muted)', fontWeight: 700 }}
+                              title="Добавить вопрос"
+                              onClick={e => { e.stopPropagation(); openModal('recordNote', { objectType: 'Student', objectId: s.id, onDone: load }); }}>
+                              ?
+                            </button>
+                          )}
                           <button className="btn btn-ghost btn-icon btn-sm"
                             style={{ color: s.is_flagged ? 'var(--warn-fg)' : 'var(--text-muted)' }}
                             title={s.is_flagged ? 'Снять метку' : 'Отметить'}
@@ -966,11 +982,32 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
               <tbody>
                 {loading ? <SkeletonRows cols={5} /> : data.results.map(e => (
                   <tr key={e.id} className="row-link" onClick={() => onNavigate('employee-detail', { employeeId: e.id })}>
-                    <td className="fwm">{e.full_name}</td>
+                    <td className="fwm">
+                      {e.full_name}
+                      {e.warn_incomplete && (
+                        <span title="Нет должности - требуется дозаполнение" style={{ marginLeft: 6, color: 'var(--warn-fg, #f59e0b)', fontSize: 14 }}>!</span>
+                      )}
+                      {e.has_pending_delreq && (
+                        <span title="Подана заявка на удаление" style={{ marginLeft: 4, color: 'var(--bad-fg)', fontSize: 13, opacity: 0.8 }}>{I.trash}</span>
+                      )}
+                      {e.has_note && currentUser?.role !== 'teacher' && (
+                        <button className="btn btn-ghost btn-icon btn-sm" style={{ marginLeft: 2, color: 'var(--accent)', padding: '0 2px', fontSize: 13, fontWeight: 700 }}
+                          onClick={ev => { ev.stopPropagation(); openModal('recordNote', { objectType: 'Employee', objectId: e.id, onDone: load }); }}
+                          title="Есть открытый вопрос">?</button>
+                      )}
+                    </td>
                     <td>{e.position_name || <span className="muted">-</span>}</td>
                     <td className="muted">{e.phone || '-'}</td>
                     <td className="muted">{e.email || '-'}</td>
-                    <td onClick={e2 => e2.stopPropagation()}>
+                    <td onClick={e2 => e2.stopPropagation()} style={{ whiteSpace: 'nowrap' }}>
+                      {currentUser?.role !== 'teacher' && !e.has_note && (
+                        <button className="btn btn-ghost btn-icon btn-sm"
+                          style={{ color: 'var(--text-muted)', fontWeight: 700 }}
+                          title="Добавить вопрос"
+                          onClick={ev => { ev.stopPropagation(); openModal('recordNote', { objectType: 'Employee', objectId: e.id, onDone: load }); }}>
+                          ?
+                        </button>
+                      )}
                       <button className="btn btn-ghost btn-icon btn-sm"
                         style={{ color: e.is_flagged ? 'var(--warn-fg)' : 'var(--text-muted)' }}
                         title={e.is_flagged ? 'Снять метку' : 'Отметить'}
@@ -1248,12 +1285,33 @@ function GroupList({ currentUser, openModal, onNavigate }) {
                 <tr><td colSpan={7} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Группы не найдены</td></tr>
               ) : filtered.map(g => (
                 <tr key={g.id} className="row-link" onClick={() => onNavigate('group-detail', { groupId: g.id })}>
-                  <td className="fwm">{g.name}</td>
+                  <td className="fwm">
+                    {g.name}
+                    {g.warn_incomplete && (
+                      <span title="Нет классного руководителя - требуется дозаполнение" style={{ marginLeft: 6, color: 'var(--warn-fg, #f59e0b)', fontSize: 14 }}>!</span>
+                    )}
+                    {g.has_pending_delreq && (
+                      <span title="Подана заявка на удаление" style={{ marginLeft: 4, color: 'var(--bad-fg)', fontSize: 13, opacity: 0.8 }}>{I.trash}</span>
+                    )}
+                    {g.has_note && currentUser?.role !== 'teacher' && (
+                      <button className="btn btn-ghost btn-icon btn-sm" style={{ marginLeft: 2, color: 'var(--accent)', padding: '0 2px', fontSize: 13, fontWeight: 700 }}
+                        onClick={e => { e.stopPropagation(); openModal('recordNote', { objectType: 'Group', objectId: g.id, onDone: () => load() }); }}
+                        title="Есть открытый вопрос">?</button>
+                    )}
+                  </td>
                   <td>{g.faculty_short}</td>
                   <td className="mono muted">{g.year}</td>
                   <td>{g.headteacher_name || '-'}</td>
                   <td className="mono">{g.student_count}</td>
-                  <td onClick={e => e.stopPropagation()}>
+                  <td onClick={e => e.stopPropagation()} style={{ whiteSpace: 'nowrap' }}>
+                    {currentUser?.role !== 'teacher' && !g.has_note && (
+                      <button className="btn btn-ghost btn-icon btn-sm"
+                        style={{ color: 'var(--text-muted)', fontWeight: 700 }}
+                        title="Добавить вопрос"
+                        onClick={e => { e.stopPropagation(); openModal('recordNote', { objectType: 'Group', objectId: g.id, onDone: () => load() }); }}>
+                        ?
+                      </button>
+                    )}
                     <button className="btn btn-ghost btn-icon btn-sm"
                       style={{ color: g.is_flagged ? 'var(--warn-fg)' : 'var(--text-muted)' }}
                       title={g.is_flagged ? 'Снять метку' : 'Отметить'}

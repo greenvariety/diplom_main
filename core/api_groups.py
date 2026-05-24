@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import Group, Faculty, Employee, Subject, GroupSubjectEmployee, DeleteRequest
+from django.db.models import Exists, OuterRef
+from .models import Group, Faculty, Employee, Subject, GroupSubjectEmployee, DeleteRequest, RecordNote
 from .utils import log_action
 
 
@@ -17,6 +18,9 @@ def _group_data(g):
         'headteacher_name': str(g.headteacher) if g.headteacher_id else None,
         'student_count': g.students.count(),
         'is_flagged': g.is_flagged,
+        'warn_incomplete': g.headteacher_id is None,
+        'has_pending_delreq': getattr(g, 'has_pending_delreq', False),
+        'has_note': getattr(g, 'has_note', False),
     }
 
 
@@ -31,7 +35,10 @@ class GroupsView(APIView):
         institution = request.user.institution
         if not institution:
             return Response([])
-        qs = Group.objects.filter(faculty__institution=institution).select_related('faculty', 'headteacher')
+        qs = Group.objects.filter(faculty__institution=institution).select_related('faculty', 'headteacher').annotate(
+            has_pending_delreq=Exists(DeleteRequest.objects.filter(object_type='Group', object_id=OuterRef('pk'), status='pending')),
+            has_note=Exists(RecordNote.objects.filter(object_type='Group', object_id=OuterRef('pk'), is_resolved=False)),
+        )
         faculty_id = request.query_params.get('faculty_id')
         if faculty_id:
             qs = qs.filter(faculty_id=faculty_id)

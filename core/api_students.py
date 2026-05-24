@@ -1,8 +1,8 @@
 ﻿from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.paginator import Paginator
-from django.db.models import Q, Count
-from .models import Student, Group, Faculty, Document, StudentParent, Parent, DeleteRequest, AuditLog
+from django.db.models import Q, Count, Exists, OuterRef
+from .models import Student, Group, Faculty, Document, StudentParent, Parent, DeleteRequest, AuditLog, RecordNote
 from .utils import log_action
 
 
@@ -24,6 +24,8 @@ def _student_data(s):
         'photo': s.photo.url if s.photo else None,
         'parent_count': getattr(s, 'parent_count', None),
         'is_flagged': s.is_flagged,
+        'has_pending_delreq': getattr(s, 'has_pending_delreq', False),
+        'has_note': getattr(s, 'has_note', False),
     }
 
 
@@ -51,7 +53,11 @@ class StudentsView(APIView):
         if not institution:
             return Response({'results': [], 'count': 0, 'num_pages': 0, 'page': 1})
 
-        qs = Student.objects.filter(faculty__institution=institution).select_related('faculty', 'group').annotate(parent_count=Count('parents'))
+        qs = Student.objects.filter(faculty__institution=institution).select_related('faculty', 'group').annotate(
+            parent_count=Count('parents'),
+            has_pending_delreq=Exists(DeleteRequest.objects.filter(object_type='Student', object_id=OuterRef('pk'), status='pending')),
+            has_note=Exists(RecordNote.objects.filter(object_type='Student', object_id=OuterRef('pk'), is_resolved=False)),
+        )
 
         search = request.query_params.get('search', '').strip()
         if search:

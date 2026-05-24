@@ -28,6 +28,7 @@ from core.api_parents import (
 from core.api_users import UsersView, UserDetailView, UserSetPasswordView
 from core.api_delete_requests import DeleteRequestsView, DeleteRequestApproveView, DeleteRequestRejectView, DeleteRequestsCountView
 from core.api_audit import AuditLogView, AuditLogUsersView
+from core.api_notes import NotesView, NoteDetailView
 
 router = DefaultRouter()
 
@@ -93,6 +94,9 @@ urlpatterns = [
     path('api/delete-requests/<int:pk>/reject/', DeleteRequestRejectView.as_view()),
     path('api/audit-log/', AuditLogView.as_view()),
     path('api/audit-log/users/', AuditLogUsersView.as_view()),
+    path('api/notes/', NotesView.as_view()),
+    path('api/notes/<int:pk>/resolve/', NoteDetailView.as_view()),
+    path('api/notes/<int:pk>/', NoteDetailView.as_view()),
     path('api/', include(router.urls)),
     re_path(r'^(?P<path>.*)$', serve_frontend),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
