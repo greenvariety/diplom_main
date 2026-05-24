@@ -50,6 +50,15 @@ function validateEmail(v) {
   return EMAIL_RE.test(v) ? null : 'Некорректный email';
 }
 
+function filterName(str) { return str.replace(/[^А-ЯЁа-яё\s\-]/g, ''); }
+function filterLogin(str) { return str.replace(/[^a-zA-Z0-9._\-]/g, ''); }
+const NAME_INPUT_PROPS = {
+  onBeforeInput: e => { if (e.data && /[^А-ЯЁа-яё\s\-]/.test(e.data)) e.preventDefault(); },
+};
+const LOGIN_INPUT_PROPS = {
+  onBeforeInput: e => { if (e.data && /[^a-zA-Z0-9._\-]/.test(e.data)) e.preventDefault(); },
+};
+
 /* ============================================================
    Shared option lists
    ============================================================ */
@@ -275,12 +284,12 @@ function StudentFormModal({ data, onClose }) {
         <div className="form-section-title">Личные данные</div>
         <div className="form-grid">
           <Field label="Фамилия" required error={touched.last_name && errs.last_name} className="field-full">
-            <input className={`input ${touched.last_name && errs.last_name ? 'is-error' : ''}`} value={vals.last_name} onChange={e => set('last_name', e.target.value)} onBlur={() => setTouched(t => ({ ...t, last_name: 1 }))} maxLength={100} />
+            <input className={`input ${touched.last_name && errs.last_name ? 'is-error' : ''}`} value={vals.last_name} onChange={e => set('last_name', e.target.value)} onBlur={() => setTouched(t => ({ ...t, last_name: 1 }))} maxLength={100} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); set('last_name', (vals.last_name + filterName(e.clipboardData.getData('text') || '')).slice(0, 100)); }} />
           </Field>
           <Field label="Имя" required error={touched.first_name && errs.first_name} className="field-full">
-            <input className={`input ${touched.first_name && errs.first_name ? 'is-error' : ''}`} value={vals.first_name} onChange={e => set('first_name', e.target.value)} onBlur={() => setTouched(t => ({ ...t, first_name: 1 }))} maxLength={100} />
+            <input className={`input ${touched.first_name && errs.first_name ? 'is-error' : ''}`} value={vals.first_name} onChange={e => set('first_name', e.target.value)} onBlur={() => setTouched(t => ({ ...t, first_name: 1 }))} maxLength={100} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); set('first_name', (vals.first_name + filterName(e.clipboardData.getData('text') || '')).slice(0, 100)); }} />
           </Field>
-          <Field label="Отчество" className="field-full"><input className="input" value={vals.middle_name} onChange={e => set('middle_name', e.target.value)} maxLength={100} /></Field>
+          <Field label="Отчество" className="field-full"><input className="input" value={vals.middle_name} onChange={e => set('middle_name', e.target.value)} maxLength={100} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); set('middle_name', (vals.middle_name + filterName(e.clipboardData.getData('text') || '')).slice(0, 100)); }} /></Field>
           <Field label="Дата рождения"><input className="input" type="date" value={vals.birth_date || ''} onChange={e => set('birth_date', e.target.value)} /></Field>
         </div>
       </div>
@@ -452,13 +461,13 @@ function EmployeeFormModal({ data, onClose }) {
         <div className="form-section-title">Личные данные</div>
         <div className="form-grid">
           <Field label="Фамилия" required error={touched.last_name && fieldErrs.last_name} className="field-full">
-            <input className={`input ${touched.last_name && fieldErrs.last_name ? 'is-error' : ''}`} value={lastName} onChange={e => { setLastName(e.target.value); setErr(''); }} onBlur={() => touch('last_name')} maxLength={100} />
+            <input className={`input ${touched.last_name && fieldErrs.last_name ? 'is-error' : ''}`} value={lastName} onChange={e => { setLastName(e.target.value); setErr(''); }} onBlur={() => touch('last_name')} maxLength={100} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); setLastName(p => (p + filterName(e.clipboardData.getData('text') || '')).slice(0, 100)); }} />
           </Field>
           <Field label="Имя" required error={touched.first_name && fieldErrs.first_name} className="field-full">
-            <input className={`input ${touched.first_name && fieldErrs.first_name ? 'is-error' : ''}`} value={firstName} onChange={e => { setFirstName(e.target.value); setErr(''); }} onBlur={() => touch('first_name')} maxLength={100} />
+            <input className={`input ${touched.first_name && fieldErrs.first_name ? 'is-error' : ''}`} value={firstName} onChange={e => { setFirstName(e.target.value); setErr(''); }} onBlur={() => touch('first_name')} maxLength={100} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); setFirstName(p => (p + filterName(e.clipboardData.getData('text') || '')).slice(0, 100)); }} />
           </Field>
           <Field label="Отчество" className="field-full">
-            <input className="input" value={middleName} onChange={e => setMiddleName(e.target.value)} maxLength={100} />
+            <input className="input" value={middleName} onChange={e => setMiddleName(e.target.value)} maxLength={100} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); setMiddleName(p => (p + filterName(e.clipboardData.getData('text') || '')).slice(0, 100)); }} />
           </Field>
           <Field label="Дата рождения">
             <input className="input" type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} />
@@ -653,7 +662,7 @@ function FacultyFormModal({ data, onClose }) {
       </>}>
       <div className="form-grid">
         <Field label="Полное название" required error={err && !fullName.trim() ? err : null}>
-          <input className={`input ${err && !fullName.trim() ? 'is-error' : ''}`} value={fullName} onChange={e => { const next = e.target.value; setFullName(next); if (!codeManual) setShortName(autoCode(next)); setErr(''); }} maxLength={255} />
+          <input className={`input ${err && !fullName.trim() ? 'is-error' : ''}`} value={fullName} onChange={e => { const next = e.target.value; setFullName(next); if (!codeManual) setShortName(autoCode(next)); setErr(''); }} maxLength={255} onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }} onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); const next = fullName + t; setFullName(next); if (!codeManual) setShortName(autoCode(next)); setErr(''); }} />
         </Field>
         <Field label="Код (аббревиатура)" required error={err && fullName.trim() && !shortName.trim() ? err : null} hint={!isEdit && !codeManual ? 'Формируется автоматически по названию' : null}>
           <input className={`input ${err && fullName.trim() && !shortName.trim() ? 'is-error' : ''}`} value={shortName} onChange={e => { setShortName(e.target.value.toUpperCase()); setCodeManual(true); setErr(''); }} maxLength={50} />
@@ -781,13 +790,13 @@ function ParentFormModal({ data, onClose }) {
       </div>
       <div className="form-grid">
         <Field label="Фамилия" required error={touched.last_name && pErrs.last_name} className="field-full">
-          <input className={`input ${touched.last_name && pErrs.last_name ? 'is-error' : ''}`} value={lastName} onChange={e => { setLastName(e.target.value); setErr(''); }} onBlur={() => touchP('last_name')} maxLength={100} />
+          <input className={`input ${touched.last_name && pErrs.last_name ? 'is-error' : ''}`} value={lastName} onChange={e => { setLastName(e.target.value); setErr(''); }} onBlur={() => touchP('last_name')} maxLength={100} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); setLastName(p => (p + filterName(e.clipboardData.getData('text') || '')).slice(0, 100)); }} />
         </Field>
         <Field label="Имя" required error={touched.first_name && pErrs.first_name} className="field-full">
-          <input className={`input ${touched.first_name && pErrs.first_name ? 'is-error' : ''}`} value={firstName} onChange={e => { setFirstName(e.target.value); setErr(''); }} onBlur={() => touchP('first_name')} maxLength={100} />
+          <input className={`input ${touched.first_name && pErrs.first_name ? 'is-error' : ''}`} value={firstName} onChange={e => { setFirstName(e.target.value); setErr(''); }} onBlur={() => touchP('first_name')} maxLength={100} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); setFirstName(p => (p + filterName(e.clipboardData.getData('text') || '')).slice(0, 100)); }} />
         </Field>
         <Field label="Отчество" className="field-full">
-          <input className="input" value={middleName} onChange={e => setMiddleName(e.target.value)} maxLength={100} />
+          <input className="input" value={middleName} onChange={e => setMiddleName(e.target.value)} maxLength={100} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); setMiddleName(p => (p + filterName(e.clipboardData.getData('text') || '')).slice(0, 100)); }} />
         </Field>
         {isStudentContext && !isEdit && (
           <Field label="Связь" required>
@@ -982,11 +991,11 @@ function UserFormModal({ data, onClose }) {
       <div className="form-grid">
         {!isEdit && (
           <Field label="Логин" required error={err && !username.trim() ? err : null} className="field-full">
-            <input className={`input ${err && !username.trim() ? 'is-error' : ''}`} value={username} onChange={e => { setUsername(e.target.value); setErr(''); }} maxLength={150} />
+            <input className={`input ${err && !username.trim() ? 'is-error' : ''}`} value={username} onChange={e => { setUsername(e.target.value); setErr(''); }} maxLength={150} {...LOGIN_INPUT_PROPS} onPaste={e => { e.preventDefault(); setUsername(p => (p + filterLogin(e.clipboardData.getData('text') || '')).slice(0, 150)); setErr(''); }} />
           </Field>
         )}
         <Field label="ФИО" required={!isEdit} error={err && !isEdit && !displayName.trim() ? err : null} className="field-full">
-          <input className={`input ${err && !isEdit && !displayName.trim() ? 'is-error' : ''}`} value={displayName} onChange={e => { setDisplayName(e.target.value); setErr(''); }} maxLength={150} />
+          <input className={`input ${err && !isEdit && !displayName.trim() ? 'is-error' : ''}`} value={displayName} onChange={e => { setDisplayName(e.target.value); setErr(''); }} maxLength={150} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); setDisplayName(p => (p + filterName(e.clipboardData.getData('text') || '')).slice(0, 150)); setErr(''); }} />
         </Field>
         <Field label="Роль" required className="field-full">
           <select className="select" value={role} onChange={e => setRole(e.target.value)}>
