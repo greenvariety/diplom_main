@@ -1,7 +1,7 @@
 ﻿from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Q, Count
 from .models import Student, Group, Faculty, Document, StudentParent, Parent, DeleteRequest, AuditLog
 from .utils import log_action
 
@@ -22,6 +22,7 @@ def _student_data(s):
         'group_id': s.group_id,
         'group_name': s.group.name if s.group_id else '',
         'photo': s.photo.url if s.photo else None,
+        'parent_count': getattr(s, 'parent_count', None),
     }
 
 
@@ -49,7 +50,7 @@ class StudentsView(APIView):
         if not institution:
             return Response({'results': [], 'count': 0, 'num_pages': 0, 'page': 1})
 
-        qs = Student.objects.filter(faculty__institution=institution).select_related('faculty', 'group')
+        qs = Student.objects.filter(faculty__institution=institution).select_related('faculty', 'group').annotate(parent_count=Count('parents'))
 
         search = request.query_params.get('search', '').strip()
         if search:
@@ -238,6 +239,24 @@ class StudentDetailView(APIView):
                    new_data={'full_name': str(student), 'status': student.status},
                    institution=institution)
         return Response(_student_data(student))
+
+    def delete(self, request, pk):
+        if request.user.role != 'owner':
+            return Response({'error': 'Доступ запрещён'}, status=403)
+        password = (request.data.get('password') or '').strip()
+        if not password:
+            return Response({'error': 'Введите пароль'}, status=400)
+        if not request.user.check_password(password):
+            return Response({'error': 'Неверный пароль'}, status=400)
+        student = _get_student(request, pk)
+        if not student:
+            return Response({'error': 'Не найдено'}, status=404)
+        institution = request.user.institution
+        log_action(request.user, 'deleted', student,
+                   old_data={'full_name': str(student)},
+                   institution=institution)
+        student.delete()
+        return Response({'ok': True})
 
 
 class StudentDeleteRequestView(APIView):

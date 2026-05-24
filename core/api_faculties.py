@@ -87,6 +87,23 @@ class FacultyDetailView(APIView):
                    institution=request.user.institution)
         return Response(_faculty_data(faculty))
 
+    def delete(self, request, pk):
+        if request.user.role != 'owner':
+            return Response({'error': 'Доступ запрещён'}, status=403)
+        password = (request.data.get('password') or '').strip()
+        if not password:
+            return Response({'error': 'Введите пароль'}, status=400)
+        if not request.user.check_password(password):
+            return Response({'error': 'Неверный пароль'}, status=400)
+        faculty = self._get_faculty(request, pk)
+        if not faculty:
+            return Response({'error': 'Не найдено'}, status=404)
+        log_action(request.user, 'deleted', faculty,
+                   old_data={'full_name': faculty.full_name},
+                   institution=request.user.institution)
+        faculty.delete()
+        return Response({'ok': True})
+
 
 class FacultyDeleteRequestView(APIView):
     def post(self, request, pk):

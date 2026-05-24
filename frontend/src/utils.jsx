@@ -203,9 +203,9 @@ function FadingError({ error, style }) {
 }
 
 /* ---------- Field wrapper ---------- */
-function Field({ label, required, error, success, children, hint }) {
+function Field({ label, required, error, success, children, hint, className }) {
   return (
-    <div className="field">
+    <div className={`field${className ? ' ' + className : ''}`}>
       {label && <label className="field-label">{label}{required && <span className="req">*</span>}</label>}
       <div style={{ position: 'relative' }}>
         {children}

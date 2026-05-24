@@ -617,15 +617,19 @@ function StudentList({ currentUser, openModal, onNavigate }) {
             />
           ) : (
             <table className="tbl">
-              <thead><tr><th style={{ width: 40 }}>#</th><th style={{ width: 50 }}></th><th>ФИО</th><th>Статус</th><th>Факультет</th><th>Группа</th><th>Контакт</th></tr></thead>
+              <thead><tr><th style={{ width: 50 }}></th><th>ФИО</th><th>Статус</th><th>Факультет</th><th>Группа</th><th>Контакт</th></tr></thead>
               {loading
-                ? <SkeletonRows rows={6} cols={7} />
+                ? <SkeletonRows rows={6} cols={6} />
                 : <tbody>
                     {data.results.map(s => (
                       <tr key={s.id} className="row-link" onClick={() => onNavigate('student-detail', { studentId: s.id })}>
-                        <td className="muted">{s.id}</td>
                         <td><Avatar name={`${s.last_name} ${s.first_name}`} size="sm" /></td>
-                        <td className="fwm">{s.last_name} {s.first_name} {s.middle_name}</td>
+                        <td className="fwm">
+                          {s.last_name} {s.first_name} {s.middle_name}
+                          {s.parent_count === 0 && (
+                            <span title="Нет опекунов - требуется дозаполнение" style={{ marginLeft: 6, color: 'var(--warn-fg, #f59e0b)', fontSize: 14 }}>!</span>
+                          )}
+                        </td>
                         <td onClick={e => e.stopPropagation()}>
                           <StatusDropdown value={s.status} onChange={v => handleStatusChange(s.id, v)} />
                         </td>
@@ -722,11 +726,14 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
       <PageHead
         crumbs={[{ label: 'Студенты', href: true, onClick: () => onNavigate('students') }, { label: `${student.last_name} ${student.first_name}` }]}
         title={`${student.last_name} ${student.first_name} ${student.middle_name}`}
-        sub={`#${student.id} · ${student.faculty_short} · ${student.group_name || 'без группы'}`}
+        sub={`${student.faculty_short} · ${student.group_name || 'без группы'}`}
         actions={<>
           <button className="btn btn-secondary btn-sm" onClick={() => openModal('studentForm', { student, onDone: load })}>{I.pencil}Редактировать</button>
           <button className="btn btn-secondary btn-sm" onClick={() => openModal('transfer', { student, onDone: load })}>{I.swap}Перевести</button>
-          <button className="btn btn-danger btn-sm" onClick={() => openModal('deleteConfirm', { name: `${student.last_name} ${student.first_name}`, type: 'студента', studentId, onDone: () => onNavigate('students') })}>{I.trash}Удалить</button>
+          {currentUser?.role === 'owner'
+            ? <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: `${student.last_name} ${student.first_name}`, type: 'студента', url: `/students/${student.id}/`, onDone: () => onNavigate('students') })}>{I.trash}Удалить</button>
+            : <button className="btn btn-danger btn-sm" onClick={() => openModal('deleteConfirm', { name: `${student.last_name} ${student.first_name}`, type: 'студента', studentId, onDone: () => onNavigate('students') })}>{I.trash}Подать заявку</button>
+          }
         </>}
       />
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
@@ -911,11 +918,10 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
             <EmptyState icon={I.search} title="Сотрудники не найдены" sub="Попробуйте изменить условия поиска" />
           ) : (
             <table className="tbl">
-              <thead><tr><th style={{ width: 40 }}>#</th><th>ФИО</th><th>Должность</th><th>Телефон</th><th>Email</th></tr></thead>
+              <thead><tr><th>ФИО</th><th>Должность</th><th>Телефон</th><th>Email</th></tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={5} /> : data.results.map(e => (
+                {loading ? <SkeletonRows cols={4} /> : data.results.map(e => (
                   <tr key={e.id} className="row-link" onClick={() => onNavigate('employee-detail', { employeeId: e.id })}>
-                    <td className="muted mono">{e.id}</td>
                     <td className="fwm">{e.full_name}</td>
                     <td>{e.position_name || <span className="muted">-</span>}</td>
                     <td className="muted">{e.phone || '-'}</td>
@@ -1003,7 +1009,10 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
         sub={employee.position_name || 'Сотрудник'}
         actions={<>
           <button className="btn btn-secondary btn-sm" onClick={() => openModal('employeeForm', { employee, onDone: load })}>{I.pencil}Редактировать</button>
-          <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Удалить</button>
+          {currentUser?.role === 'owner'
+            ? <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: employee.full_name, type: 'сотрудника', url: `/employees/${employeeId}/`, onDone: () => onNavigate('employees') })}>{I.trash}Удалить</button>
+            : <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Подать заявку</button>
+          }
         </>}
       />
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
@@ -1232,7 +1241,10 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
         sub={`${group.faculty_name} · Год набора ${group.year}`}
         actions={<>
           <button className="btn btn-secondary btn-sm" onClick={() => openModal('groupForm', { group, onDone: load })}>{I.pencil}Редактировать</button>
-          <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Удалить</button>
+          {currentUser?.role === 'owner'
+            ? <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: group.name, type: 'группу', url: `/groups/${groupId}/`, onDone: () => onNavigate('groups') })}>{I.trash}Удалить</button>
+            : <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Подать заявку</button>
+          }
         </>}
       />
       {group.headteacher_name && (
@@ -1248,13 +1260,12 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
           </div>
           <div className="card-body flush">
             <table className="tbl">
-              <thead><tr><th style={{ width: 40 }}>#</th><th>ФИО</th><th>Статус</th></tr></thead>
+              <thead><tr><th>ФИО</th><th>Статус</th></tr></thead>
               <tbody>
                 {group.students.length === 0 ? (
-                  <tr><td colSpan={3} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>Студенты не добавлены</td></tr>
+                  <tr><td colSpan={2} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>Студенты не добавлены</td></tr>
                 ) : group.students.map(s => (
                   <tr key={s.id}>
-                    <td className="muted">{s.id}</td>
                     <td className="fwm">{s.last_name} {s.first_name} {s.middle_name}</td>
                     <td><Badge status={s.status} /></td>
                   </tr>
@@ -1322,7 +1333,7 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
               ) : faculties.length === 0 ? (
                 <tr><td colSpan={5} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Факультеты не найдены</td></tr>
               ) : faculties.map(f => (
-                <tr key={f.id} className="row-link" onClick={() => openModal('facultyDetail', { faculty: f, onDone: load })}>
+                <tr key={f.id} className="row-link" onClick={() => openModal('facultyDetail', { faculty: f, onDone: load, currentRole: currentUser?.role })}>
                   <td><span className="badge badge-neutral mono" style={{ padding: '1px 6px' }}>{f.short_name}</span></td>
                   <td className="fwm">{f.full_name}</td>
                   <td className="mono">{f.group_count}</td>
@@ -1454,7 +1465,7 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
   return (
     <Shell currentUser={currentUser} active="delreq" openModal={openModal} onNavigate={onNavigate} onLogout={onLogout}>
       <PageHead title="Заявки на удаление" sub="Подтвердите или отклоните заявки от администраторов" />
-      <div className="banner banner-info">{I.info}<div className="banner-body">Двухступенчатое удаление: администратор подаёт заявку, суперадмин подтверждает. До подтверждения объект остаётся в системе.</div></div>
+      <div className="banner banner-info">{I.info}<div className="banner-body">Администратор подаёт заявку на удаление, суперадмин подтверждает. До подтверждения объект остаётся в системе.</div></div>
       <div className="card">
         <div className="card-body flush">
           {loading ? (
@@ -1664,11 +1675,10 @@ function ParentList({ currentUser, openModal, onNavigate }) {
             <EmptyState icon={I.search} title="Опекуны не найдены" sub="Попробуйте изменить условия поиска или добавьте нового опекуна" />
           ) : (
             <table className="tbl">
-              <thead><tr><th style={{ width: 40 }}>#</th><th>ФИО</th><th>Телефон</th><th>Email</th><th style={{ width: 40 }}></th></tr></thead>
+              <thead><tr><th>ФИО</th><th>Телефон</th><th>Email</th><th style={{ width: 40 }}></th></tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={5} /> : data.results.map(p => (
+                {loading ? <SkeletonRows cols={4} /> : data.results.map(p => (
                   <tr key={p.id} className="row-link" onClick={() => onNavigate('parent-detail', { parentId: p.id })}>
-                    <td className="muted mono">{p.id}</td>
                     <td className="fwm">{p.full_name}</td>
                     <td className="muted">{p.phone || '-'}</td>
                     <td className="muted">{p.email || '-'}</td>
@@ -1750,7 +1760,10 @@ function ParentDetail({ currentUser, openModal, onNavigate, parentId }) {
         sub="Опекун / родитель"
         actions={<>
           <button className="btn btn-secondary btn-sm" onClick={() => openModal('parentForm', { parent, onDone: load })}>{I.pencil}Редактировать</button>
-          <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Удалить</button>
+          {currentUser?.role === 'owner'
+            ? <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: parent.full_name, type: 'опекуна', url: `/parents/${parentId}/`, onDone: () => onNavigate('parents') })}>{I.trash}Удалить</button>
+            : <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Подать заявку</button>
+          }
         </>}
       />
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>

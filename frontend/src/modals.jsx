@@ -5,6 +5,37 @@ import { useToast, FadingError, Field, LoadButton, Combobox, PasswordInput } fro
 import api from './api.js';
 
 /* ============================================================
+   Phone mask helpers
+   ============================================================ */
+function applyPhoneMask(raw) {
+  const digits = raw.replace(/\D/g, '');
+  if (!digits) return '';
+  let n = digits;
+  if (n[0] === '7') n = '8' + n.slice(1);
+  else if (n[0] === '9') n = '8' + n;
+  n = n.slice(0, 11);
+  if (n.length <= 1) return n;
+  let r = n[0] + ' (';
+  r += n.slice(1, Math.min(4, n.length));
+  if (n.length >= 4) r += ') ' + n.slice(4, Math.min(7, n.length));
+  if (n.length >= 7) r += '-' + n.slice(7, Math.min(9, n.length));
+  if (n.length >= 9) r += '-' + n.slice(9, 11);
+  return r;
+}
+
+const PHONE_RE = /^8 \(\d{3}\) \d{3}-\d{2}-\d{2}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function validatePhone(v) {
+  if (!v) return null;
+  return PHONE_RE.test(v) ? null : 'Формат: 8 (900) 123-45-67';
+}
+function validateEmail(v) {
+  if (!v) return null;
+  return EMAIL_RE.test(v) ? null : 'Некорректный email';
+}
+
+/* ============================================================
    Shared option lists
    ============================================================ */
 const FAC_OPTS = [
@@ -125,7 +156,10 @@ function StudentFormModal({ data, onClose }) {
   const errs = {};
   if (!vals.last_name.trim()) errs.last_name = 'Обязательно';
   if (!vals.first_name.trim()) errs.first_name = 'Обязательно';
-  if (vals.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(vals.email)) errs.email = 'Некорректный email';
+  const phoneErr = validatePhone(vals.phone);
+  if (phoneErr) errs.phone = phoneErr;
+  const emailErr = validateEmail(vals.email);
+  if (emailErr) errs.email = emailErr;
   if (!vals.faculty_id) errs.faculty_id = 'Выберите факультет';
 
   const handlePhoto = (file) => {
@@ -152,14 +186,15 @@ function StudentFormModal({ data, onClose }) {
   };
 
   const save = async () => {
-    setTouched({ last_name: 1, first_name: 1, email: 1, faculty_id: 1 });
+    setTouched({ last_name: 1, first_name: 1, phone: 1, email: 1, faculty_id: 1 });
     if (Object.keys(errs).length) {
       const missing = [];
       if (errs.last_name) missing.push('фамилию');
       if (errs.first_name) missing.push('имя');
       if (errs.faculty_id) missing.push('факультет');
+      if (errs.phone) missing.push('корректный телефон');
       if (errs.email) missing.push('корректный email');
-      toast.push(`Введите: ${missing.join(', ')}`, { kind: 'err' });
+      toast.push(`Проверьте: ${missing.join(', ')}`, { kind: 'err' });
       return;
     }
     setErr('');
@@ -193,7 +228,7 @@ function StudentFormModal({ data, onClose }) {
     <Modal
       size="lg"
       title={isEdit ? 'Редактировать студента' : 'Новый студент'}
-      sub={isEdit ? `#${student.id} · ${student.faculty_short}` : 'Заполните личные данные и распределение'}
+      sub={isEdit ? student.faculty_short : 'Заполните личные данные и распределение'}
       onClose={onClose}
       footer={<>
         <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
@@ -224,13 +259,13 @@ function StudentFormModal({ data, onClose }) {
       <div className="form-section">
         <div className="form-section-title">Личные данные</div>
         <div className="form-grid">
-          <Field label="Фамилия" required error={touched.last_name && errs.last_name}>
+          <Field label="Фамилия" required error={touched.last_name && errs.last_name} className="field-full">
             <input className={`input ${touched.last_name && errs.last_name ? 'is-error' : ''}`} value={vals.last_name} onChange={e => set('last_name', e.target.value)} onBlur={() => setTouched(t => ({ ...t, last_name: 1 }))} maxLength={100} />
           </Field>
-          <Field label="Имя" required error={touched.first_name && errs.first_name}>
+          <Field label="Имя" required error={touched.first_name && errs.first_name} className="field-full">
             <input className={`input ${touched.first_name && errs.first_name ? 'is-error' : ''}`} value={vals.first_name} onChange={e => set('first_name', e.target.value)} onBlur={() => setTouched(t => ({ ...t, first_name: 1 }))} maxLength={100} />
           </Field>
-          <Field label="Отчество"><input className="input" value={vals.middle_name} onChange={e => set('middle_name', e.target.value)} maxLength={100} /></Field>
+          <Field label="Отчество" className="field-full"><input className="input" value={vals.middle_name} onChange={e => set('middle_name', e.target.value)} maxLength={100} /></Field>
           <Field label="Дата рождения"><input className="input" type="date" value={vals.birth_date || ''} onChange={e => set('birth_date', e.target.value)} /></Field>
         </div>
       </div>
@@ -238,9 +273,11 @@ function StudentFormModal({ data, onClose }) {
       <div className="form-section">
         <div className="form-section-title">Контакты</div>
         <div className="form-grid">
-          <Field label="Телефон"><input className="input" value={vals.phone} onChange={e => set('phone', e.target.value)} maxLength={20} /></Field>
+          <Field label="Телефон" error={touched.phone && errs.phone}>
+            <input className={`input ${touched.phone && errs.phone ? 'is-error' : ''}`} value={vals.phone} onChange={e => set('phone', applyPhoneMask(e.target.value))} onBlur={() => setTouched(t => ({ ...t, phone: 1 }))} maxLength={18} />
+          </Field>
           <Field label="Email" error={touched.email && errs.email}>
-            <input className={`input ${touched.email && errs.email ? 'is-error' : ''}`} value={vals.email} onChange={e => set('email', e.target.value)} onBlur={() => setTouched(t => ({ ...t, email: 1 }))} />
+            <input className={`input ${touched.email && errs.email ? 'is-error' : ''}`} value={vals.email} onChange={e => set('email', e.target.value)} onBlur={() => setTouched(t => ({ ...t, email: 1 }))} maxLength={254} />
           </Field>
         </div>
       </div>
@@ -294,7 +331,17 @@ function EmployeeFormModal({ data, onClose }) {
   const [photo, setPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(employee?.photo || null);
   const [dragOver, setDragOver] = useState(false);
+  const [touched, setTouched] = useState({});
   const [err, setErr] = useState('');
+  const touch = (f) => setTouched(t => ({ ...t, [f]: 1 }));
+
+  const fieldErrs = {};
+  if (!lastName.trim()) fieldErrs.last_name = 'Обязательно';
+  if (!firstName.trim()) fieldErrs.first_name = 'Обязательно';
+  const empPhoneErr = validatePhone(phone);
+  if (empPhoneErr) fieldErrs.phone = empPhoneErr;
+  const empEmailErr = validateEmail(email);
+  if (empEmailErr) fieldErrs.email = empEmailErr;
 
   useEffect(() => {
     api.get('/positions/').then(r => setPositions(r.data)).catch(() => {});
@@ -324,8 +371,16 @@ function EmployeeFormModal({ data, onClose }) {
   };
 
   const save = async () => {
-    if (!lastName.trim()) { setErr('Введите фамилию'); return; }
-    if (!firstName.trim()) { setErr('Введите имя'); return; }
+    setTouched({ last_name: 1, first_name: 1, phone: 1, email: 1 });
+    if (Object.keys(fieldErrs).length) {
+      const msgs = [];
+      if (fieldErrs.last_name) msgs.push('фамилию');
+      if (fieldErrs.first_name) msgs.push('имя');
+      if (fieldErrs.phone) msgs.push('корректный телефон');
+      if (fieldErrs.email) msgs.push('корректный email');
+      toast.push(`Проверьте: ${msgs.join(', ')}`, { kind: 'err' });
+      return;
+    }
     setErr('');
     try {
       const fd = new FormData();
@@ -381,13 +436,13 @@ function EmployeeFormModal({ data, onClose }) {
       <div className="form-section">
         <div className="form-section-title">Личные данные</div>
         <div className="form-grid">
-          <Field label="Фамилия" required error={err && !lastName.trim() ? err : ''}>
-            <input className={`input ${err && !lastName.trim() ? 'is-error' : ''}`} value={lastName} onChange={e => { setLastName(e.target.value); setErr(''); }} maxLength={100} />
+          <Field label="Фамилия" required error={touched.last_name && fieldErrs.last_name} className="field-full">
+            <input className={`input ${touched.last_name && fieldErrs.last_name ? 'is-error' : ''}`} value={lastName} onChange={e => { setLastName(e.target.value); setErr(''); }} onBlur={() => touch('last_name')} maxLength={100} />
           </Field>
-          <Field label="Имя" required>
-            <input className="input" value={firstName} onChange={e => { setFirstName(e.target.value); setErr(''); }} maxLength={100} />
+          <Field label="Имя" required error={touched.first_name && fieldErrs.first_name} className="field-full">
+            <input className={`input ${touched.first_name && fieldErrs.first_name ? 'is-error' : ''}`} value={firstName} onChange={e => { setFirstName(e.target.value); setErr(''); }} onBlur={() => touch('first_name')} maxLength={100} />
           </Field>
-          <Field label="Отчество">
+          <Field label="Отчество" className="field-full">
             <input className="input" value={middleName} onChange={e => setMiddleName(e.target.value)} maxLength={100} />
           </Field>
           <Field label="Дата рождения">
@@ -398,11 +453,11 @@ function EmployeeFormModal({ data, onClose }) {
       <div className="form-section">
         <div className="form-section-title">Контакты</div>
         <div className="form-grid">
-          <Field label="Телефон">
-            <input className="input" value={phone} onChange={e => setPhone(e.target.value)} maxLength={20} />
+          <Field label="Телефон" error={touched.phone && fieldErrs.phone}>
+            <input className={`input ${touched.phone && fieldErrs.phone ? 'is-error' : ''}`} value={phone} onChange={e => setPhone(applyPhoneMask(e.target.value))} onBlur={() => touch('phone')} maxLength={18} />
           </Field>
-          <Field label="Email">
-            <input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} />
+          <Field label="Email" error={touched.email && fieldErrs.email}>
+            <input className={`input ${touched.email && fieldErrs.email ? 'is-error' : ''}`} value={email} onChange={e => { setEmail(e.target.value); }} onBlur={() => touch('email')} maxLength={254} />
           </Field>
         </div>
       </div>
@@ -609,7 +664,17 @@ function ParentFormModal({ data, onClose }) {
   const [photo, setPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(parent?.photo || null);
   const [dragOver, setDragOver] = useState(false);
+  const [touched, setTouched] = useState({});
   const [err, setErr] = useState('');
+  const touchP = (f) => setTouched(t => ({ ...t, [f]: 1 }));
+
+  const pErrs = {};
+  if (!lastName.trim()) pErrs.last_name = 'Обязательно';
+  if (!firstName.trim()) pErrs.first_name = 'Обязательно';
+  const pPhoneErr = validatePhone(phone);
+  if (pPhoneErr) pErrs.phone = pPhoneErr;
+  const pEmailErr = validateEmail(email);
+  if (pEmailErr) pErrs.email = pEmailErr;
 
   const handlePhoto = (file) => {
     if (!file) return;
@@ -635,8 +700,16 @@ function ParentFormModal({ data, onClose }) {
   };
 
   const save = async () => {
-    if (!lastName.trim()) { setErr('Введите фамилию'); return; }
-    if (!firstName.trim()) { setErr('Введите имя'); return; }
+    setTouched({ last_name: 1, first_name: 1, phone: 1, email: 1 });
+    if (Object.keys(pErrs).length) {
+      const msgs = [];
+      if (pErrs.last_name) msgs.push('фамилию');
+      if (pErrs.first_name) msgs.push('имя');
+      if (pErrs.phone) msgs.push('корректный телефон');
+      if (pErrs.email) msgs.push('корректный email');
+      toast.push(`Проверьте: ${msgs.join(', ')}`, { kind: 'err' });
+      return;
+    }
     setErr('');
     try {
       const fd = new FormData();
@@ -692,9 +765,15 @@ function ParentFormModal({ data, onClose }) {
         <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handlePhoto(e.target.files[0])} />
       </div>
       <div className="form-grid">
-        <Field label="Фамилия" required error={err && !lastName.trim() ? err : null}><input className={`input ${err && !lastName.trim() ? 'is-error' : ''}`} value={lastName} onChange={e => { setLastName(e.target.value); setErr(''); }} maxLength={100} /></Field>
-        <Field label="Имя" required error={err && lastName.trim() && !firstName.trim() ? err : null}><input className={`input ${err && lastName.trim() && !firstName.trim() ? 'is-error' : ''}`} value={firstName} onChange={e => { setFirstName(e.target.value); setErr(''); }} maxLength={100} /></Field>
-        <Field label="Отчество"><input className="input" value={middleName} onChange={e => setMiddleName(e.target.value)} maxLength={100} /></Field>
+        <Field label="Фамилия" required error={touched.last_name && pErrs.last_name} className="field-full">
+          <input className={`input ${touched.last_name && pErrs.last_name ? 'is-error' : ''}`} value={lastName} onChange={e => { setLastName(e.target.value); setErr(''); }} onBlur={() => touchP('last_name')} maxLength={100} />
+        </Field>
+        <Field label="Имя" required error={touched.first_name && pErrs.first_name} className="field-full">
+          <input className={`input ${touched.first_name && pErrs.first_name ? 'is-error' : ''}`} value={firstName} onChange={e => { setFirstName(e.target.value); setErr(''); }} onBlur={() => touchP('first_name')} maxLength={100} />
+        </Field>
+        <Field label="Отчество" className="field-full">
+          <input className="input" value={middleName} onChange={e => setMiddleName(e.target.value)} maxLength={100} />
+        </Field>
         {isStudentContext && !isEdit && (
           <Field label="Связь" required>
             <select className="select" value={relationType} onChange={e => setRelationType(e.target.value)}>
@@ -704,9 +783,13 @@ function ParentFormModal({ data, onClose }) {
             </select>
           </Field>
         )}
-        <Field label="Телефон"><input className="input" value={phone} onChange={e => setPhone(e.target.value)} maxLength={20} /></Field>
-        <Field label="Email"><input className="input" value={email} onChange={e => setEmail(e.target.value)} /></Field>
-        {err && lastName.trim() && firstName.trim() && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
+        <Field label="Телефон" error={touched.phone && pErrs.phone}>
+          <input className={`input ${touched.phone && pErrs.phone ? 'is-error' : ''}`} value={phone} onChange={e => setPhone(applyPhoneMask(e.target.value))} onBlur={() => touchP('phone')} maxLength={18} />
+        </Field>
+        <Field label="Email" error={touched.email && pErrs.email}>
+          <input className={`input ${touched.email && pErrs.email ? 'is-error' : ''}`} value={email} onChange={e => setEmail(e.target.value)} onBlur={() => touchP('email')} maxLength={254} />
+        </Field>
+        {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
       </div>
     </Modal>
   );
@@ -821,10 +904,18 @@ function UserFormModal({ data, onClose }) {
 
   const employeeOpts = employees.map(e => ({ value: String(e.id), label: e.full_name, sub: e.position_name || '' }));
 
+  const pwdErrs = [];
+  if (!isEdit && password) {
+    if (password.length < 8) pwdErrs.push('не менее 8 символов');
+    if (!/[A-Za-z]/.test(password)) pwdErrs.push('латинские буквы');
+    if (!/\d/.test(password)) pwdErrs.push('цифра');
+  }
+
   const save = async () => {
     setErr('');
     if (!isEdit && !username.trim()) { setErr('Введите логин'); return; }
     if (!isEdit && !password) { setErr('Введите пароль'); return; }
+    if (!isEdit && pwdErrs.length) { setErr(`Пароль должен содержать: ${pwdErrs.join(', ')}`); return; }
     if (!isEdit && password !== password2) { setErr('Пароли не совпадают'); return; }
     if (institutionIds.length === 0) { setErr('Выберите хотя бы одну организацию'); return; }
     try {
@@ -863,11 +954,11 @@ function UserFormModal({ data, onClose }) {
     >
       <div className="form-grid">
         {!isEdit && (
-          <Field label="Логин" required error={err && !username.trim() ? err : null}>
+          <Field label="Логин" required error={err && !username.trim() ? err : null} className="field-full">
             <input className={`input ${err && !username.trim() ? 'is-error' : ''}`} value={username} onChange={e => { setUsername(e.target.value); setErr(''); }} maxLength={150} />
           </Field>
         )}
-        <Field label="ФИО">
+        <Field label="ФИО" className="field-full">
           <input className="input" value={displayName} onChange={e => setDisplayName(e.target.value)} maxLength={150} />
         </Field>
         <Field label="Роль" required>
@@ -876,12 +967,17 @@ function UserFormModal({ data, onClose }) {
           </select>
         </Field>
         {!isEdit && <>
-          <Field label="Пароль" required error={err && !password ? err : null}>
-            <input className={`input ${err && !password ? 'is-error' : ''}`} type="password" value={password} onChange={e => { setPassword(e.target.value.replace(/[^\x00-\x7F]/g, '')); setErr(''); }} />
+          <Field label="Пароль" required error={err && (!password || pwdErrs.length) ? (err || null) : null}>
+            <input className={`input ${err && (!password || pwdErrs.length) ? 'is-error' : ''}`} type="password" value={password} onChange={e => { setPassword(e.target.value.replace(/[^\x00-\x7F]/g, '')); setErr(''); }} />
           </Field>
-          <Field label="Повторите" required error={err && password && password !== password2 ? err : null}>
+          <Field label="Повторите пароль" required error={err && password && password !== password2 ? err : null}>
             <input className={`input ${err && password && password !== password2 ? 'is-error' : ''}`} type="password" value={password2} onChange={e => { setPassword2(e.target.value.replace(/[^\x00-\x7F]/g, '')); setErr(''); }} />
           </Field>
+          {password && pwdErrs.length > 0 && (
+            <div className="field field-full">
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Пароль должен содержать: {pwdErrs.join(', ')}</div>
+            </div>
+          )}
         </>}
         <div className="field field-full">
           <label className="field-label">Привязать к сотруднику</label>
@@ -1287,7 +1383,7 @@ function LogoutModal({ onClose, onLogout }) {
 function StudentDetailModal({ data, onClose, openModal }) {
   const s = data || STUDENTS[0];
   return (
-    <Modal size="xl" title={`${s.last} ${s.first} ${s.mid}`} sub={`#${s.id} · ${s.fac} · ${s.group}`} onClose={onClose}
+    <Modal size="xl" title={`${s.last} ${s.first} ${s.mid}`} sub={`${s.fac} · ${s.group}`} onClose={onClose}
       footer={<>
         <button className="btn btn-danger" onClick={() => openModal('deleteConfirm', { name: `${s.last} ${s.first}`, type: 'студента' })}>{I.trash}Удалить</button>
         <div style={{ flex: 1 }}></div>
@@ -1347,6 +1443,7 @@ function GroupDetailModal({ data, onClose, openModal }) {
 function FacultyDetailModal({ data, onClose, openModal }) {
   const f = data?.faculty || data;
   const onDone = data?.onDone;
+  const currentRole = data?.currentRole;
   const toast = useToast();
 
   const handleDeleteRequest = async () => {
@@ -1364,7 +1461,10 @@ function FacultyDetailModal({ data, onClose, openModal }) {
   return (
     <Modal title={f.full_name || f.name} sub={`Код: ${f.short_name || f.code}`} onClose={onClose}
       footer={<>
-        <button className="btn btn-danger" onClick={handleDeleteRequest}>{I.trash}Удалить</button>
+        {currentRole === 'owner'
+          ? <button className="btn btn-danger" onClick={() => { onClose(); openModal('ownerDirectDelete', { name: f.full_name, type: 'факультет', url: `/faculties/${f.id}/`, onDone }); }}>{I.trash}Удалить</button>
+          : <button className="btn btn-danger" onClick={handleDeleteRequest}>{I.trash}Подать заявку</button>
+        }
         <div style={{ flex: 1 }}></div>
         <button className="btn btn-secondary" onClick={onClose}>Закрыть</button>
         <button className="btn btn-primary" onClick={() => openModal('facultyForm', { faculty: f, onDone })}>{I.pencil}Редактировать</button>
@@ -1743,11 +1843,62 @@ function OrgDeleteConfirmModal({ data, onClose }) {
   );
 }
 
+/* ============================================================
+   OwnerDirectDeleteModal - суперадмин удаляет запись напрямую с паролем
+   ============================================================ */
+function OwnerDirectDeleteModal({ data, onClose }) {
+  const { name, type, url, onDone } = data || {};
+  const toast = useToast();
+  const [password, setPassword] = useState('');
+  const [shake, setShake] = useState(false);
+  const [err, setErr] = useState('');
+
+  const submit = async () => {
+    if (!password.trim()) {
+      setShake(true); setTimeout(() => setShake(false), 400);
+      toast.push('Введите пароль', { kind: 'err' });
+      return;
+    }
+    setErr('');
+    try {
+      await api.delete(url, { data: { password } });
+      toast.push(`${name || 'Запись'} удалена`, { kind: 'ok' });
+      onDone && onDone();
+      onClose();
+    } catch (e) {
+      const msg = e.response?.data?.error || 'Ошибка при удалении';
+      setErr(msg);
+      setShake(true); setTimeout(() => setShake(false), 400);
+    }
+  };
+
+  return (
+    <Modal title={`Удалить ${type || 'запись'}?`} kind="danger" onClose={onClose} allowOverlayClose={false}
+      footer={<>
+        <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
+        <LoadButton className={`btn btn-danger-solid ${shake ? 'shake' : ''}`} onClick={submit}>{I.trash}Удалить навсегда</LoadButton>
+      </>}>
+      <div className={shake ? 'shake' : ''}>
+        <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', marginBottom: 16 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--bad-bg)', color: 'var(--bad-fg)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>{I.alert}</div>
+          <div>
+            <p style={{ marginBottom: 4 }}>Будет безвозвратно удалена запись <strong>{name || 'объект'}</strong>.</p>
+            <p className="muted" style={{ fontSize: 13 }}>Это действие нельзя отменить. Для подтверждения введите свой пароль.</p>
+          </div>
+        </div>
+        <Field label="Ваш пароль" required error={err}>
+          <input className={`input ${err ? 'is-error' : ''}`} type="password" value={password} onChange={e => { setPassword(e.target.value); setErr(''); }} autoFocus />
+        </Field>
+      </div>
+    </Modal>
+  );
+}
+
 export {
   StudentFormModal, EmployeeFormModal, GroupFormModal, FacultyFormModal,
   ParentFormModal, ParentAddStudentModal, SubjectFormModal, PositionFormModal, UserFormModal, UserSetPasswordModal,
   TransferModal, DeleteConfirmModal, ApproveDeleteModal, UploadDocModal,
   AssignSubjectModal, EmployeeAssignSubjectModal, AuditDiffModal, LogoutModal,
   StudentDetailModal, GroupDetailModal, FacultyDetailModal, EmployeeDetailModal,
-  OrgFormModal, OrgDeleteConfirmModal,
+  OrgFormModal, OrgDeleteConfirmModal, OwnerDirectDeleteModal,
 };

@@ -155,6 +155,23 @@ class ParentDetailView(APIView):
                    institution=request.user.institution)
         return Response(_parent_data(parent))
 
+    def delete(self, request, pk):
+        if request.user.role != 'owner':
+            return Response({'error': 'Доступ запрещён'}, status=403)
+        password = (request.data.get('password') or '').strip()
+        if not password:
+            return Response({'error': 'Введите пароль'}, status=400)
+        if not request.user.check_password(password):
+            return Response({'error': 'Неверный пароль'}, status=400)
+        parent = _get_parent(request, pk)
+        if not parent:
+            return Response({'error': 'Не найдено'}, status=404)
+        log_action(request.user, 'deleted', parent,
+                   old_data={'full_name': str(parent)},
+                   institution=request.user.institution)
+        parent.delete()
+        return Response({'ok': True})
+
 
 class ParentDeleteRequestView(APIView):
     def post(self, request, pk):

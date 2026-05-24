@@ -30,6 +30,26 @@ ROLE_LABELS = {
     'teacher': 'Преподаватель',
 }
 
+OBJ_TYPE_LABELS = {
+    'Student': 'Студент', 'Employee': 'Сотрудник', 'Group': 'Группа',
+    'Faculty': 'Факультет', 'Parent': 'Опекун', 'User': 'Пользователь',
+    'StudentParent': 'Связь опекун-студент', 'GroupSubjectEmployee': 'Назначение предмета',
+}
+
+
+def _extract_name(new_data_str, old_data_str):
+    for data_str in (new_data_str, old_data_str):
+        if not data_str:
+            continue
+        try:
+            d = json.loads(data_str)
+            for key in ('full_name', 'name', 'username'):
+                if d.get(key):
+                    return d[key]
+        except Exception:
+            pass
+    return None
+
 
 def _compute_changes(old_data_str, new_data_str):
     try:
@@ -69,7 +89,7 @@ def _serialize(log):
         'action': action_key,
         'label': action_label,
         'cls': action_cls,
-        'obj': f'{log.object_type} #{log.object_id}',
+        'obj': _extract_name(log.new_data, log.old_data) or OBJ_TYPE_LABELS.get(log.object_type, log.object_type),
         'changes': _compute_changes(log.old_data, log.new_data),
     }
 

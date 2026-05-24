@@ -154,6 +154,24 @@ class GroupDetailView(APIView):
                    institution=institution)
         return Response(_group_data(group))
 
+    def delete(self, request, pk):
+        if request.user.role != 'owner':
+            return Response({'error': 'Доступ запрещён'}, status=403)
+        password = (request.data.get('password') or '').strip()
+        if not password:
+            return Response({'error': 'Введите пароль'}, status=400)
+        if not request.user.check_password(password):
+            return Response({'error': 'Неверный пароль'}, status=400)
+        group = self._get_group(request, pk)
+        if not group:
+            return Response({'error': 'Не найдено'}, status=404)
+        institution = request.user.institution
+        log_action(request.user, 'deleted', group,
+                   old_data={'name': group.name},
+                   institution=institution)
+        group.delete()
+        return Response({'ok': True})
+
 
 class GroupDeleteRequestView(APIView):
     def post(self, request, pk):

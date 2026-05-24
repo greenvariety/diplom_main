@@ -209,6 +209,24 @@ class EmployeeDetailView(APIView):
                    institution=institution)
         return Response(_employee_data(employee))
 
+    def delete(self, request, pk):
+        if request.user.role != 'owner':
+            return Response({'error': 'Доступ запрещён'}, status=403)
+        password = (request.data.get('password') or '').strip()
+        if not password:
+            return Response({'error': 'Введите пароль'}, status=400)
+        if not request.user.check_password(password):
+            return Response({'error': 'Неверный пароль'}, status=400)
+        employee = _get_employee(request, pk)
+        if not employee:
+            return Response({'error': 'Не найдено'}, status=404)
+        institution = request.user.institution
+        log_action(request.user, 'deleted', employee,
+                   old_data={'full_name': str(employee)},
+                   institution=institution)
+        employee.delete()
+        return Response({'ok': True})
+
 
 class EmployeeDeleteRequestView(APIView):
     def post(self, request, pk):

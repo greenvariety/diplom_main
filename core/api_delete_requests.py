@@ -23,13 +23,14 @@ TYPE_LABELS = {
 
 def _req_data(r):
     model_cls = MODELS.get(r.object_type)
-    obj_repr = f'{r.object_type} #{r.object_id}'
+    type_label = TYPE_LABELS.get(r.object_type, r.object_type)
+    obj_repr = type_label
     if model_cls:
         try:
             obj = model_cls.objects.get(pk=r.object_id)
             obj_repr = str(obj)
         except model_cls.DoesNotExist:
-            obj_repr += ' (удалён)'
+            obj_repr = f'{type_label} (удалён)'
     return {
         'id': r.pk,
         'object_type': r.object_type,
