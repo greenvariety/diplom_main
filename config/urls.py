@@ -98,5 +98,6 @@ urlpatterns = [
     path('api/notes/<int:pk>/resolve/', NoteDetailView.as_view()),
     path('api/notes/<int:pk>/', NoteDetailView.as_view()),
     path('api/', include(router.urls)),
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + [
     re_path(r'^(?P<path>.*)$', serve_frontend),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
