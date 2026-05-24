@@ -26,6 +26,21 @@ function applyPhoneMask(raw) {
 const PHONE_RE = /^8 \(\d{3}\) \d{3}-\d{2}-\d{2}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const TRANSLIT_MAP = {
+  'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z',
+  'и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r',
+  'с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh',
+  'щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya',
+};
+function translit(str) {
+  return str.toLowerCase().split('').map(c => TRANSLIT_MAP[c] ?? c).join('');
+}
+function genUsername(emp) {
+  const fi = translit(emp.first_name || '').replace(/[^a-z]/g, '').charAt(0);
+  const ln = translit(emp.last_name || '').replace(/[^a-z0-9]/g, '');
+  return fi && ln ? `${fi}.${ln}` : (ln || fi);
+}
+
 function validatePhone(v) {
   if (!v) return null;
   return PHONE_RE.test(v) ? null : 'Формат: 8 (900) 123-45-67';
@@ -904,6 +919,17 @@ function UserFormModal({ data, onClose }) {
 
   const employeeOpts = employees.map(e => ({ value: String(e.id), label: e.full_name, sub: e.position_name || '' }));
 
+  const handleEmployeeChange = (val) => {
+    setEmployeeId(val);
+    if (!isEdit && val) {
+      const emp = employees.find(e => String(e.id) === val);
+      if (emp) {
+        setDisplayName(emp.full_name || '');
+        setUsername(genUsername(emp));
+      }
+    }
+  };
+
   const pwdErrs = [];
   if (!isEdit && password) {
     if (password.length < 8) pwdErrs.push('не менее 8 символов');
@@ -914,6 +940,7 @@ function UserFormModal({ data, onClose }) {
   const save = async () => {
     setErr('');
     if (!isEdit && !username.trim()) { setErr('Введите логин'); return; }
+    if (!isEdit && !displayName.trim()) { setErr('Введите ФИО'); return; }
     if (!isEdit && !password) { setErr('Введите пароль'); return; }
     if (!isEdit && pwdErrs.length) { setErr(`Пароль должен содержать: ${pwdErrs.join(', ')}`); return; }
     if (!isEdit && password !== password2) { setErr('Пароли не совпадают'); return; }
@@ -958,10 +985,10 @@ function UserFormModal({ data, onClose }) {
             <input className={`input ${err && !username.trim() ? 'is-error' : ''}`} value={username} onChange={e => { setUsername(e.target.value); setErr(''); }} maxLength={150} />
           </Field>
         )}
-        <Field label="ФИО" className="field-full">
-          <input className="input" value={displayName} onChange={e => setDisplayName(e.target.value)} maxLength={150} />
+        <Field label="ФИО" required={!isEdit} error={err && !isEdit && !displayName.trim() ? err : null} className="field-full">
+          <input className={`input ${err && !isEdit && !displayName.trim() ? 'is-error' : ''}`} value={displayName} onChange={e => { setDisplayName(e.target.value); setErr(''); }} maxLength={150} />
         </Field>
-        <Field label="Роль" required>
+        <Field label="Роль" required className="field-full">
           <select className="select" value={role} onChange={e => setRole(e.target.value)}>
             {REAL_ROLE_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
@@ -984,8 +1011,7 @@ function UserFormModal({ data, onClose }) {
           <Combobox
             options={employeeOpts}
             value={employeeId}
-            onChange={setEmployeeId}
-            placeholder="Начните вводить ФИО сотрудника…"
+            onChange={handleEmployeeChange}
           />
         </div>
         <div className="field field-full">
