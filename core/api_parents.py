@@ -13,7 +13,7 @@ def _parent_data(p):
         'first_name': p.first_name,
         'middle_name': p.middle_name,
         'full_name': str(p),
-        'birth_date': p.birth_date.isoformat() if p.birth_date else None,
+        'birth_date': (p.birth_date.isoformat() if hasattr(p.birth_date, 'isoformat') else str(p.birth_date)) if p.birth_date else None,
         'phone': p.phone,
         'email': p.email,
         'photo': p.photo.url if p.photo else None,

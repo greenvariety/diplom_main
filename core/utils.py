@@ -179,7 +179,7 @@ def get_institution_from_session(request):
     if request.user.is_owner:
         institution_id = request.session.get('institution_id')
         if not institution_id:
-            return None
+            return request.user.institution
         return get_object_or_404(Institution, pk=institution_id, owner=request.user)
     return request.user.institution
 

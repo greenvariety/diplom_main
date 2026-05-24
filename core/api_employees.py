@@ -13,7 +13,7 @@ def _employee_data(e):
         'first_name': e.first_name,
         'middle_name': e.middle_name,
         'full_name': e.full_name(),
-        'birth_date': e.birth_date.isoformat() if e.birth_date else None,
+        'birth_date': (e.birth_date.isoformat() if hasattr(e.birth_date, 'isoformat') else str(e.birth_date)) if e.birth_date else None,
         'phone': e.phone,
         'email': e.email,
         'position_id': e.position_id,

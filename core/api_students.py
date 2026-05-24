@@ -12,7 +12,7 @@ def _student_data(s):
         'last_name': s.last_name,
         'first_name': s.first_name,
         'middle_name': s.middle_name,
-        'birth_date': s.birth_date.isoformat() if s.birth_date else None,
+        'birth_date': (s.birth_date.isoformat() if hasattr(s.birth_date, 'isoformat') else str(s.birth_date)) if s.birth_date else None,
         'phone': s.phone,
         'email': s.email,
         'status': s.status,
