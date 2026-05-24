@@ -16,6 +16,7 @@ def _group_data(g):
         'headteacher_id': g.headteacher_id,
         'headteacher_name': str(g.headteacher) if g.headteacher_id else None,
         'student_count': g.students.count(),
+        'is_flagged': g.is_flagged,
     }
 
 
@@ -246,3 +247,16 @@ class GroupSubjectDetailView(APIView):
                    institution=institution)
         assignment.delete()
         return Response({'ok': True})
+
+
+class GroupFlagView(APIView):
+    def post(self, request, pk):
+        if request.user.role not in ('owner', 'admin'):
+            return Response({'error': 'Доступ запрещён'}, status=403)
+        try:
+            group = Group.objects.get(pk=pk, faculty__institution=request.user.institution)
+        except Group.DoesNotExist:
+            return Response({'error': 'Не найдено'}, status=404)
+        group.is_flagged = not group.is_flagged
+        group.save(update_fields=['is_flagged'])
+        return Response({'is_flagged': group.is_flagged})

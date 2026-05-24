@@ -8,22 +8,22 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from core.api_auth import LoginView, RegisterView, LogoutView, RecoverView, VerifyEmailView, SendRecoverCodeView, ResendRegisterCodeView, CheckAvailabilityView
 from core.api_main import MeView, DashboardView
 from core.api_organizations import OrganizationsView, OrganizationDetailView, OrganizationSwitchView, AllowedOrganizationsView, SendOrgDeleteCodeView
-from core.api_faculties import FacultiesView, FacultyDetailView, FacultyDeleteRequestView
-from core.api_groups import GroupsView, GroupDetailView, GroupDeleteRequestView, GroupSubjectsView, GroupSubjectDetailView
+from core.api_faculties import FacultiesView, FacultyDetailView, FacultyDeleteRequestView, FacultyFlagView
+from core.api_groups import GroupsView, GroupDetailView, GroupDeleteRequestView, GroupSubjectsView, GroupSubjectDetailView, GroupFlagView
 from core.api_employees import (
     EmployeesView, EmployeeDetailView, EmployeeDeleteRequestView,
-    EmployeeSubjectsView, EmployeeSubjectDetailView,
+    EmployeeSubjectsView, EmployeeSubjectDetailView, EmployeeFlagView,
 )
 from core.api_subjects import SubjectsView, SubjectDetailView
 from core.api_students import (
     StudentsView, StudentDetailView, StudentDeleteRequestView,
-    StudentTransferView, StudentParentsView, StudentParentDetailView,
+    StudentTransferView, StudentParentsView, StudentParentDetailView, StudentFlagView,
 )
 from core.api_documents import DocumentUploadView, DocumentDetailView
 from core.api_positions import PositionsView, PositionDetailView
 from core.api_parents import (
     ParentsView, ParentDetailView, ParentDeleteRequestView,
-    ParentStudentsView, ParentStudentDetailView,
+    ParentStudentsView, ParentStudentDetailView, ParentFlagView,
 )
 from core.api_users import UsersView, UserDetailView, UserSetPasswordView
 from core.api_delete_requests import DeleteRequestsView, DeleteRequestApproveView, DeleteRequestRejectView, DeleteRequestsCountView
@@ -52,14 +52,17 @@ urlpatterns = [
     path('api/faculties/', FacultiesView.as_view()),
     path('api/faculties/<int:pk>/', FacultyDetailView.as_view()),
     path('api/faculties/<int:pk>/delete-request/', FacultyDeleteRequestView.as_view()),
+    path('api/faculties/<int:pk>/flag/', FacultyFlagView.as_view()),
     path('api/groups/', GroupsView.as_view()),
     path('api/groups/<int:pk>/', GroupDetailView.as_view()),
     path('api/groups/<int:pk>/delete-request/', GroupDeleteRequestView.as_view()),
+    path('api/groups/<int:pk>/flag/', GroupFlagView.as_view()),
     path('api/groups/<int:pk>/subjects/', GroupSubjectsView.as_view()),
     path('api/groups/<int:pk>/subjects/<int:assignment_pk>/', GroupSubjectDetailView.as_view()),
     path('api/employees/', EmployeesView.as_view()),
     path('api/employees/<int:pk>/', EmployeeDetailView.as_view()),
     path('api/employees/<int:pk>/delete-request/', EmployeeDeleteRequestView.as_view()),
+    path('api/employees/<int:pk>/flag/', EmployeeFlagView.as_view()),
     path('api/employees/<int:pk>/subjects/', EmployeeSubjectsView.as_view()),
     path('api/employees/<int:pk>/subjects/<int:assignment_pk>/', EmployeeSubjectDetailView.as_view()),
     path('api/subjects/', SubjectsView.as_view()),
@@ -67,6 +70,7 @@ urlpatterns = [
     path('api/students/', StudentsView.as_view()),
     path('api/students/<int:pk>/', StudentDetailView.as_view()),
     path('api/students/<int:pk>/delete-request/', StudentDeleteRequestView.as_view()),
+    path('api/students/<int:pk>/flag/', StudentFlagView.as_view()),
     path('api/students/<int:pk>/transfer/', StudentTransferView.as_view()),
     path('api/students/<int:pk>/parents/', StudentParentsView.as_view()),
     path('api/students/<int:pk>/parents/<int:sp_pk>/', StudentParentDetailView.as_view()),
@@ -75,6 +79,7 @@ urlpatterns = [
     path('api/parents/', ParentsView.as_view()),
     path('api/parents/<int:pk>/', ParentDetailView.as_view()),
     path('api/parents/<int:pk>/delete-request/', ParentDeleteRequestView.as_view()),
+    path('api/parents/<int:pk>/flag/', ParentFlagView.as_view()),
     path('api/parents/<int:pk>/students/', ParentStudentsView.as_view()),
     path('api/parents/<int:pk>/students/<int:sp_pk>/', ParentStudentDetailView.as_view()),
     path('api/documents/upload/', DocumentUploadView.as_view()),

@@ -17,6 +17,7 @@ def _parent_data(p):
         'phone': p.phone,
         'email': p.email,
         'photo': p.photo.url if p.photo else None,
+        'is_flagged': p.is_flagged,
     }
 
 
@@ -56,6 +57,12 @@ class ParentsView(APIView):
 
         if 'page' not in request.query_params:
             return Response([_parent_data(p) for p in qs])
+
+        sort = request.query_params.get('sort', '')
+        if sort == 'flagged':
+            qs = qs.order_by('-is_flagged', 'last_name', 'first_name')
+        else:
+            qs = qs.order_by('last_name', 'first_name')
 
         paginator = Paginator(qs, 20)
         try:
@@ -255,3 +262,15 @@ class ParentStudentDetailView(APIView):
                    institution=institution)
         sp.delete()
         return Response({'ok': True})
+
+
+class ParentFlagView(APIView):
+    def post(self, request, pk):
+        if request.user.role not in ('owner', 'admin'):
+            return Response({'error': 'Доступ запрещён'}, status=403)
+        parent = _get_parent(request, pk)
+        if not parent:
+            return Response({'error': 'Не найдено'}, status=404)
+        parent.is_flagged = not parent.is_flagged
+        parent.save(update_fields=['is_flagged'])
+        return Response({'is_flagged': parent.is_flagged})

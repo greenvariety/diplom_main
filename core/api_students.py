@@ -23,6 +23,7 @@ def _student_data(s):
         'group_name': s.group.name if s.group_id else '',
         'photo': s.photo.url if s.photo else None,
         'parent_count': getattr(s, 'parent_count', None),
+        'is_flagged': s.is_flagged,
     }
 
 
@@ -71,6 +72,12 @@ class StudentsView(APIView):
         group_id = request.query_params.get('group_id', '')
         if group_id:
             qs = qs.filter(group_id=group_id)
+
+        sort = request.query_params.get('sort', '')
+        if sort == 'flagged':
+            qs = qs.order_by('-is_flagged', 'last_name', 'first_name')
+        else:
+            qs = qs.order_by('last_name', 'first_name')
 
         paginator = Paginator(qs, 20)
         try:
@@ -396,3 +403,16 @@ class StudentParentDetailView(APIView):
                    institution=institution)
         sp.delete()
         return Response({'ok': True})
+
+
+class StudentFlagView(APIView):
+    def post(self, request, pk):
+        err = _admin_only(request)
+        if err:
+            return err
+        student = _get_student(request, pk)
+        if not student:
+            return Response({'error': 'Не найдено'}, status=404)
+        student.is_flagged = not student.is_flagged
+        student.save(update_fields=['is_flagged'])
+        return Response({'is_flagged': student.is_flagged})

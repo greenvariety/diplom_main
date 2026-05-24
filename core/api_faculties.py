@@ -12,6 +12,7 @@ def _faculty_data(f):
         'created_at': f.created_at.strftime('%d.%m.%Y') if f.created_at else None,
         'group_count': f.groups.count(),
         'student_count': Student.objects.filter(faculty=f).count(),
+        'is_flagged': f.is_flagged,
     }
 
 
@@ -122,3 +123,16 @@ class FacultyDeleteRequestView(APIView):
             reason=reason,
         )
         return Response({'ok': True})
+
+
+class FacultyFlagView(APIView):
+    def post(self, request, pk):
+        if request.user.role not in ('owner', 'admin'):
+            return Response({'error': 'Доступ запрещён'}, status=403)
+        try:
+            faculty = Faculty.objects.get(pk=pk, institution=request.user.institution)
+        except Faculty.DoesNotExist:
+            return Response({'error': 'Не найдено'}, status=404)
+        faculty.is_flagged = not faculty.is_flagged
+        faculty.save(update_fields=['is_flagged'])
+        return Response({'is_flagged': faculty.is_flagged})

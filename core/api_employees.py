@@ -19,6 +19,7 @@ def _employee_data(e):
         'position_id': e.position_id,
         'position_name': e.position.name if e.position_id else None,
         'photo': e.photo.url if e.photo else None,
+        'is_flagged': e.is_flagged,
     }
 
 
@@ -63,6 +64,12 @@ class EmployeesView(APIView):
         # flat list for dropdowns when no page param
         if 'page' not in request.query_params:
             return Response([_employee_data(e) for e in qs])
+
+        sort = request.query_params.get('sort', '')
+        if sort == 'flagged':
+            qs = qs.order_by('-is_flagged', 'last_name', 'first_name')
+        else:
+            qs = qs.order_by('last_name', 'first_name')
 
         paginator = Paginator(qs, 20)
         try:
@@ -315,3 +322,16 @@ class EmployeeSubjectDetailView(APIView):
                    institution=institution)
         assignment.delete()
         return Response({'ok': True})
+
+
+class EmployeeFlagView(APIView):
+    def post(self, request, pk):
+        err = _admin_only(request)
+        if err:
+            return err
+        employee = _get_employee(request, pk)
+        if not employee:
+            return Response({'error': 'Не найдено'}, status=404)
+        employee.is_flagged = not employee.is_flagged
+        employee.save(update_fields=['is_flagged'])
+        return Response({'is_flagged': employee.is_flagged})

@@ -40,6 +40,7 @@ class Faculty(models.Model):
     full_name = models.CharField(max_length=255, verbose_name='Полное название')
     short_name = models.CharField(max_length=50, verbose_name='Сокращение (аббревиатура)')
     created_at = models.DateField(null=True, blank=True, verbose_name='Дата создания')
+    is_flagged = models.BooleanField(default=False, verbose_name='Отмечено')
 
     class Meta:
         verbose_name = 'Факультет'
@@ -86,6 +87,7 @@ class Employee(models.Model):
     phone = models.CharField(max_length=20, blank=True, verbose_name='Телефон')
     email = models.EmailField(blank=True, verbose_name='Email')
     photo = models.ImageField(upload_to='employees/', null=True, blank=True, verbose_name='Фото')
+    is_flagged = models.BooleanField(default=False, verbose_name='Отмечено')
     position = models.ForeignKey(
         Position, on_delete=models.PROTECT, null=True, blank=True,
         verbose_name='Должность'
@@ -118,6 +120,7 @@ class Group(models.Model):
         Employee, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='headed_groups', verbose_name='Классный руководитель'
     )
+    is_flagged = models.BooleanField(default=False, verbose_name='Отмечено')
 
     class Meta:
         verbose_name = 'Группа'
@@ -165,6 +168,7 @@ class Student(models.Model):
         max_length=30, choices=STATUS_CHOICES, default='pending_review',
         verbose_name='Статус'
     )
+    is_flagged = models.BooleanField(default=False, verbose_name='Отмечено')
     group = models.ForeignKey(
         Group, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='students', verbose_name='Группа'
@@ -202,6 +206,7 @@ class Parent(models.Model):
     phone = models.CharField(max_length=20, blank=True, verbose_name='Телефон')
     email = models.EmailField(blank=True, verbose_name='Email')
     photo = models.ImageField(upload_to='parents/', null=True, blank=True, verbose_name='Фото')
+    is_flagged = models.BooleanField(default=False, verbose_name='Отмечено')
 
     class Meta:
         verbose_name = 'Опекун'

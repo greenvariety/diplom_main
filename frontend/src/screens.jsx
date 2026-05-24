@@ -499,6 +499,7 @@ function StudentList({ currentUser, openModal, onNavigate }) {
   const [facId, setFacId] = useState('');
   const [grpId, setGrpId] = useState('');
   const [stat, setStat] = useState('');
+  const [sortFlagged, setSortFlagged] = useState(false);
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ results: [], count: 0, num_pages: 1 });
   const [loading, setLoading] = useState(true);
@@ -525,15 +526,26 @@ function StudentList({ currentUser, openModal, onNavigate }) {
     if (stat) params.set('status', stat);
     if (facId) params.set('faculty_id', facId);
     if (grpId) params.set('group_id', grpId);
+    if (sortFlagged) params.set('sort', 'flagged');
     api.get(`/students/?${params}`).then(r => {
       setData(r.data);
       setLoading(false);
     }).catch(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [page]);
+  useEffect(() => { load(); }, [page, sortFlagged]);
 
   const handleSearch = () => { setPage(1); load(); };
+
+  const handleToggleFlagStudent = async (id, e) => {
+    e.stopPropagation();
+    try {
+      await api.post(`/students/${id}/flag/`);
+      load();
+    } catch {
+      toast.push('Ошибка', { kind: 'err' });
+    }
+  };
 
   const handleStatusChange = async (studentId, newStatus) => {
     try {
@@ -545,7 +557,7 @@ function StudentList({ currentUser, openModal, onNavigate }) {
     }
   };
 
-  const reset = () => { setQ(''); setFacId(''); setGrpId(''); setStat(''); setPage(1); setTimeout(load, 0); };
+  const reset = () => { setQ(''); setFacId(''); setGrpId(''); setStat(''); setSortFlagged(false); setPage(1); setTimeout(load, 0); };
 
   const activeFilters = [];
   if (facId) {
@@ -597,6 +609,12 @@ function StudentList({ currentUser, openModal, onNavigate }) {
         </div>
         <button className="btn btn-primary btn-sm" onClick={handleSearch}>Найти</button>
         <button className="btn btn-ghost btn-sm" onClick={reset}>Сбросить</button>
+        <button
+          className={`btn btn-sm ${sortFlagged ? 'btn-warn' : 'btn-ghost'}`}
+          style={sortFlagged ? { color: 'var(--warn-fg)', borderColor: 'var(--warn-bd)', background: 'var(--warn-bg)' } : {}}
+          onClick={() => setSortFlagged(v => !v)}
+          title="Сначала помеченные"
+        >{I.alert} Помеченные</button>
       </div>
       {activeFilters.length > 0 && (
         <div className="filter-chips" style={{ marginBottom: 12 }}>
@@ -617,9 +635,9 @@ function StudentList({ currentUser, openModal, onNavigate }) {
             />
           ) : (
             <table className="tbl">
-              <thead><tr><th style={{ width: 50 }}></th><th>ФИО</th><th>Статус</th><th>Факультет</th><th>Группа</th><th>Контакт</th></tr></thead>
+              <thead><tr><th style={{ width: 50 }}></th><th>ФИО</th><th>Статус</th><th>Факультет</th><th>Группа</th><th>Контакт</th><th style={{ width: 40 }}></th></tr></thead>
               {loading
-                ? <SkeletonRows rows={6} cols={6} />
+                ? <SkeletonRows rows={6} cols={7} />
                 : <tbody>
                     {data.results.map(s => (
                       <tr key={s.id} className="row-link" onClick={() => onNavigate('student-detail', { studentId: s.id })}>
@@ -636,6 +654,14 @@ function StudentList({ currentUser, openModal, onNavigate }) {
                         <td>{s.faculty_short}</td>
                         <td>{s.group_name || <span className="muted">-</span>}</td>
                         <td className="muted">{s.phone}</td>
+                        <td onClick={e => e.stopPropagation()}>
+                          <button className="btn btn-ghost btn-icon btn-sm"
+                            style={{ color: s.is_flagged ? 'var(--warn-fg)' : 'var(--text-muted)' }}
+                            title={s.is_flagged ? 'Снять метку' : 'Отметить'}
+                            onClick={e => handleToggleFlagStudent(s.id, e)}>
+                            {I.alert}
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -861,6 +887,7 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
   const toast = useToast();
   const [q, setQ] = useState('');
   const [posId, setPosId] = useState('');
+  const [sortFlagged, setSortFlagged] = useState(false);
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ results: [], count: 0, num_pages: 1 });
   const [loading, setLoading] = useState(true);
@@ -875,16 +902,27 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
     const params = new URLSearchParams({ page });
     if (q) params.set('search', q);
     if (posId) params.set('position_id', posId);
+    if (sortFlagged) params.set('sort', 'flagged');
     api.get(`/employees/?${params}`).then(r => {
       setData(r.data);
       setLoading(false);
     }).catch(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [page]);
+  useEffect(() => { load(); }, [page, sortFlagged]);
 
   const handleSearch = () => { setPage(1); load(); };
-  const reset = () => { setQ(''); setPosId(''); setPage(1); setTimeout(load, 0); };
+  const reset = () => { setQ(''); setPosId(''); setSortFlagged(false); setPage(1); setTimeout(load, 0); };
+
+  const handleToggleFlagEmployee = async (id, e) => {
+    e.stopPropagation();
+    try {
+      await api.post(`/employees/${id}/flag/`);
+      load();
+    } catch {
+      toast.push('Ошибка', { kind: 'err' });
+    }
+  };
 
   return (
     <Shell currentUser={currentUser} active="employees" onNavigate={onNavigate} openModal={openModal}>
@@ -911,6 +949,12 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
         </div>
         <button className="btn btn-primary btn-sm" onClick={handleSearch}>Найти</button>
         <button className="btn btn-ghost btn-sm" onClick={reset}>Сбросить</button>
+        <button
+          className="btn btn-sm btn-ghost"
+          style={sortFlagged ? { color: 'var(--warn-fg)', borderColor: 'var(--warn-bd)', background: 'var(--warn-bg)' } : {}}
+          onClick={() => setSortFlagged(v => !v)}
+          title="Сначала помеченные"
+        >{I.alert} Помеченные</button>
       </div>
       <div className="card">
         <div className="card-body flush">
@@ -918,14 +962,22 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
             <EmptyState icon={I.search} title="Сотрудники не найдены" sub="Попробуйте изменить условия поиска" />
           ) : (
             <table className="tbl">
-              <thead><tr><th>ФИО</th><th>Должность</th><th>Телефон</th><th>Email</th></tr></thead>
+              <thead><tr><th>ФИО</th><th>Должность</th><th>Телефон</th><th>Email</th><th style={{ width: 40 }}></th></tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={4} /> : data.results.map(e => (
+                {loading ? <SkeletonRows cols={5} /> : data.results.map(e => (
                   <tr key={e.id} className="row-link" onClick={() => onNavigate('employee-detail', { employeeId: e.id })}>
                     <td className="fwm">{e.full_name}</td>
                     <td>{e.position_name || <span className="muted">-</span>}</td>
                     <td className="muted">{e.phone || '-'}</td>
                     <td className="muted">{e.email || '-'}</td>
+                    <td onClick={e2 => e2.stopPropagation()}>
+                      <button className="btn btn-ghost btn-icon btn-sm"
+                        style={{ color: e.is_flagged ? 'var(--warn-fg)' : 'var(--text-muted)' }}
+                        title={e.is_flagged ? 'Снять метку' : 'Отметить'}
+                        onClick={ev => handleToggleFlagEmployee(e.id, ev)}>
+                        {I.alert}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -1119,11 +1171,13 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
    Groups list / detail; Faculties list
    ============================================================ */
 function GroupList({ currentUser, openModal, onNavigate }) {
+  const toast = useToast();
   const [groups, setGroups] = useState([]);
   const [faculties, setFaculties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [facultyFilter, setFacultyFilter] = useState('');
   const [search, setSearch] = useState('');
+  const [sortFlagged, setSortFlagged] = useState(false);
 
   const load = (fid) => {
     const f = fid !== undefined ? fid : facultyFilter;
@@ -1140,9 +1194,22 @@ function GroupList({ currentUser, openModal, onNavigate }) {
     load('');
   }, []);
 
-  const filtered = groups.filter(g =>
+  const handleToggleFlagGroup = async (id, e) => {
+    e.stopPropagation();
+    try {
+      await api.post(`/groups/${id}/flag/`);
+      load();
+    } catch {
+      toast.push('Ошибка', { kind: 'err' });
+    }
+  };
+
+  const baseFiltered = groups.filter(g =>
     !search || g.name.toLowerCase().includes(search.toLowerCase())
   );
+  const filtered = sortFlagged
+    ? [...baseFiltered].sort((a, b) => (b.is_flagged ? 1 : 0) - (a.is_flagged ? 1 : 0))
+    : baseFiltered;
 
   return (
     <Shell currentUser={currentUser} active="groups" onNavigate={onNavigate} openModal={openModal}>
@@ -1163,16 +1230,22 @@ function GroupList({ currentUser, openModal, onNavigate }) {
             {faculties.map(f => <option key={f.id} value={f.id}>{f.short_name}</option>)}
           </select>
         </div>
+        <button
+          className="btn btn-sm btn-ghost"
+          style={sortFlagged ? { color: 'var(--warn-fg)', borderColor: 'var(--warn-bd)', background: 'var(--warn-bg)' } : {}}
+          onClick={() => setSortFlagged(v => !v)}
+          title="Сначала помеченные"
+        >{I.alert} Помеченные</button>
       </div>
       <div className="card">
         <div className="card-body flush">
           <table className="tbl">
-            <thead><tr><th>Название</th><th>Факультет</th><th>Год</th><th>Классный руководитель</th><th>Студентов</th><th style={{ width: 40 }}></th></tr></thead>
+            <thead><tr><th>Название</th><th>Факультет</th><th>Год</th><th>Классный руководитель</th><th>Студентов</th><th style={{ width: 40 }}></th><th style={{ width: 40 }}></th></tr></thead>
             <tbody>
               {loading ? (
-                <SkeletonRows cols={6} rows={4} />
+                <SkeletonRows cols={7} rows={4} />
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Группы не найдены</td></tr>
+                <tr><td colSpan={7} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Группы не найдены</td></tr>
               ) : filtered.map(g => (
                 <tr key={g.id} className="row-link" onClick={() => onNavigate('group-detail', { groupId: g.id })}>
                   <td className="fwm">{g.name}</td>
@@ -1180,6 +1253,14 @@ function GroupList({ currentUser, openModal, onNavigate }) {
                   <td className="mono muted">{g.year}</td>
                   <td>{g.headteacher_name || '-'}</td>
                   <td className="mono">{g.student_count}</td>
+                  <td onClick={e => e.stopPropagation()}>
+                    <button className="btn btn-ghost btn-icon btn-sm"
+                      style={{ color: g.is_flagged ? 'var(--warn-fg)' : 'var(--text-muted)' }}
+                      title={g.is_flagged ? 'Снять метку' : 'Отметить'}
+                      onClick={e => handleToggleFlagGroup(g.id, e)}>
+                      {I.alert}
+                    </button>
+                  </td>
                   <td>{I.chevr}</td>
                 </tr>
               ))}
@@ -1301,8 +1382,10 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
 }
 
 function FacultyList({ currentUser, openModal, onNavigate }) {
+  const toast = useToast();
   const [faculties, setFaculties] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sortFlagged, setSortFlagged] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -1314,6 +1397,20 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
 
   useEffect(() => { load(); }, []);
 
+  const handleToggleFlagFaculty = async (id, e) => {
+    e.stopPropagation();
+    try {
+      await api.post(`/faculties/${id}/flag/`);
+      load();
+    } catch {
+      toast.push('Ошибка', { kind: 'err' });
+    }
+  };
+
+  const displayFaculties = sortFlagged
+    ? [...faculties].sort((a, b) => (b.is_flagged ? 1 : 0) - (a.is_flagged ? 1 : 0))
+    : faculties;
+
   return (
     <Shell currentUser={currentUser} active="faculties" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
@@ -1321,23 +1418,39 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
         sub={loading ? '…' : `Всего ${faculties.length} факультетов`}
         actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('facultyForm', { onDone: load })}>{I.plus}Добавить</button>}
       />
+      <div className="filters">
+        <button
+          className="btn btn-sm btn-ghost"
+          style={sortFlagged ? { color: 'var(--warn-fg)', borderColor: 'var(--warn-bd)', background: 'var(--warn-bg)' } : {}}
+          onClick={() => setSortFlagged(v => !v)}
+          title="Сначала помеченные"
+        >{I.alert} Помеченные</button>
+      </div>
       <div className="card">
         <div className="card-body flush">
           <table className="tbl">
             <thead>
-              <tr><th>Код</th><th>Название</th><th>Групп</th><th>Студентов</th><th style={{ width: 40 }}></th></tr>
+              <tr><th>Код</th><th>Название</th><th>Групп</th><th>Студентов</th><th style={{ width: 40 }}></th><th style={{ width: 40 }}></th></tr>
             </thead>
             <tbody>
               {loading ? (
-                <SkeletonRows cols={5} rows={4} />
-              ) : faculties.length === 0 ? (
-                <tr><td colSpan={5} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Факультеты не найдены</td></tr>
-              ) : faculties.map(f => (
+                <SkeletonRows cols={6} rows={4} />
+              ) : displayFaculties.length === 0 ? (
+                <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Факультеты не найдены</td></tr>
+              ) : displayFaculties.map(f => (
                 <tr key={f.id} className="row-link" onClick={() => openModal('facultyDetail', { faculty: f, onDone: load, currentRole: currentUser?.role })}>
                   <td><span className="badge badge-neutral mono" style={{ padding: '1px 6px' }}>{f.short_name}</span></td>
                   <td className="fwm">{f.full_name}</td>
                   <td className="mono">{f.group_count}</td>
                   <td className="mono">{f.student_count}</td>
+                  <td onClick={e => e.stopPropagation()}>
+                    <button className="btn btn-ghost btn-icon btn-sm"
+                      style={{ color: f.is_flagged ? 'var(--warn-fg)' : 'var(--text-muted)' }}
+                      title={f.is_flagged ? 'Снять метку' : 'Отметить'}
+                      onClick={e => handleToggleFlagFaculty(f.id, e)}>
+                      {I.alert}
+                    </button>
+                  </td>
                   <td>{I.chevr}</td>
                 </tr>
               ))}
@@ -1621,6 +1734,7 @@ function AuditLog({ currentUser, openModal, onNavigate }) {
 function ParentList({ currentUser, openModal, onNavigate }) {
   const toast = useToast();
   const [q, setQ] = useState('');
+  const [sortFlagged, setSortFlagged] = useState(false);
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ results: [], count: 0, num_pages: 1 });
   const [loading, setLoading] = useState(true);
@@ -1629,16 +1743,27 @@ function ParentList({ currentUser, openModal, onNavigate }) {
     setLoading(true);
     const params = new URLSearchParams({ page });
     if (q) params.set('search', q);
+    if (sortFlagged) params.set('sort', 'flagged');
     api.get(`/parents/?${params}`).then(r => {
       setData(r.data);
       setLoading(false);
     }).catch(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [page]);
+  useEffect(() => { load(); }, [page, sortFlagged]);
 
   const handleSearch = () => { setPage(1); load(); };
-  const reset = () => { setQ(''); setPage(1); setTimeout(load, 0); };
+  const reset = () => { setQ(''); setSortFlagged(false); setPage(1); setTimeout(load, 0); };
+
+  const handleToggleFlagParent = async (id, e) => {
+    e.stopPropagation();
+    try {
+      await api.post(`/parents/${id}/flag/`);
+      load();
+    } catch {
+      toast.push('Ошибка', { kind: 'err' });
+    }
+  };
 
   const handleDeleteRequest = async (p) => {
     try {
@@ -1668,6 +1793,12 @@ function ParentList({ currentUser, openModal, onNavigate }) {
         </div>
         <button className="btn btn-primary btn-sm" onClick={handleSearch}>Найти</button>
         <button className="btn btn-ghost btn-sm" onClick={reset}>Сбросить</button>
+        <button
+          className="btn btn-sm btn-ghost"
+          style={sortFlagged ? { color: 'var(--warn-fg)', borderColor: 'var(--warn-bd)', background: 'var(--warn-bg)' } : {}}
+          onClick={() => setSortFlagged(v => !v)}
+          title="Сначала помеченные"
+        >{I.alert} Помеченные</button>
       </div>
       <div className="card">
         <div className="card-body flush">
@@ -1675,9 +1806,9 @@ function ParentList({ currentUser, openModal, onNavigate }) {
             <EmptyState icon={I.search} title="Опекуны не найдены" sub="Попробуйте изменить условия поиска или добавьте нового опекуна" />
           ) : (
             <table className="tbl">
-              <thead><tr><th>ФИО</th><th>Телефон</th><th>Email</th><th style={{ width: 40 }}></th></tr></thead>
+              <thead><tr><th>ФИО</th><th>Телефон</th><th>Email</th><th style={{ width: 40 }}></th><th style={{ width: 40 }}></th></tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={4} /> : data.results.map(p => (
+                {loading ? <SkeletonRows cols={5} /> : data.results.map(p => (
                   <tr key={p.id} className="row-link" onClick={() => onNavigate('parent-detail', { parentId: p.id })}>
                     <td className="fwm">{p.full_name}</td>
                     <td className="muted">{p.phone || '-'}</td>
@@ -1686,6 +1817,14 @@ function ParentList({ currentUser, openModal, onNavigate }) {
                       <button className="btn btn-ghost btn-icon btn-sm"
                         onClick={() => openModal('parentForm', { parent: p, onDone: load })}>
                         {I.pencil}
+                      </button>
+                    </td>
+                    <td onClick={e => e.stopPropagation()}>
+                      <button className="btn btn-ghost btn-icon btn-sm"
+                        style={{ color: p.is_flagged ? 'var(--warn-fg)' : 'var(--text-muted)' }}
+                        title={p.is_flagged ? 'Снять метку' : 'Отметить'}
+                        onClick={e => handleToggleFlagParent(p.id, e)}>
+                        {I.alert}
                       </button>
                     </td>
                   </tr>
