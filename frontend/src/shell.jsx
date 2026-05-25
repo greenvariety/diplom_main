@@ -207,7 +207,7 @@ function Shell({ currentUser, role: roleProp, active, onNavigate, onLogout, open
   return (
     <div className="app-shell">
       <div className="brand-cell">
-        <div className="logo">У</div>
+        <img src="/logo.png" alt="Логотип" className="logo" style={{ objectFit: 'contain' }} />
         <div>
           <div>Учёт студентов</div>
           <div style={{ fontSize: 11, color: 'var(--text-faint)', fontWeight: 400, marginTop: -2 }}>АИС колледжа</div>

@@ -62,10 +62,7 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
       <PageHead
         title="Дашборд"
         sub="Сводка по системе"
-        actions={<>
-          <button className="btn btn-secondary btn-sm">{I.excel}Экспорт в Excel</button>
-          <button className="btn btn-primary btn-sm" onClick={() => openModal && openModal('studentForm')}>{I.plus}Добавить</button>
-        </>}
+        actions={<button className="btn btn-secondary btn-sm">{I.excel}Настроить экспорт в Excel</button>}
       />
       {!currentUser?.institution && (
         <div className="banner banner-warn">
@@ -90,53 +87,6 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
         <Stat label="Групп"        value={stats.groups     ?? '…'} icon={I.users} />
         <Stat label="Студентов"    value={stats.students   ?? '…'} icon={I.badge} />
         <Stat label="Сотрудников"  value={stats.employees  ?? '…'} icon={I.briefcase} />
-      </div>
-      <div className="card">
-        <div className="card-head" style={{ flexWrap: 'wrap', gap: 8 }}>
-          <div className="title">{I.history}<span>Журнал изменений</span><span className="muted" style={{ fontWeight: 400, fontSize: 12, marginLeft: 6 }}>· {filtered.length}</span></div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 1, justifyContent: 'flex-end', minWidth: 360 }}>
-            <div className="input-with-icon" style={{ flex: '0 1 220px' }}>
-              {I.search}<input className="input" style={{ height: 30 }} value={q} onChange={e => setQ(e.target.value)} placeholder="Поиск по объекту…" />
-            </div>
-            <div style={{ width: 160 }}>
-              <Combobox value={userFilter} onChange={setUserFilter} options={userOpts} placeholder="Все пользователи" />
-            </div>
-            <div style={{ width: 140 }}>
-              <Combobox value={actionFilter} onChange={setActionFilter}
-                options={[{ value: 'created', label: 'Создание' }, { value: 'updated', label: 'Изменение' }, { value: 'deleted', label: 'Удаление' }]}
-                placeholder="Все действия" />
-            </div>
-          </div>
-        </div>
-        <div className="card-body flush">
-          {!dashData
-            ? <SkeletonRows rows={5} cols={4} />
-            : sorted.length === 0
-              ? <EmptyState icon={I.history} title="Записи не найдены" sub="Измените условия поиска" />
-              : <table className="tbl">
-                  <thead><tr>
-                    <SortHeader k="ts"     sort={sort}>Дата и время</SortHeader>
-                    <SortHeader k="user"   sort={sort}>Пользователь</SortHeader>
-                    <SortHeader k="action" sort={sort}>Действие</SortHeader>
-                    <SortHeader k="obj"    sort={sort}>Объект</SortHeader>
-                  </tr></thead>
-                  <tbody>
-                    {rows.map((a, i) => (
-                      <tr key={pager.start + i} className="row-link">
-                        <td className="mono muted">{a.ts}</td>
-                        <td>
-                          <span className="fwm mono">{a.user}</span>
-                          <div className="muted" style={{ fontSize: 11 }}>{a.userName} · {a.role}</div>
-                        </td>
-                        <td><span className={`badge ${a.cls}`}><span className="dot"></span>{a.label}</span></td>
-                        <td>{a.obj}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-          }
-        </div>
-        {sorted.length > 0 && <Pager pager={pager} total={sorted.length} />}
       </div>
     </Shell>
   );
