@@ -78,18 +78,31 @@ def _serialize(log):
     action_key, action_label, action_cls = ACTION_MAP.get(log.action, ('update', log.action, 'badge-warn'))
     u = log.user
     user_login = (u.username if u else None) or '-'
-    user_name = (u.display_name or u.username if u else None) or '-'
     user_role = ROLE_LABELS.get(u.role, u.role or '-') if u else '-'
+    user_position = None
+    if u and u.employee_id:
+        try:
+            pos = u.employee.position
+            user_position = pos.name if pos else None
+        except Exception:
+            pass
+
+    obj_name = _extract_name(log.new_data, log.old_data) or ''
+    obj_type = OBJ_TYPE_LABELS.get(log.object_type, log.object_type)
+
     return {
         'id': log.pk,
         'ts': log.created_at.strftime('%d.%m.%Y %H:%M:%S'),
         'user': user_login,
-        'userName': user_name,
+        'userName': (u.display_name or u.username if u else None) or '-',
         'role': user_role,
+        'userPosition': user_position,
         'action': action_key,
         'label': action_label,
         'cls': action_cls,
-        'obj': _extract_name(log.new_data, log.old_data) or OBJ_TYPE_LABELS.get(log.object_type, log.object_type),
+        'obj': obj_name or obj_type,
+        'obj_name': obj_name,
+        'obj_type': obj_type,
         'changes': _compute_changes(log.old_data, log.new_data),
     }
 
@@ -102,7 +115,7 @@ class AuditLogView(APIView):
         if not institution:
             return Response({'results': [], 'count': 0, 'num_pages': 1})
 
-        qs = AuditLog.objects.filter(institution=institution).select_related('user')
+        qs = AuditLog.objects.filter(institution=institution).select_related('user', 'user__employee', 'user__employee__position')
 
         search = request.GET.get('search', '').strip()
         if search:

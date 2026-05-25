@@ -1355,24 +1355,30 @@ function AssignSubjectModal({ data, onClose }) {
 }
 
 function AuditDiffModal({ data, onClose }) {
-  // Render each changed field as its own card; old/new are clearly separated.
-  // No IP shown - only when/who/what.
-  const changes = data?.changes || [
-    { key: 'phone',  label: 'Телефон',  from: '+7 900 222-33-44',  to: '+7 900 222-33-99' },
-    { key: 'status', label: 'Статус',   from: 'pending_review',    to: 'enrolled' },
-  ];
+  const changes = data?.changes || [];
+  const actorRole = data?.role || '-';
+  const actorPosition = data?.userPosition || null;
+  const objType = data?.obj_type || '';
+  const objName = data?.obj_name || '';
   return (
-    <Modal size="lg" title="Изменение записи"
-      sub={`${data?.user || 'admin1'} · ${data?.ts || '09.05.2026 13:55:04'}`}
+    <Modal size="lg" title="Запись журнала изменений"
+      sub={`${data?.user || '-'} - ${data?.ts || '-'}`}
       onClose={onClose}
       footer={<button className="btn btn-secondary" onClick={onClose}>Закрыть</button>}>
       <dl className="kv" style={{ padding: 0, marginBottom: 16 }}>
-        <dt>Кто</dt><dd className="fwm"><span className="mono">{data?.user || 'admin1'}</span> <span className="muted">- {data?.userName || 'Дмитриева О. П.'}</span></dd>
-        <dt>Когда</dt><dd className="mono">{data?.ts || '09.05.2026 13:55:04'}</dd>
-        <dt>Действие</dt><dd><Badge>{data?.label || 'Изменил'}</Badge></dd>
-        <dt>Объект</dt><dd className="fwm">{data?.obj || 'Студент #610 - Петрова М. С.'}</dd>
+        <dt>Кто:</dt>
+        <dd>
+          <span className="fwm mono">{data?.user || '-'}</span>
+          <span className="muted" style={{ marginLeft: 6 }}>- {actorRole}{actorPosition ? ` - ${actorPosition}` : ''}</span>
+        </dd>
+        <dt>Запись о:</dt>
+        <dd className="fwm">
+          {objType}{objName ? ` - ${objName}` : ''}
+        </dd>
+        <dt>Когда:</dt><dd className="mono">{data?.ts || '-'}</dd>
+        <dt>Действие:</dt><dd><span className={`badge ${data?.cls || 'badge-neutral'}`}><span className="dot"></span>{data?.label || '-'}</span></dd>
       </dl>
-      <div className="form-section-title" style={{ marginBottom: 10 }}>Изменённые поля · {changes.length}</div>
+      <div className="form-section-title" style={{ marginBottom: 10 }}>Изменённые поля - {changes.length}</div>
       <div className="diff-grid">
         {changes.map((c) => (
           <div key={c.key} className="diff-card">
@@ -1381,7 +1387,7 @@ function AuditDiffModal({ data, onClose }) {
               <span className="field-key">{c.key}</span>
             </div>
             <div className="diff-row removed">
-              <span className="diff-sign">−</span>
+              <span className="diff-sign">-</span>
               <span className="diff-val removed-val">{String(c.from)}</span>
             </div>
             <div className="diff-row added">
