@@ -1087,6 +1087,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
   const [accUsername, setAccUsername] = useState('');
   const [accRole, setAccRole] = useState('teacher');
   const [accPassword, setAccPassword] = useState('');
+  const [accPassword2, setAccPassword2] = useState('');
   const [accErr, setAccErr] = useState('');
   const [accSaving, setAccSaving] = useState(false);
 
@@ -1108,6 +1109,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
           setAccUsername(r.data.username);
           setAccRole(r.data.role);
           setAccPassword('');
+          setAccPassword2('');
         }
       })
       .catch(() => setAccount(null));
@@ -1179,10 +1181,21 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
     }
   };
 
+  const validateAccPassword = (pwd) => {
+    const errs = [];
+    if (pwd.length < 8) errs.push('не менее 8 символов');
+    if (!/[A-Za-z]/.test(pwd)) errs.push('латинские буквы');
+    if (!/\d/.test(pwd)) errs.push('цифра');
+    return errs;
+  };
+
   const handleCreateAccount = async () => {
     setAccErr('');
     if (!accUsername.trim()) { setAccErr('Введите логин'); return; }
-    if (!accPassword.trim()) { setAccErr('Введите пароль'); return; }
+    if (!accPassword) { setAccErr('Введите пароль'); return; }
+    const pwdErrs = validateAccPassword(accPassword);
+    if (pwdErrs.length) { setAccErr('Пароль должен содержать: ' + pwdErrs.join(', ')); return; }
+    if (accPassword !== accPassword2) { setAccErr('Пароли не совпадают'); return; }
     setAccSaving(true);
     try {
       const r = await api.post(`/employees/${employeeId}/account/`, {
@@ -1191,6 +1204,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
       setAccount(r.data);
       setAccShowCreate(false);
       setAccPassword('');
+      setAccPassword2('');
       toast.push('Аккаунт создан', { kind: 'ok' });
     } catch (e) {
       setAccErr(e.response?.data?.error || 'Ошибка при создании');
@@ -1202,13 +1216,19 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
   const handleSaveAccount = async () => {
     setAccErr('');
     if (!accUsername.trim()) { setAccErr('Введите логин'); return; }
+    if (accPassword) {
+      const pwdErrs = validateAccPassword(accPassword);
+      if (pwdErrs.length) { setAccErr('Пароль должен содержать: ' + pwdErrs.join(', ')); return; }
+      if (accPassword !== accPassword2) { setAccErr('Пароли не совпадают'); return; }
+    }
     setAccSaving(true);
     try {
       const payload = { username: accUsername.trim(), role: accRole };
-      if (accPassword.trim()) payload.password = accPassword;
+      if (accPassword) payload.password = accPassword;
       const r = await api.patch(`/employees/${employeeId}/account/`, payload);
       setAccount(r.data);
       setAccPassword('');
+      setAccPassword2('');
       toast.push('Аккаунт обновлён', { kind: 'ok' });
     } catch (e) {
       setAccErr(e.response?.data?.error || 'Ошибка при сохранении');
@@ -1281,39 +1301,65 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <Field label="Логин" required error={accErr && !accUsername.trim() ? accErr : null}>
-                        <input className={`input ${accErr && !accUsername.trim() ? 'is-error' : ''}`} value={accUsername} onChange={e => { setAccUsername(e.target.value); setAccErr(''); }} maxLength={150} />
+                      <Field label="Логин" required>
+                        <input className={`input${accErr && !accUsername.trim() ? ' is-error' : ''}`} value={accUsername} onChange={e => { setAccUsername(e.target.value); setAccErr(''); }} maxLength={150} />
                       </Field>
-                      <Field label="Пароль" required error={accErr && !accPassword.trim() ? accErr : null}>
-                        <input type="password" className={`input ${accErr && !accPassword.trim() ? 'is-error' : ''}`} value={accPassword} onChange={e => { setAccPassword(e.target.value); setAccErr(''); }} maxLength={128} />
+                      <Field label="Пароль" required>
+                        <input type="password" className={`input${accErr && !accPassword ? ' is-error' : ''}`} value={accPassword} onChange={e => { setAccPassword(e.target.value.replace(/[^\x00-\x7F]/g, '')); setAccErr(''); }} maxLength={128} />
+                      </Field>
+                      {accPassword && validateAccPassword(accPassword).length > 0 && (
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: -4 }}>Пароль должен содержать: {validateAccPassword(accPassword).join(', ')}</div>
+                      )}
+                      <Field label="Повторите пароль" required>
+                        <input type="password" className={`input${accErr === 'Пароли не совпадают' ? ' is-error' : ''}`} value={accPassword2} onChange={e => { setAccPassword2(e.target.value.replace(/[^\x00-\x7F]/g, '')); setAccErr(''); }} maxLength={128} />
                       </Field>
                       <Field label="Роль">
-                        <select className="select" value={accRole} onChange={e => setAccRole(e.target.value)}>
-                          <option value="teacher">Преподаватель</option>
-                          <option value="admin">Администратор</option>
-                        </select>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+                            <input type="radio" name="accRoleCreate" value="teacher" checked={accRole === 'teacher'} onChange={() => setAccRole('teacher')} />
+                            Преподаватель
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+                            <input type="radio" name="accRoleCreate" value="admin" checked={accRole === 'admin'} onChange={() => setAccRole('admin')} />
+                            Администратор
+                          </label>
+                        </div>
                       </Field>
-                      {accErr && accUsername.trim() && accPassword.trim() && <div style={{ color: 'var(--bad-fg)', fontSize: 13 }}>{accErr}</div>}
+                      {accErr && <div style={{ color: 'var(--bad-fg)', fontSize: 13 }}>{accErr}</div>}
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <button className="btn btn-secondary btn-sm" onClick={() => { setAccShowCreate(false); setAccErr(''); }}>Отмена</button>
+                        <button className="btn btn-secondary btn-sm" onClick={() => { setAccShowCreate(false); setAccErr(''); setAccPassword(''); setAccPassword2(''); }}>Отмена</button>
                         <LoadButton className="btn btn-primary btn-sm" loading={accSaving} onClick={handleCreateAccount}>Создать</LoadButton>
                       </div>
                     </div>
                   )
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <Field label="Логин" required error={accErr && !accUsername.trim() ? accErr : null}>
-                      <input className={`input ${accErr && !accUsername.trim() ? 'is-error' : ''}`} value={accUsername} onChange={e => { setAccUsername(e.target.value); setAccErr(''); }} maxLength={150} />
+                    <Field label="Логин" required>
+                      <input className={`input${accErr && !accUsername.trim() ? ' is-error' : ''}`} value={accUsername} onChange={e => { setAccUsername(e.target.value); setAccErr(''); }} maxLength={150} />
                     </Field>
                     <Field label="Новый пароль">
-                      <input type="password" className="input" value={accPassword} onChange={e => setAccPassword(e.target.value)} maxLength={128} />
+                      <input type="password" className="input" value={accPassword} onChange={e => { setAccPassword(e.target.value.replace(/[^\x00-\x7F]/g, '')); setAccErr(''); }} maxLength={128} />
                     </Field>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: -6 }}>Оставьте пустым, чтобы не менять пароль</div>
+                    {accPassword && validateAccPassword(accPassword).length > 0 && (
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: -4 }}>Пароль должен содержать: {validateAccPassword(accPassword).join(', ')}</div>
+                    )}
+                    {accPassword && (
+                      <Field label="Повторите пароль">
+                        <input type="password" className={`input${accErr === 'Пароли не совпадают' ? ' is-error' : ''}`} value={accPassword2} onChange={e => { setAccPassword2(e.target.value.replace(/[^\x00-\x7F]/g, '')); setAccErr(''); }} maxLength={128} />
+                      </Field>
+                    )}
+                    {!accPassword && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: -4 }}>Оставьте пустым, чтобы не менять пароль</div>}
                     <Field label="Роль">
-                      <select className="select" value={accRole} onChange={e => setAccRole(e.target.value)}>
-                        <option value="teacher">Преподаватель</option>
-                        <option value="admin">Администратор</option>
-                      </select>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+                          <input type="radio" name="accRoleEdit" value="teacher" checked={accRole === 'teacher'} onChange={() => setAccRole('teacher')} />
+                          Преподаватель
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+                          <input type="radio" name="accRoleEdit" value="admin" checked={accRole === 'admin'} onChange={() => setAccRole('admin')} />
+                          Администратор
+                        </label>
+                      </div>
                     </Field>
                     {accErr && <div style={{ color: 'var(--bad-fg)', fontSize: 13 }}>{accErr}</div>}
                     <LoadButton className="btn btn-primary btn-sm" loading={accSaving} onClick={handleSaveAccount}>Сохранить</LoadButton>
