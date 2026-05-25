@@ -18,7 +18,7 @@ def _read_tasks():
     # Разбиваем по разделителю ---
     for block in re.split(r'\n---+\n', content):
         block = block.strip()
-        m = re.match(r'^##\s+(\d+)\.\s+(.+?)$', block, re.MULTILINE)
+        m = re.search(r'^##\s+(\d+)\.\s+(.+?)$', block, re.MULTILINE)
         if not m:
             continue
         task_id = int(m.group(1))
