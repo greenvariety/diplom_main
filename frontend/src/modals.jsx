@@ -1354,17 +1354,52 @@ function AssignSubjectModal({ data, onClose }) {
   );
 }
 
-function AuditDiffModal({ data, onClose }) {
+const AUDIT_NAV_MAP = {
+  Student:  (id, nav) => nav('student-detail',  { studentId:  id }),
+  Employee: (id, nav) => nav('employee-detail', { employeeId: id }),
+  Group:    (id, nav) => nav('group-detail',    { groupId:    id }),
+  Parent:   (id, nav) => nav('parent-detail',   { parentId:   id }),
+  Faculty:  (_,  nav) => nav('faculties'),
+};
+
+function AuditDiffModal({ data, onClose, onNavigate }) {
   const changes = data?.changes || [];
   const actorRole = data?.role || '-';
   const actorPosition = data?.userPosition || null;
   const objType = data?.obj_type || '';
   const objName = data?.obj_name || '';
+
+  const navFn = AUDIT_NAV_MAP[data?.object_type_raw];
+  const isDeleted = data?.action === 'delete';
+
+  const handleGo = () => {
+    if (!navFn || isDeleted || !onNavigate) return;
+    navFn(data.object_id, onNavigate);
+    onClose();
+  };
+
+  const footer = (
+    <>
+      {navFn && (
+        <button
+          className="btn btn-primary"
+          onClick={handleGo}
+          disabled={isDeleted}
+          title={isDeleted ? 'Объект был удалён' : undefined}
+        >
+          Перейти к записи
+        </button>
+      )}
+      <div style={{ flex: 1 }} />
+      <button className="btn btn-secondary" onClick={onClose}>Закрыть</button>
+    </>
+  );
+
   return (
     <Modal size="lg" title="Запись журнала изменений"
       sub={`Кто: ${data?.user || '-'}  Когда: ${data?.ts || '-'}`}
       onClose={onClose}
-      footer={<button className="btn btn-secondary" onClick={onClose}>Закрыть</button>}>
+      footer={footer}>
       <dl className="kv" style={{ padding: 0, marginBottom: 16 }}>
         <dt>Кто:</dt>
         <dd>

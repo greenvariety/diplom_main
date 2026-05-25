@@ -345,7 +345,7 @@ function AppShell({ onLogout }) {
       return <ApproveDeleteModal data={modal.data} onClose={closeModal} />;
     }
     if (modal.name === 'auditDiff') {
-      return <AuditDiffModal data={modal.data} onClose={closeModal} />;
+      return <AuditDiffModal data={modal.data} onClose={closeModal} onNavigate={handleNavigate} />;
     }
     if (modal.name === 'logout') {
       return <LogoutModal onClose={closeModal} onLogout={handleLogout} />;

@@ -103,6 +103,8 @@ def _serialize(log):
         'obj': obj_name or obj_type,
         'obj_name': obj_name,
         'obj_type': obj_type,
+        'object_id': log.object_id,
+        'object_type_raw': log.object_type,
         'changes': _compute_changes(log.old_data, log.new_data),
     }
 
