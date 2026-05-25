@@ -163,9 +163,10 @@ const NAV_BY_ROLE = {
       { key: 'parents',   label: 'Опекуны',    icon: I.heart },
     ]},
     { section: 'Администрирование', items: [
-      { key: 'positions', label: 'Должности',          icon: I.settings },
-      { key: 'delreq',    label: 'Заявки на удаление', icon: I.trash, badge: 'bad' },
-      { key: 'audit',     label: 'Журнал изменений',   icon: I.history },
+      { key: 'users',     label: 'Пользователи',       icon: I.shield },
+      { key: 'positions', label: 'Должности',           icon: I.settings },
+      { key: 'delreq',    label: 'Заявки на удаление',  icon: I.trash, badge: 'bad' },
+      { key: 'audit',     label: 'Журнал изменений',    icon: I.history },
     ]},
   ],
   admin: [

@@ -1770,7 +1770,6 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
 const ROLE_CLS = { owner: 'badge-bad', admin: 'badge-info', teacher: 'badge-ok' };
 
 function UserList({ currentUser, openModal, onNavigate }) {
-  const toast = useToast();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -1784,14 +1783,9 @@ function UserList({ currentUser, openModal, onNavigate }) {
 
   useEffect(() => { load(); }, []);
 
-  const handleDelete = async (u) => {
-    if (!confirm(`Удалить пользователя «${u.username}»? Это действие необратимо.`)) return;
-    try {
-      await api.delete(`/users/${u.id}/`);
-      toast.push('Пользователь удалён', { kind: 'ok' });
-      load();
-    } catch (e) {
-      toast.push(e.response?.data?.error || 'Ошибка при удалении', { kind: 'err' });
+  const handleRowClick = (u) => {
+    if (u.employee_id) {
+      onNavigate('employee-detail', { employeeId: u.employee_id });
     }
   };
 
@@ -1801,45 +1795,22 @@ function UserList({ currentUser, openModal, onNavigate }) {
         crumbs={[{ label: 'Главная', href: true }, { label: 'Пользователи системы' }]}
         title="Пользователи системы"
         sub={loading ? 'Загрузка…' : `Всего ${users.length}`}
-        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('userForm', { onDone: load })}>{I.plus}Создать пользователя</button>}
       />
       <div className="card">
         <div className="card-body flush">
           {!loading && users.length === 0 ? (
-            <EmptyState icon={I.users} title="Пользователи не найдены" sub="Нажмите «Создать пользователя» чтобы добавить первого" />
+            <EmptyState icon={I.users} title="Пользователи не найдены" sub="Создайте аккаунт сотруднику через его карточку" />
           ) : (
             <table className="tbl">
-              <thead><tr><th>Логин</th><th>ФИО</th><th>Роль</th><th>Организации</th><th>Последний вход</th><th>Статус</th><th style={{ width: 100 }}></th></tr></thead>
+              <thead><tr><th>Сотрудник</th><th>Логин</th><th>Роль</th><th>Последний вход</th><th>Статус</th></tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={7} /> : users.map(u => (
-                  <tr key={u.id}>
-                    <td className="mono fwm">{u.username}</td>
-                    <td>{u.display_name || '-'}</td>
+                {loading ? <SkeletonRows cols={5} /> : users.map(u => (
+                  <tr key={u.id} className={u.employee_id ? 'row-link' : ''} onClick={() => handleRowClick(u)}>
+                    <td className="fwm">{u.employee_name || <span className="muted">-</span>}</td>
+                    <td className="mono">{u.username}</td>
                     <td><span className={`badge ${ROLE_CLS[u.role] || 'badge-neutral'}`}><span className="dot"></span>{u.role_display}</span></td>
-                    <td>
-                      {u.institution_codes && u.institution_codes.length > 0
-                        ? u.institution_codes.map(c => (
-                            <span key={c} className="badge badge-neutral" style={{ marginRight: 4 }}>{c}</span>
-                          ))
-                        : <span className="muted" style={{ fontSize: 12 }}>нет</span>
-                      }
-                    </td>
                     <td className="mono muted">{u.last_login || 'никогда'}</td>
                     <td>{u.is_active ? <span className="badge badge-ok"><span className="dot"></span>Активен</span> : <span className="badge badge-neutral"><span className="dot"></span>Неактивен</span>}</td>
-                    <td style={{ display: 'flex', gap: 4 }}>
-                      <button className="btn btn-ghost btn-icon btn-sm" title="Редактировать"
-                        onClick={() => openModal('userForm', { user: u, onDone: load })}>
-                        {I.pencil}
-                      </button>
-                      <button className="btn btn-ghost btn-icon btn-sm" title="Сменить пароль"
-                        onClick={() => openModal('userSetPassword', { userId: u.id, username: u.username })}>
-                        {I.shield}
-                      </button>
-                      <button className="btn btn-ghost btn-icon btn-sm" title="Удалить"
-                        onClick={() => handleDelete(u)}>
-                        {I.trash}
-                      </button>
-                    </td>
                   </tr>
                 ))}
               </tbody>
