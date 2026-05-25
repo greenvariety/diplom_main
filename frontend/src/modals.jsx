@@ -1362,7 +1362,7 @@ function AuditDiffModal({ data, onClose }) {
   const objName = data?.obj_name || '';
   return (
     <Modal size="lg" title="Запись журнала изменений"
-      sub={`${data?.user || '-'} - ${data?.ts || '-'}`}
+      sub={`Кто: ${data?.user || '-'}  Когда: ${data?.ts || '-'}`}
       onClose={onClose}
       footer={<button className="btn btn-secondary" onClick={onClose}>Закрыть</button>}>
       <dl className="kv" style={{ padding: 0, marginBottom: 16 }}>
