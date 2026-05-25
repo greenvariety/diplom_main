@@ -8,6 +8,7 @@ import { Shell } from './shell.jsx';
 import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, FacultyList, GroupList, GroupDetail, StudentList, StudentDetail, EmployeeList, EmployeeDetail, PositionList, ParentList, ParentDetail, SubjectList, UserList, DeleteRequests, AuditLog } from './screens.jsx';
 import { OrgFormModal, FacultyFormModal, FacultyDetailModal, GroupFormModal, AssignSubjectModal, StudentFormModal, TransferModal, UploadDocModal, ParentFormModal, ParentAddStudentModal, DeleteConfirmModal, EmployeeFormModal, EmployeeAssignSubjectModal, PositionFormModal, SubjectFormModal, UserFormModal, UserSetPasswordModal, ApproveDeleteModal, AuditDiffModal, LogoutModal, OrgDeleteConfirmModal, OwnerDirectDeleteModal, NoteModal } from './modals.jsx';
 import api from './api.js';
+import { HtmlTasksPanel } from './dev-tasks.jsx';
 
 function AuthFlow({ onAuthenticated }) {
   const [screen, setScreen] = useState('login');
@@ -492,6 +493,7 @@ function App() {
   return (
     <ToastProvider>
       <AppShell onLogout={() => setAuthenticated(false)} />
+      <HtmlTasksPanel />
     </ToastProvider>
   );
 }
