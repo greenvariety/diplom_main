@@ -1371,10 +1371,10 @@ function AuditDiffModal({ data, onClose }) {
           <span className="fwm mono">{data?.user || '-'}</span>
           <span className="muted" style={{ marginLeft: 6 }}>- {actorRole}{actorPosition ? ` - ${actorPosition}` : ''}</span>
         </dd>
-        <dt>Запись о:</dt>
-        <dd className="fwm">
-          {objType}{objName ? ` - ${objName}` : ''}
-        </dd>
+        <dt>Запись:</dt>
+        <dd className="fwm">{objName || '-'}</dd>
+        <dt>Тип:</dt>
+        <dd>{objType || '-'}</dd>
         <dt>Когда:</dt><dd className="mono">{data?.ts || '-'}</dd>
         <dt>Действие:</dt><dd><span className={`badge ${data?.cls || 'badge-neutral'}`}><span className="dot"></span>{data?.label || '-'}</span></dd>
       </dl>
