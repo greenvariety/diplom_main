@@ -176,7 +176,7 @@ export function HtmlTasksPanel() {
           </div>
 
           {/* Список задач */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '8px 12px' }}>
+          <div style={{ maxHeight: 220, overflowY: 'auto', padding: '8px 12px' }}>
             {tasks.length === 0 && (
               <div style={{ color: 'var(--text-muted)', fontSize: 13, textAlign: 'center', padding: 24 }}>
                 Нет задач. Добавьте первую.
