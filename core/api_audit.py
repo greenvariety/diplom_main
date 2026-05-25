@@ -10,12 +10,28 @@ PAGE_SIZE = 50
 
 FIELD_LABELS = {
     'last_name': 'Фамилия', 'first_name': 'Имя', 'middle_name': 'Отчество',
-    'phone': 'Телефон', 'email': 'Email', 'date_of_birth': 'Дата рождения',
-    'address': 'Адрес', 'status': 'Статус', 'group': 'Группа', 'group_id': 'Группа',
-    'name': 'Название', 'position': 'Должность', 'position_id': 'Должность',
-    'faculty': 'Факультет', 'faculty_id': 'Факультет', 'curator': 'Куратор', 'curator_id': 'Куратор',
-    'role': 'Роль', 'is_active': 'Активен', 'repr': 'Объект', 'reason': 'Причина',
+    'full_name': 'ФИО',
+    'phone': 'Телефон', 'email': 'Email',
+    'date_of_birth': 'Дата рождения', 'birth_date': 'Дата рождения',
+    'address': 'Адрес', 'status': 'Статус',
+    'group': 'Группа', 'group_id': 'Группа', 'group_number': 'Номер группы',
+    'name': 'Название', 'full_name_ru': 'Полное название', 'short_name': 'Аббревиатура',
+    'code': 'Код', 'description': 'Описание',
+    'year': 'Год начала',
+    'position': 'Должность', 'position_id': 'Должность',
+    'faculty': 'Факультет', 'faculty_id': 'Факультет',
+    'curator': 'Куратор', 'curator_id': 'Куратор',
+    'headteacher': 'Классный руководитель', 'headteacher_id': 'Классный руководитель',
+    'employee': 'Сотрудник', 'employee_id': 'Сотрудник',
+    'student': 'Студент', 'student_id': 'Студент',
+    'parent': 'Опекун', 'parent_id': 'Опекун',
+    'subject': 'Предмет', 'subject_id': 'Предмет',
+    'relation_type': 'Тип связи',
+    'username': 'Логин',
+    'role': 'Роль', 'is_active': 'Активен',
+    'repr': 'Объект', 'reason': 'Причина',
     'institution': 'Организация', 'institution_id': 'Организация',
+    'founded_date': 'Дата основания',
 }
 
 ACTION_MAP = {

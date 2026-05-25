@@ -1368,6 +1368,7 @@ function AuditDiffModal({ data, onClose, onNavigate }) {
   const actorPosition = data?.userPosition || null;
   const objType = data?.obj_type || '';
   const objName = data?.obj_name || '';
+  const isCreate = data?.action === 'create';
 
   const navFn = AUDIT_NAV_MAP[data?.object_type_raw];
   const isDeleted = data?.action === 'delete';
@@ -1413,22 +1414,30 @@ function AuditDiffModal({ data, onClose, onNavigate }) {
         <dt>Когда:</dt><dd className="mono">{data?.ts || '-'}</dd>
         <dt>Действие:</dt><dd><span className={`badge ${data?.cls || 'badge-neutral'}`}><span className="dot"></span>{data?.label || '-'}</span></dd>
       </dl>
-      <div className="form-section-title" style={{ marginBottom: 10 }}>Изменённые поля - {changes.length}</div>
+      <div className="form-section-title" style={{ marginBottom: 10 }}>
+        {isCreate ? 'Поля записи' : `Изменённые поля - ${changes.length}`}
+      </div>
       <div className="diff-grid">
         {changes.map((c) => (
           <div key={c.key} className="diff-card">
             <div className="diff-card-head">
               <span>{c.label}</span>
-              <span className="field-key">{c.key}</span>
+              {!isCreate && <span className="field-key">{c.key}</span>}
             </div>
-            <div className="diff-row removed">
-              <span className="diff-sign">-</span>
-              <span className="diff-val removed-val">{String(c.from)}</span>
-            </div>
-            <div className="diff-row added">
-              <span className="diff-sign">+</span>
-              <span className="diff-val">{String(c.to)}</span>
-            </div>
+            {isCreate ? (
+              <div className="diff-row-plain">{String(c.to)}</div>
+            ) : (
+              <>
+                <div className="diff-row removed">
+                  <span className="diff-sign">-</span>
+                  <span className="diff-val removed-val">{String(c.from)}</span>
+                </div>
+                <div className="diff-row added">
+                  <span className="diff-sign">+</span>
+                  <span className="diff-val">{String(c.to)}</span>
+                </div>
+              </>
+            )}
           </div>
         ))}
       </div>

@@ -1324,3 +1324,10 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
   font-size: 14px;
 }
 .diff-val.removed-val { text-decoration: line-through; opacity: 0.85; }
+.diff-row-plain {
+  padding: 8px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  background: var(--ok-bg);
+  color: var(--ok-fg);
+}
