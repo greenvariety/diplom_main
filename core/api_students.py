@@ -411,6 +411,53 @@ class StudentParentDetailView(APIView):
         return Response({'ok': True})
 
 
+class StudentTransferInstitutionView(APIView):
+    def post(self, request, pk):
+        if not request.user.is_owner:
+            return Response({'error': 'Доступ запрещён'}, status=403)
+        try:
+            student = Student.objects.select_related(
+                'faculty', 'group', 'faculty__institution'
+            ).get(pk=pk, faculty__institution__owner=request.user)
+        except Student.DoesNotExist:
+            return Response({'error': 'Студент не найден'}, status=404)
+
+        faculty_id = request.data.get('faculty_id')
+        if not faculty_id:
+            return Response({'error': 'Выберите факультет'}, status=400)
+        try:
+            target_faculty = Faculty.objects.select_related('institution').get(
+                pk=faculty_id, institution__owner=request.user
+            )
+        except Faculty.DoesNotExist:
+            return Response({'error': 'Факультет не найден'}, status=404)
+
+        target_group = None
+        group_id = request.data.get('group_id')
+        if group_id:
+            try:
+                target_group = Group.objects.get(pk=group_id, faculty=target_faculty)
+            except Group.DoesNotExist:
+                pass
+
+        old_inst = student.faculty.institution.name if student.faculty_id else '-'
+        old_fac = student.faculty.full_name if student.faculty_id else '-'
+        old_grp = student.group.name if student.group_id else None
+        institution = request.user.institution
+
+        student.faculty = target_faculty
+        student.group = target_group
+        student.status = 'transferred'
+        student.save()
+
+        log_action(request.user, 'updated', student,
+                   old_data={'institution': old_inst, 'faculty': old_fac, 'group': old_grp},
+                   new_data={'institution': target_faculty.institution.name, 'faculty': target_faculty.full_name,
+                             'group': target_group.name if target_group else None, 'status': 'transferred'},
+                   institution=institution)
+        return Response({'ok': True})
+
+
 class StudentFlagView(APIView):
     def post(self, request, pk):
         err = _admin_only(request)

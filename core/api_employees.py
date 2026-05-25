@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.paginator import Paginator
 from django.db.models import Q, Exists, OuterRef
-from .models import Employee, Position, GroupSubjectEmployee, Subject, Group, Document, DeleteRequest, RecordNote
+from .models import Employee, Position, GroupSubjectEmployee, Subject, Group, Document, DeleteRequest, RecordNote, User
 from .utils import log_action
 
 
@@ -341,3 +341,87 @@ class EmployeeFlagView(APIView):
         employee.is_flagged = not employee.is_flagged
         employee.save(update_fields=['is_flagged'])
         return Response({'is_flagged': employee.is_flagged})
+
+
+class EmployeeAccountView(APIView):
+    def get(self, request, pk):
+        if request.user.role != 'owner':
+            return Response({'error': 'Доступ запрещён'}, status=403)
+        employee = _get_employee(request, pk)
+        if not employee:
+            return Response({'error': 'Не найдено'}, status=404)
+        try:
+            user = User.objects.get(employee=employee)
+            return Response({'exists': True, 'id': user.pk, 'username': user.username, 'role': user.role, 'is_active': user.is_active})
+        except User.DoesNotExist:
+            return Response({'exists': False})
+
+    def post(self, request, pk):
+        if request.user.role != 'owner':
+            return Response({'error': 'Доступ запрещён'}, status=403)
+        institution = request.user.institution
+        if not institution:
+            return Response({'error': 'Нет активной организации'}, status=400)
+        employee = _get_employee(request, pk)
+        if not employee:
+            return Response({'error': 'Не найдено'}, status=404)
+        if User.objects.filter(employee=employee).exists():
+            return Response({'error': 'У сотрудника уже есть аккаунт'}, status=400)
+        username = (request.data.get('username') or '').strip()
+        if not username:
+            return Response({'error': 'Введите логин'}, status=400)
+        if User.objects.filter(username=username).exists():
+            return Response({'error': 'Логин уже занят'}, status=400)
+        role = request.data.get('role', 'teacher')
+        if role not in ('admin', 'teacher'):
+            return Response({'error': 'Недопустимая роль'}, status=400)
+        password = (request.data.get('password') or '').strip()
+        if not password:
+            return Response({'error': 'Введите пароль'}, status=400)
+        user = User.objects.create_user(
+            username=username,
+            password=password,
+            role=role,
+            display_name=employee.full_name(),
+            institution=institution,
+            employee=employee,
+        )
+        user.allowed_institutions.add(institution)
+        log_action(request.user, 'created', user,
+                   new_data={'username': username, 'role': role},
+                   institution=institution)
+        return Response({'exists': True, 'id': user.pk, 'username': user.username, 'role': user.role, 'is_active': user.is_active}, status=201)
+
+    def patch(self, request, pk):
+        if request.user.role != 'owner':
+            return Response({'error': 'Доступ запрещён'}, status=403)
+        employee = _get_employee(request, pk)
+        if not employee:
+            return Response({'error': 'Не найдено'}, status=404)
+        try:
+            user = User.objects.get(employee=employee)
+        except User.DoesNotExist:
+            return Response({'error': 'Аккаунт не найден'}, status=404)
+        institution = request.user.institution
+        old_data = {'username': user.username, 'role': user.role}
+        if 'username' in request.data:
+            new_username = (request.data['username'] or '').strip()
+            if not new_username:
+                return Response({'error': 'Введите логин'}, status=400)
+            if new_username != user.username and User.objects.filter(username=new_username).exists():
+                return Response({'error': 'Логин уже занят'}, status=400)
+            user.username = new_username
+        if 'role' in request.data:
+            role = request.data['role']
+            if role not in ('admin', 'teacher'):
+                return Response({'error': 'Недопустимая роль'}, status=400)
+            user.role = role
+        new_password = (request.data.get('password') or '').strip()
+        if new_password:
+            user.set_password(new_password)
+        user.save()
+        log_action(request.user, 'updated', user,
+                   old_data=old_data,
+                   new_data={'username': user.username, 'role': user.role},
+                   institution=institution)
+        return Response({'exists': True, 'id': user.pk, 'username': user.username, 'role': user.role, 'is_active': user.is_active})

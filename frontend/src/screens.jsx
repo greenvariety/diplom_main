@@ -705,6 +705,12 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
   const [loading, setLoading] = useState(true);
   const [over, setOver] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [auditData, setAuditData] = useState([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditFilter, setAuditFilter] = useState('');
+  const [auditPage, setAuditPage] = useState(1);
+  const [auditTotal, setAuditTotal] = useState(0);
+  const [auditPages, setAuditPages] = useState(1);
   const toast = useToast();
 
   const load = () => {
@@ -716,6 +722,23 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
   };
 
   useEffect(() => { if (studentId) load(); }, [studentId]);
+
+  const loadAudit = () => {
+    if (!['owner', 'admin'].includes(currentUser?.role)) return;
+    setAuditLoading(true);
+    const params = new URLSearchParams({ object_type: 'Student', object_id: studentId, page: auditPage });
+    if (auditFilter) params.set('action', auditFilter);
+    api.get(`/audit-log/?${params}`).then(r => {
+      setAuditData(r.data.results);
+      setAuditTotal(r.data.count);
+      setAuditPages(r.data.num_pages);
+      setAuditLoading(false);
+    }).catch(() => setAuditLoading(false));
+  };
+
+  useEffect(() => {
+    if (historyOpen) loadAudit();
+  }, [historyOpen, auditFilter, auditPage]);
 
   const handleStatusChange = async (newStatus) => {
     try {
@@ -771,7 +794,7 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
         sub={`${student.faculty_short} · ${student.group_name || 'без группы'}`}
         actions={<>
           <button className="btn btn-secondary btn-sm" onClick={() => openModal('studentForm', { student, onDone: load })}>{I.pencil}Редактировать</button>
-          <button className="btn btn-secondary btn-sm" onClick={() => openModal('transfer', { student, onDone: load })}>{I.swap}Перевести</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => openModal('transfer', { student, currentUser, onDone: load })}>{I.swap}Перевести</button>
           {currentUser?.role === 'owner'
             ? <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: `${student.last_name} ${student.first_name}`, type: 'студента', url: `/students/${student.id}/`, onDone: () => onNavigate('students') })}>{I.trash}Удалить</button>
             : <button className="btn btn-danger btn-sm" onClick={() => openModal('deleteConfirm', { name: `${student.last_name} ${student.first_name}`, type: 'студента', studentId, onDone: () => onNavigate('students') })}>{I.trash}Подать заявку</button>
@@ -864,32 +887,52 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
             </div>
           </div>
 
-          <div className="card">
-            <div className="card-head" style={{ cursor: 'pointer' }} onClick={() => setHistoryOpen(o => !o)}>
-              <div className="title">{I.history}<span>История изменений</span><span className="muted" style={{ fontWeight: 400, fontSize: 12, marginLeft: 6 }}>· {student.audit_log.length} событий</span></div>
-              <svg className="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: historyOpen ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            {historyOpen && (
-              <div className="card-body flush">
-                {student.audit_log.length === 0 ? (
-                  <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>История пуста</div>
-                ) : (
-                  <table className="tbl">
-                    <thead><tr><th>Дата и время</th><th>Пользователь</th><th>Действие</th></tr></thead>
-                    <tbody>
-                      {student.audit_log.map((l, i) => (
-                        <tr key={i}>
-                          <td className="mono muted">{l.created_at}</td>
-                          <td className="fwm">{l.user}</td>
-                          <td><Badge>{l.action}</Badge></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
+          {['owner', 'admin'].includes(currentUser?.role) && (
+            <div className="card">
+              <div className="card-head" style={{ cursor: 'pointer' }} onClick={() => setHistoryOpen(o => !o)}>
+                <div className="title">{I.history}<span>История изменений</span>{auditTotal > 0 && <span className="muted" style={{ fontWeight: 400, fontSize: 12, marginLeft: 6 }}>- {auditTotal} событий</span>}</div>
+                <svg className="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: historyOpen ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}><polyline points="6 9 12 15 18 9"/></svg>
               </div>
-            )}
-          </div>
+              {historyOpen && (
+                <div className="card-body flush">
+                  <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 8 }}>
+                    <select className="select" style={{ width: 180, fontSize: 13 }} value={auditFilter} onChange={e => { setAuditFilter(e.target.value); setAuditPage(1); }}>
+                      <option value="">Все действия</option>
+                      <option value="create">Создание</option>
+                      <option value="update">Изменение</option>
+                      <option value="delete">Удаление</option>
+                    </select>
+                  </div>
+                  {auditLoading ? (
+                    <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Загрузка...</div>
+                  ) : auditData.length === 0 ? (
+                    <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>История пуста</div>
+                  ) : (
+                    <table className="tbl">
+                      <thead><tr><th>Дата и время</th><th>Пользователь</th><th>Действие</th><th>Diff</th></tr></thead>
+                      <tbody>
+                        {auditData.map(a => (
+                          <tr key={a.id} className="row-link" onClick={() => openModal('auditDiff', a)}>
+                            <td className="mono muted">{a.ts}</td>
+                            <td><span className="fwm mono">{a.user}</span><div className="muted" style={{ fontSize: 11 }}>{a.userName}</div></td>
+                            <td><span className={`badge ${a.cls}`}><span className="dot"></span>{a.label}</span></td>
+                            <td><a href="#" onClick={ev => { ev.preventDefault(); ev.stopPropagation(); openModal('auditDiff', a); }}>Показать</a></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                  {auditPages > 1 && (
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: 10 }}>
+                      <button className="btn btn-secondary btn-sm" disabled={auditPage <= 1} onClick={() => setAuditPage(p => p - 1)}>Назад</button>
+                      <span style={{ padding: '0 8px', lineHeight: '30px', fontSize: 13 }}>{auditPage} / {auditPages}</span>
+                      <button className="btn btn-secondary btn-sm" disabled={auditPage >= auditPages} onClick={() => setAuditPage(p => p + 1)}>Вперёд</button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </Shell>
@@ -1038,6 +1081,38 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Account block state
+  const [account, setAccount] = useState(undefined);
+  const [accShowCreate, setAccShowCreate] = useState(false);
+  const [accUsername, setAccUsername] = useState('');
+  const [accRole, setAccRole] = useState('teacher');
+  const [accPassword, setAccPassword] = useState('');
+  const [accErr, setAccErr] = useState('');
+  const [accSaving, setAccSaving] = useState(false);
+
+  // Employee history state
+  const [empHistoryOpen, setEmpHistoryOpen] = useState(false);
+  const [empAuditData, setEmpAuditData] = useState([]);
+  const [empAuditLoading, setEmpAuditLoading] = useState(false);
+  const [empAuditFilter, setEmpAuditFilter] = useState('');
+  const [empAuditPage, setEmpAuditPage] = useState(1);
+  const [empAuditTotal, setEmpAuditTotal] = useState(0);
+  const [empAuditPages, setEmpAuditPages] = useState(1);
+
+  const loadAccount = () => {
+    if (currentUser?.role !== 'owner') return;
+    api.get(`/employees/${employeeId}/account/`)
+      .then(r => {
+        setAccount(r.data);
+        if (r.data.exists) {
+          setAccUsername(r.data.username);
+          setAccRole(r.data.role);
+          setAccPassword('');
+        }
+      })
+      .catch(() => setAccount(null));
+  };
+
   const load = () => {
     setLoading(true);
     api.get(`/employees/${employeeId}/`).then(r => {
@@ -1049,7 +1124,29 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
     });
   };
 
-  useEffect(() => { if (employeeId) load(); }, [employeeId]);
+  useEffect(() => {
+    if (employeeId) {
+      load();
+      loadAccount();
+    }
+  }, [employeeId]);
+
+  const loadEmpAudit = () => {
+    if (!['owner', 'admin'].includes(currentUser?.role)) return;
+    setEmpAuditLoading(true);
+    const params = new URLSearchParams({ object_type: 'Employee', object_id: employeeId, page: empAuditPage });
+    if (empAuditFilter) params.set('action', empAuditFilter);
+    api.get(`/audit-log/?${params}`).then(r => {
+      setEmpAuditData(r.data.results);
+      setEmpAuditTotal(r.data.count);
+      setEmpAuditPages(r.data.num_pages);
+      setEmpAuditLoading(false);
+    }).catch(() => setEmpAuditLoading(false));
+  };
+
+  useEffect(() => {
+    if (empHistoryOpen) loadEmpAudit();
+  }, [empHistoryOpen, empAuditFilter, empAuditPage]);
 
   const removeSubject = async (assignmentId) => {
     try {
@@ -1082,6 +1179,44 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
     }
   };
 
+  const handleCreateAccount = async () => {
+    setAccErr('');
+    if (!accUsername.trim()) { setAccErr('Введите логин'); return; }
+    if (!accPassword.trim()) { setAccErr('Введите пароль'); return; }
+    setAccSaving(true);
+    try {
+      const r = await api.post(`/employees/${employeeId}/account/`, {
+        username: accUsername.trim(), role: accRole, password: accPassword,
+      });
+      setAccount(r.data);
+      setAccShowCreate(false);
+      setAccPassword('');
+      toast.push('Аккаунт создан', { kind: 'ok' });
+    } catch (e) {
+      setAccErr(e.response?.data?.error || 'Ошибка при создании');
+    } finally {
+      setAccSaving(false);
+    }
+  };
+
+  const handleSaveAccount = async () => {
+    setAccErr('');
+    if (!accUsername.trim()) { setAccErr('Введите логин'); return; }
+    setAccSaving(true);
+    try {
+      const payload = { username: accUsername.trim(), role: accRole };
+      if (accPassword.trim()) payload.password = accPassword;
+      const r = await api.patch(`/employees/${employeeId}/account/`, payload);
+      setAccount(r.data);
+      setAccPassword('');
+      toast.push('Аккаунт обновлён', { kind: 'ok' });
+    } catch (e) {
+      setAccErr(e.response?.data?.error || 'Ошибка при сохранении');
+    } finally {
+      setAccSaving(false);
+    }
+  };
+
   if (loading || !employee) {
     return (
       <Shell currentUser={currentUser} active="employees" onNavigate={onNavigate} openModal={openModal}>
@@ -1105,28 +1240,90 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
         </>}
       />
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
-        <div className="card">
-          <div className="card-body" style={{ textAlign: 'center', padding: 24 }}>
-            {employee.photo
-              ? <img src={employee.photo} alt="" style={{ width: 96, height: 96, borderRadius: 16, objectFit: 'cover' }} className="avatar-zoomy" />
-              : <Avatar name={employee.full_name} size="lg" className="avatar-zoomy" />
-            }
-            <h3 style={{ marginTop: 14, marginBottom: 6 }}>{employee.last_name} {employee.first_name}</h3>
-            <div className="muted" style={{ fontSize: 13, marginBottom: 12 }}>{employee.middle_name}</div>
-            {employee.position_name && (
-              <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-                <Badge>{employee.position_name}</Badge>
+        <div>
+          <div className="card">
+            <div className="card-body" style={{ textAlign: 'center', padding: 24 }}>
+              {employee.photo
+                ? <img src={employee.photo} alt="" style={{ width: 96, height: 96, borderRadius: 16, objectFit: 'cover' }} className="avatar-zoomy" />
+                : <Avatar name={employee.full_name} size="lg" className="avatar-zoomy" />
+              }
+              <h3 style={{ marginTop: 14, marginBottom: 6 }}>{employee.last_name} {employee.first_name}</h3>
+              <div className="muted" style={{ fontSize: 13, marginBottom: 12 }}>{employee.middle_name}</div>
+              {employee.position_name && (
+                <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                  <Badge>{employee.position_name}</Badge>
+                </div>
+              )}
+            </div>
+            <div style={{ borderTop: '1px solid var(--border)' }}>
+              <dl className="kv">
+                {employee.birth_date && <><dt>Дата рождения</dt><dd>{employee.birth_date}</dd></>}
+                <dt>Телефон</dt><dd>{employee.phone || '-'}</dd>
+                <dt>Email</dt><dd>{employee.email || '-'}</dd>
+              </dl>
+            </div>
+          </div>
+
+          {/* Account block - owner only */}
+          {currentUser?.role === 'owner' && account !== undefined && (
+            <div className="card" style={{ marginTop: 16 }}>
+              <div className="card-head">
+                <div className="title">{I.key}Аккаунт</div>
               </div>
-            )}
-          </div>
-          <div style={{ borderTop: '1px solid var(--border)' }}>
-            <dl className="kv">
-              {employee.birth_date && <><dt>Дата рождения</dt><dd>{employee.birth_date}</dd></>}
-              <dt>Телефон</dt><dd>{employee.phone || '-'}</dd>
-              <dt>Email</dt><dd>{employee.email || '-'}</dd>
-            </dl>
-          </div>
+              <div className="card-body">
+                {!account?.exists ? (
+                  !accShowCreate ? (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span className="muted" style={{ fontSize: 13 }}>Нет аккаунта</span>
+                      <button className="btn btn-primary btn-sm" onClick={() => { setAccShowCreate(true); setAccUsername(''); setAccRole('teacher'); setAccPassword(''); setAccErr(''); }}>
+                        Создать аккаунт
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <Field label="Логин" required error={accErr && !accUsername.trim() ? accErr : null}>
+                        <input className={`input ${accErr && !accUsername.trim() ? 'is-error' : ''}`} value={accUsername} onChange={e => { setAccUsername(e.target.value); setAccErr(''); }} maxLength={150} />
+                      </Field>
+                      <Field label="Пароль" required error={accErr && !accPassword.trim() ? accErr : null}>
+                        <input type="password" className={`input ${accErr && !accPassword.trim() ? 'is-error' : ''}`} value={accPassword} onChange={e => { setAccPassword(e.target.value); setAccErr(''); }} maxLength={128} />
+                      </Field>
+                      <Field label="Роль">
+                        <select className="select" value={accRole} onChange={e => setAccRole(e.target.value)}>
+                          <option value="teacher">Преподаватель</option>
+                          <option value="admin">Администратор</option>
+                        </select>
+                      </Field>
+                      {accErr && accUsername.trim() && accPassword.trim() && <div style={{ color: 'var(--bad-fg)', fontSize: 13 }}>{accErr}</div>}
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button className="btn btn-secondary btn-sm" onClick={() => { setAccShowCreate(false); setAccErr(''); }}>Отмена</button>
+                        <LoadButton className="btn btn-primary btn-sm" loading={accSaving} onClick={handleCreateAccount}>Создать</LoadButton>
+                      </div>
+                    </div>
+                  )
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <Field label="Логин" required error={accErr && !accUsername.trim() ? accErr : null}>
+                      <input className={`input ${accErr && !accUsername.trim() ? 'is-error' : ''}`} value={accUsername} onChange={e => { setAccUsername(e.target.value); setAccErr(''); }} maxLength={150} />
+                    </Field>
+                    <Field label="Новый пароль">
+                      <input type="password" className="input" value={accPassword} onChange={e => setAccPassword(e.target.value)} maxLength={128} />
+                    </Field>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: -6 }}>Оставьте пустым, чтобы не менять пароль</div>
+                    <Field label="Роль">
+                      <select className="select" value={accRole} onChange={e => setAccRole(e.target.value)}>
+                        <option value="teacher">Преподаватель</option>
+                        <option value="admin">Администратор</option>
+                      </select>
+                    </Field>
+                    {accErr && <div style={{ color: 'var(--bad-fg)', fontSize: 13 }}>{accErr}</div>}
+                    <LoadButton className="btn btn-primary btn-sm" loading={accSaving} onClick={handleSaveAccount}>Сохранить</LoadButton>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {employee.headed_groups?.length > 0 && (
             <div className="card">
@@ -1198,6 +1395,53 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
               )}
             </div>
           </div>
+
+          {['owner', 'admin'].includes(currentUser?.role) && (
+            <div className="card">
+              <div className="card-head" style={{ cursor: 'pointer' }} onClick={() => setEmpHistoryOpen(o => !o)}>
+                <div className="title">{I.history}<span>История изменений</span>{empAuditTotal > 0 && <span className="muted" style={{ fontWeight: 400, fontSize: 12, marginLeft: 6 }}>- {empAuditTotal} событий</span>}</div>
+                <svg className="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: empHistoryOpen ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+              {empHistoryOpen && (
+                <div className="card-body flush">
+                  <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 8 }}>
+                    <select className="select" style={{ width: 180, fontSize: 13 }} value={empAuditFilter} onChange={e => { setEmpAuditFilter(e.target.value); setEmpAuditPage(1); }}>
+                      <option value="">Все действия</option>
+                      <option value="create">Создание</option>
+                      <option value="update">Изменение</option>
+                      <option value="delete">Удаление</option>
+                    </select>
+                  </div>
+                  {empAuditLoading ? (
+                    <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Загрузка...</div>
+                  ) : empAuditData.length === 0 ? (
+                    <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>История пуста</div>
+                  ) : (
+                    <table className="tbl">
+                      <thead><tr><th>Дата и время</th><th>Пользователь</th><th>Действие</th><th>Diff</th></tr></thead>
+                      <tbody>
+                        {empAuditData.map(a => (
+                          <tr key={a.id} className="row-link" onClick={() => openModal('auditDiff', a)}>
+                            <td className="mono muted">{a.ts}</td>
+                            <td><span className="fwm mono">{a.user}</span><div className="muted" style={{ fontSize: 11 }}>{a.userName}</div></td>
+                            <td><span className={`badge ${a.cls}`}><span className="dot"></span>{a.label}</span></td>
+                            <td><a href="#" onClick={ev => { ev.preventDefault(); ev.stopPropagation(); openModal('auditDiff', a); }}>Показать</a></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                  {empAuditPages > 1 && (
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: 10 }}>
+                      <button className="btn btn-secondary btn-sm" disabled={empAuditPage <= 1} onClick={() => setEmpAuditPage(p => p - 1)}>Назад</button>
+                      <span style={{ padding: '0 8px', lineHeight: '30px', fontSize: 13 }}>{empAuditPage} / {empAuditPages}</span>
+                      <button className="btn btn-secondary btn-sm" disabled={empAuditPage >= empAuditPages} onClick={() => setEmpAuditPage(p => p + 1)}>Вперёд</button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </Shell>

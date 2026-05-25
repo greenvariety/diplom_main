@@ -12,12 +12,12 @@ from core.api_faculties import FacultiesView, FacultyDetailView, FacultyDeleteRe
 from core.api_groups import GroupsView, GroupDetailView, GroupDeleteRequestView, GroupSubjectsView, GroupSubjectDetailView, GroupFlagView
 from core.api_employees import (
     EmployeesView, EmployeeDetailView, EmployeeDeleteRequestView,
-    EmployeeSubjectsView, EmployeeSubjectDetailView, EmployeeFlagView,
+    EmployeeSubjectsView, EmployeeSubjectDetailView, EmployeeFlagView, EmployeeAccountView,
 )
 from core.api_subjects import SubjectsView, SubjectDetailView
 from core.api_students import (
     StudentsView, StudentDetailView, StudentDeleteRequestView,
-    StudentTransferView, StudentParentsView, StudentParentDetailView, StudentFlagView,
+    StudentTransferView, StudentTransferInstitutionView, StudentParentsView, StudentParentDetailView, StudentFlagView,
 )
 from core.api_documents import DocumentUploadView, DocumentDetailView
 from core.api_positions import PositionsView, PositionDetailView
@@ -64,6 +64,7 @@ urlpatterns = [
     path('api/employees/<int:pk>/', EmployeeDetailView.as_view()),
     path('api/employees/<int:pk>/delete-request/', EmployeeDeleteRequestView.as_view()),
     path('api/employees/<int:pk>/flag/', EmployeeFlagView.as_view()),
+    path('api/employees/<int:pk>/account/', EmployeeAccountView.as_view()),
     path('api/employees/<int:pk>/subjects/', EmployeeSubjectsView.as_view()),
     path('api/employees/<int:pk>/subjects/<int:assignment_pk>/', EmployeeSubjectDetailView.as_view()),
     path('api/subjects/', SubjectsView.as_view()),
@@ -73,6 +74,7 @@ urlpatterns = [
     path('api/students/<int:pk>/delete-request/', StudentDeleteRequestView.as_view()),
     path('api/students/<int:pk>/flag/', StudentFlagView.as_view()),
     path('api/students/<int:pk>/transfer/', StudentTransferView.as_view()),
+    path('api/students/<int:pk>/transfer-institution/', StudentTransferInstitutionView.as_view()),
     path('api/students/<int:pk>/parents/', StudentParentsView.as_view()),
     path('api/students/<int:pk>/parents/<int:sp_pk>/', StudentParentDetailView.as_view()),
     path('api/positions/', PositionsView.as_view()),

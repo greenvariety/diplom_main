@@ -165,6 +165,17 @@ class AuditLogView(APIView):
             except (ValueError, TypeError):
                 pass
 
+        object_type = request.GET.get('object_type', '')
+        if object_type:
+            qs = qs.filter(object_type=object_type)
+
+        object_id = request.GET.get('object_id', '')
+        if object_id:
+            try:
+                qs = qs.filter(object_id=int(object_id))
+            except (ValueError, TypeError):
+                pass
+
         count = qs.count()
         try:
             page = max(1, int(request.GET.get('page', 1)))

@@ -24,7 +24,15 @@ def _admin_only(request):
 
 class FacultiesView(APIView):
     def get(self, request):
-        institution = request.user.institution
+        inst_id = request.query_params.get('institution_id')
+        if inst_id and request.user.is_owner:
+            from .models import Institution as Inst
+            try:
+                institution = Inst.objects.get(pk=inst_id, owner=request.user)
+            except Inst.DoesNotExist:
+                return Response([])
+        else:
+            institution = request.user.institution
         if not institution:
             return Response([])
         faculties = Faculty.objects.filter(institution=institution).order_by('full_name')
