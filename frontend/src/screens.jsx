@@ -559,12 +559,6 @@ function StudentList({ currentUser, openModal, onNavigate }) {
         </div>
         <button className="btn btn-primary btn-sm" onClick={handleSearch}>Найти</button>
         <button className="btn btn-ghost btn-sm" onClick={reset}>Сбросить</button>
-        <button
-          className={`btn btn-sm ${sortFlagged ? 'btn-warn' : 'btn-ghost'}`}
-          style={sortFlagged ? { color: 'var(--warn-fg)', borderColor: 'var(--warn-bd)', background: 'var(--warn-bg)' } : {}}
-          onClick={() => setSortFlagged(v => !v)}
-          title="Сначала помеченные"
-        >{I.alert} Помеченные</button>
       </div>
       {activeFilters.length > 0 && (
         <div className="filter-chips" style={{ marginBottom: 12 }}>
@@ -958,12 +952,6 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
         </div>
         <button className="btn btn-primary btn-sm" onClick={handleSearch}>Найти</button>
         <button className="btn btn-ghost btn-sm" onClick={reset}>Сбросить</button>
-        <button
-          className="btn btn-sm btn-ghost"
-          style={sortFlagged ? { color: 'var(--warn-fg)', borderColor: 'var(--warn-bd)', background: 'var(--warn-bg)' } : {}}
-          onClick={() => setSortFlagged(v => !v)}
-          title="Сначала помеченные"
-        >{I.alert} Помеченные</button>
       </div>
       <div className="card">
         <div className="card-body flush">
@@ -1453,6 +1441,7 @@ function GroupList({ currentUser, openModal, onNavigate }) {
   const [faculties, setFaculties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [facultyFilter, setFacultyFilter] = useState('');
+  const [q, setQ] = useState('');
   const [search, setSearch] = useState('');
   const [sortFlagged, setSortFlagged] = useState(false);
 
@@ -1498,7 +1487,7 @@ function GroupList({ currentUser, openModal, onNavigate }) {
       <div className="filters">
         <div className="field grow-2">
           <label className="field-label">Поиск</label>
-          <div className="input-with-icon">{I.search}<input className="input" value={search} onChange={e => setSearch(e.target.value)} /></div>
+          <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && setSearch(q)} /></div>
         </div>
         <div className="field">
           <label className="field-label">Факультет</label>
@@ -1507,13 +1496,8 @@ function GroupList({ currentUser, openModal, onNavigate }) {
             {faculties.map(f => <option key={f.id} value={f.id}>{f.short_name}</option>)}
           </select>
         </div>
-        <button className="btn btn-ghost btn-sm" onClick={() => { setSearch(''); setFacultyFilter(''); load(''); }}>Сбросить</button>
-        <button
-          className="btn btn-sm btn-ghost"
-          style={sortFlagged ? { color: 'var(--warn-fg)', borderColor: 'var(--warn-bd)', background: 'var(--warn-bg)' } : {}}
-          onClick={() => setSortFlagged(v => !v)}
-          title="Сначала помеченные"
-        >{I.alert} Помеченные</button>
+        <button className="btn btn-primary btn-sm" onClick={() => setSearch(q)}>Найти</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => { setQ(''); setSearch(''); setFacultyFilter(''); load(''); }}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
@@ -1685,6 +1669,7 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
   const [faculties, setFaculties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sortFlagged, setSortFlagged] = useState(false);
+  const [q, setQ] = useState('');
   const [search, setSearch] = useState('');
 
   const load = () => {
@@ -1725,16 +1710,11 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
         <div className="field grow-2">
           <label className="field-label">Поиск</label>
           <div className="input-with-icon">{I.search}
-            <input className="input" value={search} onChange={e => setSearch(e.target.value)} />
+            <input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && setSearch(q)} />
           </div>
         </div>
-        <button className="btn btn-ghost btn-sm" onClick={() => setSearch('')}>Сбросить</button>
-        <button
-          className="btn btn-sm btn-ghost"
-          style={sortFlagged ? { color: 'var(--warn-fg)', borderColor: 'var(--warn-bd)', background: 'var(--warn-bg)' } : {}}
-          onClick={() => setSortFlagged(v => !v)}
-          title="Сначала помеченные"
-        >{I.alert} Помеченные</button>
+        <button className="btn btn-primary btn-sm" onClick={() => setSearch(q)}>Найти</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => { setQ(''); setSearch(''); }}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
@@ -1780,6 +1760,7 @@ const ROLE_CLS = { owner: 'badge-bad', admin: 'badge-info', teacher: 'badge-ok' 
 function UserList({ currentUser, openModal, onNavigate }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [q, setQ] = useState('');
   const [search, setSearch] = useState('');
 
   const load = () => {
@@ -1809,10 +1790,11 @@ function UserList({ currentUser, openModal, onNavigate }) {
         <div className="field grow-2">
           <label className="field-label">Поиск</label>
           <div className="input-with-icon">{I.search}
-            <input className="input" value={search} onChange={e => setSearch(e.target.value)} />
+            <input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && setSearch(q)} />
           </div>
         </div>
-        <button className="btn btn-ghost btn-sm" onClick={() => setSearch('')}>Сбросить</button>
+        <button className="btn btn-primary btn-sm" onClick={() => setSearch(q)}>Найти</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => { setQ(''); setSearch(''); }}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
@@ -2084,12 +2066,6 @@ function ParentList({ currentUser, openModal, onNavigate }) {
         </div>
         <button className="btn btn-primary btn-sm" onClick={handleSearch}>Найти</button>
         <button className="btn btn-ghost btn-sm" onClick={reset}>Сбросить</button>
-        <button
-          className="btn btn-sm btn-ghost"
-          style={sortFlagged ? { color: 'var(--warn-fg)', borderColor: 'var(--warn-bd)', background: 'var(--warn-bg)' } : {}}
-          onClick={() => setSortFlagged(v => !v)}
-          title="Сначала помеченные"
-        >{I.alert} Помеченные</button>
       </div>
       <div className="card">
         <div className="card-body flush">
@@ -2259,6 +2235,7 @@ function SubjectList({ currentUser, openModal, onNavigate }) {
   const toast = useToast();
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [q, setQ] = useState('');
   const [search, setSearch] = useState('');
 
   const load = () => {
@@ -2294,10 +2271,11 @@ function SubjectList({ currentUser, openModal, onNavigate }) {
         <div className="field grow-2">
           <label className="field-label">Поиск</label>
           <div className="input-with-icon">{I.search}
-            <input className="input" value={search} onChange={e => setSearch(e.target.value)} />
+            <input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && setSearch(q)} />
           </div>
         </div>
-        <button className="btn btn-ghost btn-sm" onClick={() => setSearch('')}>Сбросить</button>
+        <button className="btn btn-primary btn-sm" onClick={() => setSearch(q)}>Найти</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => { setQ(''); setSearch(''); }}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
