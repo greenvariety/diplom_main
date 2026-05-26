@@ -62,7 +62,7 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
       <PageHead
         title="Дашборд"
         sub="Сводка по системе"
-        actions={<button className="btn btn-secondary btn-sm">{I.excel}Настроить экспорт в Excel</button>}
+        actions={<button className="btn btn-success btn-sm">{I.excel}Настроить экспорт в Excel</button>}
       />
       {!currentUser?.institution && (
         <div className="banner banner-warn">
@@ -1498,7 +1498,7 @@ function GroupList({ currentUser, openModal, onNavigate }) {
       <div className="filters">
         <div className="field grow-2">
           <label className="field-label">Поиск</label>
-          <div className="input-with-icon">{I.search}<input className="input" value={search} onChange={e => setSearch(e.target.value)} placeholder="Название группы…" /></div>
+          <div className="input-with-icon">{I.search}<input className="input" value={search} onChange={e => setSearch(e.target.value)} /></div>
         </div>
         <div className="field">
           <label className="field-label">Факультет</label>
@@ -1507,6 +1507,7 @@ function GroupList({ currentUser, openModal, onNavigate }) {
             {faculties.map(f => <option key={f.id} value={f.id}>{f.short_name}</option>)}
           </select>
         </div>
+        <button className="btn btn-ghost btn-sm" onClick={() => { setSearch(''); setFacultyFilter(''); load(''); }}>Сбросить</button>
         <button
           className="btn btn-sm btn-ghost"
           style={sortFlagged ? { color: 'var(--warn-fg)', borderColor: 'var(--warn-bd)', background: 'var(--warn-bg)' } : {}}
@@ -1684,6 +1685,7 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
   const [faculties, setFaculties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sortFlagged, setSortFlagged] = useState(false);
+  const [search, setSearch] = useState('');
 
   const load = () => {
     setLoading(true);
@@ -1705,9 +1707,12 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
     }
   };
 
-  const displayFaculties = sortFlagged
-    ? [...faculties].sort((a, b) => (b.is_flagged ? 1 : 0) - (a.is_flagged ? 1 : 0))
+  const searchFiltered = search
+    ? faculties.filter(f => f.full_name.toLowerCase().includes(search.toLowerCase()) || f.short_name.toLowerCase().includes(search.toLowerCase()))
     : faculties;
+  const displayFaculties = sortFlagged
+    ? [...searchFiltered].sort((a, b) => (b.is_flagged ? 1 : 0) - (a.is_flagged ? 1 : 0))
+    : searchFiltered;
 
   return (
     <Shell currentUser={currentUser} active="faculties" onNavigate={onNavigate} openModal={openModal}>
@@ -1717,6 +1722,13 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
         actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('facultyForm', { onDone: load })}>{I.plus}Добавить</button>}
       />
       <div className="filters">
+        <div className="field grow-2">
+          <label className="field-label">Поиск</label>
+          <div className="input-with-icon">{I.search}
+            <input className="input" value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+        </div>
+        <button className="btn btn-ghost btn-sm" onClick={() => setSearch('')}>Сбросить</button>
         <button
           className="btn btn-sm btn-ghost"
           style={sortFlagged ? { color: 'var(--warn-fg)', borderColor: 'var(--warn-bd)', background: 'var(--warn-bg)' } : {}}
@@ -1768,6 +1780,7 @@ const ROLE_CLS = { owner: 'badge-bad', admin: 'badge-info', teacher: 'badge-ok' 
 function UserList({ currentUser, openModal, onNavigate }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
   const load = () => {
     setLoading(true);
@@ -1792,6 +1805,15 @@ function UserList({ currentUser, openModal, onNavigate }) {
         title="Пользователи системы"
         sub={loading ? 'Загрузка…' : `Всего ${users.length}`}
       />
+      <div className="filters">
+        <div className="field grow-2">
+          <label className="field-label">Поиск</label>
+          <div className="input-with-icon">{I.search}
+            <input className="input" value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+        </div>
+        <button className="btn btn-ghost btn-sm" onClick={() => setSearch('')}>Сбросить</button>
+      </div>
       <div className="card">
         <div className="card-body flush">
           {!loading && users.length === 0 ? (
@@ -1800,7 +1822,7 @@ function UserList({ currentUser, openModal, onNavigate }) {
             <table className="tbl">
               <thead><tr><th>Сотрудник</th><th>Логин</th><th>Роль</th><th>Последний вход</th><th>Статус</th></tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={5} /> : users.map(u => (
+                {loading ? <SkeletonRows cols={5} /> : users.filter(u => !search || (u.employee_name || '').toLowerCase().includes(search.toLowerCase()) || u.username.toLowerCase().includes(search.toLowerCase())).map(u => (
                   <tr key={u.id} className={u.employee_id ? 'row-link' : ''} onClick={() => handleRowClick(u)}>
                     <td className="fwm">{u.employee_name || <span className="muted">-</span>}</td>
                     <td className="mono">{u.username}</td>
@@ -2237,6 +2259,7 @@ function SubjectList({ currentUser, openModal, onNavigate }) {
   const toast = useToast();
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
   const load = () => {
     setLoading(true);
@@ -2267,6 +2290,15 @@ function SubjectList({ currentUser, openModal, onNavigate }) {
         sub={loading ? 'Загрузка…' : `Всего ${subjects.length}`}
         actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('subjectForm', { onDone: load })}>{I.plus}Добавить</button>}
       />
+      <div className="filters">
+        <div className="field grow-2">
+          <label className="field-label">Поиск</label>
+          <div className="input-with-icon">{I.search}
+            <input className="input" value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+        </div>
+        <button className="btn btn-ghost btn-sm" onClick={() => setSearch('')}>Сбросить</button>
+      </div>
       <div className="card">
         <div className="card-body flush">
           {!loading && subjects.length === 0 ? (
@@ -2275,7 +2307,7 @@ function SubjectList({ currentUser, openModal, onNavigate }) {
             <table className="tbl">
               <thead><tr><th>Название</th><th style={{ width: 80 }}></th></tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={2} /> : subjects.map(s => (
+                {loading ? <SkeletonRows cols={2} /> : subjects.filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase())).map(s => (
                   <tr key={s.id}>
                     <td className="fwm">{s.name}</td>
                     <td style={{ display: 'flex', gap: 4 }}>
