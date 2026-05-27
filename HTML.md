@@ -1,49 +1,49 @@
 # HTML.md - задачи по правке интерфейса
 
-~~## 1. Убери везде эти флаги~~
+~~## 1. Кнопку зеленой сделай, крч основной нашего цвета!~~
 
 ```html
-<button class="btn btn-ghost btn-icon btn-sm" title="Отметить" style="color: var(--text-muted); outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></button>
+<button class="btn btn-success btn-sm" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="m9 13 6 5M15 13l-6 5"></path></svg>Настроить экспорт в Excel</button>
 ```
 
 ---
 
-~~## 2. Убери на всех: факультеты, группы, предметы, сотрудники, студенты, опекуны вот такю сортирорвку, везде сверху будет только окно ввода для поиска!~~
+## 2. Всю область чуть меньше сделай, потому что изза больших размеров, она кажется пустоватой
 
 ```html
-<select class="select" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);"><option value="">- Все -</option><option value="6">Админ</option></select>
+<main class="main" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">
 ```
 
 ---
 
-~~## 3. Найсти и сбросить сделать одного размера с поисковой строкой!~~
+## 3. Сделай тоже большего размера область!
 
 ```html
-<button class="btn btn-primary btn-sm" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">Найти</button>
+<nav class="sidebar" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">
 ```
 
 ---
 
-~~## 4. Такие флаги тоже убери!~~
+## 4. На факультетах, группах, проедметах, сотрудниках и везде, сделай кнопку Всего: n и жирным шрифтом!
 
 ```html
-<button class="btn btn-ghost btn-icon btn-sm" title="Добавить вопрос" style="color: var(--text-muted); font-weight: 700; outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">?</button>
+<div class="sub" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">Всего 3 факультетов</div>
 ```
 
 ---
 
-~~## 5. Убери эту надпись!~~
+## 5. На всех вкладках, группах, предметах, факульетатх и тд, сделай так чтобы можно было сортировать текстовые по алфавиту, а числа по возврастнаию и тд! И также Перед всем добавь номер: типа №, код, название и так везде!
 
 ```html
-<div class="banner banner-info" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg><div class="banner-body" style="">Администратор подаёт заявку на удаление, суперадмин подтверждает. До подтверждения объект остаётся в системе.</div></div>
+<th style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">Код</th>
 ```
 
 ---
 
-~~## 6. Сделай все такие вещи на дашборде кликабьельными для перехода на вкладки!~~
+## 6. Вот тут ! флаг, убери везде эти флаги, вообще саму концепцию их!
 
 ```html
-<div class="stat" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);"><div class="stat-label" style=""><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"></rect><path d="M9 22v-4h6v4"></path><path d="M8 6h.01M16 6h.01M12 6h.01M8 10h.01M16 10h.01M12 10h.01M8 14h.01M16 14h.01M12 14h.01"></path></svg>Факультетов</div><div class="stat-value" style=""><span>1</span></div></div>
+<td class="fwm" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">Агафонова Юлия Сергеевна<span title="Нет опекунов - требуется дозаполнение" style="margin-left: 6px; color: var(--warn-fg, #f59e0b); font-size: 14px;">!</span></td>
 ```
 
 ---

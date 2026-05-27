@@ -62,7 +62,7 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
       <PageHead
         title="Дашборд"
         sub="Сводка по системе"
-        actions={<button className="btn btn-success btn-sm">{I.excel}Настроить экспорт в Excel</button>}
+        actions={<button className="btn btn-primary btn-sm">{I.excel}Настроить экспорт в Excel</button>}
       />
       {!currentUser?.institution && (
         <div className="banner banner-warn">
