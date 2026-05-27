@@ -1647,10 +1647,12 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
     <Shell currentUser={currentUser} active="delreq" openModal={openModal} onNavigate={onNavigate} onLogout={onLogout}>
       <PageHead title="Заявки на удаление" sub={loading ? 'Загрузка…' : `Всего: ${reqs.length} записей`} />
       <div className="filters">
-        <div className="field grow-2"><label className="field-label">Поиск по объекту, автору или причине</label>
-          <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} /></div>
+        <div className="field grow-2">
+          <label className="field-label">Поиск</label>
+          <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && setQ(q)} /></div>
         </div>
-        <button className="btn btn-secondary btn-sm" style={{ alignSelf: 'flex-end', height: 36 }} onClick={() => setQ('')}>Сбросить</button>
+        <button className="btn btn-primary" style={{ height: 36 }} onClick={() => setQ(q)}>Найти</button>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={() => setQ('')}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
@@ -1714,13 +1716,12 @@ function AuditLog({ currentUser, openModal, onNavigate }) {
         actions={<button className="btn btn-secondary btn-sm">{I.excel}Экспорт</button>}
       />
       <div className="filters">
-        <div className="field grow-2"><label className="field-label">Поиск по объекту, пользователю или ФИО</label>
-          <div className="input-with-icon">{I.search}<input className="input" value={q}
-            onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearch()}
-            /></div>
+        <div className="field grow-2">
+          <label className="field-label">Поиск</label>
+          <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearch()} /></div>
         </div>
-        <button className="btn btn-primary btn-sm" style={{ alignSelf: 'flex-end', height: 36 }} onClick={handleSearch}>Найти</button>
-        <button className="btn btn-secondary btn-sm" style={{ alignSelf: 'flex-end', height: 36 }} onClick={reset}>Сбросить</button>
+        <button className="btn btn-primary" style={{ height: 36 }} onClick={handleSearch}>Найти</button>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
@@ -2055,6 +2056,8 @@ function PositionList({ currentUser, openModal, onNavigate }) {
   const toast = useToast();
   const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [q, setQ] = useState('');
+  const [search, setSearch] = useState('');
 
   const load = () => {
     setLoading(true);
@@ -2066,6 +2069,8 @@ function PositionList({ currentUser, openModal, onNavigate }) {
 
   useEffect(() => { load(); }, []);
 
+  const filtered = search ? positions.filter(p => p.name.toLowerCase().includes(search.toLowerCase())) : positions;
+
   return (
     <Shell currentUser={currentUser} active="positions" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
@@ -2074,6 +2079,14 @@ function PositionList({ currentUser, openModal, onNavigate }) {
         sub={loading ? 'Загрузка…' : `Всего: ${positions.length} записей`}
         actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('positionForm', { onDone: load })}>{I.plus}Добавить</button>}
       />
+      <div className="filters">
+        <div className="field grow-2">
+          <label className="field-label">Поиск</label>
+          <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && setSearch(q)} /></div>
+        </div>
+        <button className="btn btn-primary" style={{ height: 36 }} onClick={() => setSearch(q)}>Найти</button>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={() => { setQ(''); setSearch(''); }}>Сбросить</button>
+      </div>
       <div className="card">
         <div className="card-body flush">
           {!loading && positions.length === 0 ? (
@@ -2082,7 +2095,7 @@ function PositionList({ currentUser, openModal, onNavigate }) {
             <table className="tbl">
               <thead><tr><th>Название</th><th>Сотрудников</th><th style={{ width: 40 }}></th></tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={3} /> : positions.map(p => (
+                {loading ? <SkeletonRows cols={3} /> : filtered.map(p => (
                   <tr key={p.id}>
                     <td className="fwm">{p.name}</td>
                     <td className="mono">{p.employee_count}</td>
