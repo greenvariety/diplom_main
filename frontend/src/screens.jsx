@@ -534,9 +534,6 @@ function StudentList({ currentUser, openModal, onNavigate }) {
                         <td><Avatar name={`${s.last_name} ${s.first_name}`} size="sm" /></td>
                         <td className="fwm">
                           {s.last_name} {s.first_name} {s.middle_name}
-                          {s.parent_count === 0 && (
-                            <span title="Нет опекунов - требуется дозаполнение" style={{ marginLeft: 6, color: 'var(--warn-fg, #f59e0b)', fontSize: 14 }}>!</span>
-                          )}
                           {s.has_pending_delreq && (
                             <span title="Подана заявка на удаление" style={{ marginLeft: 4, color: 'var(--bad-fg)', fontSize: 13, opacity: 0.8 }}>{I.trash}</span>
                           )}
@@ -878,9 +875,6 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
                     <td className="mono muted">{idx + 1}</td>
                     <td className="fwm">
                       {e.full_name}
-                      {e.warn_incomplete && (
-                        <span title="Нет должности - требуется дозаполнение" style={{ marginLeft: 6, color: 'var(--warn-fg, #f59e0b)', fontSize: 14 }}>!</span>
-                      )}
                       {e.has_pending_delreq && (
                         <span title="Подана заявка на удаление" style={{ marginLeft: 4, color: 'var(--bad-fg)', fontSize: 13, opacity: 0.8 }}>{I.trash}</span>
                       )}
@@ -1393,9 +1387,6 @@ function GroupList({ currentUser, openModal, onNavigate }) {
                   <td className="mono muted">{idx + 1}</td>
                   <td className="fwm">
                     {g.name}
-                    {g.warn_incomplete && (
-                      <span title="Нет классного руководителя - требуется дозаполнение" style={{ marginLeft: 6, color: 'var(--warn-fg, #f59e0b)', fontSize: 14 }}>!</span>
-                    )}
                     {g.has_pending_delreq && (
                       <span title="Подана заявка на удаление" style={{ marginLeft: 4, color: 'var(--bad-fg)', fontSize: 13, opacity: 0.8 }}>{I.trash}</span>
                     )}
