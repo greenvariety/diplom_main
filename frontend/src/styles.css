@@ -465,6 +465,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 }
 .filters .field { flex: 1; min-width: 120px; }
 .filters .field.grow-2 { flex: 2; min-width: 200px; }
+.filters .btn-ghost { border-color: var(--border); color: var(--text-muted); }
 
 /* ============================================================
    Modal
