@@ -117,7 +117,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 
 .app-shell {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: 280px 1fr;
   grid-template-rows: 56px 1fr;
   grid-template-areas:
     "brand topbar"
