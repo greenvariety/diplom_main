@@ -634,6 +634,7 @@ function FacultyFormModal({ data, onClose }) {
   const [err, setErr] = useState('');
 
   const autoCode = (n) => n.trim().split(/\s+/).filter(w => w.length >= 2 && /^[А-ЯЁа-яё]/.test(w)).map(w => w[0].toUpperCase()).join('').slice(0, 50);
+  const autoName = (n) => { const s = n.trim(); return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s; };
 
   const save = async () => {
     if (!fullName.trim()) { setErr('Введите полное название'); return; }
@@ -662,7 +663,7 @@ function FacultyFormModal({ data, onClose }) {
       </>}>
       <div className="form-grid">
         <Field label="Полное название" required error={err && !fullName.trim() ? err : null}>
-          <input className={`input ${err && !fullName.trim() ? 'is-error' : ''}`} value={fullName} onChange={e => { const next = e.target.value; setFullName(next); if (!codeManual) setShortName(autoCode(next)); setErr(''); }} maxLength={255} onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }} onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); const next = fullName + t; setFullName(next); if (!codeManual) setShortName(autoCode(next)); setErr(''); }} />
+          <input className={`input ${err && !fullName.trim() ? 'is-error' : ''}`} value={fullName} onChange={e => { const next = e.target.value; setFullName(next); if (!codeManual) setShortName(autoCode(next)); setErr(''); }} onBlur={() => { const formatted = autoName(fullName); setFullName(formatted); if (!codeManual) setShortName(autoCode(formatted)); }} maxLength={255} onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }} onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); const next = fullName + t; setFullName(next); if (!codeManual) setShortName(autoCode(next)); setErr(''); }} />
         </Field>
         <Field label="Код (аббревиатура)" required error={err && fullName.trim() && !shortName.trim() ? err : null} hint={!isEdit && !codeManual ? 'Формируется автоматически по названию' : null}>
           <input className={`input ${err && fullName.trim() && !shortName.trim() ? 'is-error' : ''}`} value={shortName} onChange={e => { setShortName(e.target.value.toUpperCase()); setCodeManual(true); setErr(''); }} maxLength={50} />
@@ -1679,6 +1680,7 @@ function OrgFormModal({ data, onClose }) {
   const [description, setDescription] = useState(org?.description || '');
 
   const autoCode = (n) => n.trim().split(/\s+/).filter(w => w.length >= 2 && /^[А-ЯЁа-яё]/.test(w)).map(w => w[0].toUpperCase()).join('').slice(0, 20);
+  const autoName = (n) => { const s = n.trim(); return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s; };
   const [foundedDate, setFoundedDate] = useState(
     org?.founded_date
       ? (() => {
@@ -1818,6 +1820,7 @@ function OrgFormModal({ data, onClose }) {
             onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }}
             onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); const next = name + t; setName(next); if (!codeManual) setCode(autoCode(next)); clearErr('name'); }}
             onChange={e => { const next = e.target.value; setName(next); if (!codeManual) setCode(autoCode(next)); clearErr('name'); }}
+            onBlur={() => { const formatted = autoName(name); setName(formatted); if (!codeManual) setCode(autoCode(formatted)); }}
             onFocus={() => touch('name')}
             maxLength={1000}
           />
