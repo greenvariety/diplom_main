@@ -1616,6 +1616,7 @@ function UserList({ currentUser, openModal, onNavigate }) {
 function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
   const [reqs, setReqs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [q, setQ] = useState('');
   const toast = useToast();
 
   const load = async () => {
@@ -1639,9 +1640,18 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
     }
   };
 
+  const lq = q.toLowerCase();
+  const filtered = q ? reqs.filter(r => [r.object_repr, r.author, r.type_label, r.reason].some(v => v?.toLowerCase().includes(lq))) : reqs;
+
   return (
     <Shell currentUser={currentUser} active="delreq" openModal={openModal} onNavigate={onNavigate} onLogout={onLogout}>
-      <PageHead title="Заявки на удаление" sub="Подтвердите или отклоните заявки от администраторов" />
+      <PageHead title="Заявки на удаление" sub={loading ? 'Загрузка…' : `Всего: ${reqs.length} записей`} />
+      <div className="filters">
+        <div className="field grow-2"><label className="field-label">Поиск по объекту, автору или причине</label>
+          <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} /></div>
+        </div>
+        <button className="btn btn-secondary btn-sm" style={{ alignSelf: 'flex-end', height: 36 }} onClick={() => setQ('')}>Сбросить</button>
+      </div>
       <div className="card">
         <div className="card-body flush">
           {loading ? (
@@ -1650,9 +1660,9 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
             <table className="tbl">
               <thead><tr><th>Тип</th><th>Объект</th><th>Кто подал</th><th>Когда</th><th>Причина</th><th style={{ width: 200 }}>Действия</th></tr></thead>
               <tbody>
-                {reqs.length === 0 ? (
-                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32 }} className="muted">Нет заявок на удаление</td></tr>
-                ) : reqs.map(r => (
+                {filtered.length === 0 ? (
+                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32 }} className="muted">{reqs.length === 0 ? 'Нет заявок на удаление' : 'Ничего не найдено'}</td></tr>
+                ) : filtered.map(r => (
                   <tr key={r.id}>
                     <td><Badge>{r.type_label}</Badge></td>
                     <td className="fwm">{r.object_repr}</td>
@@ -1678,25 +1688,14 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
 
 function AuditLog({ currentUser, openModal, onNavigate }) {
   const [q, setQ] = useState('');
-  const [userFilter, setUserFilter] = useState('');
-  const [actionFilter, setActionFilter] = useState('');
-  const [period, setPeriod] = useState('all');
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ results: [], count: 0, num_pages: 1 });
   const [loading, setLoading] = useState(true);
-  const [userOpts, setUserOpts] = useState([]);
-
-  useEffect(() => {
-    api.get('/audit-log/users/').then(r => setUserOpts(r.data)).catch(() => {});
-  }, []);
 
   const load = () => {
     setLoading(true);
     const params = new URLSearchParams({ page });
     if (q) params.set('search', q);
-    if (actionFilter) params.set('action', actionFilter);
-    if (period && period !== 'all') params.set('period', period);
-    if (userFilter) params.set('user_id', userFilter);
     api.get(`/audit-log/?${params}`).then(r => {
       setData(r.data);
       setLoading(false);
@@ -1706,14 +1705,7 @@ function AuditLog({ currentUser, openModal, onNavigate }) {
   useEffect(() => { load(); }, [page]);
 
   const handleSearch = () => { setPage(1); load(); };
-  const reset = () => { setQ(''); setUserFilter(''); setActionFilter(''); setPeriod('all'); setPage(1); setTimeout(load, 0); };
-
-  const activeFilters = [];
-  if (userFilter) {
-    const u = userOpts.find(u => String(u.value) === String(userFilter));
-    activeFilters.push({ k: 'u', l: `Пользователь: ${u?.label || userFilter}`, clr: () => setUserFilter('') });
-  }
-  if (actionFilter) activeFilters.push({ k: 'a', l: `Действие: ${actionFilter === 'create' ? 'Создание' : actionFilter === 'update' ? 'Изменение' : 'Удаление'}`, clr: () => setActionFilter('') });
+  const reset = () => { setQ(''); setPage(1); setTimeout(load, 0); };
 
   return (
     <Shell currentUser={currentUser} active="audit" onNavigate={onNavigate} openModal={openModal}>
@@ -1727,36 +1719,16 @@ function AuditLog({ currentUser, openModal, onNavigate }) {
             onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearch()}
             /></div>
         </div>
-        <div className="field"><label className="field-label">Пользователь</label>
-          <Combobox value={userFilter} onChange={v => { setUserFilter(v); setPage(1); setTimeout(load, 0); }}
-            options={userOpts} placeholder="Все пользователи" />
-        </div>
-        <div className="field"><label className="field-label">Действие</label>
-          <Combobox value={actionFilter} onChange={v => { setActionFilter(v); setPage(1); setTimeout(load, 0); }}
-            options={[{ value: 'create', label: 'Создание' }, { value: 'update', label: 'Изменение' }, { value: 'delete', label: 'Удаление' }]}
-            placeholder="Все действия" />
-        </div>
-        <div className="field"><label className="field-label">Период</label>
-          <Combobox value={period} onChange={v => { setPeriod(v); setPage(1); setTimeout(load, 0); }}
-            options={[{ value: 'day', label: 'За сегодня' }, { value: 'week', label: 'За неделю' }, { value: 'month', label: 'За месяц' }, { value: 'all', label: 'За всё время' }]}
-            placeholder="Период" allowClear={false} />
-        </div>
+        <button className="btn btn-primary btn-sm" style={{ alignSelf: 'flex-end', height: 36 }} onClick={handleSearch}>Найти</button>
+        <button className="btn btn-secondary btn-sm" style={{ alignSelf: 'flex-end', height: 36 }} onClick={reset}>Сбросить</button>
       </div>
-      {activeFilters.length > 0 && (
-        <div className="filter-chips" style={{ marginBottom: 12 }}>
-          <span className="muted" style={{ fontSize: 12 }}>Активные фильтры:</span>
-          {activeFilters.map(f => (
-            <span key={f.k} className="filter-chip">{f.l}<button onClick={f.clr} aria-label="Убрать">{I.x}</button></span>
-          ))}
-        </div>
-      )}
       <div className="card">
         <div className="card-body flush">
           {loading
             ? <table className="tbl"><thead><tr><th>Дата и время</th><th>Пользователь</th><th>Действие</th><th>Объект</th><th style={{ width: 100 }}>Diff</th></tr></thead><tbody><SkeletonRows cols={5} /></tbody></table>
             : data.results.length === 0
-              ? <EmptyState icon={I.history} title="Записи не найдены" sub="Измените условия фильтрации или сбросьте фильтры"
-                  action={<button className="btn btn-secondary btn-sm" onClick={reset}>Сбросить фильтры</button>} />
+              ? <EmptyState icon={I.history} title="Записи не найдены" sub="Попробуйте изменить поисковый запрос"
+                  action={<button className="btn btn-secondary btn-sm" onClick={reset}>Сбросить</button>} />
               : <table className="tbl">
                   <thead><tr>
                     <th>Дата и время</th>
