@@ -481,7 +481,7 @@ function StudentList({ currentUser, openModal, onNavigate }) {
       <PageHead
         crumbs={[{ label: 'Главная', href: true }, { label: 'Студенты' }]}
         title="Студенты"
-        sub={loading ? 'Загрузка…' : `Всего ${data.count} человек`}
+        sub={loading ? 'Загрузка…' : `Всего: ${data.count} записей`}
         actions={<>
           <button className="btn btn-primary btn-sm" onClick={() => openModal('studentForm', { onDone: () => { setPage(1); load(); } })}>{I.plus}Добавить</button>
         </>}
@@ -822,7 +822,7 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
       <PageHead
         crumbs={[{ label: 'Главная', href: true }, { label: 'Сотрудники' }]}
         title="Сотрудники"
-        sub={loading ? 'Загрузка…' : `Всего ${data.count} человек`}
+        sub={loading ? 'Загрузка…' : `Всего: ${data.count} записей`}
         actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('employeeForm', { onDone: () => { setPage(1); load(); } })}>{I.plus}Добавить</button>}
       />
       <div className="filters">
@@ -1323,7 +1323,7 @@ function GroupList({ currentUser, openModal, onNavigate }) {
     <Shell currentUser={currentUser} active="groups" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
         title="Группы"
-        sub={loading ? '…' : `Всего ${filtered.length} групп`}
+        sub={loading ? '…' : `Всего: ${filtered.length} записей`}
         actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('groupForm', { onDone: load })}>{I.plus}Создать группу</button>}
       />
       <div className="filters">
@@ -1502,7 +1502,7 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
     <Shell currentUser={currentUser} active="faculties" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
         title="Факультеты"
-        sub={loading ? '…' : `Всего ${faculties.length} факультетов`}
+        sub={loading ? '…' : `Всего: ${faculties.length} записей`}
         actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('facultyForm', { onDone: load })}>{I.plus}Добавить</button>}
       />
       <div className="filters">
@@ -1575,7 +1575,7 @@ function UserList({ currentUser, openModal, onNavigate }) {
       <PageHead
         crumbs={[{ label: 'Главная', href: true }, { label: 'Пользователи системы' }]}
         title="Пользователи системы"
-        sub={loading ? 'Загрузка…' : `Всего ${users.length}`}
+        sub={loading ? 'Загрузка…' : `Всего: ${users.length} записей`}
       />
       <div className="filters">
         <div className="field grow-2">
@@ -1718,7 +1718,7 @@ function AuditLog({ currentUser, openModal, onNavigate }) {
   return (
     <Shell currentUser={currentUser} active="audit" onNavigate={onNavigate} openModal={openModal}>
       <PageHead title="Журнал изменений"
-        sub={loading ? 'Загрузка…' : `Найдено: ${data.count} записей`}
+        sub={loading ? 'Загрузка…' : `Всего: ${data.count} записей`}
         actions={<button className="btn btn-secondary btn-sm">{I.excel}Экспорт</button>}
       />
       <div className="filters">
@@ -1830,7 +1830,7 @@ function ParentList({ currentUser, openModal, onNavigate }) {
       <PageHead
         crumbs={[{ label: 'Главная', href: true }, { label: 'Опекуны и родители' }]}
         title="Опекуны и родители"
-        sub={loading ? 'Загрузка…' : `Всего ${data.count} человек`}
+        sub={loading ? 'Загрузка…' : `Всего: ${data.count} записей`}
         actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('parentForm', { onDone: () => { setPage(1); load(); } })}>{I.plus}Добавить</button>}
       />
       <div className="filters">
@@ -2034,7 +2034,7 @@ function SubjectList({ currentUser, openModal, onNavigate }) {
       <PageHead
         crumbs={[{ label: 'Главная', href: true }, { label: 'Предметы' }]}
         title="Предметы"
-        sub={loading ? 'Загрузка…' : `Всего ${subjects.length}`}
+        sub={loading ? 'Загрузка…' : `Всего: ${subjects.length} записей`}
         actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('subjectForm', { onDone: load })}>{I.plus}Добавить</button>}
       />
       <div className="filters">
@@ -2099,7 +2099,7 @@ function PositionList({ currentUser, openModal, onNavigate }) {
       <PageHead
         crumbs={[{ label: 'Главная', href: true }, { label: 'Должности' }]}
         title="Должности"
-        sub={loading ? 'Загрузка…' : `Всего ${positions.length}`}
+        sub={loading ? 'Загрузка…' : `Всего: ${positions.length} записей`}
         actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('positionForm', { onDone: load })}>{I.plus}Добавить</button>}
       />
       <div className="card">
