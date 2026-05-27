@@ -633,7 +633,8 @@ function FacultyFormModal({ data, onClose }) {
   const [codeManual, setCodeManual] = useState(isEdit);
   const [err, setErr] = useState('');
 
-  const autoCode = (n) => { const r = []; for (let i = 0; i < n.length; i++) { const c = n[i]; if (/[А-ЯЁ]/.test(c) && (i === 0 || /[\s]/.test(n[i-1]) || /[а-яё]/.test(n[i-1]))) r.push(c); } return r.join('').slice(0, 50); };
+  const isUC = (c) => c && ((c >= 'А' && c <= 'Я') || c === 'Ё');
+  const autoCode = (n) => { const r = []; for (let i = 0; i < n.length; i++) { if (isUC(n[i]) && (i === 0 || n[i-1] === ' ' || !isUC(n[i-1]))) r.push(n[i]); } return r.join('').slice(0, 50); };
   const autoName = (n) => { const s = n.trim(); return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s; };
 
   const save = async () => {
@@ -1679,7 +1680,8 @@ function OrgFormModal({ data, onClose }) {
   const [codeManual, setCodeManual] = useState(isEdit);
   const [description, setDescription] = useState(org?.description || '');
 
-  const autoCode = (n) => { const r = []; for (let i = 0; i < n.length; i++) { const c = n[i]; if (/[А-ЯЁ]/.test(c) && (i === 0 || /[\s]/.test(n[i-1]) || /[а-яё]/.test(n[i-1]))) r.push(c); } return r.join('').slice(0, 20); };
+  const isUC = (c) => c && ((c >= 'А' && c <= 'Я') || c === 'Ё');
+  const autoCode = (n) => { const r = []; for (let i = 0; i < n.length; i++) { if (isUC(n[i]) && (i === 0 || n[i-1] === ' ' || !isUC(n[i-1]))) r.push(n[i]); } return r.join('').slice(0, 20); };
   const autoName = (n) => { const s = n.trim(); return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s; };
   const [foundedDate, setFoundedDate] = useState(
     org?.founded_date
