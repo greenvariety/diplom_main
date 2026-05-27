@@ -449,16 +449,14 @@ function useSortable(initial = { key: null, dir: 'asc' }, persistKey) {
     return initial;
   });
   const apply = (k) => {
-    let next;
-    if (sort.key !== k) {
-      next = { key: k, dir: 'asc' };
-    } else if (sort.dir === 'asc') {
-      next = { key: k, dir: 'desc' };
-    } else {
-      next = { key: null, dir: 'asc' };
-    }
-    setSort(next);
-    if (persistKey) { try { localStorage.setItem(`sort.${persistKey}`, JSON.stringify(next)); } catch {} }
+    setSort(prev => {
+      let next;
+      if (prev.key !== k) next = { key: k, dir: 'asc' };
+      else if (prev.dir === 'asc') next = { key: k, dir: 'desc' };
+      else next = { key: null, dir: 'asc' };
+      if (persistKey) { try { localStorage.setItem(`sort.${persistKey}`, JSON.stringify(next)); } catch {} }
+      return next;
+    });
   };
   const sortFn = (arr, accessors = {}) => {
     const indexed = arr.map((x, i) => ({ ...x, _rownum: i }));
