@@ -644,11 +644,12 @@ function FacultyFormModal({ data, onClose }) {
     if (!shortName.trim()) { setErr('Введите код факультета'); return; }
     setErr('');
     try {
+      const formattedName = autoName(fullName.trim());
       if (isEdit) {
-        await api.patch(`/faculties/${faculty.id}/`, { full_name: fullName.trim(), short_name: shortName.trim() });
+        await api.patch(`/faculties/${faculty.id}/`, { full_name: formattedName, short_name: shortName.trim() });
         toast.push('Факультет обновлён', { kind: 'ok' });
       } else {
-        await api.post('/faculties/', { full_name: fullName.trim(), short_name: shortName.trim() });
+        await api.post('/faculties/', { full_name: formattedName, short_name: shortName.trim() });
         toast.push('Факультет создан', { kind: 'ok' });
       }
       onDone && onDone();
@@ -666,7 +667,7 @@ function FacultyFormModal({ data, onClose }) {
       </>}>
       <div className="form-grid">
         <Field label="Полное название" required error={err && !fullName.trim() ? err : null}>
-          <input className={`input ${err && !fullName.trim() ? 'is-error' : ''}`} value={fullName} onChange={e => { const next = e.target.value; setFullName(next); if (!codeManual) setShortName(autoCode(next)); setErr(''); }} onBlur={() => setFullName(autoName(fullName))} maxLength={255} onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }} onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); const next = fullName + t; setFullName(next); if (!codeManual) setShortName(autoCode(next)); setErr(''); }} />
+          <input className={`input ${err && !fullName.trim() ? 'is-error' : ''}`} value={fullName} onChange={e => { const next = e.target.value; setFullName(next); if (!codeManual) setShortName(autoCode(next)); setErr(''); }} maxLength={255} onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }} onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); const next = fullName + t; setFullName(next); if (!codeManual) setShortName(autoCode(next)); setErr(''); }} />
         </Field>
         <Field label="Код (аббревиатура)" required error={err && fullName.trim() && !shortName.trim() ? err : null} hint={!isEdit && !codeManual ? 'Формируется автоматически по названию' : null}>
           <input className={`input ${err && fullName.trim() && !shortName.trim() ? 'is-error' : ''}`} value={shortName} onChange={e => { setShortName(e.target.value.toUpperCase()); setCodeManual(true); setErr(''); }} maxLength={50} />
@@ -1745,7 +1746,7 @@ function OrgFormModal({ data, onClose }) {
     setErrs({ name: '', date: '' });
     try {
       const fd = new FormData();
-      fd.append('name', name.trim());
+      fd.append('name', autoName(name.trim()));
       if (code.trim()) fd.append('code', code.trim());
       fd.append('description', description.trim());
       fd.append('founded_date', foundedDate);
@@ -1826,7 +1827,6 @@ function OrgFormModal({ data, onClose }) {
             onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }}
             onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); const next = name + t; setName(next); if (!codeManual) setCode(autoCode(next)); clearErr('name'); }}
             onChange={e => { const next = e.target.value; setName(next); if (!codeManual) setCode(autoCode(next)); clearErr('name'); }}
-            onBlur={() => setName(autoName(name))}
             onFocus={() => touch('name')}
             maxLength={1000}
           />
