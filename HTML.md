@@ -32,7 +32,7 @@
 
 ---
 
-## 5. Убери на всех вкладках этот блок и посмотри как он сделан в факультетах и группах!
+~~## 5. Убери на всех вкладках этот блок и посмотри как он сделан в факультетах и группах!~~
 
 ```html
 <div class="crumbs" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);"><span style="display: contents;"><a href="#" style="">Главная</a></span><span style="display: contents;"><span class="sep" style="">/</span><span style="">Предметы</span></span></div>

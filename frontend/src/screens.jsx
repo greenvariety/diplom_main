@@ -480,7 +480,6 @@ function StudentList({ currentUser, openModal, onNavigate }) {
   return (
     <Shell currentUser={currentUser} active="students" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
-        crumbs={[{ label: 'Главная', href: true }, { label: 'Студенты' }]}
         title="Студенты"
         sub={loading ? 'Загрузка…' : `Всего: ${data.count} записей`}
         actions={<>
@@ -834,7 +833,6 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
   return (
     <Shell currentUser={currentUser} active="employees" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
-        crumbs={[{ label: 'Главная', href: true }, { label: 'Сотрудники' }]}
         title="Сотрудники"
         sub={loading ? 'Загрузка…' : `Всего: ${data.count} записей`}
         actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('employeeForm', { onDone: () => { setPage(1); load(); } })}>{I.plus}Добавить</button>}
@@ -1628,7 +1626,6 @@ function UserList({ currentUser, openModal, onNavigate }) {
   return (
     <Shell currentUser={currentUser} active="users" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
-        crumbs={[{ label: 'Главная', href: true }, { label: 'Пользователи системы' }]}
         title="Пользователи системы"
         sub={loading ? 'Загрузка…' : `Всего: ${users.length} записей`}
       />
@@ -1899,7 +1896,6 @@ function ParentList({ currentUser, openModal, onNavigate }) {
   return (
     <Shell currentUser={currentUser} active="parents" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
-        crumbs={[{ label: 'Главная', href: true }, { label: 'Опекуны и родители' }]}
         title="Опекуны и родители"
         sub={loading ? 'Загрузка…' : `Всего: ${data.count} записей`}
         actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('parentForm', { onDone: () => { setPage(1); load(); } })}>{I.plus}Добавить</button>}
@@ -2115,7 +2111,6 @@ function SubjectList({ currentUser, openModal, onNavigate }) {
   return (
     <Shell currentUser={currentUser} active="subjects" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
-        crumbs={[{ label: 'Главная', href: true }, { label: 'Предметы' }]}
         title="Предметы"
         sub={loading ? 'Загрузка…' : `Всего: ${subjects.length} записей`}
         actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('subjectForm', { onDone: load })}>{I.plus}Добавить</button>}
@@ -2198,7 +2193,6 @@ function PositionList({ currentUser, openModal, onNavigate }) {
   return (
     <Shell currentUser={currentUser} active="positions" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
-        crumbs={[{ label: 'Главная', href: true }, { label: 'Должности' }]}
         title="Должности"
         sub={loading ? 'Загрузка…' : `Всего: ${positions.length} записей`}
         actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('positionForm', { onDone: load })}>{I.plus}Добавить</button>}
