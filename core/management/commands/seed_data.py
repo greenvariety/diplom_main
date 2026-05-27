@@ -23,14 +23,22 @@ class Command(BaseCommand):
         User.objects.filter(role__in=['admin', 'teacher']).delete()
         Institution.objects.all().delete()
         EmailCode.objects.all().delete()
-        User.objects.filter(role='owner').delete()
+        # Аккаунты владельцев НЕ удаляем — они создаются при регистрации и принадлежат реальным пользователям
 
         # --- Owner ---
-        owner = User.objects.create_user(
-            username='owner1', password='demo_1234', role='owner',
-            display_name='Владелец Demo', email='owner1@demo.ru',
+        owner, created = User.objects.get_or_create(
+            username='owner1',
+            defaults={'role': 'owner', 'display_name': 'Владелец Demo', 'email': 'owner1@demo.ru'},
         )
-        self.stdout.write(f'  Владелец: owner1 / demo_1234 (email: owner1@demo.ru)')
+        if created:
+            owner.set_password('demo_1234')
+            owner.save()
+            self.stdout.write(f'  Владелец создан: owner1 / demo_1234 (email: owner1@demo.ru)')
+        else:
+            owner.set_password('demo_1234')
+            owner.role = 'owner'
+            owner.save(update_fields=['password', 'role'])
+            self.stdout.write(f'  Владелец обновлён: owner1 / demo_1234')
 
         inst = Institution.objects.create(owner=owner, code='КОЛЛЕДЖ1', name='Колледж №1')
         inst2 = Institution.objects.create(owner=owner, code='КОЛЛЕДЖ2', name='Колледж №2')

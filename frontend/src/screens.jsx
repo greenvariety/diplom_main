@@ -449,6 +449,7 @@ function StudentList({ currentUser, openModal, onNavigate }) {
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ results: [], count: 0, num_pages: 1 });
   const [loading, setLoading] = useState(true);
+  const sort = useSortable({ key: null, dir: 'asc' }, 'students-list');
 
   const load = () => {
     setLoading(true);
@@ -509,12 +510,27 @@ function StudentList({ currentUser, openModal, onNavigate }) {
             />
           ) : (
             <table className="tbl">
-              <thead><tr><th style={{ width: 50 }}></th><th>ФИО</th><th>Статус</th><th>Факультет</th><th>Группа</th><th>Контакт</th></tr></thead>
+              <thead><tr>
+                <th style={{ width: 44 }}>№</th>
+                <th style={{ width: 50 }}></th>
+                <SortHeader k="last_name" sort={sort}>ФИО</SortHeader>
+                <SortHeader k="status" sort={sort}>Статус</SortHeader>
+                <SortHeader k="faculty_short" sort={sort}>Факультет</SortHeader>
+                <SortHeader k="group_name" sort={sort}>Группа</SortHeader>
+                <SortHeader k="phone" sort={sort}>Контакт</SortHeader>
+              </tr></thead>
               {loading
                 ? <SkeletonRows rows={6} cols={7} />
                 : <tbody>
-                    {data.results.map(s => (
+                    {sort.sortFn(data.results, {
+                        last_name: s => `${s.last_name} ${s.first_name}`,
+                        status: s => s.status || '',
+                        faculty_short: s => s.faculty_short || '',
+                        group_name: s => s.group_name || '',
+                        phone: s => s.phone || '',
+                      }).map((s, idx) => (
                       <tr key={s.id} className="row-link" onClick={() => onNavigate('student-detail', { studentId: s.id })}>
+                        <td className="mono muted">{idx + 1}</td>
                         <td><Avatar name={`${s.last_name} ${s.first_name}`} size="sm" /></td>
                         <td className="fwm">
                           {s.last_name} {s.first_name} {s.middle_name}
@@ -801,6 +817,7 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ results: [], count: 0, num_pages: 1 });
   const [loading, setLoading] = useState(true);
+  const sort = useSortable({ key: null, dir: 'asc' }, 'employees-list');
 
   const load = () => {
     setLoading(true);
@@ -843,10 +860,22 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
             <EmptyState icon={I.search} title="Сотрудники не найдены" sub="Попробуйте изменить условия поиска" />
           ) : (
             <table className="tbl">
-              <thead><tr><th>ФИО</th><th>Должность</th><th>Телефон</th><th>Email</th></tr></thead>
+              <thead><tr>
+                <th style={{ width: 44 }}>№</th>
+                <SortHeader k="full_name" sort={sort}>ФИО</SortHeader>
+                <SortHeader k="position_name" sort={sort}>Должность</SortHeader>
+                <SortHeader k="phone" sort={sort}>Телефон</SortHeader>
+                <SortHeader k="email" sort={sort}>Email</SortHeader>
+              </tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={5} /> : data.results.map(e => (
+                {loading ? <SkeletonRows cols={5} /> : sort.sortFn(data.results, {
+                    full_name: e => e.full_name || '',
+                    position_name: e => e.position_name || '',
+                    phone: e => e.phone || '',
+                    email: e => e.email || '',
+                  }).map((e, idx) => (
                   <tr key={e.id} className="row-link" onClick={() => onNavigate('employee-detail', { employeeId: e.id })}>
+                    <td className="mono muted">{idx + 1}</td>
                     <td className="fwm">
                       {e.full_name}
                       {e.warn_incomplete && (
@@ -1304,6 +1333,7 @@ function GroupList({ currentUser, openModal, onNavigate }) {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
   const [search, setSearch] = useState('');
+  const sort = useSortable({ key: null, dir: 'asc' }, 'groups-list');
 
   const load = () => {
     setLoading(true);
@@ -1315,8 +1345,15 @@ function GroupList({ currentUser, openModal, onNavigate }) {
 
   useEffect(() => { load(); }, []);
 
-  const filtered = groups.filter(g =>
-    !search || g.name.toLowerCase().includes(search.toLowerCase())
+  const filtered = sort.sortFn(
+    groups.filter(g => !search || g.name.toLowerCase().includes(search.toLowerCase())),
+    {
+      name: g => g.name,
+      faculty_short: g => g.faculty_short || '',
+      year: g => g.year,
+      headteacher_name: g => g.headteacher_name || '',
+      student_count: g => g.student_count,
+    }
   );
 
   return (
@@ -1337,14 +1374,23 @@ function GroupList({ currentUser, openModal, onNavigate }) {
       <div className="card">
         <div className="card-body flush">
           <table className="tbl">
-            <thead><tr><th>Название</th><th>Факультет</th><th>Год</th><th>Классный руководитель</th><th>Студентов</th><th style={{ width: 40 }}></th></tr></thead>
+            <thead><tr>
+              <th style={{ width: 44 }}>№</th>
+              <SortHeader k="name" sort={sort}>Название</SortHeader>
+              <SortHeader k="faculty_short" sort={sort}>Факультет</SortHeader>
+              <SortHeader k="year" sort={sort}>Год</SortHeader>
+              <SortHeader k="headteacher_name" sort={sort}>Классный руководитель</SortHeader>
+              <SortHeader k="student_count" sort={sort}>Студентов</SortHeader>
+              <th style={{ width: 40 }}></th>
+            </tr></thead>
             <tbody>
               {loading ? (
                 <SkeletonRows cols={7} rows={4} />
               ) : filtered.length === 0 ? (
                 <tr><td colSpan={7} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Группы не найдены</td></tr>
-              ) : filtered.map(g => (
+              ) : filtered.map((g, idx) => (
                 <tr key={g.id} className="row-link" onClick={() => onNavigate('group-detail', { groupId: g.id })}>
+                  <td className="mono muted">{idx + 1}</td>
                   <td className="fwm">
                     {g.name}
                     {g.warn_incomplete && (
@@ -1483,6 +1529,7 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
   const [search, setSearch] = useState('');
+  const sort = useSortable({ key: null, dir: 'asc' }, 'faculties-list');
 
   const load = () => {
     setLoading(true);
@@ -1494,9 +1541,17 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
 
   useEffect(() => { load(); }, []);
 
-  const displayFaculties = search
-    ? faculties.filter(f => f.full_name.toLowerCase().includes(search.toLowerCase()) || f.short_name.toLowerCase().includes(search.toLowerCase()))
-    : faculties;
+  const displayFaculties = sort.sortFn(
+    search
+      ? faculties.filter(f => f.full_name.toLowerCase().includes(search.toLowerCase()) || f.short_name.toLowerCase().includes(search.toLowerCase()))
+      : faculties,
+    {
+      short_name: f => f.short_name,
+      full_name: f => f.full_name,
+      group_count: f => f.group_count,
+      student_count: f => f.student_count,
+    }
+  );
 
   return (
     <Shell currentUser={currentUser} active="faculties" onNavigate={onNavigate} openModal={openModal}>
@@ -1519,15 +1574,23 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
         <div className="card-body flush">
           <table className="tbl">
             <thead>
-              <tr><th>Код</th><th>Название</th><th>Групп</th><th>Студентов</th><th style={{ width: 40 }}></th></tr>
+              <tr>
+                <th style={{ width: 44 }}>№</th>
+                <SortHeader k="short_name" sort={sort}>Код</SortHeader>
+                <SortHeader k="full_name" sort={sort}>Название</SortHeader>
+                <SortHeader k="group_count" sort={sort}>Групп</SortHeader>
+                <SortHeader k="student_count" sort={sort}>Студентов</SortHeader>
+                <th style={{ width: 40 }}></th>
+              </tr>
             </thead>
             <tbody>
               {loading ? (
-                <SkeletonRows cols={5} rows={4} />
+                <SkeletonRows cols={6} rows={4} />
               ) : displayFaculties.length === 0 ? (
-                <tr><td colSpan={5} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Факультеты не найдены</td></tr>
-              ) : displayFaculties.map(f => (
+                <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Факультеты не найдены</td></tr>
+              ) : displayFaculties.map((f, idx) => (
                 <tr key={f.id} className="row-link" onClick={() => openModal('facultyDetail', { faculty: f, onDone: load, currentRole: currentUser?.role })}>
+                  <td className="mono muted">{idx + 1}</td>
                   <td><span className="badge badge-neutral mono" style={{ padding: '1px 6px' }}>{f.short_name}</span></td>
                   <td className="fwm">{f.full_name}</td>
                   <td className="mono">{f.group_count}</td>
@@ -1553,6 +1616,7 @@ function UserList({ currentUser, openModal, onNavigate }) {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
   const [search, setSearch] = useState('');
+  const sort = useSortable({ key: null, dir: 'asc' }, 'users-list');
 
   const load = () => {
     setLoading(true);
@@ -1593,10 +1657,26 @@ function UserList({ currentUser, openModal, onNavigate }) {
             <EmptyState icon={I.users} title="Пользователи не найдены" sub="Создайте аккаунт сотруднику через его карточку" />
           ) : (
             <table className="tbl">
-              <thead><tr><th>Сотрудник</th><th>Логин</th><th>Роль</th><th>Последний вход</th><th>Статус</th></tr></thead>
+              <thead><tr>
+                <th style={{ width: 44 }}>№</th>
+                <SortHeader k="employee_name" sort={sort}>Сотрудник</SortHeader>
+                <SortHeader k="username" sort={sort}>Логин</SortHeader>
+                <SortHeader k="role" sort={sort}>Роль</SortHeader>
+                <SortHeader k="last_login" sort={sort}>Последний вход</SortHeader>
+                <th>Статус</th>
+              </tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={5} /> : users.filter(u => !search || (u.employee_name || '').toLowerCase().includes(search.toLowerCase()) || u.username.toLowerCase().includes(search.toLowerCase())).map(u => (
+                {loading ? <SkeletonRows cols={6} /> : sort.sortFn(
+                  users.filter(u => !search || (u.employee_name || '').toLowerCase().includes(search.toLowerCase()) || u.username.toLowerCase().includes(search.toLowerCase())),
+                  {
+                    employee_name: u => u.employee_name || '',
+                    username: u => u.username,
+                    role: u => u.role_display || '',
+                    last_login: u => u.last_login || '',
+                  }
+                ).map((u, idx) => (
                   <tr key={u.id} className={u.employee_id ? 'row-link' : ''} onClick={() => handleRowClick(u)}>
+                    <td className="mono muted">{idx + 1}</td>
                     <td className="fwm">{u.employee_name || <span className="muted">-</span>}</td>
                     <td className="mono">{u.username}</td>
                     <td><span className={`badge ${ROLE_CLS[u.role] || 'badge-neutral'}`}><span className="dot"></span>{u.role_display}</span></td>
@@ -1618,6 +1698,7 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
   const toast = useToast();
+  const sort = useSortable({ key: null, dir: 'asc' }, 'delreq-list');
 
   const load = async () => {
     setLoading(true);
@@ -1641,7 +1722,15 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
   };
 
   const lq = q.toLowerCase();
-  const filtered = q ? reqs.filter(r => [r.object_repr, r.author, r.type_label, r.reason].some(v => v?.toLowerCase().includes(lq))) : reqs;
+  const filtered = sort.sortFn(
+    q ? reqs.filter(r => [r.object_repr, r.author, r.type_label, r.reason].some(v => v?.toLowerCase().includes(lq))) : reqs,
+    {
+      type_label: r => r.type_label || '',
+      object_repr: r => r.object_repr || '',
+      author: r => r.author || '',
+      created_at: r => r.created_at || '',
+    }
+  );
 
   return (
     <Shell currentUser={currentUser} active="delreq" openModal={openModal} onNavigate={onNavigate} onLogout={onLogout}>
@@ -1657,15 +1746,24 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
       <div className="card">
         <div className="card-body flush">
           {loading ? (
-            <table className="tbl"><thead><tr><th>Тип</th><th>Объект</th><th>Кто подал</th><th>Когда</th><th>Причина</th><th style={{ width: 200 }}>Действия</th></tr></thead><tbody><SkeletonRows cols={6} /></tbody></table>
+            <table className="tbl"><thead><tr><th style={{ width: 44 }}>№</th><th>Тип</th><th>Объект</th><th>Кто подал</th><th>Когда</th><th>Причина</th><th style={{ width: 200 }}>Действия</th></tr></thead><tbody><SkeletonRows cols={7} /></tbody></table>
           ) : (
             <table className="tbl">
-              <thead><tr><th>Тип</th><th>Объект</th><th>Кто подал</th><th>Когда</th><th>Причина</th><th style={{ width: 200 }}>Действия</th></tr></thead>
+              <thead><tr>
+                <th style={{ width: 44 }}>№</th>
+                <SortHeader k="type_label" sort={sort}>Тип</SortHeader>
+                <SortHeader k="object_repr" sort={sort}>Объект</SortHeader>
+                <SortHeader k="author" sort={sort}>Кто подал</SortHeader>
+                <SortHeader k="created_at" sort={sort}>Когда</SortHeader>
+                <th>Причина</th>
+                <th style={{ width: 200 }}>Действия</th>
+              </tr></thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32 }} className="muted">{reqs.length === 0 ? 'Нет заявок на удаление' : 'Ничего не найдено'}</td></tr>
-                ) : filtered.map(r => (
+                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: 32 }} className="muted">{reqs.length === 0 ? 'Нет заявок на удаление' : 'Ничего не найдено'}</td></tr>
+                ) : filtered.map((r, idx) => (
                   <tr key={r.id}>
+                    <td className="mono muted">{idx + 1}</td>
                     <td><Badge>{r.type_label}</Badge></td>
                     <td className="fwm">{r.object_repr}</td>
                     <td className="mono">{r.author}</td>
@@ -1693,6 +1791,7 @@ function AuditLog({ currentUser, openModal, onNavigate }) {
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ results: [], count: 0, num_pages: 1 });
   const [loading, setLoading] = useState(true);
+  const sort = useSortable({ key: null, dir: 'asc' }, 'audit-list');
 
   const load = () => {
     setLoading(true);
@@ -1726,21 +1825,28 @@ function AuditLog({ currentUser, openModal, onNavigate }) {
       <div className="card">
         <div className="card-body flush">
           {loading
-            ? <table className="tbl"><thead><tr><th>Дата и время</th><th>Пользователь</th><th>Действие</th><th>Объект</th><th style={{ width: 100 }}>Diff</th></tr></thead><tbody><SkeletonRows cols={5} /></tbody></table>
+            ? <table className="tbl"><thead><tr><th style={{ width: 44 }}>№</th><th>Дата и время</th><th>Пользователь</th><th>Действие</th><th>Объект</th><th style={{ width: 100 }}>Diff</th></tr></thead><tbody><SkeletonRows cols={6} /></tbody></table>
             : data.results.length === 0
               ? <EmptyState icon={I.history} title="Записи не найдены" sub="Попробуйте изменить поисковый запрос"
                   action={<button className="btn btn-secondary btn-sm" onClick={reset}>Сбросить</button>} />
               : <table className="tbl">
                   <thead><tr>
-                    <th>Дата и время</th>
-                    <th>Пользователь</th>
-                    <th>Действие</th>
-                    <th>Объект</th>
+                    <th style={{ width: 44 }}>№</th>
+                    <SortHeader k="ts" sort={sort}>Дата и время</SortHeader>
+                    <SortHeader k="user" sort={sort}>Пользователь</SortHeader>
+                    <SortHeader k="label" sort={sort}>Действие</SortHeader>
+                    <SortHeader k="obj" sort={sort}>Объект</SortHeader>
                     <th style={{ width: 100 }}>Diff</th>
                   </tr></thead>
                   <tbody>
-                    {data.results.map(a => (
+                    {sort.sortFn(data.results, {
+                        ts: a => a.ts,
+                        user: a => a.user || '',
+                        label: a => a.label || '',
+                        obj: a => a.obj || '',
+                      }).map((a, idx) => (
                       <tr key={a.id} className="row-link" onClick={() => openModal('auditDiff', a)}>
+                        <td className="mono muted">{idx + 1}</td>
                         <td className="mono muted">{a.ts}</td>
                         <td>
                           <span className="fwm mono">{a.user}</span>
@@ -1773,6 +1879,7 @@ function ParentList({ currentUser, openModal, onNavigate }) {
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ results: [], count: 0, num_pages: 1 });
   const [loading, setLoading] = useState(true);
+  const sort = useSortable({ key: null, dir: 'asc' }, 'parents-list');
 
   const load = () => {
     setLoading(true);
@@ -1824,10 +1931,21 @@ function ParentList({ currentUser, openModal, onNavigate }) {
             <EmptyState icon={I.search} title="Опекуны не найдены" sub="Попробуйте изменить условия поиска или добавьте нового опекуна" />
           ) : (
             <table className="tbl">
-              <thead><tr><th>ФИО</th><th>Телефон</th><th>Email</th><th style={{ width: 40 }}></th></tr></thead>
+              <thead><tr>
+                <th style={{ width: 44 }}>№</th>
+                <SortHeader k="full_name" sort={sort}>ФИО</SortHeader>
+                <SortHeader k="phone" sort={sort}>Телефон</SortHeader>
+                <SortHeader k="email" sort={sort}>Email</SortHeader>
+                <th style={{ width: 40 }}></th>
+              </tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={5} /> : data.results.map(p => (
+                {loading ? <SkeletonRows cols={5} /> : sort.sortFn(data.results, {
+                    full_name: p => p.full_name || '',
+                    phone: p => p.phone || '',
+                    email: p => p.email || '',
+                  }).map((p, idx) => (
                   <tr key={p.id} className="row-link" onClick={() => onNavigate('parent-detail', { parentId: p.id })}>
+                    <td className="mono muted">{idx + 1}</td>
                     <td className="fwm">{p.full_name}</td>
                     <td className="muted">{p.phone || '-'}</td>
                     <td className="muted">{p.email || '-'}</td>
@@ -1980,6 +2098,7 @@ function SubjectList({ currentUser, openModal, onNavigate }) {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
   const [search, setSearch] = useState('');
+  const sort = useSortable({ key: 'name', dir: 'asc' }, 'subjects-list');
 
   const load = () => {
     setLoading(true);
@@ -2026,10 +2145,17 @@ function SubjectList({ currentUser, openModal, onNavigate }) {
             <EmptyState icon={I.book} title="Предметы не добавлены" sub="Нажмите «Добавить» чтобы создать первый предмет" />
           ) : (
             <table className="tbl">
-              <thead><tr><th>Название</th><th style={{ width: 80 }}></th></tr></thead>
+              <thead><tr>
+                <th style={{ width: 44 }}>№</th>
+                <SortHeader k="name" sort={sort}>Название</SortHeader>
+                <th style={{ width: 80 }}></th>
+              </tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={2} /> : subjects.filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase())).map(s => (
+                {loading ? <SkeletonRows cols={3} /> : sort.sortFn(subjects.filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase())), {
+                    name: s => s.name,
+                  }).map((s, idx) => (
                   <tr key={s.id}>
+                    <td className="mono muted">{idx + 1}</td>
                     <td className="fwm">{s.name}</td>
                     <td style={{ display: 'flex', gap: 4 }}>
                       <button className="btn btn-ghost btn-icon btn-sm"
@@ -2058,6 +2184,7 @@ function PositionList({ currentUser, openModal, onNavigate }) {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
   const [search, setSearch] = useState('');
+  const sort = useSortable({ key: null, dir: 'asc' }, 'positions-list');
 
   const load = () => {
     setLoading(true);
@@ -2069,7 +2196,13 @@ function PositionList({ currentUser, openModal, onNavigate }) {
 
   useEffect(() => { load(); }, []);
 
-  const filtered = search ? positions.filter(p => p.name.toLowerCase().includes(search.toLowerCase())) : positions;
+  const filtered = sort.sortFn(
+    search ? positions.filter(p => p.name.toLowerCase().includes(search.toLowerCase())) : positions,
+    {
+      name: p => p.name,
+      employee_count: p => p.employee_count,
+    }
+  );
 
   return (
     <Shell currentUser={currentUser} active="positions" onNavigate={onNavigate} openModal={openModal}>
@@ -2093,10 +2226,16 @@ function PositionList({ currentUser, openModal, onNavigate }) {
             <EmptyState icon={I.briefcase} title="Должности не добавлены" sub="Нажмите «Добавить» чтобы создать первую должность" />
           ) : (
             <table className="tbl">
-              <thead><tr><th>Название</th><th>Сотрудников</th><th style={{ width: 40 }}></th></tr></thead>
+              <thead><tr>
+                <th style={{ width: 44 }}>№</th>
+                <SortHeader k="name" sort={sort}>Название</SortHeader>
+                <SortHeader k="employee_count" sort={sort}>Сотрудников</SortHeader>
+                <th style={{ width: 40 }}></th>
+              </tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={3} /> : filtered.map(p => (
+                {loading ? <SkeletonRows cols={4} /> : filtered.map((p, idx) => (
                   <tr key={p.id}>
+                    <td className="mono muted">{idx + 1}</td>
                     <td className="fwm">{p.name}</td>
                     <td className="mono">{p.employee_count}</td>
                     <td>
