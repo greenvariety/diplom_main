@@ -8,9 +8,9 @@ import api from './api.js';
    Dashboards
    ============================================================ */
 
-function Stat({ label, value, icon, trend }) {
+function Stat({ label, value, icon, trend, onClick }) {
   return (
-    <div className="stat">
+    <div className="stat" onClick={onClick} style={onClick ? { cursor: 'pointer' } : undefined}>
       <div className="stat-label">{icon}{label}</div>
       <div className="stat-value"><StatNumber value={value} /></div>
       {trend && <div className={`stat-trend ${trend.up ? 'up' : ''}`}>{trend.up && I.arrowU}{trend.text}</div>}
@@ -83,10 +83,10 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
         </div>
       )}
       <div className="stats">
-        <Stat label="Факультетов"  value={stats.faculties  ?? '…'} icon={I.building} />
-        <Stat label="Групп"        value={stats.groups     ?? '…'} icon={I.users} />
-        <Stat label="Студентов"    value={stats.students   ?? '…'} icon={I.badge} />
-        <Stat label="Сотрудников"  value={stats.employees  ?? '…'} icon={I.briefcase} />
+        <Stat label="Факультетов"  value={stats.faculties  ?? '…'} icon={I.building}  onClick={() => onNavigate('faculties')} />
+        <Stat label="Групп"        value={stats.groups     ?? '…'} icon={I.users}      onClick={() => onNavigate('groups')} />
+        <Stat label="Студентов"    value={stats.students   ?? '…'} icon={I.badge}      onClick={() => onNavigate('students')} />
+        <Stat label="Сотрудников"  value={stats.employees  ?? '…'} icon={I.briefcase}  onClick={() => onNavigate('employees')} />
       </div>
     </Shell>
   );
@@ -313,10 +313,10 @@ function DashboardAdmin({ currentUser, onNavigate, onLogout, openModal }) {
         </>}
       />
       <div className="stats">
-        <Stat label="Факультетов" value={stats.faculties  ?? '…'} icon={I.building} />
-        <Stat label="Групп"       value={stats.groups     ?? '…'} icon={I.users} />
-        <Stat label="Студентов"   value={stats.students   ?? '…'} icon={I.badge} />
-        <Stat label="Сотрудников" value={stats.employees  ?? '…'} icon={I.briefcase} />
+        <Stat label="Факультетов" value={stats.faculties  ?? '…'} icon={I.building}  onClick={() => onNavigate('faculties')} />
+        <Stat label="Групп"       value={stats.groups     ?? '…'} icon={I.users}      onClick={() => onNavigate('groups')} />
+        <Stat label="Студентов"   value={stats.students   ?? '…'} icon={I.badge}      onClick={() => onNavigate('students')} />
+        <Stat label="Сотрудников" value={stats.employees  ?? '…'} icon={I.briefcase}  onClick={() => onNavigate('employees')} />
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
         <div className="card">
@@ -446,56 +446,23 @@ function StatusDropdown({ value, onChange }) {
 function StudentList({ currentUser, openModal, onNavigate }) {
   const toast = useToast();
   const [q, setQ] = useState('');
-  const [facId, setFacId] = useState('');
-  const [grpId, setGrpId] = useState('');
-  const [stat, setStat] = useState('');
-  const [sortFlagged, setSortFlagged] = useState(false);
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ results: [], count: 0, num_pages: 1 });
   const [loading, setLoading] = useState(true);
-  const [faculties, setFaculties] = useState([]);
-  const [groups, setGroups] = useState([]);
-
-  useEffect(() => {
-    api.get('/faculties/').then(r => setFaculties(r.data)).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (facId) {
-      api.get(`/groups/?faculty_id=${facId}`).then(r => setGroups(r.data)).catch(() => {});
-    } else {
-      setGroups([]);
-      setGrpId('');
-    }
-  }, [facId]);
 
   const load = () => {
     setLoading(true);
     const params = new URLSearchParams({ page });
     if (q) params.set('search', q);
-    if (stat) params.set('status', stat);
-    if (facId) params.set('faculty_id', facId);
-    if (grpId) params.set('group_id', grpId);
-    if (sortFlagged) params.set('sort', 'flagged');
     api.get(`/students/?${params}`).then(r => {
       setData(r.data);
       setLoading(false);
     }).catch(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [page, sortFlagged]);
+  useEffect(() => { load(); }, [page]);
 
   const handleSearch = () => { setPage(1); load(); };
-
-  const handleToggleFlagStudent = async (id, e) => {
-    e.stopPropagation();
-    try {
-      await api.post(`/students/${id}/flag/`);
-      load();
-    } catch {
-      toast.push('Ошибка', { kind: 'err' });
-    }
-  };
 
   const handleStatusChange = async (studentId, newStatus) => {
     try {
@@ -507,18 +474,7 @@ function StudentList({ currentUser, openModal, onNavigate }) {
     }
   };
 
-  const reset = () => { setQ(''); setFacId(''); setGrpId(''); setStat(''); setSortFlagged(false); setPage(1); setTimeout(load, 0); };
-
-  const activeFilters = [];
-  if (facId) {
-    const f = faculties.find(f => String(f.id) === String(facId));
-    activeFilters.push({ k: 'fac', l: `Факультет: ${f?.short_name || facId}`, clr: () => { setFacId(''); setGrpId(''); } });
-  }
-  if (grpId) {
-    const g = groups.find(g => String(g.id) === String(grpId));
-    activeFilters.push({ k: 'grp', l: `Группа: ${g?.name || grpId}`, clr: () => setGrpId('') });
-  }
-  if (stat) activeFilters.push({ k: 'stat', l: `Статус: ${STATUSES[stat]?.label || stat}`, clr: () => setStat('') });
+  const reset = () => { setQ(''); setPage(1); setTimeout(load, 0); };
 
   return (
     <Shell currentUser={currentUser} active="students" onNavigate={onNavigate} openModal={openModal}>
@@ -539,35 +495,9 @@ function StudentList({ currentUser, openModal, onNavigate }) {
               />
           </div>
         </div>
-        <div className="field"><label className="field-label">Факультет</label>
-          <select className="select" value={facId} onChange={e => { setFacId(e.target.value); setGrpId(''); }}>
-            <option value="">- Все -</option>
-            {faculties.map(f => <option key={f.id} value={f.id}>{f.short_name}</option>)}
-          </select>
-        </div>
-        <div className="field"><label className="field-label">Группа</label>
-          <select className="select" value={grpId} onChange={e => setGrpId(e.target.value)} disabled={!facId}>
-            <option value="">- Все -</option>
-            {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-          </select>
-        </div>
-        <div className="field"><label className="field-label">Статус</label>
-          <select className="select" value={stat} onChange={e => setStat(e.target.value)}>
-            <option value="">- Все -</option>
-            {Object.entries(STATUSES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-          </select>
-        </div>
-        <button className="btn btn-primary btn-sm" onClick={handleSearch}>Найти</button>
-        <button className="btn btn-ghost btn-sm" onClick={reset}>Сбросить</button>
+        <button className="btn btn-primary" style={{ height: 36 }} onClick={handleSearch}>Найти</button>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset}>Сбросить</button>
       </div>
-      {activeFilters.length > 0 && (
-        <div className="filter-chips" style={{ marginBottom: 12 }}>
-          <span className="muted" style={{ fontSize: 12 }}>Активные фильтры:</span>
-          {activeFilters.map(f => (
-            <span key={f.k} className="filter-chip">{f.l}<button onClick={f.clr} aria-label="Убрать фильтр">{I.x}</button></span>
-          ))}
-        </div>
-      )}
       <div className="card">
         <div className="card-body flush">
           {!loading && data.results.length === 0 ? (
@@ -579,7 +509,7 @@ function StudentList({ currentUser, openModal, onNavigate }) {
             />
           ) : (
             <table className="tbl">
-              <thead><tr><th style={{ width: 50 }}></th><th>ФИО</th><th>Статус</th><th>Факультет</th><th>Группа</th><th>Контакт</th><th style={{ width: 40 }}></th></tr></thead>
+              <thead><tr><th style={{ width: 50 }}></th><th>ФИО</th><th>Статус</th><th>Факультет</th><th>Группа</th><th>Контакт</th></tr></thead>
               {loading
                 ? <SkeletonRows rows={6} cols={7} />
                 : <tbody>
@@ -594,11 +524,6 @@ function StudentList({ currentUser, openModal, onNavigate }) {
                           {s.has_pending_delreq && (
                             <span title="Подана заявка на удаление" style={{ marginLeft: 4, color: 'var(--bad-fg)', fontSize: 13, opacity: 0.8 }}>{I.trash}</span>
                           )}
-                          {s.has_note && currentUser?.role !== 'teacher' && (
-                            <button className="btn btn-ghost btn-icon btn-sm" style={{ marginLeft: 2, color: 'var(--accent)', padding: '0 2px', fontSize: 13, fontWeight: 700 }}
-                              onClick={e => { e.stopPropagation(); openModal('recordNote', { objectType: 'Student', objectId: s.id, onDone: load }); }}
-                              title="Есть открытый вопрос">?</button>
-                          )}
                         </td>
                         <td onClick={e => e.stopPropagation()}>
                           <StatusDropdown value={s.status} onChange={v => handleStatusChange(s.id, v)} />
@@ -606,22 +531,6 @@ function StudentList({ currentUser, openModal, onNavigate }) {
                         <td>{s.faculty_short}</td>
                         <td>{s.group_name || <span className="muted">-</span>}</td>
                         <td className="muted">{s.phone}</td>
-                        <td onClick={e => e.stopPropagation()} style={{ whiteSpace: 'nowrap' }}>
-                          {currentUser?.role !== 'teacher' && !s.has_note && (
-                            <button className="btn btn-ghost btn-icon btn-sm"
-                              style={{ color: 'var(--text-muted)', fontWeight: 700 }}
-                              title="Добавить вопрос"
-                              onClick={e => { e.stopPropagation(); openModal('recordNote', { objectType: 'Student', objectId: s.id, onDone: load }); }}>
-                              ?
-                            </button>
-                          )}
-                          <button className="btn btn-ghost btn-icon btn-sm"
-                            style={{ color: s.is_flagged ? 'var(--warn-fg)' : 'var(--text-muted)' }}
-                            title={s.is_flagged ? 'Снять метку' : 'Отметить'}
-                            onClick={e => handleToggleFlagStudent(s.id, e)}>
-                            {I.alert}
-                          </button>
-                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -889,43 +798,24 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
 function EmployeeList({ currentUser, openModal, onNavigate }) {
   const toast = useToast();
   const [q, setQ] = useState('');
-  const [posId, setPosId] = useState('');
-  const [sortFlagged, setSortFlagged] = useState(false);
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ results: [], count: 0, num_pages: 1 });
   const [loading, setLoading] = useState(true);
-  const [positions, setPositions] = useState([]);
-
-  useEffect(() => {
-    api.get('/positions/').then(r => setPositions(r.data)).catch(() => {});
-  }, []);
 
   const load = () => {
     setLoading(true);
     const params = new URLSearchParams({ page });
     if (q) params.set('search', q);
-    if (posId) params.set('position_id', posId);
-    if (sortFlagged) params.set('sort', 'flagged');
     api.get(`/employees/?${params}`).then(r => {
       setData(r.data);
       setLoading(false);
     }).catch(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [page, sortFlagged]);
+  useEffect(() => { load(); }, [page]);
 
   const handleSearch = () => { setPage(1); load(); };
-  const reset = () => { setQ(''); setPosId(''); setSortFlagged(false); setPage(1); setTimeout(load, 0); };
-
-  const handleToggleFlagEmployee = async (id, e) => {
-    e.stopPropagation();
-    try {
-      await api.post(`/employees/${id}/flag/`);
-      load();
-    } catch {
-      toast.push('Ошибка', { kind: 'err' });
-    }
-  };
+  const reset = () => { setQ(''); setPage(1); setTimeout(load, 0); };
 
   return (
     <Shell currentUser={currentUser} active="employees" onNavigate={onNavigate} openModal={openModal}>
@@ -944,14 +834,8 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
               />
           </div>
         </div>
-        <div className="field"><label className="field-label">Должность</label>
-          <select className="select" value={posId} onChange={e => setPosId(e.target.value)}>
-            <option value="">- Все -</option>
-            {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        </div>
-        <button className="btn btn-primary btn-sm" onClick={handleSearch}>Найти</button>
-        <button className="btn btn-ghost btn-sm" onClick={reset}>Сбросить</button>
+        <button className="btn btn-primary" style={{ height: 36 }} onClick={handleSearch}>Найти</button>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
@@ -959,7 +843,7 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
             <EmptyState icon={I.search} title="Сотрудники не найдены" sub="Попробуйте изменить условия поиска" />
           ) : (
             <table className="tbl">
-              <thead><tr><th>ФИО</th><th>Должность</th><th>Телефон</th><th>Email</th><th style={{ width: 40 }}></th></tr></thead>
+              <thead><tr><th>ФИО</th><th>Должность</th><th>Телефон</th><th>Email</th></tr></thead>
               <tbody>
                 {loading ? <SkeletonRows cols={5} /> : data.results.map(e => (
                   <tr key={e.id} className="row-link" onClick={() => onNavigate('employee-detail', { employeeId: e.id })}>
@@ -971,31 +855,10 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
                       {e.has_pending_delreq && (
                         <span title="Подана заявка на удаление" style={{ marginLeft: 4, color: 'var(--bad-fg)', fontSize: 13, opacity: 0.8 }}>{I.trash}</span>
                       )}
-                      {e.has_note && currentUser?.role !== 'teacher' && (
-                        <button className="btn btn-ghost btn-icon btn-sm" style={{ marginLeft: 2, color: 'var(--accent)', padding: '0 2px', fontSize: 13, fontWeight: 700 }}
-                          onClick={ev => { ev.stopPropagation(); openModal('recordNote', { objectType: 'Employee', objectId: e.id, onDone: load }); }}
-                          title="Есть открытый вопрос">?</button>
-                      )}
                     </td>
                     <td>{e.position_name || <span className="muted">-</span>}</td>
                     <td className="muted">{e.phone || '-'}</td>
                     <td className="muted">{e.email || '-'}</td>
-                    <td onClick={e2 => e2.stopPropagation()} style={{ whiteSpace: 'nowrap' }}>
-                      {currentUser?.role !== 'teacher' && !e.has_note && (
-                        <button className="btn btn-ghost btn-icon btn-sm"
-                          style={{ color: 'var(--text-muted)', fontWeight: 700 }}
-                          title="Добавить вопрос"
-                          onClick={ev => { ev.stopPropagation(); openModal('recordNote', { objectType: 'Employee', objectId: e.id, onDone: load }); }}>
-                          ?
-                        </button>
-                      )}
-                      <button className="btn btn-ghost btn-icon btn-sm"
-                        style={{ color: e.is_flagged ? 'var(--warn-fg)' : 'var(--text-muted)' }}
-                        title={e.is_flagged ? 'Снять метку' : 'Отметить'}
-                        onClick={ev => handleToggleFlagEmployee(e.id, ev)}>
-                        {I.alert}
-                      </button>
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -1438,44 +1301,23 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
 function GroupList({ currentUser, openModal, onNavigate }) {
   const toast = useToast();
   const [groups, setGroups] = useState([]);
-  const [faculties, setFaculties] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [facultyFilter, setFacultyFilter] = useState('');
   const [q, setQ] = useState('');
   const [search, setSearch] = useState('');
-  const [sortFlagged, setSortFlagged] = useState(false);
 
-  const load = (fid) => {
-    const f = fid !== undefined ? fid : facultyFilter;
+  const load = () => {
     setLoading(true);
-    const params = f ? `?faculty_id=${f}` : '';
-    api.get(`/groups/${params}`).then(r => {
+    api.get('/groups/').then(r => {
       setGroups(r.data);
       setLoading(false);
     }).catch(() => setLoading(false));
   };
 
-  useEffect(() => {
-    api.get('/faculties/').then(r => setFaculties(r.data)).catch(() => {});
-    load('');
-  }, []);
+  useEffect(() => { load(); }, []);
 
-  const handleToggleFlagGroup = async (id, e) => {
-    e.stopPropagation();
-    try {
-      await api.post(`/groups/${id}/flag/`);
-      load();
-    } catch {
-      toast.push('Ошибка', { kind: 'err' });
-    }
-  };
-
-  const baseFiltered = groups.filter(g =>
+  const filtered = groups.filter(g =>
     !search || g.name.toLowerCase().includes(search.toLowerCase())
   );
-  const filtered = sortFlagged
-    ? [...baseFiltered].sort((a, b) => (b.is_flagged ? 1 : 0) - (a.is_flagged ? 1 : 0))
-    : baseFiltered;
 
   return (
     <Shell currentUser={currentUser} active="groups" onNavigate={onNavigate} openModal={openModal}>
@@ -1489,20 +1331,13 @@ function GroupList({ currentUser, openModal, onNavigate }) {
           <label className="field-label">Поиск</label>
           <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && setSearch(q)} /></div>
         </div>
-        <div className="field">
-          <label className="field-label">Факультет</label>
-          <select className="select" value={facultyFilter} onChange={e => { setFacultyFilter(e.target.value); load(e.target.value); }}>
-            <option value="">- Все -</option>
-            {faculties.map(f => <option key={f.id} value={f.id}>{f.short_name}</option>)}
-          </select>
-        </div>
-        <button className="btn btn-primary btn-sm" onClick={() => setSearch(q)}>Найти</button>
-        <button className="btn btn-ghost btn-sm" onClick={() => { setQ(''); setSearch(''); setFacultyFilter(''); load(''); }}>Сбросить</button>
+        <button className="btn btn-primary" style={{ height: 36 }} onClick={() => setSearch(q)}>Найти</button>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={() => { setQ(''); setSearch(''); load(); }}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
           <table className="tbl">
-            <thead><tr><th>Название</th><th>Факультет</th><th>Год</th><th>Классный руководитель</th><th>Студентов</th><th style={{ width: 40 }}></th><th style={{ width: 40 }}></th></tr></thead>
+            <thead><tr><th>Название</th><th>Факультет</th><th>Год</th><th>Классный руководитель</th><th>Студентов</th><th style={{ width: 40 }}></th></tr></thead>
             <tbody>
               {loading ? (
                 <SkeletonRows cols={7} rows={4} />
@@ -1518,32 +1353,11 @@ function GroupList({ currentUser, openModal, onNavigate }) {
                     {g.has_pending_delreq && (
                       <span title="Подана заявка на удаление" style={{ marginLeft: 4, color: 'var(--bad-fg)', fontSize: 13, opacity: 0.8 }}>{I.trash}</span>
                     )}
-                    {g.has_note && currentUser?.role !== 'teacher' && (
-                      <button className="btn btn-ghost btn-icon btn-sm" style={{ marginLeft: 2, color: 'var(--accent)', padding: '0 2px', fontSize: 13, fontWeight: 700 }}
-                        onClick={e => { e.stopPropagation(); openModal('recordNote', { objectType: 'Group', objectId: g.id, onDone: () => load() }); }}
-                        title="Есть открытый вопрос">?</button>
-                    )}
                   </td>
                   <td>{g.faculty_short}</td>
                   <td className="mono muted">{g.year}</td>
                   <td>{g.headteacher_name || '-'}</td>
                   <td className="mono">{g.student_count}</td>
-                  <td onClick={e => e.stopPropagation()} style={{ whiteSpace: 'nowrap' }}>
-                    {currentUser?.role !== 'teacher' && !g.has_note && (
-                      <button className="btn btn-ghost btn-icon btn-sm"
-                        style={{ color: 'var(--text-muted)', fontWeight: 700 }}
-                        title="Добавить вопрос"
-                        onClick={e => { e.stopPropagation(); openModal('recordNote', { objectType: 'Group', objectId: g.id, onDone: () => load() }); }}>
-                        ?
-                      </button>
-                    )}
-                    <button className="btn btn-ghost btn-icon btn-sm"
-                      style={{ color: g.is_flagged ? 'var(--warn-fg)' : 'var(--text-muted)' }}
-                      title={g.is_flagged ? 'Снять метку' : 'Отметить'}
-                      onClick={e => handleToggleFlagGroup(g.id, e)}>
-                      {I.alert}
-                    </button>
-                  </td>
                   <td>{I.chevr}</td>
                 </tr>
               ))}
@@ -1665,10 +1479,8 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
 }
 
 function FacultyList({ currentUser, openModal, onNavigate }) {
-  const toast = useToast();
   const [faculties, setFaculties] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sortFlagged, setSortFlagged] = useState(false);
   const [q, setQ] = useState('');
   const [search, setSearch] = useState('');
 
@@ -1682,22 +1494,9 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
 
   useEffect(() => { load(); }, []);
 
-  const handleToggleFlagFaculty = async (id, e) => {
-    e.stopPropagation();
-    try {
-      await api.post(`/faculties/${id}/flag/`);
-      load();
-    } catch {
-      toast.push('Ошибка', { kind: 'err' });
-    }
-  };
-
-  const searchFiltered = search
+  const displayFaculties = search
     ? faculties.filter(f => f.full_name.toLowerCase().includes(search.toLowerCase()) || f.short_name.toLowerCase().includes(search.toLowerCase()))
     : faculties;
-  const displayFaculties = sortFlagged
-    ? [...searchFiltered].sort((a, b) => (b.is_flagged ? 1 : 0) - (a.is_flagged ? 1 : 0))
-    : searchFiltered;
 
   return (
     <Shell currentUser={currentUser} active="faculties" onNavigate={onNavigate} openModal={openModal}>
@@ -1713,34 +1512,26 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
             <input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && setSearch(q)} />
           </div>
         </div>
-        <button className="btn btn-primary btn-sm" onClick={() => setSearch(q)}>Найти</button>
-        <button className="btn btn-ghost btn-sm" onClick={() => { setQ(''); setSearch(''); }}>Сбросить</button>
+        <button className="btn btn-primary" style={{ height: 36 }} onClick={() => setSearch(q)}>Найти</button>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={() => { setQ(''); setSearch(''); }}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
           <table className="tbl">
             <thead>
-              <tr><th>Код</th><th>Название</th><th>Групп</th><th>Студентов</th><th style={{ width: 40 }}></th><th style={{ width: 40 }}></th></tr>
+              <tr><th>Код</th><th>Название</th><th>Групп</th><th>Студентов</th><th style={{ width: 40 }}></th></tr>
             </thead>
             <tbody>
               {loading ? (
-                <SkeletonRows cols={6} rows={4} />
+                <SkeletonRows cols={5} rows={4} />
               ) : displayFaculties.length === 0 ? (
-                <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Факультеты не найдены</td></tr>
+                <tr><td colSpan={5} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Факультеты не найдены</td></tr>
               ) : displayFaculties.map(f => (
                 <tr key={f.id} className="row-link" onClick={() => openModal('facultyDetail', { faculty: f, onDone: load, currentRole: currentUser?.role })}>
                   <td><span className="badge badge-neutral mono" style={{ padding: '1px 6px' }}>{f.short_name}</span></td>
                   <td className="fwm">{f.full_name}</td>
                   <td className="mono">{f.group_count}</td>
                   <td className="mono">{f.student_count}</td>
-                  <td onClick={e => e.stopPropagation()}>
-                    <button className="btn btn-ghost btn-icon btn-sm"
-                      style={{ color: f.is_flagged ? 'var(--warn-fg)' : 'var(--text-muted)' }}
-                      title={f.is_flagged ? 'Снять метку' : 'Отметить'}
-                      onClick={e => handleToggleFlagFaculty(f.id, e)}>
-                      {I.alert}
-                    </button>
-                  </td>
                   <td>{I.chevr}</td>
                 </tr>
               ))}
@@ -1793,8 +1584,8 @@ function UserList({ currentUser, openModal, onNavigate }) {
             <input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && setSearch(q)} />
           </div>
         </div>
-        <button className="btn btn-primary btn-sm" onClick={() => setSearch(q)}>Найти</button>
-        <button className="btn btn-ghost btn-sm" onClick={() => { setQ(''); setSearch(''); }}>Сбросить</button>
+        <button className="btn btn-primary" style={{ height: 36 }} onClick={() => setSearch(q)}>Найти</button>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={() => { setQ(''); setSearch(''); }}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
@@ -1851,7 +1642,6 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
   return (
     <Shell currentUser={currentUser} active="delreq" openModal={openModal} onNavigate={onNavigate} onLogout={onLogout}>
       <PageHead title="Заявки на удаление" sub="Подтвердите или отклоните заявки от администраторов" />
-      <div className="banner banner-info">{I.info}<div className="banner-body">Администратор подаёт заявку на удаление, суперадмин подтверждает. До подтверждения объект остаётся в системе.</div></div>
       <div className="card">
         <div className="card-body flush">
           {loading ? (
@@ -2007,7 +1797,6 @@ function AuditLog({ currentUser, openModal, onNavigate }) {
 function ParentList({ currentUser, openModal, onNavigate }) {
   const toast = useToast();
   const [q, setQ] = useState('');
-  const [sortFlagged, setSortFlagged] = useState(false);
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ results: [], count: 0, num_pages: 1 });
   const [loading, setLoading] = useState(true);
@@ -2016,27 +1805,16 @@ function ParentList({ currentUser, openModal, onNavigate }) {
     setLoading(true);
     const params = new URLSearchParams({ page });
     if (q) params.set('search', q);
-    if (sortFlagged) params.set('sort', 'flagged');
     api.get(`/parents/?${params}`).then(r => {
       setData(r.data);
       setLoading(false);
     }).catch(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [page, sortFlagged]);
+  useEffect(() => { load(); }, [page]);
 
   const handleSearch = () => { setPage(1); load(); };
-  const reset = () => { setQ(''); setSortFlagged(false); setPage(1); setTimeout(load, 0); };
-
-  const handleToggleFlagParent = async (id, e) => {
-    e.stopPropagation();
-    try {
-      await api.post(`/parents/${id}/flag/`);
-      load();
-    } catch {
-      toast.push('Ошибка', { kind: 'err' });
-    }
-  };
+  const reset = () => { setQ(''); setPage(1); setTimeout(load, 0); };
 
   const handleDeleteRequest = async (p) => {
     try {
@@ -2064,8 +1842,8 @@ function ParentList({ currentUser, openModal, onNavigate }) {
               />
           </div>
         </div>
-        <button className="btn btn-primary btn-sm" onClick={handleSearch}>Найти</button>
-        <button className="btn btn-ghost btn-sm" onClick={reset}>Сбросить</button>
+        <button className="btn btn-primary" style={{ height: 36 }} onClick={handleSearch}>Найти</button>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
@@ -2073,7 +1851,7 @@ function ParentList({ currentUser, openModal, onNavigate }) {
             <EmptyState icon={I.search} title="Опекуны не найдены" sub="Попробуйте изменить условия поиска или добавьте нового опекуна" />
           ) : (
             <table className="tbl">
-              <thead><tr><th>ФИО</th><th>Телефон</th><th>Email</th><th style={{ width: 40 }}></th><th style={{ width: 40 }}></th></tr></thead>
+              <thead><tr><th>ФИО</th><th>Телефон</th><th>Email</th><th style={{ width: 40 }}></th></tr></thead>
               <tbody>
                 {loading ? <SkeletonRows cols={5} /> : data.results.map(p => (
                   <tr key={p.id} className="row-link" onClick={() => onNavigate('parent-detail', { parentId: p.id })}>
@@ -2084,14 +1862,6 @@ function ParentList({ currentUser, openModal, onNavigate }) {
                       <button className="btn btn-ghost btn-icon btn-sm"
                         onClick={() => openModal('parentForm', { parent: p, onDone: load })}>
                         {I.pencil}
-                      </button>
-                    </td>
-                    <td onClick={e => e.stopPropagation()}>
-                      <button className="btn btn-ghost btn-icon btn-sm"
-                        style={{ color: p.is_flagged ? 'var(--warn-fg)' : 'var(--text-muted)' }}
-                        title={p.is_flagged ? 'Снять метку' : 'Отметить'}
-                        onClick={e => handleToggleFlagParent(p.id, e)}>
-                        {I.alert}
                       </button>
                     </td>
                   </tr>
@@ -2274,8 +2044,8 @@ function SubjectList({ currentUser, openModal, onNavigate }) {
             <input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && setSearch(q)} />
           </div>
         </div>
-        <button className="btn btn-primary btn-sm" onClick={() => setSearch(q)}>Найти</button>
-        <button className="btn btn-ghost btn-sm" onClick={() => { setQ(''); setSearch(''); }}>Сбросить</button>
+        <button className="btn btn-primary" style={{ height: 36 }} onClick={() => setSearch(q)}>Найти</button>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={() => { setQ(''); setSearch(''); }}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
