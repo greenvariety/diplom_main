@@ -257,7 +257,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 .page-head .crumbs a:hover { color: var(--text); }
 .page-head .crumbs .sep { color: var(--text-faint); }
 .page-head h1 { margin: 0; }
-.page-head .sub { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
+.page-head .sub { display: inline-flex; align-items: center; color: var(--accent-ink); font-size: 12px; font-weight: 700; margin-top: 6px; background: var(--accent-soft); border-radius: 20px; padding: 3px 12px; }
 .page-actions { display: flex; gap: 8px; flex-shrink: 0; }
 
 /* ============================================================
