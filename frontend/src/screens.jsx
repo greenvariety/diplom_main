@@ -510,7 +510,7 @@ function StudentList({ currentUser, openModal, onNavigate }) {
           ) : (
             <table className="tbl">
               <thead><tr>
-                <th style={{ width: 44 }}>№</th>
+                <SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader>
                 <th style={{ width: 50 }}></th>
                 <SortHeader k="last_name" sort={sort}>ФИО</SortHeader>
                 <SortHeader k="status" sort={sort}>Статус</SortHeader>
@@ -856,7 +856,7 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
           ) : (
             <table className="tbl">
               <thead><tr>
-                <th style={{ width: 44 }}>№</th>
+                <SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader>
                 <SortHeader k="full_name" sort={sort}>ФИО</SortHeader>
                 <SortHeader k="position_name" sort={sort}>Должность</SortHeader>
                 <SortHeader k="phone" sort={sort}>Телефон</SortHeader>
@@ -1367,7 +1367,7 @@ function GroupList({ currentUser, openModal, onNavigate }) {
         <div className="card-body flush">
           <table className="tbl">
             <thead><tr>
-              <th style={{ width: 44 }}>№</th>
+              <SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader>
               <SortHeader k="name" sort={sort}>Название</SortHeader>
               <SortHeader k="faculty_short" sort={sort}>Факультет</SortHeader>
               <SortHeader k="year" sort={sort}>Год</SortHeader>
@@ -1564,7 +1564,7 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
           <table className="tbl">
             <thead>
               <tr>
-                <th style={{ width: 44 }}>№</th>
+                <SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader>
                 <SortHeader k="short_name" sort={sort}>Код</SortHeader>
                 <SortHeader k="full_name" sort={sort}>Название</SortHeader>
                 <SortHeader k="group_count" sort={sort}>Групп</SortHeader>
@@ -1646,7 +1646,7 @@ function UserList({ currentUser, openModal, onNavigate }) {
           ) : (
             <table className="tbl">
               <thead><tr>
-                <th style={{ width: 44 }}>№</th>
+                <SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader>
                 <SortHeader k="employee_name" sort={sort}>Сотрудник</SortHeader>
                 <SortHeader k="username" sort={sort}>Логин</SortHeader>
                 <SortHeader k="role" sort={sort}>Роль</SortHeader>
@@ -1734,11 +1734,11 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
       <div className="card">
         <div className="card-body flush">
           {loading ? (
-            <table className="tbl"><thead><tr><th style={{ width: 44 }}>№</th><th>Тип</th><th>Объект</th><th>Кто подал</th><th>Когда</th><th>Причина</th><th style={{ width: 200 }}>Действия</th></tr></thead><tbody><SkeletonRows cols={7} /></tbody></table>
+            <table className="tbl"><thead><tr><SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader><th>Тип</th><th>Объект</th><th>Кто подал</th><th>Когда</th><th>Причина</th><th style={{ width: 200 }}>Действия</th></tr></thead><tbody><SkeletonRows cols={7} /></tbody></table>
           ) : (
             <table className="tbl">
               <thead><tr>
-                <th style={{ width: 44 }}>№</th>
+                <SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader>
                 <SortHeader k="type_label" sort={sort}>Тип</SortHeader>
                 <SortHeader k="object_repr" sort={sort}>Объект</SortHeader>
                 <SortHeader k="author" sort={sort}>Кто подал</SortHeader>
@@ -1813,13 +1813,13 @@ function AuditLog({ currentUser, openModal, onNavigate }) {
       <div className="card">
         <div className="card-body flush">
           {loading
-            ? <table className="tbl"><thead><tr><th style={{ width: 44 }}>№</th><th>Дата и время</th><th>Пользователь</th><th>Действие</th><th>Объект</th><th style={{ width: 100 }}>Diff</th></tr></thead><tbody><SkeletonRows cols={6} /></tbody></table>
+            ? <table className="tbl"><thead><tr><SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader><th>Дата и время</th><th>Пользователь</th><th>Действие</th><th>Объект</th><th style={{ width: 100 }}>Diff</th></tr></thead><tbody><SkeletonRows cols={6} /></tbody></table>
             : data.results.length === 0
               ? <EmptyState icon={I.history} title="Записи не найдены" sub="Попробуйте изменить поисковый запрос"
                   action={<button className="btn btn-secondary btn-sm" onClick={reset}>Сбросить</button>} />
               : <table className="tbl">
                   <thead><tr>
-                    <th style={{ width: 44 }}>№</th>
+                    <SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader>
                     <SortHeader k="ts" sort={sort}>Дата и время</SortHeader>
                     <SortHeader k="user" sort={sort}>Пользователь</SortHeader>
                     <SortHeader k="label" sort={sort}>Действие</SortHeader>
@@ -1919,7 +1919,7 @@ function ParentList({ currentUser, openModal, onNavigate }) {
           ) : (
             <table className="tbl">
               <thead><tr>
-                <th style={{ width: 44 }}>№</th>
+                <SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader>
                 <SortHeader k="full_name" sort={sort}>ФИО</SortHeader>
                 <SortHeader k="phone" sort={sort}>Телефон</SortHeader>
                 <SortHeader k="email" sort={sort}>Email</SortHeader>
@@ -2132,7 +2132,7 @@ function SubjectList({ currentUser, openModal, onNavigate }) {
           ) : (
             <table className="tbl">
               <thead><tr>
-                <th style={{ width: 44 }}>№</th>
+                <SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader>
                 <SortHeader k="name" sort={sort}>Название</SortHeader>
                 <th style={{ width: 80 }}></th>
               </tr></thead>
@@ -2212,7 +2212,7 @@ function PositionList({ currentUser, openModal, onNavigate }) {
           ) : (
             <table className="tbl">
               <thead><tr>
-                <th style={{ width: 44 }}>№</th>
+                <SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader>
                 <SortHeader k="name" sort={sort}>Название</SortHeader>
                 <SortHeader k="employee_count" sort={sort}>Сотрудников</SortHeader>
                 <th style={{ width: 40 }}></th>
