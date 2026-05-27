@@ -635,8 +635,7 @@ function FacultyFormModal({ data, onClose }) {
 
   const isUC = (c) => c && ((c >= 'А' && c <= 'Я') || c === 'Ё');
   const isLC = (c) => c && ((c >= 'а' && c <= 'я') || c === 'ё');
-  const isWordStart = (n, i) => i === 0 || n[i-1] === ' ' || isLC(n[i-1]) || (isUC(n[i-1]) && i + 1 < n.length && isLC(n[i+1]));
-  const autoCode = (n) => { const s = n.trim(); if (!s) return ''; const hasLower = [...s].some(c => isLC(c)); if (!hasLower) { const words = s.split(/\s+/); return (words.length === 1 ? [...words[0]].filter(c => isUC(c)) : words.filter(w => isUC(w[0])).map(w => w[0])).join('').slice(0, 50); } const r = []; for (let i = 0; i < s.length; i++) { if (isUC(s[i]) && isWordStart(s, i)) r.push(s[i]); } return r.join('').slice(0, 50); };
+  const autoCode = (n) => { const s = n.trim(); if (!s) return ''; const hasLower = [...s].some(c => isLC(c)); if (!hasLower) { const ws = s.split(/\s+/).filter(w => w && isUC(w[0])); return (ws.length === 1 ? [...ws[0]].filter(c => isUC(c)) : ws.map(w => w[0])).join('').slice(0, 50); } const r = []; for (const w of s.split(/\s+/)) { if (!w || !isUC(w[0])) continue; if (![...w].some(c => isLC(c))) { r.push(...[...w].filter(c => isUC(c))); } else { r.push(w[0]); for (let i = 1; i < w.length; i++) { if (isUC(w[i]) && (isLC(w[i-1]) || (isUC(w[i-1]) && i+1 < w.length && isLC(w[i+1])))) r.push(w[i]); } } } return r.join('').slice(0, 50); };
   const autoName = (n) => { let exp = ''; for (let i = 0; i < n.length; i++) { if (isUC(n[i]) && i > 0 && n[i-1] !== ' ' && isLC(n[i-1])) exp += ' '; exp += n[i]; } const s = exp.trim().replace(/\s+/g, ' '); return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s; };
 
   const save = async () => {
@@ -1685,8 +1684,7 @@ function OrgFormModal({ data, onClose }) {
 
   const isUC = (c) => c && ((c >= 'А' && c <= 'Я') || c === 'Ё');
   const isLC = (c) => c && ((c >= 'а' && c <= 'я') || c === 'ё');
-  const isWordStart = (n, i) => i === 0 || n[i-1] === ' ' || isLC(n[i-1]) || (isUC(n[i-1]) && i + 1 < n.length && isLC(n[i+1]));
-  const autoCode = (n) => { const s = n.trim(); if (!s) return ''; const hasLower = [...s].some(c => isLC(c)); if (!hasLower) { const words = s.split(/\s+/); return (words.length === 1 ? [...words[0]].filter(c => isUC(c)) : words.filter(w => isUC(w[0])).map(w => w[0])).join('').slice(0, 20); } const r = []; for (let i = 0; i < s.length; i++) { if (isUC(s[i]) && isWordStart(s, i)) r.push(s[i]); } return r.join('').slice(0, 20); };
+  const autoCode = (n) => { const s = n.trim(); if (!s) return ''; const hasLower = [...s].some(c => isLC(c)); if (!hasLower) { const ws = s.split(/\s+/).filter(w => w && isUC(w[0])); return (ws.length === 1 ? [...ws[0]].filter(c => isUC(c)) : ws.map(w => w[0])).join('').slice(0, 20); } const r = []; for (const w of s.split(/\s+/)) { if (!w || !isUC(w[0])) continue; if (![...w].some(c => isLC(c))) { r.push(...[...w].filter(c => isUC(c))); } else { r.push(w[0]); for (let i = 1; i < w.length; i++) { if (isUC(w[i]) && (isLC(w[i-1]) || (isUC(w[i-1]) && i+1 < w.length && isLC(w[i+1])))) r.push(w[i]); } } } return r.join('').slice(0, 20); };
   const autoName = (n) => { let exp = ''; for (let i = 0; i < n.length; i++) { if (isUC(n[i]) && i > 0 && n[i-1] !== ' ' && isLC(n[i-1])) exp += ' '; exp += n[i]; } const s = exp.trim().replace(/\s+/g, ' '); return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s; };
   const [foundedDate, setFoundedDate] = useState(
     org?.founded_date
