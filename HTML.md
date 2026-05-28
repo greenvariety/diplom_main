@@ -8,7 +8,7 @@
 
 ---
 
-## 2. Я же сказал удалить блок студентов!
+~~## 2. Я же сказал удалить блок студентов!~~
 
 ```html
 <div class="card-head" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);"><div class="title">Студенты<span class="muted" style="font-weight: 700;">: 3</span></div></div>

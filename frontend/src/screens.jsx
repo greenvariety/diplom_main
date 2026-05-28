@@ -2305,30 +2305,6 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId }) {
           </div>
         </div>
       </div>
-      <div className="card" style={{ marginTop: 16 }}>
-        <div className="card-head">
-          <div className="title">Студенты<span className="muted" style={{ fontWeight: 700 }}>: {subject.students.length}</span></div>
-        </div>
-        <div className="card-body flush">
-          {subject.students.length === 0 ? (
-            <EmptyState icon={I.users} title="Нет студентов" sub="Студенты появятся когда предмет будет назначен группе" />
-          ) : (
-            <table className="tbl">
-              <thead><tr><th>Студент</th><th>Группа</th><th>Статус</th><th style={{ width: 40 }}></th></tr></thead>
-              <tbody>
-                {subject.students.map(s => (
-                  <tr key={s.id} className="row-link" onClick={() => onNavigate('student-detail', { studentId: s.id })}>
-                    <td className="fwm">{s.last_name} {s.first_name} {s.middle_name}</td>
-                    <td className="muted">{s.group_name}</td>
-                    <td><Badge status={s.status} /></td>
-                    <td>{I.chevr}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
     </Shell>
   );
 }
