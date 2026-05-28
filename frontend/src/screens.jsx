@@ -1364,7 +1364,7 @@ function GroupList({ currentUser, openModal, onNavigate }) {
       <PageHead
         title="Группы"
         sub={loading ? '…' : `Всего: ${filtered.length} записей`}
-        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('groupForm', { onDone: load })}>{I.plus}Создать группу</button>}
+        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('groupForm', { onDone: load })}>{I.plus}Добавить</button>}
       />
       <div className="filters">
         <div className="field grow-2">
