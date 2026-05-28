@@ -1237,8 +1237,8 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                   <tbody>
                     {employee.subjects?.map(s => (
                       <tr key={s.assignment_id}>
-                        <td className="fwm">{s.subject_name}</td>
-                        <td>{s.group_name}</td>
+                        <td className="fwm row-link" style={{ cursor: 'pointer' }} onClick={() => onNavigate('subject-detail', { subjectId: s.subject_id })}>{s.subject_name}</td>
+                        <td className="row-link" style={{ cursor: 'pointer' }} onClick={() => onNavigate('group-detail', { groupId: s.group_id })}>{s.group_name}</td>
                         <td>
                           <button className="btn btn-ghost btn-icon btn-sm" onClick={() => removeSubject(s.assignment_id)} title="Убрать">{I.x}</button>
                         </td>
@@ -1521,9 +1521,9 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
                 <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: '8px 0' }}>Предметы не назначены</div>
               ) : group.subjects.map(a => (
                 <div key={a.id} style={{ borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center' }}>
-                  <div style={{ flex: 1, padding: '8px 0', cursor: 'pointer' }} onClick={() => onNavigate('employee-detail', { employeeId: a.employee_id })}>
-                    <div className="fwm" style={{ fontSize: 13 }}>{a.subject_name}</div>
-                    <div className="muted" style={{ fontSize: 11 }}>{a.employee_name}</div>
+                  <div style={{ flex: 1, padding: '8px 0' }}>
+                    <div className="fwm" style={{ fontSize: 13, cursor: 'pointer' }} onClick={() => onNavigate('subject-detail', { subjectId: a.subject_id })}>{a.subject_name}</div>
+                    <div className="muted" style={{ fontSize: 11, cursor: 'pointer' }} onClick={() => onNavigate('employee-detail', { employeeId: a.employee_id })}>{a.employee_name}</div>
                   </div>
                   <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleRemoveSubject(a.id)}>{I.x}</button>
                 </div>
