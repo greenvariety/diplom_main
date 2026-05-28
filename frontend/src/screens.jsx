@@ -898,7 +898,11 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
                         <span title="Подана заявка на удаление" style={{ marginLeft: 4, color: 'var(--bad-fg)', fontSize: 13, opacity: 0.8 }}>{I.trash}</span>
                       )}
                     </td>
-                    <td>{e.position_name || <span className="muted">-</span>}</td>
+                    <td
+                      className={e.position_id ? 'row-link' : ''}
+                      style={e.position_id ? { cursor: 'pointer' } : {}}
+                      onClick={e.position_id ? ev => { ev.stopPropagation(); onNavigate('employees', { filterPositionId: e.position_id, filterPositionName: e.position_name }); } : undefined}
+                    >{e.position_name || <span className="muted">-</span>}</td>
                     <td className="muted">{e.phone || '-'}</td>
                     <td className="muted">{e.email || '-'}</td>
                     <td>{I.chevr}</td>
