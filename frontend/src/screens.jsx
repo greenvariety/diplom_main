@@ -2308,6 +2308,9 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId }) {
       <div className="card" style={{ marginTop: 16 }}>
         <div className="card-head">
           <div className="title">Студенты<span className="muted" style={{ fontWeight: 700 }}>: {subject.students.length}</span></div>
+          {['owner', 'admin'].includes(currentUser?.role) && (
+            <button className="btn btn-secondary btn-sm" onClick={() => openModal('studentForm', { onDone: load })}>{I.plus}</button>
+          )}
         </div>
         <div className="card-body flush">
           {subject.students.length === 0 ? (
