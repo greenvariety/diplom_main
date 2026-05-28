@@ -1472,9 +1472,10 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
         </>}
       />
       {group.headteacher_name && (
-        <div className="banner banner-info">
+        <div className="banner banner-info" style={{ cursor: 'pointer' }} onClick={() => onNavigate('employee-detail', { employeeId: group.headteacher_id })}>
           {I.user}
-          <div className="banner-body"><strong>Классный руководитель:</strong> <span className="link-text" style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => onNavigate('employee-detail', { employeeId: group.headteacher_id })}>{group.headteacher_name}</span></div>
+          <div className="banner-body"><strong>Классный руководитель:</strong> {group.headteacher_name}</div>
+          {I.chevr}
         </div>
       )}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
@@ -1484,14 +1485,15 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
           </div>
           <div className="card-body flush">
             <table className="tbl">
-              <thead><tr><th>ФИО</th><th>Статус</th></tr></thead>
+              <thead><tr><th>ФИО</th><th>Статус</th><th></th></tr></thead>
               <tbody>
                 {group.students.length === 0 ? (
-                  <tr><td colSpan={2} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>Студенты не добавлены</td></tr>
+                  <tr><td colSpan={3} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>Студенты не добавлены</td></tr>
                 ) : group.students.map(s => (
-                  <tr key={s.id}>
-                    <td className="fwm" style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => onNavigate('student-detail', { studentId: s.id })}>{s.last_name} {s.first_name} {s.middle_name}</td>
+                  <tr key={s.id} className="row-link" onClick={() => onNavigate('student-detail', { studentId: s.id })}>
+                    <td className="fwm">{s.last_name} {s.first_name} {s.middle_name}</td>
                     <td><Badge status={s.status} /></td>
+                    <td>{I.chevr}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1508,10 +1510,10 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
               {group.subjects.length === 0 ? (
                 <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: '8px 0' }}>Предметы не назначены</div>
               ) : group.subjects.map(a => (
-                <div key={a.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between' }}>
-                  <div>
-                    <div className="fwm" style={{ fontSize: 13, cursor: 'pointer', textDecoration: 'underline' }} onClick={() => onNavigate('subjects')}>{a.subject_name}</div>
-                    <div className="muted" style={{ fontSize: 11, cursor: 'pointer', textDecoration: 'underline' }} onClick={() => onNavigate('employee-detail', { employeeId: a.employee_id })}>{a.employee_name}</div>
+                <div key={a.id} style={{ borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center' }}>
+                  <div style={{ flex: 1, padding: '8px 0', cursor: 'pointer' }} onClick={() => onNavigate('employee-detail', { employeeId: a.employee_id })}>
+                    <div className="fwm" style={{ fontSize: 13 }}>{a.subject_name}</div>
+                    <div className="muted" style={{ fontSize: 11 }}>{a.employee_name}</div>
                   </div>
                   <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleRemoveSubject(a.id)}>{I.x}</button>
                 </div>
