@@ -708,10 +708,11 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
                 <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Опекуны не добавлены</div>
               ) : (
                 <table className="tbl">
-                  <thead><tr><th>ФИО</th><th>Связь</th><th>Телефон</th><th style={{ width: 40 }}></th></tr></thead>
+                  <thead><tr><th style={{ width: 50 }}></th><th>ФИО</th><th>Связь</th><th>Телефон</th><th style={{ width: 40 }}></th></tr></thead>
                   <tbody>
                     {student.parents.map(p => (
                       <tr key={p.id}>
+                        <td><Avatar name={p.parent_name} size="sm" /></td>
                         <td className="fwm">{p.parent_name}</td>
                         <td>{p.relation_display}</td>
                         <td className="muted">{p.phone || '-'}</td>
@@ -865,13 +866,14 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
             <table className="tbl">
               <thead><tr>
                 <SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader>
+                <th style={{ width: 50 }}></th>
                 <SortHeader k="full_name" sort={sort}>ФИО</SortHeader>
                 <SortHeader k="position_name" sort={sort}>Должность</SortHeader>
                 <SortHeader k="phone" sort={sort}>Телефон</SortHeader>
                 <SortHeader k="email" sort={sort}>Email</SortHeader>
               </tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={5} /> : sort.sortFn(data.results, {
+                {loading ? <SkeletonRows cols={6} /> : sort.sortFn(data.results, {
                     full_name: e => e.full_name || '',
                     position_name: e => e.position_name || '',
                     phone: e => e.phone || '',
@@ -879,6 +881,7 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
                   }).map((e, idx) => (
                   <tr key={e.id} className="row-link" onClick={() => onNavigate('employee-detail', { employeeId: e.id })}>
                     <td className="mono muted">{idx + 1}</td>
+                    <td><Avatar name={e.full_name} size="sm" /></td>
                     <td className="fwm">
                       {e.full_name}
                       {e.has_pending_delreq && (
@@ -1928,19 +1931,21 @@ function ParentList({ currentUser, openModal, onNavigate }) {
             <table className="tbl">
               <thead><tr>
                 <SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader>
+                <th style={{ width: 50 }}></th>
                 <SortHeader k="full_name" sort={sort}>ФИО</SortHeader>
                 <SortHeader k="phone" sort={sort}>Телефон</SortHeader>
                 <SortHeader k="email" sort={sort}>Email</SortHeader>
                 <th style={{ width: 40 }}></th>
               </tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={5} /> : sort.sortFn(data.results, {
+                {loading ? <SkeletonRows cols={6} /> : sort.sortFn(data.results, {
                     full_name: p => p.full_name || '',
                     phone: p => p.phone || '',
                     email: p => p.email || '',
                   }).map((p, idx) => (
                   <tr key={p.id} className="row-link" onClick={() => onNavigate('parent-detail', { parentId: p.id })}>
                     <td className="mono muted">{idx + 1}</td>
+                    <td><Avatar name={p.full_name} size="sm" /></td>
                     <td className="fwm">{p.full_name}</td>
                     <td className="muted">{p.phone || '-'}</td>
                     <td className="muted">{p.email || '-'}</td>
