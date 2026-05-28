@@ -8,7 +8,7 @@
 
 ---
 
-## 2. Сделай крч на везде таких вкладках сортировку как и на основных! Во всех вкладках если что!
+~~## 2. Сделай крч на везде таких вкладках сортировку как и на основных! Во всех вкладках если что!~~
 
 ```html
 <th style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">Преподаватель</th>
@@ -16,7 +16,7 @@
 
 ---
 
-## 3. Тут вот тоже
+~~## 3. Тут вот тоже~~
 
 ```html
 <th style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">Преподаватель</th>
@@ -24,7 +24,7 @@
 
 ---
 
-## 4. Как здесь крч!
+~~## 4. Как здесь крч!~~
 
 ```html
 <th class="sortable " style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);"><span style="display: inline-flex; align-items: center;">Название<span class="sort-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 10 12 5 17 10"></polyline><polyline points="7 14 12 19 17 14"></polyline></svg></span></span></th>

@@ -587,6 +587,7 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
   const [auditTotal, setAuditTotal] = useState(0);
   const [auditPages, setAuditPages] = useState(1);
   const toast = useToast();
+  const sortParents = useSortable({ key: null, dir: 'asc' }, 'std-parents');
 
   const load = () => {
     setLoading(true);
@@ -710,9 +711,9 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
                 <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Опекуны не добавлены</div>
               ) : (
                 <table className="tbl">
-                  <thead><tr><th style={{ width: 50 }}></th><th>ФИО</th><th>Связь</th><th>Телефон</th><th style={{ width: 40 }}></th></tr></thead>
+                  <thead><tr><th style={{ width: 50 }}></th><SortHeader k="parent_name" sort={sortParents}>ФИО</SortHeader><SortHeader k="relation_display" sort={sortParents}>Связь</SortHeader><SortHeader k="phone" sort={sortParents}>Телефон</SortHeader><th style={{ width: 40 }}></th></tr></thead>
                   <tbody>
-                    {student.parents.map(p => (
+                    {sortParents.sortFn(student.parents).map(p => (
                       <tr key={p.id}>
                         <td><Avatar name={p.parent_name} size="sm" /></td>
                         <td className="fwm">{p.parent_name}</td>
@@ -936,6 +937,9 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
   const [empAuditPage, setEmpAuditPage] = useState(1);
   const [empAuditTotal, setEmpAuditTotal] = useState(0);
   const [empAuditPages, setEmpAuditPages] = useState(1);
+  const sortEmpGroups = useSortable({ key: null, dir: 'asc' }, 'emp-groups');
+  const sortEmpSubjects = useSortable({ key: null, dir: 'asc' }, 'emp-subjects');
+  const sortEmpDocs = useSortable({ key: null, dir: 'asc' }, 'emp-docs');
 
   const loadAccount = () => {
     if (currentUser?.role !== 'owner') return;
@@ -1213,9 +1217,13 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
               <div className="card-head"><div className="title">Классное руководство</div></div>
               <div className="card-body flush">
                 <table className="tbl">
-                  <thead><tr><th>Группа</th><th>Факультет</th><th>Студентов</th><th style={{ width: 40 }}></th></tr></thead>
+                  <thead><tr><SortHeader k="name" sort={sortEmpGroups}>Группа</SortHeader><SortHeader k="faculty_short" sort={sortEmpGroups}>Факультет</SortHeader><SortHeader k="student_count" sort={sortEmpGroups}>Студентов</SortHeader><th style={{ width: 40 }}></th></tr></thead>
                   <tbody>
-                    {employee.headed_groups.map(g => (
+                    {sortEmpGroups.sortFn(employee.headed_groups, {
+                      name: g => g.name,
+                      faculty_short: g => g.faculty_short || '',
+                      student_count: g => g.student_count,
+                    }).map(g => (
                       <tr key={g.id} className="row-link" onClick={() => onNavigate('group-detail', { groupId: g.id })}>
                         <td className="fwm">{g.name}</td>
                         <td>{g.faculty_short}</td>
@@ -1238,9 +1246,12 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                 <EmptyState icon={I.briefcase} title="Предметы не назначены" sub="Нажмите «Назначить» чтобы добавить" />
               ) : (
                 <table className="tbl">
-                  <thead><tr><th>Предмет</th><th>Группа</th><th style={{ width: 40 }}></th></tr></thead>
+                  <thead><tr><SortHeader k="subject_name" sort={sortEmpSubjects}>Предмет</SortHeader><SortHeader k="group_name" sort={sortEmpSubjects}>Группа</SortHeader><th style={{ width: 40 }}></th></tr></thead>
                   <tbody>
-                    {employee.subjects?.map(s => (
+                    {sortEmpSubjects.sortFn(employee.subjects || [], {
+                      subject_name: s => s.subject_name || '',
+                      group_name: s => s.group_name || '',
+                    }).map(s => (
                       <tr key={s.assignment_id}>
                         <td className="fwm row-link" style={{ cursor: 'pointer' }} onClick={() => onNavigate('subject-detail', { subjectId: s.subject_id, filterEmployeeId: employeeId })}>{s.subject_name}</td>
                         <td className="row-link" style={{ cursor: 'pointer' }} onClick={() => onNavigate('group-detail', { groupId: s.group_id })}>{s.group_name}</td>
@@ -1264,9 +1275,13 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                 <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Документы не загружены</div>
               ) : (
                 <table className="tbl">
-                  <thead><tr><th>Название</th><th>Тип</th><th>Дата</th><th style={{ width: 40 }}></th></tr></thead>
+                  <thead><tr><SortHeader k="name" sort={sortEmpDocs}>Название</SortHeader><SortHeader k="doc_type" sort={sortEmpDocs}>Тип</SortHeader><SortHeader k="uploaded_at" sort={sortEmpDocs}>Дата</SortHeader><th style={{ width: 40 }}></th></tr></thead>
                   <tbody>
-                    {employee.documents.map(d => (
+                    {sortEmpDocs.sortFn(employee.documents, {
+                      name: d => d.name || '',
+                      doc_type: d => d.doc_type || '',
+                      uploaded_at: d => d.uploaded_at || '',
+                    }).map(d => (
                       <tr key={d.id}>
                         <td className="fwm"><a href={d.file_url} target="_blank" rel="noreferrer">{d.name}</a></td>
                         <td>{d.doc_type || '-'}</td>
@@ -1423,6 +1438,7 @@ function GroupList({ currentUser, openModal, onNavigate }) {
 function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
   const [group, setGroup] = useState(null);
   const [loading, setLoading] = useState(true);
+  const sortGroupStudents = useSortable({ key: null, dir: 'asc' }, 'group-students');
 
   const load = () => {
     setLoading(true);
@@ -1500,11 +1516,14 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
           </div>
           <div className="card-body flush">
             <table className="tbl">
-              <thead><tr><th>ФИО</th><th>Статус</th><th></th></tr></thead>
+              <thead><tr><SortHeader k="last_name" sort={sortGroupStudents}>ФИО</SortHeader><SortHeader k="status" sort={sortGroupStudents}>Статус</SortHeader><th></th></tr></thead>
               <tbody>
                 {group.students.length === 0 ? (
                   <tr><td colSpan={3} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>Студенты не добавлены</td></tr>
-                ) : group.students.map(s => (
+                ) : sortGroupStudents.sortFn(group.students, {
+                    last_name: s => `${s.last_name} ${s.first_name}`,
+                    status: s => s.status || '',
+                  }).map(s => (
                   <tr key={s.id} className="row-link" onClick={() => onNavigate('student-detail', { studentId: s.id })}>
                     <td className="fwm">{s.last_name} {s.first_name} {s.middle_name}</td>
                     <td><Badge status={s.status} /></td>
@@ -1544,6 +1563,7 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
 function FacultyDetail({ currentUser, openModal, onNavigate, facultyId }) {
   const [faculty, setFaculty] = useState(null);
   const [loading, setLoading] = useState(true);
+  const sortFacGroups = useSortable({ key: null, dir: 'asc' }, 'fac-groups');
 
   const load = () => {
     setLoading(true);
@@ -1595,11 +1615,16 @@ function FacultyDetail({ currentUser, openModal, onNavigate, facultyId }) {
           </div>
           <div className="card-body flush">
             <table className="tbl">
-              <thead><tr><th>Название</th><th>Год набора</th><th>Студентов</th><th>Кл. руководитель</th><th style={{ width: 40 }}></th></tr></thead>
+              <thead><tr><SortHeader k="name" sort={sortFacGroups}>Название</SortHeader><SortHeader k="year" sort={sortFacGroups}>Год набора</SortHeader><SortHeader k="student_count" sort={sortFacGroups}>Студентов</SortHeader><SortHeader k="headteacher_name" sort={sortFacGroups}>Кл. руководитель</SortHeader><th style={{ width: 40 }}></th></tr></thead>
               <tbody>
                 {faculty.groups.length === 0 ? (
                   <tr><td colSpan={5} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>Групп нет</td></tr>
-                ) : faculty.groups.map(g => (
+                ) : sortFacGroups.sortFn(faculty.groups, {
+                    name: g => g.name,
+                    year: g => g.year,
+                    student_count: g => g.student_count,
+                    headteacher_name: g => g.headteacher_name || '',
+                  }).map(g => (
                   <tr key={g.id} className="row-link" onClick={() => onNavigate('group-detail', { groupId: g.id })}>
                     <td className="fwm">{g.name}</td>
                     <td className="mono">{g.year}</td>
@@ -2081,6 +2106,7 @@ function ParentDetail({ currentUser, openModal, onNavigate, parentId }) {
   const toast = useToast();
   const [parent, setParent] = useState(null);
   const [loading, setLoading] = useState(true);
+  const sortParentStudents = useSortable({ key: null, dir: 'asc' }, 'parent-students');
 
   const load = () => {
     setLoading(true);
@@ -2168,9 +2194,13 @@ function ParentDetail({ currentUser, openModal, onNavigate, parentId }) {
               <EmptyState icon={I.search} title="Студенты не привязаны" sub="Нажмите «Привязать студента» чтобы добавить" />
             ) : (
               <table className="tbl">
-                <thead><tr><th>Студент</th><th>Связь</th><th>Группа</th><th style={{ width: 40 }}></th></tr></thead>
+                <thead><tr><SortHeader k="student_name" sort={sortParentStudents}>Студент</SortHeader><SortHeader k="relation_display" sort={sortParentStudents}>Связь</SortHeader><SortHeader k="group_name" sort={sortParentStudents}>Группа</SortHeader><th style={{ width: 40 }}></th></tr></thead>
                 <tbody>
-                  {parent.students?.map(s => (
+                  {sortParentStudents.sortFn(parent.students || [], {
+                    student_name: s => s.student_name || '',
+                    relation_display: s => s.relation_display || '',
+                    group_name: s => s.group_name || '',
+                  }).map(s => (
                     <tr key={s.sp_id}>
                       <td className="fwm">{s.student_name}</td>
                       <td>{s.relation_display}</td>
@@ -2196,6 +2226,8 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId, filterEm
   const toast = useToast();
   const [subject, setSubject] = useState(null);
   const [loading, setLoading] = useState(true);
+  const sortSubjGroups = useSortable({ key: null, dir: 'asc' }, 'subj-groups');
+  const sortSubjTeachers = useSortable({ key: null, dir: 'asc' }, 'subj-teachers');
 
   const load = () => {
     setLoading(true);
@@ -2267,14 +2299,17 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId, filterEm
               <table className="tbl">
                 <thead>
                   <tr>
-                    <th>Группа</th>
-                    {!filterEmployeeId && <th>Преподаватель</th>}
+                    <SortHeader k="group_name" sort={sortSubjGroups}>Группа</SortHeader>
+                    {!filterEmployeeId && <SortHeader k="employee_name" sort={sortSubjGroups}>Преподаватель</SortHeader>}
                     {!filterEmployeeId && ['owner', 'admin'].includes(currentUser?.role) && <th style={{ width: 40 }}></th>}
                     {filterEmployeeId && <th style={{ width: 40 }}></th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredAssignments.map(a => (
+                  {sortSubjGroups.sortFn(filteredAssignments, {
+                    group_name: a => a.group_name || '',
+                    employee_name: a => a.employee_name || '',
+                  }).map(a => (
                     <tr key={a.id} className="row-link" onClick={() => onNavigate('group-detail', { groupId: a.group_id })}>
                       <td className="fwm">{a.group_name}</td>
                       {!filterEmployeeId && <td className="muted">{a.employee_name}</td>}
@@ -2307,9 +2342,11 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId, filterEm
                 <EmptyState icon={I.user} title="Нет назначенных преподавателей" sub="Нажмите + чтобы назначить группу с преподавателем" />
               ) : (
                 <table className="tbl">
-                  <thead><tr><th>Преподаватель</th><th style={{ width: 40 }}></th></tr></thead>
+                  <thead><tr><SortHeader k="name" sort={sortSubjTeachers}>Преподаватель</SortHeader><th style={{ width: 40 }}></th></tr></thead>
                   <tbody>
-                    {uniqueTeachers.map(t => (
+                    {sortSubjTeachers.sortFn(uniqueTeachers, {
+                      name: t => t.name || '',
+                    }).map(t => (
                       <tr key={t.id} className="row-link" onClick={() => onNavigate('employee-detail', { employeeId: t.id })}>
                         <td className="fwm">{t.name}</td>
                         <td>{I.chevr}</td>
