@@ -1,10 +1,17 @@
 # HTML.md - задачи по правке интерфейса
 
-## ~~1. Отформатируй пожалуйста чтобы не было пробвелов ммежду названием и число, должно быть~~
-Аббревиатура: ИТП
-и так далее, ! 
+## ~~1. Убери на всех вкладках эту штуку пожалуйста, она мешается!~~
+
 ```html
-<div class="card" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);"><div class="card-head" style=""><div class="title">Сведения</div></div><div style="border-top: 1px solid var(--border);"><dl class="kv" style=""><dt>Аббревиатура</dt><dd class="mono" style="">ИТП</dd><dt>Групп</dt><dd class="mono" style="">3</dd><dt>Студентов</dt><dd class="mono" style="">12</dd><dt>Основан</dt><dd style="">01.09.2012</dd></dl></div></div>
+<div class="crumbs" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);"><span style="display: contents;"><a href="#" style="">Факультеты</a></span><span style="display: contents;"><span class="sep" style="">/</span><span style="">ИП</span></span></div>
+```
+
+---
+
+## 2. Крч, если мы заходим на факультет, нам не нужно его выбирать в списке факультетов! Он доолжен автоматически подставлятся!
+
+```html
+<select class="select " style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);"><option value="">- Выберите факультет -</option><option value="12">ИП - Инн пидорас</option><option value="13">ПИДОРАС - Информационные системы ипрограммирование</option><option value="9">ЫЛВДПАДШЫВА - Информационные технологии и программирование</option><option value="11">ТОТ - Техническое обслуживание транспорта</option><option value="10">ЭУ - Экономика и управление</option></select>
 ```
 
 ---

@@ -38,8 +38,7 @@ function PageHead({ crumbs, title, sub, actions }) {
   return (
     <div className="page-head">
       <div>
-        {crumbs && <Crumbs items={crumbs} />}
-        <h1>{title}</h1>
+          <h1>{title}</h1>
         {sub && <div className="sub">{sub}</div>}
       </div>
       {actions && <div className="page-actions">{actions}</div>}

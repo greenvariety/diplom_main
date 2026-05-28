@@ -1,0 +1,37 @@
+[
+  {
+    "input": "МосковскийКолледж",
+    "expected": "МК",
+    "got": "МК",
+    "pass": true,
+    "name_unchanged": true
+  },
+  {
+    "input": "ИНН Пидорас",
+    "expected": "ИННП",
+    "got": "ИННП",
+    "pass": true,
+    "name_unchanged": true
+  },
+  {
+    "input": "ПИДОРАСсин",
+    "expected": "ПИДОРАС",
+    "got": "ПИДОРАС",
+    "pass": true,
+    "name_unchanged": true
+  },
+  {
+    "input": "МОСКОВСКИЙ",
+    "expected": "МОСКОВСКИЙ",
+    "got": "МОСКОВСКИЙ",
+    "pass": true,
+    "name_unchanged": true
+  },
+  {
+    "input": "ПидорасПИДОРАс",
+    "expected": "ППИДОРА",
+    "got": "ППИДОРА",
+    "pass": true,
+    "name_unchanged": true
+  }
+]
