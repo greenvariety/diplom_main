@@ -525,9 +525,10 @@ function StudentList({ currentUser, openModal, onNavigate }) {
                 <SortHeader k="faculty_short" sort={sort}>Факультет</SortHeader>
                 <SortHeader k="group_name" sort={sort}>Группа</SortHeader>
                 <SortHeader k="phone" sort={sort}>Контакт</SortHeader>
+                <th style={{ width: 40 }}></th>
               </tr></thead>
               {loading
-                ? <SkeletonRows rows={6} cols={7} />
+                ? <SkeletonRows rows={6} cols={8} />
                 : <tbody>
                     {sort.sortFn(data.results, {
                         last_name: s => `${s.last_name} ${s.first_name}`,
@@ -551,6 +552,7 @@ function StudentList({ currentUser, openModal, onNavigate }) {
                         <td>{s.faculty_short}</td>
                         <td>{s.group_name || <span className="muted">-</span>}</td>
                         <td className="muted">{s.phone}</td>
+                        <td>{I.chevr}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -871,9 +873,10 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
                 <SortHeader k="position_name" sort={sort}>Должность</SortHeader>
                 <SortHeader k="phone" sort={sort}>Телефон</SortHeader>
                 <SortHeader k="email" sort={sort}>Email</SortHeader>
+                <th style={{ width: 40 }}></th>
               </tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={6} /> : sort.sortFn(data.results, {
+                {loading ? <SkeletonRows cols={7} /> : sort.sortFn(data.results, {
                     full_name: e => e.full_name || '',
                     position_name: e => e.position_name || '',
                     phone: e => e.phone || '',
@@ -891,6 +894,7 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
                     <td>{e.position_name || <span className="muted">-</span>}</td>
                     <td className="muted">{e.phone || '-'}</td>
                     <td className="muted">{e.email || '-'}</td>
+                    <td>{I.chevr}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1209,13 +1213,14 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
               <div className="card-head"><div className="title">Классное руководство</div></div>
               <div className="card-body flush">
                 <table className="tbl">
-                  <thead><tr><th>Группа</th><th>Факультет</th><th>Студентов</th></tr></thead>
+                  <thead><tr><th>Группа</th><th>Факультет</th><th>Студентов</th><th style={{ width: 40 }}></th></tr></thead>
                   <tbody>
                     {employee.headed_groups.map(g => (
                       <tr key={g.id} className="row-link" onClick={() => onNavigate('group-detail', { groupId: g.id })}>
                         <td className="fwm">{g.name}</td>
                         <td>{g.faculty_short}</td>
                         <td className="mono">{g.student_count}</td>
+                        <td>{I.chevr}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1590,16 +1595,17 @@ function FacultyDetail({ currentUser, openModal, onNavigate, facultyId }) {
           </div>
           <div className="card-body flush">
             <table className="tbl">
-              <thead><tr><th>Название</th><th>Год набора</th><th>Студентов</th><th>Кл. руководитель</th></tr></thead>
+              <thead><tr><th>Название</th><th>Год набора</th><th>Студентов</th><th>Кл. руководитель</th><th style={{ width: 40 }}></th></tr></thead>
               <tbody>
                 {faculty.groups.length === 0 ? (
-                  <tr><td colSpan={4} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>Групп нет</td></tr>
+                  <tr><td colSpan={5} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>Групп нет</td></tr>
                 ) : faculty.groups.map(g => (
                   <tr key={g.id} className="row-link" onClick={() => onNavigate('group-detail', { groupId: g.id })}>
                     <td className="fwm">{g.name}</td>
                     <td className="mono">{g.year}</td>
                     <td className="mono">{g.student_count}</td>
                     <td className="muted">{g.headteacher_name || '-'}</td>
+                    <td>{I.chevr}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1759,9 +1765,10 @@ function UserList({ currentUser, openModal, onNavigate }) {
                 <SortHeader k="role" sort={sort}>Роль</SortHeader>
                 <SortHeader k="last_login" sort={sort}>Последний вход</SortHeader>
                 <th>Статус</th>
+                <th style={{ width: 40 }}></th>
               </tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={6} /> : sort.sortFn(
+                {loading ? <SkeletonRows cols={7} /> : sort.sortFn(
                   users.filter(u => !search || (u.employee_name || '').toLowerCase().includes(search.toLowerCase()) || u.username.toLowerCase().includes(search.toLowerCase())),
                   {
                     employee_name: u => u.employee_name || '',
@@ -1777,6 +1784,7 @@ function UserList({ currentUser, openModal, onNavigate }) {
                     <td><span className={`badge ${ROLE_CLS[u.role] || 'badge-neutral'}`}><span className="dot"></span>{u.role_display}</span></td>
                     <td className="mono muted">{u.last_login || 'никогда'}</td>
                     <td>{u.is_active ? <span className="badge badge-ok"><span className="dot"></span>Активен</span> : <span className="badge badge-neutral"><span className="dot"></span>Неактивен</span>}</td>
+                    <td>{u.employee_id ? I.chevr : null}</td>
                   </tr>
                 ))}
               </tbody>
@@ -2283,11 +2291,12 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId }) {
               <EmptyState icon={I.user} title="Нет назначенных преподавателей" sub="Нажмите + чтобы назначить группу с преподавателем" />
             ) : (
               <table className="tbl">
-                <thead><tr><th>Преподаватель</th></tr></thead>
+                <thead><tr><th>Преподаватель</th><th style={{ width: 40 }}></th></tr></thead>
                 <tbody>
                   {uniqueTeachers.map(t => (
                     <tr key={t.id} className="row-link" onClick={() => onNavigate('employee-detail', { employeeId: t.id })}>
                       <td className="fwm">{t.name}</td>
+                      <td>{I.chevr}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -2305,13 +2314,14 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId }) {
             <EmptyState icon={I.users} title="Нет студентов" sub="Студенты появятся когда предмет будет назначен группе" />
           ) : (
             <table className="tbl">
-              <thead><tr><th>Студент</th><th>Группа</th><th>Статус</th></tr></thead>
+              <thead><tr><th>Студент</th><th>Группа</th><th>Статус</th><th style={{ width: 40 }}></th></tr></thead>
               <tbody>
                 {subject.students.map(s => (
                   <tr key={s.id} className="row-link" onClick={() => onNavigate('student-detail', { studentId: s.id })}>
                     <td className="fwm">{s.last_name} {s.first_name} {s.middle_name}</td>
                     <td className="muted">{s.group_name}</td>
                     <td><Badge status={s.status} /></td>
+                    <td>{I.chevr}</td>
                   </tr>
                 ))}
               </tbody>
@@ -2366,14 +2376,16 @@ function SubjectList({ currentUser, openModal, onNavigate }) {
               <thead><tr>
                 <SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader>
                 <SortHeader k="name" sort={sort}>Название</SortHeader>
+                <th style={{ width: 40 }}></th>
               </tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={2} /> : sort.sortFn(subjects.filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase())), {
+                {loading ? <SkeletonRows cols={3} /> : sort.sortFn(subjects.filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase())), {
                     name: s => s.name,
                   }).map((s, idx) => (
                   <tr key={s.id} className="row-link" onClick={() => onNavigate('subject-detail', { subjectId: s.id })}>
                     <td className="mono muted">{idx + 1}</td>
                     <td className="fwm">{s.name}</td>
+                    <td>{I.chevr}</td>
                   </tr>
                 ))}
               </tbody>
