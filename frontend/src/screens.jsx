@@ -82,13 +82,17 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
           </div>
         </div>
       )}
-      <div className="stats">
-        <Stat label="Факультетов"  value={stats.faculties  ?? '…'} icon={I.building}  onClick={() => onNavigate('faculties')} />
-        <Stat label="Групп"        value={stats.groups     ?? '…'} icon={I.users}      onClick={() => onNavigate('groups')} />
-        <Stat label="Студентов"    value={stats.students   ?? '…'} icon={I.badge}      onClick={() => onNavigate('students')} />
-        <Stat label="Сотрудников"  value={stats.employees  ?? '…'} icon={I.briefcase}  onClick={() => onNavigate('employees')} />
-        <Stat label="Предметов"    value={stats.subjects   ?? '…'} icon={I.book}       onClick={() => onNavigate('subjects')} />
-        <Stat label="Опекунов"     value={stats.parents    ?? '…'} icon={I.heart}      onClick={() => onNavigate('parents')} />
+      <div className="stats" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+        <Stat label="Факультеты"           value={stats.faculties     ?? '…'} icon={I.building}  onClick={() => onNavigate('faculties')} />
+        <Stat label="Группы"               value={stats.groups        ?? '…'} icon={I.users}      onClick={() => onNavigate('groups')} />
+        <Stat label="Студенты"             value={stats.students      ?? '…'} icon={I.badge}      onClick={() => onNavigate('students')} />
+        <Stat label="Сотрудники"           value={stats.employees     ?? '…'} icon={I.briefcase}  onClick={() => onNavigate('employees')} />
+        <Stat label="Пользователи"         value={stats.users         ?? '…'} icon={I.shield}     onClick={() => onNavigate('users')} />
+        <Stat label="Предметы"             value={stats.subjects      ?? '…'} icon={I.book}       onClick={() => onNavigate('subjects')} />
+        <Stat label="Опекуны"              value={stats.parents       ?? '…'} icon={I.heart}      onClick={() => onNavigate('parents')} />
+        <Stat label="Должности"            value={stats.positions     ?? '…'} icon={I.settings}   onClick={() => onNavigate('positions')} />
+        <Stat label="Заявки на удаление"   value={stats.pending_delreq ?? '…'} icon={I.trash}     onClick={() => onNavigate('delreq')} />
+        <Stat label="Журнал изменений"     value={stats.audit         ?? '…'} icon={I.history}    onClick={() => onNavigate('audit')} />
       </div>
     </Shell>
   );
@@ -315,12 +319,12 @@ function DashboardAdmin({ currentUser, onNavigate, onLogout, openModal }) {
         </>}
       />
       <div className="stats">
-        <Stat label="Факультетов" value={stats.faculties  ?? '…'} icon={I.building}  onClick={() => onNavigate('faculties')} />
-        <Stat label="Групп"       value={stats.groups     ?? '…'} icon={I.users}      onClick={() => onNavigate('groups')} />
-        <Stat label="Студентов"   value={stats.students   ?? '…'} icon={I.badge}      onClick={() => onNavigate('students')} />
-        <Stat label="Сотрудников" value={stats.employees  ?? '…'} icon={I.briefcase}  onClick={() => onNavigate('employees')} />
-        <Stat label="Предметов"   value={stats.subjects   ?? '…'} icon={I.book}       onClick={() => onNavigate('subjects')} />
-        <Stat label="Опекунов"    value={stats.parents    ?? '…'} icon={I.heart}      onClick={() => onNavigate('parents')} />
+        <Stat label="Факультеты"  value={stats.faculties  ?? '…'} icon={I.building}  onClick={() => onNavigate('faculties')} />
+        <Stat label="Группы"      value={stats.groups     ?? '…'} icon={I.users}      onClick={() => onNavigate('groups')} />
+        <Stat label="Студенты"    value={stats.students   ?? '…'} icon={I.badge}      onClick={() => onNavigate('students')} />
+        <Stat label="Сотрудники"  value={stats.employees  ?? '…'} icon={I.briefcase}  onClick={() => onNavigate('employees')} />
+        <Stat label="Предметы"    value={stats.subjects   ?? '…'} icon={I.book}       onClick={() => onNavigate('subjects')} />
+        <Stat label="Опекуны"     value={stats.parents    ?? '…'} icon={I.heart}      onClick={() => onNavigate('parents')} />
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
         <div className="card">

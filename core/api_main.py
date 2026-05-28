@@ -1,6 +1,6 @@
 ﻿from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import Student, Employee, Faculty, AuditLog, DeleteRequest, Group, Subject, Parent
+from .models import Student, Employee, Faculty, AuditLog, DeleteRequest, Group, Subject, Parent, Position, User
 
 
 class MeView(APIView):
@@ -31,6 +31,9 @@ class DashboardView(APIView):
             groups_qs = Group.objects.filter(faculty__institution=institution)
             subjects_qs = Subject.objects.filter(institution=institution)
             parents_qs = Parent.objects.filter(institution=institution)
+            positions_qs = Position.objects.filter(institution=institution)
+            users_qs = User.objects.filter(institution=institution)
+            audit_total = AuditLog.objects.filter(institution=institution).count()
             pending_delreq = DeleteRequest.objects.filter(
                 user__institution=institution, status='pending'
             ).count()
@@ -42,6 +45,9 @@ class DashboardView(APIView):
             groups_qs = Group.objects.none()
             subjects_qs = Subject.objects.none()
             parents_qs = Parent.objects.none()
+            positions_qs = Position.objects.none()
+            users_qs = User.objects.none()
+            audit_total = 0
             pending_delreq = 0
             audit_qs = AuditLog.objects.none()
 
@@ -71,6 +77,9 @@ class DashboardView(APIView):
                 'employees': employees_qs.count(),
                 'subjects': subjects_qs.count(),
                 'parents': parents_qs.count(),
+                'positions': positions_qs.count(),
+                'users': users_qs.count(),
+                'audit': audit_total,
                 'pending_delreq': pending_delreq,
             },
             'recent_audit': recent_audit,
