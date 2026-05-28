@@ -1372,6 +1372,9 @@ function GroupList({ currentUser, openModal, onNavigate }) {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
   const [search, setSearch] = useState('');
+  const [filterFaculty, setFilterFaculty] = useState('');
+  const [filterYear, setFilterYear] = useState('');
+  const [filterHeadteacher, setFilterHeadteacher] = useState('');
   const sort = useSortable({ key: null, dir: 'asc' }, 'groups-list');
 
   const load = () => {
@@ -1384,8 +1387,18 @@ function GroupList({ currentUser, openModal, onNavigate }) {
 
   useEffect(() => { load(); }, []);
 
+  const faculties = [...new Map(groups.filter(g => g.faculty_id).map(g => [g.faculty_id, { id: g.faculty_id, short: g.faculty_short, name: g.faculty_name }])).values()].sort((a, b) => a.short.localeCompare(b.short));
+  const years = [...new Set(groups.map(g => g.year))].sort((a, b) => a - b);
+  const headteachers = [...new Map(groups.filter(g => g.headteacher_id).map(g => [g.headteacher_id, { id: g.headteacher_id, name: g.headteacher_name }])).values()].sort((a, b) => a.name.localeCompare(b.name));
+
   const filtered = sort.sortFn(
-    groups.filter(g => !search || g.name.toLowerCase().includes(search.toLowerCase())),
+    groups.filter(g => {
+      if (search && !g.name.toLowerCase().includes(search.toLowerCase())) return false;
+      if (filterFaculty && String(g.faculty_id) !== filterFaculty) return false;
+      if (filterYear && String(g.year) !== filterYear) return false;
+      if (filterHeadteacher && String(g.headteacher_id) !== filterHeadteacher) return false;
+      return true;
+    }),
     {
       name: g => g.name,
       faculty_short: g => g.faculty_short || '',
@@ -1394,6 +1407,9 @@ function GroupList({ currentUser, openModal, onNavigate }) {
       student_count: g => g.student_count,
     }
   );
+
+  const hasFilters = search || filterFaculty || filterYear || filterHeadteacher;
+  const reset = () => { setQ(''); setSearch(''); setFilterFaculty(''); setFilterYear(''); setFilterHeadteacher(''); };
 
   return (
     <Shell currentUser={currentUser} active="groups" onNavigate={onNavigate} openModal={openModal}>
@@ -1405,10 +1421,32 @@ function GroupList({ currentUser, openModal, onNavigate }) {
       <div className="filters">
         <div className="field grow-2">
           <label className="field-label">Поиск</label>
-          <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && setSearch(q)} /></div>
+          <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => { setSearch(e.target.value); }} /></div>
         </div>
-        <button className="btn btn-primary" style={{ height: 36 }} onClick={() => setSearch(q)}>Найти</button>
-        <button className="btn btn-ghost" style={{ height: 36 }} onClick={() => { setQ(''); setSearch(''); load(); }}>Сбросить</button>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset} disabled={!hasFilters}>Сбросить</button>
+      </div>
+      <div className="filters" style={{ marginTop: -8 }}>
+        <div className="field">
+          <label className="field-label">Факультет</label>
+          <select className="select" value={filterFaculty} onChange={e => setFilterFaculty(e.target.value)}>
+            <option value="">Все</option>
+            {faculties.map(f => <option key={f.id} value={f.id}>{f.short}</option>)}
+          </select>
+        </div>
+        <div className="field">
+          <label className="field-label">Год начала</label>
+          <select className="select" value={filterYear} onChange={e => setFilterYear(e.target.value)}>
+            <option value="">Все</option>
+            {years.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
+        <div className="field grow-2">
+          <label className="field-label">Классный руководитель</label>
+          <select className="select" value={filterHeadteacher} onChange={e => setFilterHeadteacher(e.target.value)}>
+            <option value="">Все</option>
+            {headteachers.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+          </select>
+        </div>
       </div>
       <div className="card">
         <div className="card-body flush">
