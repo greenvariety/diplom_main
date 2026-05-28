@@ -340,7 +340,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
   border-radius: var(--radius);
   overflow: hidden;
 }
-.card + .card { margin-top: 16px; }
+.card-stack > .card + .card { margin-top: 16px; }
 .card-head {
   display: flex; align-items: center; justify-content: space-between;
   padding: 12px var(--pad);

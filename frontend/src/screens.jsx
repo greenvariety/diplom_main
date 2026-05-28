@@ -697,7 +697,7 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
             </div>
           </div>
         </div>
-        <div>
+        <div className="card-stack">
           <div className="card">
             <div className="card-head">
               <div className="title">Опекуны и родители</div>
@@ -2185,8 +2185,113 @@ function ParentDetail({ currentUser, openModal, onNavigate, parentId }) {
   );
 }
 
-function SubjectList({ currentUser, openModal, onNavigate }) {
+function SubjectDetail({ currentUser, openModal, onNavigate, subjectId }) {
   const toast = useToast();
+  const [subject, setSubject] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = () => {
+    setLoading(true);
+    api.get(`/subjects/${subjectId}/`).then(r => {
+      setSubject(r.data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  };
+
+  useEffect(() => { if (subjectId) load(); }, [subjectId]);
+
+  const handleDelete = async () => {
+    if (!confirm(`Удалить предмет «${subject.name}»?`)) return;
+    try {
+      await api.delete(`/subjects/${subjectId}/`);
+      toast.push('Предмет удалён', { kind: 'ok' });
+      onNavigate('subjects');
+    } catch (e) {
+      toast.push(e.response?.data?.error || 'Ошибка при удалении', { kind: 'err' });
+    }
+  };
+
+  if (loading || !subject) {
+    return (
+      <Shell currentUser={currentUser} active="subjects" onNavigate={onNavigate} openModal={openModal}>
+        <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>Загрузка…</div>
+      </Shell>
+    );
+  }
+
+  const uniqueTeachers = [];
+  const seenIds = new Set();
+  for (const a of subject.assignments) {
+    if (!seenIds.has(a.employee_id)) {
+      seenIds.add(a.employee_id);
+      uniqueTeachers.push({ id: a.employee_id, name: a.employee_name });
+    }
+  }
+
+  return (
+    <Shell currentUser={currentUser} active="subjects" onNavigate={onNavigate} openModal={openModal}>
+      <PageHead
+        crumbs={[{ label: 'Предметы', href: true, onClick: () => onNavigate('subjects') }, { label: subject.name }]}
+        title={subject.name}
+        sub={`Групп: ${subject.assignments.length}`}
+        actions={<>
+          <button className="btn btn-secondary btn-sm" onClick={() => openModal('subjectForm', { subject, onDone: load })}>{I.pencil}Редактировать</button>
+          {currentUser?.role === 'owner'
+            ? <button className="btn btn-danger btn-sm" onClick={handleDelete}>{I.trash}Удалить</button>
+            : null
+          }
+        </>}
+      />
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+        <div className="card">
+          <div className="card-head">
+            <div className="title">Группы <span className="muted" style={{ fontWeight: 400 }}>· {subject.assignments.length}</span></div>
+          </div>
+          <div className="card-body flush">
+            {subject.assignments.length === 0 ? (
+              <EmptyState icon={I.book} title="Предмет не назначен ни одной группе" sub="Назначьте предмет через карточку группы" />
+            ) : (
+              <table className="tbl">
+                <thead><tr><th>Группа</th><th>Преподаватель</th></tr></thead>
+                <tbody>
+                  {subject.assignments.map(a => (
+                    <tr key={a.id} className="row-link" onClick={() => onNavigate('group-detail', { groupId: a.group_id })}>
+                      <td className="fwm">{a.group_name}</td>
+                      <td className="muted">{a.employee_name}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-head">
+            <div className="title">Преподаватели <span className="muted" style={{ fontWeight: 400 }}>· {uniqueTeachers.length}</span></div>
+          </div>
+          <div className="card-body flush">
+            {uniqueTeachers.length === 0 ? (
+              <div style={{ padding: '16px 20px', color: 'var(--text-muted)', fontSize: 13 }}>Нет назначенных преподавателей</div>
+            ) : (
+              <table className="tbl">
+                <thead><tr><th>Преподаватель</th></tr></thead>
+                <tbody>
+                  {uniqueTeachers.map(t => (
+                    <tr key={t.id} className="row-link" onClick={() => onNavigate('employee-detail', { employeeId: t.id })}>
+                      <td className="fwm">{t.name}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      </div>
+    </Shell>
+  );
+}
+
+function SubjectList({ currentUser, openModal, onNavigate }) {
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
@@ -2202,17 +2307,6 @@ function SubjectList({ currentUser, openModal, onNavigate }) {
   };
 
   useEffect(() => { load(); }, []);
-
-  const handleDelete = async (s) => {
-    if (!confirm(`Удалить предмет «${s.name}»?`)) return;
-    try {
-      await api.delete(`/subjects/${s.id}/`);
-      toast.push('Предмет удалён', { kind: 'ok' });
-      load();
-    } catch (e) {
-      toast.push(e.response?.data?.error || 'Ошибка при удалении', { kind: 'err' });
-    }
-  };
 
   return (
     <Shell currentUser={currentUser} active="subjects" onNavigate={onNavigate} openModal={openModal}>
@@ -2240,25 +2334,14 @@ function SubjectList({ currentUser, openModal, onNavigate }) {
               <thead><tr>
                 <SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader>
                 <SortHeader k="name" sort={sort}>Название</SortHeader>
-                <th style={{ width: 80 }}></th>
               </tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={3} /> : sort.sortFn(subjects.filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase())), {
+                {loading ? <SkeletonRows cols={2} /> : sort.sortFn(subjects.filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase())), {
                     name: s => s.name,
                   }).map((s, idx) => (
-                  <tr key={s.id}>
+                  <tr key={s.id} className="row-link" onClick={() => onNavigate('subject-detail', { subjectId: s.id })}>
                     <td className="mono muted">{idx + 1}</td>
                     <td className="fwm">{s.name}</td>
-                    <td style={{ display: 'flex', gap: 4 }}>
-                      <button className="btn btn-ghost btn-icon btn-sm"
-                        onClick={() => openModal('subjectForm', { subject: s, onDone: load })}>
-                        {I.pencil}
-                      </button>
-                      <button className="btn btn-ghost btn-icon btn-sm"
-                        onClick={() => handleDelete(s)}>
-                        {I.trash}
-                      </button>
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -2354,5 +2437,5 @@ export {
   GroupList, GroupDetail,
   FacultyList, FacultyDetail,
   UserList, DeleteRequests, AuditLog,
-  ParentList, ParentDetail, SubjectList, PositionList,
+  ParentList, ParentDetail, SubjectList, SubjectDetail, PositionList,
 };
