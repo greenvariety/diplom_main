@@ -2248,9 +2248,7 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId }) {
         <div className="card">
           <div className="card-head">
             <div className="title">Группы<span className="muted" style={{ fontWeight: 700 }}>: {subject.assignments.length}</span></div>
-            {['owner', 'admin'].includes(currentUser?.role) && (
-              <button className="btn btn-secondary btn-sm" onClick={() => openModal('assignSubject', { subjectId, subjectName: subject.name, onDone: load })}>{I.plus}</button>
-            )}
+            <button className="btn btn-secondary btn-sm" onClick={() => openModal('assignSubject', { subjectId, subjectName: subject.name, onDone: load })}>{I.plus}</button>
           </div>
           <div className="card-body flush">
             {subject.assignments.length === 0 ? (
