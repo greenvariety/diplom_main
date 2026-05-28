@@ -87,6 +87,8 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
         <Stat label="Групп"        value={stats.groups     ?? '…'} icon={I.users}      onClick={() => onNavigate('groups')} />
         <Stat label="Студентов"    value={stats.students   ?? '…'} icon={I.badge}      onClick={() => onNavigate('students')} />
         <Stat label="Сотрудников"  value={stats.employees  ?? '…'} icon={I.briefcase}  onClick={() => onNavigate('employees')} />
+        <Stat label="Предметов"    value={stats.subjects   ?? '…'} icon={I.book}       onClick={() => onNavigate('subjects')} />
+        <Stat label="Опекунов"     value={stats.parents    ?? '…'} icon={I.heart}      onClick={() => onNavigate('parents')} />
       </div>
     </Shell>
   );
@@ -317,6 +319,8 @@ function DashboardAdmin({ currentUser, onNavigate, onLogout, openModal }) {
         <Stat label="Групп"       value={stats.groups     ?? '…'} icon={I.users}      onClick={() => onNavigate('groups')} />
         <Stat label="Студентов"   value={stats.students   ?? '…'} icon={I.badge}      onClick={() => onNavigate('students')} />
         <Stat label="Сотрудников" value={stats.employees  ?? '…'} icon={I.briefcase}  onClick={() => onNavigate('employees')} />
+        <Stat label="Предметов"   value={stats.subjects   ?? '…'} icon={I.book}       onClick={() => onNavigate('subjects')} />
+        <Stat label="Опекунов"    value={stats.parents    ?? '…'} icon={I.heart}      onClick={() => onNavigate('parents')} />
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
         <div className="card">

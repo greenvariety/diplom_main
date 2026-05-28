@@ -1,41 +1,49 @@
 # HTML.md - задачи по правке интерфейса
 
-~~## 1. На всех вкладках, группах, предметах, факульетатх и тд, сделай так чтобы можно было сортировать текстовые по алфавиту, а числа по возврастнаию и тд! И также Перед всем добавь номер: типа №, код, название и так везде!~~
+~~## 1. Добавь сюда все вообще! типа блоки с передметами, сотрудниками, студентами, опекунами и тд!~~
 
 ```html
-<th style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">Код</th>
+<main class="main" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">
 ```
 
 ---
 
-~~## 2. Вот тут ! флаг, убери везде эти флаги, вообще саму концепцию их!~~
+## 2. Перенеси на нюжний блок он в след таске будет!
 
 ```html
-<td class="fwm" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">Агафонова Юлия Сергеевна<span title="Нет опекунов - требуется дозаполнение" style="margin-left: 6px; color: var(--warn-fg, #f59e0b); font-size: 14px;">!</span></td>
+<div class="modal-sub" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">Код: ИТП</div>
 ```
 
 ---
 
-~~## 3. Всего: n записей~~
+## 3. Вот сюда нужно перенести и сделать Групп: n а то естебя нет : и пробел гигантский
 
 ```html
-<div class="sub" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">Подтвердите или отклоните заявки от администраторов</div>
+<div class="modal-body" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);"><dl class="kv" style="padding: 0px;"><dt>Групп</dt><dd class="mono" style="">3</dd><dt>Студентов</dt><dd class="mono" style="">12</dd></dl></div>
 ```
 
 ---
 
-~~## 4. На всех закладках кнопка почему то чуть меньше кнопки найти! Сделай их одинакового размера, а также кнопку Сбросить чуть обведи и сделай серенькой~~
+## 4. Сделай везде эту штуку квадратом скругленным, в стиле всех кнопок
 
 ```html
-<button class="btn btn-ghost" style="height: 36px; outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">Сбросить</button>
+<div class="sub" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">Сводка по системе</div>
 ```
 
 ---
 
-~~## 5. Убери на всех вкладках этот блок и посмотри как он сделан в факультетах и группах!~~
+## 5. Это должно быть скругленным квадратом как и везде, у нас только аватарки круглые!
 
 ```html
-<div class="crumbs" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);"><span style="display: contents;"><a href="#" style="">Главная</a></span><span style="display: contents;"><span class="sep" style="">/</span><span style="">Предметы</span></span></div>
+<span class="badge badge-neutral mono" style="padding: 1px 6px; outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">ЭУ</span>
+```
+
+---
+
+## 6. Добавь аватарки опекунам и сотрудникам на примере этой штуки, они у всех должны быть!
+
+```html
+<span class="avatar avatar-sm av-1 " style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">СВ</span>
 ```
 
 ---
