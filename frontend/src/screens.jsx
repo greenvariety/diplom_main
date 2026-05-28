@@ -850,7 +850,10 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
         crumbs={filterPositionId ? [{ label: 'Должности', href: true, onClick: () => onNavigate('positions') }, { label: filterPositionName }] : undefined}
         title="Сотрудники"
         sub={loading ? 'Загрузка…' : `Всего: ${data.count} записей`}
-        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('employeeForm', { onDone: () => { setPage(1); load(); } })}>{I.plus}</button>}
+        actions={<>
+          {filterPositionId && <button className="btn btn-secondary btn-sm" onClick={() => openModal('positionForm', { position: { id: filterPositionId, name: filterPositionName }, onDone: load })}>{I.pencil}Переименовать должность</button>}
+          <button className="btn btn-primary btn-sm" onClick={() => openModal('employeeForm', { onDone: () => { setPage(1); load(); } })}>{I.plus}</button>
+        </>}
       />
       <div className="filters">
         <div className="field grow-2">
@@ -2481,7 +2484,7 @@ function PositionList({ currentUser, openModal, onNavigate }) {
                 <SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader>
                 <SortHeader k="name" sort={sort}>Название</SortHeader>
                 <SortHeader k="employee_count" sort={sort}>Сотрудников</SortHeader>
-                <th style={{ width: 72 }}></th>
+                <th style={{ width: 40 }}></th>
               </tr></thead>
               <tbody>
                 {loading ? <SkeletonRows cols={4} /> : filtered.map((p, idx) => (
@@ -2489,15 +2492,7 @@ function PositionList({ currentUser, openModal, onNavigate }) {
                     <td className="mono muted">{idx + 1}</td>
                     <td className="fwm">{p.name}</td>
                     <td className="mono">{p.employee_count}</td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <button className="btn btn-ghost btn-icon btn-sm"
-                          onClick={e => { e.stopPropagation(); openModal('positionForm', { position: p, onDone: load }); }}>
-                          {I.pencil}
-                        </button>
-                        {I.chevr}
-                      </div>
-                    </td>
+                    <td>{I.chevr}</td>
                   </tr>
                 ))}
               </tbody>
