@@ -2481,7 +2481,7 @@ function PositionList({ currentUser, openModal, onNavigate }) {
                 <SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader>
                 <SortHeader k="name" sort={sort}>Название</SortHeader>
                 <SortHeader k="employee_count" sort={sort}>Сотрудников</SortHeader>
-                <th style={{ width: 40 }}></th>
+                <th style={{ width: 72 }}></th>
               </tr></thead>
               <tbody>
                 {loading ? <SkeletonRows cols={4} /> : filtered.map((p, idx) => (
@@ -2490,10 +2490,13 @@ function PositionList({ currentUser, openModal, onNavigate }) {
                     <td className="fwm">{p.name}</td>
                     <td className="mono">{p.employee_count}</td>
                     <td>
-                      <button className="btn btn-ghost btn-icon btn-sm"
-                        onClick={e => { e.stopPropagation(); openModal('positionForm', { position: p, onDone: load }); }}>
-                        {I.pencil}
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <button className="btn btn-ghost btn-icon btn-sm"
+                          onClick={e => { e.stopPropagation(); openModal('positionForm', { position: p, onDone: load }); }}>
+                          {I.pencil}
+                        </button>
+                        {I.chevr}
+                      </div>
                     </td>
                   </tr>
                 ))}
