@@ -35,10 +35,9 @@ class Command(BaseCommand):
             owner.save()
             self.stdout.write(f'  Владелец создан: owner1 / demo_1234 (email: owner1@demo.ru)')
         else:
-            owner.set_password('demo_1234')
             owner.role = 'owner'
-            owner.save(update_fields=['password', 'role'])
-            self.stdout.write(f'  Владелец обновлён: owner1 / demo_1234')
+            owner.save(update_fields=['role'])
+            self.stdout.write(f'  Владелец уже существует: owner1 (пароль не изменён)')
 
         inst = Institution.objects.create(owner=owner, code='КОЛЛЕДЖ1', name='Колледж №1')
         inst2 = Institution.objects.create(owner=owner, code='КОЛЛЕДЖ2', name='Колледж №2')
