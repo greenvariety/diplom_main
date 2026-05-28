@@ -1574,7 +1574,7 @@ function FacultyDetail({ currentUser, openModal, onNavigate, facultyId }) {
         <div className="card">
           <div className="card-head">
             <div className="title">Группы <span className="muted" style={{ fontWeight: 400 }}>· {faculty.groups.length}</span></div>
-            <button className="btn btn-secondary btn-sm" onClick={() => openModal('groupForm', { onDone: load })}>{I.plus}Добавить группу</button>
+            <button className="btn btn-secondary btn-sm" onClick={() => openModal('groupForm', { onDone: load, facultyId: faculty.id })}>{I.plus}Добавить группу</button>
           </div>
           <div className="card-body flush">
             <table className="tbl">

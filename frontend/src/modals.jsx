@@ -555,11 +555,11 @@ function EmployeeAssignSubjectModal({ data, onClose }) {
 }
 
 function GroupFormModal({ data, onClose }) {
-  const { group, onDone } = data || {};
+  const { group, onDone, facultyId: presetFacultyId } = data || {};
   const isEdit = !!group;
   const [faculties, setFaculties] = useState([]);
   const [employees, setEmployees] = useState([]);
-  const [facultyId, setFacultyId] = useState(group?.faculty_id?.toString() || '');
+  const [facultyId, setFacultyId] = useState(group?.faculty_id?.toString() || presetFacultyId?.toString() || '');
   const [year, setYear] = useState(group?.year?.toString() || new Date().getFullYear().toString());
   const [headteacherId, setHeadteacherId] = useState(group?.headteacher_id?.toString() || '');
   const [err, setErr] = useState('');
@@ -601,12 +601,14 @@ function GroupFormModal({ data, onClose }) {
         <LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton>
       </>}>
       <div className="form-grid">
-        <Field label="Факультет" required error={err && !facultyId ? err : null}>
-          <select className={`select ${err && !facultyId ? 'is-error' : ''}`} value={facultyId} onChange={e => { setFacultyId(e.target.value); setErr(''); }}>
-            <option value="">- Выберите факультет -</option>
-            {faculties.map(f => <option key={f.id} value={f.id}>{f.short_name} - {f.full_name}</option>)}
-          </select>
-        </Field>
+        {!presetFacultyId && (
+          <Field label="Факультет" required error={err && !facultyId ? err : null}>
+            <select className={`select ${err && !facultyId ? 'is-error' : ''}`} value={facultyId} onChange={e => { setFacultyId(e.target.value); setErr(''); }}>
+              <option value="">- Выберите факультет -</option>
+              {faculties.map(f => <option key={f.id} value={f.id}>{f.short_name} - {f.full_name}</option>)}
+            </select>
+          </Field>
+        )}
         <Field label="Год начала" required error={err && facultyId && !year ? err : null}>
           <input className={`input ${err && facultyId && !year ? 'is-error' : ''}`} type="number" value={year} onChange={e => { setYear(e.target.value); setErr(''); }} min={2000} max={2099} />
         </Field>
