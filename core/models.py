@@ -174,7 +174,7 @@ class Student(models.Model):
         related_name='students', verbose_name='Группа'
     )
     faculty = models.ForeignKey(
-        Faculty, on_delete=models.CASCADE, related_name='students',
+        Faculty, on_delete=models.SET_NULL, null=True, blank=True, related_name='students',
         verbose_name='Факультет'
     )
 

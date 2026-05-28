@@ -60,6 +60,9 @@ class OrganizationsView(APIView):
         code = request.data.get('code', '').strip()
         if not name:
             return Response({'error': 'Введите название организации'}, status=400)
+        founded_date_raw = (request.data.get('founded_date', '') or '').strip()
+        if not founded_date_raw:
+            return Response({'error': 'Укажите дату основания'}, status=400)
         if not code:
             base = re.sub(r'[^a-zA-Zа-яА-ЯёЁ0-9 ]', '', name)
             parts = base.split()
@@ -73,7 +76,6 @@ class OrganizationsView(APIView):
                 n += 1
             code = f'{code}{n}'
         description = (request.data.get('description', '') or '').strip()
-        founded_date_raw = (request.data.get('founded_date', '') or '').strip()
         founded_date = _parse_date(founded_date_raw)
         photo = request.FILES.get('photo')
         org = Institution.objects.create(

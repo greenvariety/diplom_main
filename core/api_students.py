@@ -115,13 +115,13 @@ class StudentsView(APIView):
         if not first_name:
             return Response({'error': 'Введите имя'}, status=400)
 
+        faculty = None
         faculty_id = request.data.get('faculty_id')
-        if not faculty_id:
-            return Response({'error': 'Выберите факультет'}, status=400)
-        try:
-            faculty = Faculty.objects.get(pk=faculty_id, institution=institution)
-        except Faculty.DoesNotExist:
-            return Response({'error': 'Факультет не найден'}, status=404)
+        if faculty_id:
+            try:
+                faculty = Faculty.objects.get(pk=faculty_id, institution=institution)
+            except Faculty.DoesNotExist:
+                return Response({'error': 'Факультет не найден'}, status=404)
 
         group = None
         group_id = request.data.get('group_id')

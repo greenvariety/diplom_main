@@ -184,7 +184,6 @@ function StudentFormModal({ data, onClose }) {
   if (phoneErr) errs.phone = phoneErr;
   const emailErr = validateEmail(vals.email);
   if (emailErr) errs.email = emailErr;
-  if (!vals.faculty_id) errs.faculty_id = 'Выберите факультет';
 
   const handlePhoto = (file) => {
     if (!file) return;
@@ -210,12 +209,11 @@ function StudentFormModal({ data, onClose }) {
   };
 
   const save = async () => {
-    setTouched({ last_name: 1, first_name: 1, phone: 1, email: 1, faculty_id: 1 });
+    setTouched({ last_name: 1, first_name: 1, phone: 1, email: 1 });
     if (Object.keys(errs).length) {
       const missing = [];
       if (errs.last_name) missing.push('фамилию');
       if (errs.first_name) missing.push('имя');
-      if (errs.faculty_id) missing.push('факультет');
       if (errs.phone) missing.push('корректный телефон');
       if (errs.email) missing.push('корректный email');
       toast.push(`Проверьте: ${missing.join(', ')}`, { kind: 'err' });
@@ -309,10 +307,10 @@ function StudentFormModal({ data, onClose }) {
       <div className="form-section">
         <div className="form-section-title">Учёба</div>
         <div className="form-grid">
-          <Field label="Факультет" required error={touched.faculty_id && errs.faculty_id}>
-            <select className={`select ${touched.faculty_id && errs.faculty_id ? 'is-error' : ''}`}
+          <Field label="Факультет">
+            <select className="select"
               value={vals.faculty_id}
-              onChange={e => { set('faculty_id', e.target.value); set('group_id', ''); setTouched(t => ({ ...t, faculty_id: 1 })); }}>
+              onChange={e => { set('faculty_id', e.target.value); set('group_id', ''); }}>
               <option value="">- Выберите факультет -</option>
               {faculties.map(f => <option key={f.id} value={f.id}>{f.short_name} - {f.full_name}</option>)}
             </select>
@@ -1905,8 +1903,8 @@ function OrgFormModal({ data, onClose }) {
           <input
             className="input"
             value={code}
-            onBeforeInput={e => { if (e.data && /[A-Za-z\s]/.test(e.data)) e.preventDefault(); }}
-            onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z\s]/g, '').toUpperCase(); setCode(prev => (prev + t).slice(0, 50)); setCodeManual(true); }}
+            onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }}
+            onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, '').toUpperCase(); setCode(prev => (prev + t).slice(0, 50)); setCodeManual(true); }}
             onChange={e => { setCode(e.target.value.toUpperCase()); setCodeManual(true); }}
             onFocus={() => touch('code')}
             maxLength={50}
