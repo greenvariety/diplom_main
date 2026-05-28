@@ -894,6 +894,9 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
                     <td><Avatar name={e.full_name} size="sm" /></td>
                     <td className="fwm">
                       {e.full_name}
+                      {e.warn_incomplete && (
+                        <span title="Заполнены не все данные" style={{ marginLeft: 6, color: 'var(--bad-fg)', fontWeight: 700, fontSize: 14 }}>!</span>
+                      )}
                       {e.has_pending_delreq && (
                         <span title="Подана заявка на удаление" style={{ marginLeft: 4, color: 'var(--bad-fg)', fontSize: 13, opacity: 0.8 }}>{I.trash}</span>
                       )}
