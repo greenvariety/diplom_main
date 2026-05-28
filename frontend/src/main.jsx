@@ -448,7 +448,7 @@ function AppShell({ onLogout }) {
     }
 
     if (currentScreen === 'employees') {
-      return <EmployeeList {...sharedProps} />;
+      return <EmployeeList {...sharedProps} filterPositionId={navExtra?.filterPositionId} filterPositionName={navExtra?.filterPositionName} />;
     }
 
     if (currentScreen === 'employee-detail') {

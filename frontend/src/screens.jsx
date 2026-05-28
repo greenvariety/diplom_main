@@ -820,7 +820,7 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
 /* ============================================================
    Employees list / detail
    ============================================================ */
-function EmployeeList({ currentUser, openModal, onNavigate }) {
+function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, filterPositionName }) {
   const toast = useToast();
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
@@ -832,6 +832,7 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
     setLoading(true);
     const params = new URLSearchParams({ page });
     if (q) params.set('search', q);
+    if (filterPositionId) params.set('position_id', filterPositionId);
     api.get(`/employees/?${params}`).then(r => {
       setData(r.data);
       setLoading(false);
@@ -846,6 +847,7 @@ function EmployeeList({ currentUser, openModal, onNavigate }) {
   return (
     <Shell currentUser={currentUser} active="employees" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
+        crumbs={filterPositionId ? [{ label: 'Должности', href: true, onClick: () => onNavigate('positions') }, { label: filterPositionName }] : undefined}
         title="Сотрудники"
         sub={loading ? 'Загрузка…' : `Всего: ${data.count} записей`}
         actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('employeeForm', { onDone: () => { setPage(1); load(); } })}>{I.plus}</button>}
@@ -2483,13 +2485,13 @@ function PositionList({ currentUser, openModal, onNavigate }) {
               </tr></thead>
               <tbody>
                 {loading ? <SkeletonRows cols={4} /> : filtered.map((p, idx) => (
-                  <tr key={p.id}>
+                  <tr key={p.id} className="row-link" onClick={() => onNavigate('employees', { filterPositionId: p.id, filterPositionName: p.name })}>
                     <td className="mono muted">{idx + 1}</td>
                     <td className="fwm">{p.name}</td>
                     <td className="mono">{p.employee_count}</td>
                     <td>
                       <button className="btn btn-ghost btn-icon btn-sm"
-                        onClick={() => openModal('positionForm', { position: p, onDone: load })}>
+                        onClick={e => { e.stopPropagation(); openModal('positionForm', { position: p, onDone: load }); }}>
                         {I.pencil}
                       </button>
                     </td>
