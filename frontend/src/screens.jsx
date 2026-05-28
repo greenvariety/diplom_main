@@ -2241,7 +2241,7 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId }) {
           }
         </>}
       />
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <div className="card">
           <div className="card-head">
             <div className="title">Группы <span className="muted" style={{ fontWeight: 400 }}>: {subject.assignments.length}</span></div>
