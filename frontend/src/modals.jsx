@@ -1442,11 +1442,7 @@ function AssignSubjectModal({ data, onClose }) {
     <Modal title="Назначить предмет" onClose={onClose}
       footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>Назначить</LoadButton></>}>
       <div className="form-grid">
-        {isSubjectFixed ? (
-          <Field label="Предмет">
-            <div style={{ padding: '6px 0', fontWeight: 500 }}>{preSubjectName}</div>
-          </Field>
-        ) : (
+        {!isSubjectFixed && (
           <Field label="Предмет" required>
             <select className="select" value={subjectId} onChange={e => { setSubjectId(e.target.value); setErr(''); }}>
               <option value="">- Выберите предмет -</option>
