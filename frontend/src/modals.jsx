@@ -140,7 +140,7 @@ function useClosable(onClose) {
    StudentFormModal - создать / редактировать студента (реальный API)
    ============================================================ */
 function StudentFormModal({ data, onClose }) {
-  const { student, onDone } = data || {};
+  const { student, onDone, preGroupId, preFacultyId } = data || {};
   const isEdit = !!student;
   const toast = useToast();
   const fileRef = useRef(null);
@@ -153,8 +153,8 @@ function StudentFormModal({ data, onClose }) {
     birth_date: student?.birth_date || '',
     phone: student?.phone || '',
     email: student?.email || '',
-    faculty_id: student?.faculty_id ? String(student.faculty_id) : '',
-    group_id: student?.group_id ? String(student.group_id) : '',
+    faculty_id: student?.faculty_id ? String(student.faculty_id) : (preFacultyId ? String(preFacultyId) : ''),
+    group_id: student?.group_id ? String(student.group_id) : (preGroupId ? String(preGroupId) : ''),
     status: student?.status || 'pending_review',
   });
   const [touched, setTouched] = useState({});

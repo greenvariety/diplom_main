@@ -1489,6 +1489,9 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
         <div className="card">
           <div className="card-head">
             <div className="title">Студенты<span className="muted" style={{ fontWeight: 700 }}>: {group.students.length}</span></div>
+            {['owner', 'admin'].includes(currentUser?.role) && (
+              <button className="btn btn-secondary btn-sm" onClick={() => openModal('studentForm', { preGroupId: groupId, preFacultyId: group.faculty_id, onDone: load })}>{I.plus}</button>
+            )}
           </div>
           <div className="card-body flush">
             <table className="tbl">
@@ -2280,10 +2283,13 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId }) {
         <div className="card">
           <div className="card-head">
             <div className="title">Преподаватели<span className="muted" style={{ fontWeight: 700 }}>: {uniqueTeachers.length}</span></div>
+            {['owner', 'admin'].includes(currentUser?.role) && (
+              <button className="btn btn-secondary btn-sm" onClick={() => openModal('assignSubject', { subjectId, subjectName: subject.name, onDone: load })}>{I.plus}</button>
+            )}
           </div>
           <div className="card-body flush">
             {uniqueTeachers.length === 0 ? (
-              <div style={{ padding: '16px 20px', color: 'var(--text-muted)', fontSize: 13 }}>Нет назначенных преподавателей</div>
+              <EmptyState icon={I.user} title="Нет назначенных преподавателей" sub="Нажмите + чтобы назначить группу с преподавателем" />
             ) : (
               <table className="tbl">
                 <thead><tr><th>Преподаватель</th></tr></thead>
@@ -2297,6 +2303,29 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId }) {
               </table>
             )}
           </div>
+        </div>
+      </div>
+      <div className="card" style={{ marginTop: 16 }}>
+        <div className="card-head">
+          <div className="title">Студенты<span className="muted" style={{ fontWeight: 700 }}>: {subject.students.length}</span></div>
+        </div>
+        <div className="card-body flush">
+          {subject.students.length === 0 ? (
+            <EmptyState icon={I.users} title="Нет студентов" sub="Студенты появятся когда предмет будет назначен группе" />
+          ) : (
+            <table className="tbl">
+              <thead><tr><th>Студент</th><th>Группа</th><th>Статус</th></tr></thead>
+              <tbody>
+                {subject.students.map(s => (
+                  <tr key={s.id} className="row-link" onClick={() => onNavigate('student-detail', { studentId: s.id })}>
+                    <td className="fwm">{s.last_name} {s.first_name} {s.middle_name}</td>
+                    <td className="muted">{s.group_name}</td>
+                    <td><Badge status={s.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </Shell>
