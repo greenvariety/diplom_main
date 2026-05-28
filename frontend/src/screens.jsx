@@ -1472,10 +1472,17 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
         </>}
       />
       {group.headteacher_name && (
-        <div className="banner banner-info banner-link" onClick={() => onNavigate('employee-detail', { employeeId: group.headteacher_id })}>
-          {I.user}
-          <div className="banner-body"><strong>Классный руководитель:</strong> {group.headteacher_name}</div>
-          {I.chevr}
+        <div className="card" style={{ marginBottom: 16 }}>
+          <table className="tbl">
+            <tbody>
+              <tr className="row-link" onClick={() => onNavigate('employee-detail', { employeeId: group.headteacher_id })}>
+                <td className="muted" style={{ width: 32 }}>{I.user}</td>
+                <td className="muted" style={{ width: 180 }}>Классный руководитель</td>
+                <td className="fwm">{group.headteacher_name}</td>
+                <td style={{ width: 32 }}>{I.chevr}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       )}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
