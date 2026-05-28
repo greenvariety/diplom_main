@@ -16,7 +16,7 @@
 
 ---
 
-## 3. Вот сюда нужно перенести и сделать Групп: n а то естебя нет : и пробел гигантский
+~~## 3. Вот сюда нужно перенести и сделать Групп: n а то естебя нет : и пробел гигантский~~
 
 ```html
 <div class="modal-body" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);"><dl class="kv" style="padding: 0px;"><dt>Групп</dt><dd class="mono" style="">3</dd><dt>Студентов</dt><dd class="mono" style="">12</dd></dl></div>

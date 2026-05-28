@@ -1634,11 +1634,11 @@ function FacultyDetailModal({ data, onClose, openModal }) {
         <button className="btn btn-secondary" onClick={onClose}>Закрыть</button>
         <button className="btn btn-primary" onClick={() => openModal('facultyForm', { faculty: f, onDone })}>{I.pencil}Редактировать</button>
       </>}>
-      <dl className="kv" style={{ padding: 0 }}>
-        <dt>Код</dt><dd className="mono">{f.short_name || f.code || '-'}</dd>
-        <dt>Групп</dt><dd className="mono">{f.group_count ?? f.groups ?? '-'}</dd>
-        <dt>Студентов</dt><dd className="mono">{f.student_count ?? f.students ?? '-'}</dd>
-      </dl>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14 }}>
+        <div><span style={{ color: 'var(--text-muted)' }}>Код: </span><span className="mono">{f.short_name || f.code || '-'}</span></div>
+        <div><span style={{ color: 'var(--text-muted)' }}>Групп: </span><span className="mono">{f.group_count ?? f.groups ?? '-'}</span></div>
+        <div><span style={{ color: 'var(--text-muted)' }}>Студентов: </span><span className="mono">{f.student_count ?? f.students ?? '-'}</span></div>
+      </div>
     </Modal>
   );
 }
