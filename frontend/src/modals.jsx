@@ -351,7 +351,7 @@ function EmployeeFormModal({ data, onClose }) {
   const [birthDate, setBirthDate] = useState(employee?.birth_date || '');
   const [phone, setPhone] = useState(employee?.phone || '');
   const [email, setEmail] = useState(employee?.email || '');
-  const [positionId, setPositionId] = useState(employee?.position_id?.toString() || '');
+  const [positionId, setPositionId] = useState(employee?.position_id?.toString() || data?.initialPositionId?.toString() || '');
   const [photo, setPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(employee?.photo || null);
   const [dragOver, setDragOver] = useState(false);
