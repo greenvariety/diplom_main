@@ -18,6 +18,7 @@ def _parent_data(p):
         'email': p.email,
         'photo': p.photo.url if p.photo else None,
         'is_flagged': p.is_flagged,
+        'warn_incomplete': not all([p.birth_date, p.phone, p.email, p.photo]),
     }
 
 

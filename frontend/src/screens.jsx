@@ -542,6 +542,9 @@ function StudentList({ currentUser, openModal, onNavigate }) {
                         <td><Avatar name={`${s.last_name} ${s.first_name}`} size="sm" /></td>
                         <td className="fwm">
                           {s.last_name} {s.first_name} {s.middle_name}
+                          {s.warn_incomplete && (
+                            <span title="Заполнены не все данные" style={{ marginLeft: 6, color: 'var(--bad-fg)', fontWeight: 700, fontSize: 14 }}>!</span>
+                          )}
                           {s.has_pending_delreq && (
                             <span title="Подана заявка на удаление" style={{ marginLeft: 4, color: 'var(--bad-fg)', fontSize: 13, opacity: 0.8 }}>{I.trash}</span>
                           )}
@@ -685,7 +688,12 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
                 ? <img src={student.photo} alt="" style={{ width: 96, height: 96, borderRadius: 16, objectFit: 'cover' }} className="avatar-zoomy" />
                 : <Avatar name={`${student.last_name} ${student.first_name}`} size="lg" className="avatar-zoomy" />
               }
-              <h3 style={{ marginTop: 14, marginBottom: 6 }}>{student.last_name} {student.first_name}</h3>
+              <h3 style={{ marginTop: 14, marginBottom: 6 }}>
+                {student.last_name} {student.first_name}
+                {student.warn_incomplete && (
+                  <span title="Заполнены не все данные" style={{ marginLeft: 6, color: 'var(--bad-fg)', fontWeight: 700, fontSize: 16 }}>!</span>
+                )}
+              </h3>
               <div className="muted" style={{ fontSize: 13, marginBottom: 12 }}>{student.middle_name}</div>
               <StatusDropdown value={student.status} onChange={handleStatusChange} />
             </div>
@@ -716,7 +724,12 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
                     {sortParents.sortFn(student.parents).map(p => (
                       <tr key={p.id}>
                         <td><Avatar name={p.parent_name} size="sm" /></td>
-                        <td className="fwm">{p.parent_name}</td>
+                        <td className="fwm">
+                          {p.parent_name}
+                          {p.parent_warn_incomplete && (
+                            <span title="Заполнены не все данные" style={{ marginLeft: 6, color: 'var(--bad-fg)', fontWeight: 700, fontSize: 14 }}>!</span>
+                          )}
+                        </td>
                         <td>{p.relation_display}</td>
                         <td className="muted">{p.phone || '-'}</td>
                         <td><button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleRemoveParent(p.id)}>{I.x}</button></td>
@@ -1548,7 +1561,12 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
                     status: s => s.status || '',
                   }).map(s => (
                   <tr key={s.id} className="row-link" onClick={() => onNavigate('student-detail', { studentId: s.id })}>
-                    <td className="fwm">{s.last_name} {s.first_name} {s.middle_name}</td>
+                    <td className="fwm">
+                      {s.last_name} {s.first_name} {s.middle_name}
+                      {s.warn_incomplete && (
+                        <span title="Заполнены не все данные" style={{ marginLeft: 6, color: 'var(--bad-fg)', fontWeight: 700, fontSize: 14 }}>!</span>
+                      )}
+                    </td>
                     <td><Badge status={s.status} /></td>
                     <td>{I.chevr}</td>
                   </tr>
@@ -2103,7 +2121,12 @@ function ParentList({ currentUser, openModal, onNavigate }) {
                   <tr key={p.id} className="row-link" onClick={() => onNavigate('parent-detail', { parentId: p.id })}>
                     <td className="mono muted">{idx + 1}</td>
                     <td><Avatar name={p.full_name} size="sm" /></td>
-                    <td className="fwm">{p.full_name}</td>
+                    <td className="fwm">
+                      {p.full_name}
+                      {p.warn_incomplete && (
+                        <span title="Заполнены не все данные" style={{ marginLeft: 6, color: 'var(--bad-fg)', fontWeight: 700, fontSize: 14 }}>!</span>
+                      )}
+                    </td>
                     <td className="muted">{p.phone || '-'}</td>
                     <td className="muted">{p.email || '-'}</td>
                     <td onClick={e => e.stopPropagation()}>
@@ -2198,7 +2221,12 @@ function ParentDetail({ currentUser, openModal, onNavigate, parentId }) {
               ? <img src={parent.photo} alt="" style={{ width: 96, height: 96, borderRadius: 16, objectFit: 'cover' }} className="avatar-zoomy" />
               : <Avatar name={parent.full_name} size="lg" className="avatar-zoomy" />
             }
-            <h3 style={{ marginTop: 14, marginBottom: 6 }}>{parent.last_name} {parent.first_name}</h3>
+            <h3 style={{ marginTop: 14, marginBottom: 6 }}>
+              {parent.last_name} {parent.first_name}
+              {parent.warn_incomplete && (
+                <span title="Заполнены не все данные" style={{ marginLeft: 6, color: 'var(--bad-fg)', fontWeight: 700, fontSize: 16 }}>!</span>
+              )}
+            </h3>
             <div className="muted" style={{ fontSize: 13 }}>{parent.middle_name}</div>
           </div>
           <div style={{ borderTop: '1px solid var(--border)' }}>
