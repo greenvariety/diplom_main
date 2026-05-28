@@ -194,6 +194,97 @@ class AuditLogView(APIView):
         })
 
 
+class AuditRollbackView(APIView):
+    _ROLLBACK_FIELDS = {
+        'Student':  ['last_name', 'first_name', 'middle_name', 'phone', 'email', 'birth_date', 'status'],
+        'Employee': ['last_name', 'first_name', 'middle_name', 'phone', 'email', 'birth_date'],
+        'Faculty':  ['full_name', 'short_name'],
+        'Group':    ['year'],
+        'Parent':   ['last_name', 'first_name', 'middle_name', 'phone', 'email', 'birth_date'],
+    }
+
+    def _get_obj(self, object_type, object_id, institution):
+        from .models import Student, Employee, Faculty, Group, Parent
+        try:
+            if object_type == 'Student':
+                return Student.objects.get(pk=object_id, faculty__institution=institution)
+            if object_type == 'Employee':
+                return Employee.objects.get(pk=object_id, institution=institution)
+            if object_type == 'Faculty':
+                return Faculty.objects.get(pk=object_id, institution=institution)
+            if object_type == 'Group':
+                return Group.objects.get(pk=object_id, faculty__institution=institution)
+            if object_type == 'Parent':
+                return Parent.objects.get(pk=object_id, institution=institution)
+        except Exception:
+            pass
+        return None
+
+    def post(self, request, pk):
+        if request.user.role not in ('owner', 'admin'):
+            return Response({'error': 'Доступ запрещён'}, status=403)
+        institution = request.user.institution
+        try:
+            log = AuditLog.objects.get(pk=pk, institution=institution)
+        except AuditLog.DoesNotExist:
+            return Response({'error': 'Запись не найдена'}, status=404)
+
+        if log.action != 'updated':
+            return Response({'error': 'Откат доступен только для записей об изменении'}, status=400)
+
+        try:
+            old_data = json.loads(log.old_data) if log.old_data else {}
+        except Exception:
+            old_data = {}
+
+        if not old_data:
+            return Response({'error': 'Нет данных для отката'}, status=400)
+
+        obj = self._get_obj(log.object_type, log.object_id, institution)
+        if obj is None:
+            return Response({'error': 'Объект не найден - возможно, он был удалён'}, status=404)
+
+        allowed = self._ROLLBACK_FIELDS.get(log.object_type, [])
+        if not allowed:
+            return Response({'error': 'Откат для этого типа объектов не поддерживается'}, status=400)
+
+        before_rollback = {}
+        applied = False
+        for field in allowed:
+            if field not in old_data:
+                continue
+            val = old_data[field]
+            if val in ('None', '-'):
+                val = None
+            if field == 'year' and val is not None:
+                try:
+                    val = int(val)
+                except (ValueError, TypeError):
+                    continue
+            current = getattr(obj, field, None)
+            before_rollback[field] = str(current) if current is not None else None
+            current_str = str(current) if current is not None else None
+            old_str = str(val) if val is not None else None
+            if current_str != old_str:
+                setattr(obj, field, val)
+                applied = True
+
+        if not applied:
+            return Response({'error': 'Нечего откатывать - данные уже совпадают'}, status=400)
+
+        obj.save()
+        after_rollback = {f: str(getattr(obj, f)) if getattr(obj, f) is not None else None
+                         for f in before_rollback}
+
+        from .utils import log_action
+        log_action(request.user, 'updated', obj,
+                   old_data=before_rollback,
+                   new_data=after_rollback,
+                   institution=institution)
+
+        return Response({'ok': True})
+
+
 class AuditLogUsersView(APIView):
     def get(self, request):
         if request.user.role not in ('owner', 'admin'):

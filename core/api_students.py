@@ -210,7 +210,13 @@ class StudentDetailView(APIView):
             return Response({'error': 'Не найдено'}, status=404)
 
         institution = request.user.institution
-        old_data = {'full_name': str(student), 'status': student.status}
+        old_data = {
+            'last_name': student.last_name, 'first_name': student.first_name,
+            'middle_name': student.middle_name, 'phone': student.phone,
+            'email': student.email,
+            'birth_date': str(student.birth_date) if student.birth_date else None,
+            'status': student.status,
+        }
 
         for field in ('last_name', 'first_name', 'middle_name', 'phone', 'email'):
             if field in request.data:
@@ -249,7 +255,13 @@ class StudentDetailView(APIView):
         student.save()
         log_action(request.user, 'updated', student,
                    old_data=old_data,
-                   new_data={'full_name': str(student), 'status': student.status},
+                   new_data={
+                       'last_name': student.last_name, 'first_name': student.first_name,
+                       'middle_name': student.middle_name, 'phone': student.phone,
+                       'email': student.email,
+                       'birth_date': str(student.birth_date) if student.birth_date else None,
+                       'status': student.status,
+                   },
                    institution=institution)
         return Response(_student_data(student))
 

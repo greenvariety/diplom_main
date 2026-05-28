@@ -144,7 +144,12 @@ class ParentDetailView(APIView):
         if not parent:
             return Response({'error': 'Не найдено'}, status=404)
 
-        old_data = {'full_name': str(parent)}
+        old_data = {
+            'last_name': parent.last_name, 'first_name': parent.first_name,
+            'middle_name': parent.middle_name, 'phone': parent.phone,
+            'email': parent.email,
+            'birth_date': str(parent.birth_date) if parent.birth_date else None,
+        }
         for field in ('last_name', 'first_name', 'middle_name', 'phone', 'email'):
             if field in request.data:
                 setattr(parent, field, (request.data[field] or '').strip())
@@ -158,7 +163,12 @@ class ParentDetailView(APIView):
         parent.save()
         log_action(request.user, 'updated', parent,
                    old_data=old_data,
-                   new_data={'full_name': str(parent)},
+                   new_data={
+                       'last_name': parent.last_name, 'first_name': parent.first_name,
+                       'middle_name': parent.middle_name, 'phone': parent.phone,
+                       'email': parent.email,
+                       'birth_date': str(parent.birth_date) if parent.birth_date else None,
+                   },
                    institution=request.user.institution)
         return Response(_parent_data(parent))
 

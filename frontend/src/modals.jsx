@@ -1482,12 +1482,16 @@ const AUDIT_NAV_MAP = {
 };
 
 function AuditDiffModal({ data, onClose, onNavigate }) {
+  const toast = useToast();
   const changes = data?.changes || [];
   const actorRole = data?.role || '-';
   const actorPosition = data?.userPosition || null;
   const objType = data?.obj_type || '';
   const objName = data?.obj_name || '';
   const isCreate = data?.action === 'create';
+  const isUpdate = data?.action === 'update';
+
+  const [confirmRollback, setConfirmRollback] = useState(false);
 
   const navFn = AUDIT_NAV_MAP[data?.object_type_raw];
   const isDeleted = data?.action === 'delete';
@@ -1496,6 +1500,18 @@ function AuditDiffModal({ data, onClose, onNavigate }) {
     if (!navFn || isDeleted || !onNavigate) return;
     navFn(data.object_id, onNavigate);
     onClose();
+  };
+
+  const handleRollback = async () => {
+    try {
+      await api.post(`/audit-log/${data.id}/rollback/`);
+      toast.push('Откат выполнен - данные восстановлены', { kind: 'ok' });
+      onClose();
+    } catch (e) {
+      const msg = e?.response?.data?.error || 'Ошибка при откате';
+      toast.push(msg, { kind: 'error' });
+      setConfirmRollback(false);
+    }
   };
 
   const footer = (
@@ -1511,7 +1527,23 @@ function AuditDiffModal({ data, onClose, onNavigate }) {
         </button>
       )}
       <div style={{ flex: 1 }} />
-      <button className="btn btn-secondary" onClick={onClose}>Закрыть</button>
+      {isUpdate && changes.length > 0 && !confirmRollback && (
+        <button className="btn btn-danger btn-sm" onClick={() => setConfirmRollback(true)}>
+          Откатить изменение
+        </button>
+      )}
+      {confirmRollback && (
+        <>
+          <span className="muted" style={{ fontSize: 13, alignSelf: 'center' }}>Восстановить предыдущие значения?</span>
+          <LoadButton className="btn btn-danger btn-sm" onClick={handleRollback}>
+            Да, откатить
+          </LoadButton>
+          <button className="btn btn-ghost btn-sm" onClick={() => setConfirmRollback(false)}>
+            Отмена
+          </button>
+        </>
+      )}
+      {!confirmRollback && <button className="btn btn-secondary" onClick={onClose}>Закрыть</button>}
     </>
   );
 

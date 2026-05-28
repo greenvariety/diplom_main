@@ -192,7 +192,12 @@ class EmployeeDetailView(APIView):
             return Response({'error': 'Не найдено'}, status=404)
 
         institution = request.user.institution
-        old_data = {'full_name': str(employee)}
+        old_data = {
+            'last_name': employee.last_name, 'first_name': employee.first_name,
+            'middle_name': employee.middle_name, 'phone': employee.phone,
+            'email': employee.email,
+            'birth_date': str(employee.birth_date) if employee.birth_date else None,
+        }
 
         for field in ('last_name', 'first_name', 'middle_name', 'phone', 'email'):
             if field in request.data:
@@ -218,7 +223,12 @@ class EmployeeDetailView(APIView):
         employee.save()
         log_action(request.user, 'updated', employee,
                    old_data=old_data,
-                   new_data={'full_name': str(employee)},
+                   new_data={
+                       'last_name': employee.last_name, 'first_name': employee.first_name,
+                       'middle_name': employee.middle_name, 'phone': employee.phone,
+                       'email': employee.email,
+                       'birth_date': str(employee.birth_date) if employee.birth_date else None,
+                   },
                    institution=institution)
         return Response(_employee_data(employee))
 

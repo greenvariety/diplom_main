@@ -136,6 +136,7 @@ class GroupDetailView(APIView):
         if not group:
             return Response({'error': 'Не найдено'}, status=404)
         old_name = group.name
+        old_year = group.year
         institution = request.user.institution
         if 'faculty_id' in request.data:
             try:
@@ -165,7 +166,7 @@ class GroupDetailView(APIView):
                 group.headteacher = None
         group.save()
         log_action(request.user, 'updated', group,
-                   old_data={'name': old_name},
+                   old_data={'name': old_name, 'year': old_year},
                    new_data={'name': group.name, 'year': group.year},
                    institution=institution)
         return Response(_group_data(group))
