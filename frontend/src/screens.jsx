@@ -2233,7 +2233,6 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId }) {
       <PageHead
         crumbs={[{ label: 'Предметы', href: true, onClick: () => onNavigate('subjects') }, { label: subject.name }]}
         title={subject.name}
-        sub={`Групп: ${subject.assignments.length}`}
         actions={<>
           <button className="btn btn-secondary btn-sm" onClick={() => openModal('subjectForm', { subject, onDone: load })}>{I.pencil}Редактировать</button>
           {currentUser?.role === 'owner'
