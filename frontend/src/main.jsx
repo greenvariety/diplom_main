@@ -464,7 +464,7 @@ function AppShell({ onLogout }) {
     }
 
     if (currentScreen === 'subject-detail') {
-      return <SubjectDetail {...sharedProps} subjectId={navExtra?.subjectId} />;
+      return <SubjectDetail {...sharedProps} subjectId={navExtra?.subjectId} filterEmployeeId={navExtra?.filterEmployeeId} />;
     }
 
     if (currentScreen === 'parents') {

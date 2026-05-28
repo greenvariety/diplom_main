@@ -1242,7 +1242,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                   <tbody>
                     {employee.subjects?.map(s => (
                       <tr key={s.assignment_id}>
-                        <td className="fwm row-link" style={{ cursor: 'pointer' }} onClick={() => onNavigate('subject-detail', { subjectId: s.subject_id })}>{s.subject_name}</td>
+                        <td className="fwm row-link" style={{ cursor: 'pointer' }} onClick={() => onNavigate('subject-detail', { subjectId: s.subject_id, filterEmployeeId: employeeId })}>{s.subject_name}</td>
                         <td className="row-link" style={{ cursor: 'pointer' }} onClick={() => onNavigate('group-detail', { groupId: s.group_id })}>{s.group_name}</td>
                         <td>
                           <button className="btn btn-ghost btn-icon btn-sm" onClick={() => removeSubject(s.assignment_id)} title="Убрать">{I.x}</button>
@@ -2192,7 +2192,7 @@ function ParentDetail({ currentUser, openModal, onNavigate, parentId }) {
   );
 }
 
-function SubjectDetail({ currentUser, openModal, onNavigate, subjectId }) {
+function SubjectDetail({ currentUser, openModal, onNavigate, subjectId, filterEmployeeId }) {
   const toast = useToast();
   const [subject, setSubject] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -2235,37 +2235,50 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId }) {
     }
   }
 
+  const filteredAssignments = filterEmployeeId
+    ? subject.assignments.filter(a => a.employee_id === filterEmployeeId)
+    : subject.assignments;
+
   return (
     <Shell currentUser={currentUser} active="subjects" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
         crumbs={[{ label: 'Предметы', href: true, onClick: () => onNavigate('subjects') }, { label: subject.name }]}
         title={subject.name}
-        actions={<>
+        actions={!filterEmployeeId ? <>
           <button className="btn btn-secondary btn-sm" onClick={() => openModal('subjectForm', { subject, onDone: load })}>{I.pencil}Редактировать</button>
           {currentUser?.role === 'owner'
             ? <button className="btn btn-danger btn-sm" onClick={handleDelete}>{I.trash}Удалить</button>
             : null
           }
-        </>}
+        </> : null}
       />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: filterEmployeeId ? '1fr' : '1fr 1fr', gap: 16 }}>
         <div className="card">
           <div className="card-head">
-            <div className="title">Группы<span className="muted" style={{ fontWeight: 700 }}>: {subject.assignments.length}</span></div>
-            <button className="btn btn-secondary btn-sm" onClick={() => openModal('assignSubject', { subjectId, subjectName: subject.name, onDone: load })}>{I.plus}</button>
+            <div className="title">Группы<span className="muted" style={{ fontWeight: 700 }}>: {filteredAssignments.length}</span></div>
+            {!filterEmployeeId && (
+              <button className="btn btn-secondary btn-sm" onClick={() => openModal('assignSubject', { subjectId, subjectName: subject.name, onDone: load })}>{I.plus}</button>
+            )}
           </div>
           <div className="card-body flush">
-            {subject.assignments.length === 0 ? (
+            {filteredAssignments.length === 0 ? (
               <EmptyState icon={I.book} title="Предмет не назначен ни одной группе" sub="Нажмите + чтобы назначить группу" />
             ) : (
               <table className="tbl">
-                <thead><tr><th>Группа</th><th>Преподаватель</th>{['owner', 'admin'].includes(currentUser?.role) && <th style={{ width: 40 }}></th>}</tr></thead>
+                <thead>
+                  <tr>
+                    <th>Группа</th>
+                    {!filterEmployeeId && <th>Преподаватель</th>}
+                    {!filterEmployeeId && ['owner', 'admin'].includes(currentUser?.role) && <th style={{ width: 40 }}></th>}
+                    {filterEmployeeId && <th style={{ width: 40 }}></th>}
+                  </tr>
+                </thead>
                 <tbody>
-                  {subject.assignments.map(a => (
-                    <tr key={a.id}>
-                      <td className="fwm" style={{ cursor: 'pointer' }} onClick={() => onNavigate('group-detail', { groupId: a.group_id })}>{a.group_name}</td>
-                      <td className="muted" style={{ cursor: 'pointer' }} onClick={() => onNavigate('group-detail', { groupId: a.group_id })}>{a.employee_name}</td>
-                      {['owner', 'admin'].includes(currentUser?.role) && (
+                  {filteredAssignments.map(a => (
+                    <tr key={a.id} className="row-link" onClick={() => onNavigate('group-detail', { groupId: a.group_id })}>
+                      <td className="fwm">{a.group_name}</td>
+                      {!filterEmployeeId && <td className="muted">{a.employee_name}</td>}
+                      {!filterEmployeeId && ['owner', 'admin'].includes(currentUser?.role) && (
                         <td onClick={e => e.stopPropagation()}>
                           <button className="btn btn-ghost btn-icon btn-sm" title="Убрать" onClick={async () => {
                             try {
@@ -2275,6 +2288,7 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId }) {
                           }}>{I.x}</button>
                         </td>
                       )}
+                      {filterEmployeeId && <td>{I.chevr}</td>}
                     </tr>
                   ))}
                 </tbody>
@@ -2282,29 +2296,31 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId }) {
             )}
           </div>
         </div>
-        <div className="card">
-          <div className="card-head">
-            <div className="title">Преподаватели<span className="muted" style={{ fontWeight: 700 }}>: {uniqueTeachers.length}</span></div>
-            <button className="btn btn-secondary btn-sm" onClick={() => openModal('assignSubject', { subjectId, subjectName: subject.name, onDone: load })}>{I.plus}</button>
+        {!filterEmployeeId && (
+          <div className="card">
+            <div className="card-head">
+              <div className="title">Преподаватели<span className="muted" style={{ fontWeight: 700 }}>: {uniqueTeachers.length}</span></div>
+              <button className="btn btn-secondary btn-sm" onClick={() => openModal('assignSubject', { subjectId, subjectName: subject.name, onDone: load })}>{I.plus}</button>
+            </div>
+            <div className="card-body flush">
+              {uniqueTeachers.length === 0 ? (
+                <EmptyState icon={I.user} title="Нет назначенных преподавателей" sub="Нажмите + чтобы назначить группу с преподавателем" />
+              ) : (
+                <table className="tbl">
+                  <thead><tr><th>Преподаватель</th><th style={{ width: 40 }}></th></tr></thead>
+                  <tbody>
+                    {uniqueTeachers.map(t => (
+                      <tr key={t.id} className="row-link" onClick={() => onNavigate('employee-detail', { employeeId: t.id })}>
+                        <td className="fwm">{t.name}</td>
+                        <td>{I.chevr}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
           </div>
-          <div className="card-body flush">
-            {uniqueTeachers.length === 0 ? (
-              <EmptyState icon={I.user} title="Нет назначенных преподавателей" sub="Нажмите + чтобы назначить группу с преподавателем" />
-            ) : (
-              <table className="tbl">
-                <thead><tr><th>Преподаватель</th><th style={{ width: 40 }}></th></tr></thead>
-                <tbody>
-                  {uniqueTeachers.map(t => (
-                    <tr key={t.id} className="row-link" onClick={() => onNavigate('employee-detail', { employeeId: t.id })}>
-                      <td className="fwm">{t.name}</td>
-                      <td>{I.chevr}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
+        )}
       </div>
     </Shell>
   );
