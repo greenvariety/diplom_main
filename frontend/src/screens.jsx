@@ -1226,7 +1226,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
           <div className="card">
             <div className="card-head">
               <div className="title">Ведёт предметы</div>
-              <button className="btn btn-secondary btn-sm" onClick={() => openModal('employeeAssignSubject', { employeeId, onDone: load })}>{I.plus}Назначить</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => openModal('employeeAssignSubject', { employeeId, onDone: load })}>{I.plus}</button>
             </div>
             <div className="card-body flush">
               {employee.subjects?.length === 0 ? (
