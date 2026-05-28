@@ -5,7 +5,7 @@ import { ToastProvider, useToast, LoadButton } from './utils.jsx';
 import { I } from './data.jsx';
 import { LoginScreen, RegisterScreen, EmailVerifyScreen, RecoverPasswordScreen } from './auth.jsx';
 import { Shell } from './shell.jsx';
-import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, FacultyList, FacultyDetail, GroupList, GroupDetail, StudentList, StudentDetail, EmployeeList, EmployeeDetail, PositionList, ParentList, ParentDetail, SubjectList, UserList, DeleteRequests, AuditLog } from './screens.jsx';
+import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, FacultyList, FacultyDetail, GroupList, GroupDetail, StudentList, StudentDetail, EmployeeList, EmployeeDetail, PositionList, ParentList, ParentDetail, SubjectList, SubjectDetail, UserList, DeleteRequests, AuditLog } from './screens.jsx';
 import { OrgFormModal, FacultyFormModal, FacultyDetailModal, GroupFormModal, AssignSubjectModal, StudentFormModal, TransferModal, UploadDocModal, ParentFormModal, ParentAddStudentModal, DeleteConfirmModal, EmployeeFormModal, EmployeeAssignSubjectModal, PositionFormModal, SubjectFormModal, UserFormModal, UserSetPasswordModal, ApproveDeleteModal, AuditDiffModal, LogoutModal, OrgDeleteConfirmModal, OwnerDirectDeleteModal, NoteModal } from './modals.jsx';
 import api from './api.js';
 import { HtmlTasksPanel } from './dev-tasks.jsx';
@@ -461,6 +461,10 @@ function AppShell({ onLogout }) {
 
     if (currentScreen === 'subjects') {
       return <SubjectList {...sharedProps} />;
+    }
+
+    if (currentScreen === 'subject-detail') {
+      return <SubjectDetail {...sharedProps} subjectId={navExtra?.subjectId} />;
     }
 
     if (currentScreen === 'parents') {
