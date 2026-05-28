@@ -42,7 +42,7 @@ def _get_student(request, pk):
         return None
     try:
         return Student.objects.select_related('faculty', 'group').get(
-            pk=pk, faculty__institution=institution
+            pk=pk, institution=institution
         )
     except Student.DoesNotExist:
         return None
@@ -54,7 +54,7 @@ class StudentsView(APIView):
         if not institution:
             return Response({'results': [], 'count': 0, 'num_pages': 0, 'page': 1})
 
-        qs = Student.objects.filter(faculty__institution=institution).select_related('faculty', 'group').annotate(
+        qs = Student.objects.filter(institution=institution).select_related('faculty', 'group').annotate(
             parent_count=Count('student_parents'),
             has_pending_delreq=Exists(DeleteRequest.objects.filter(object_type='Student', object_id=OuterRef('pk'), status='pending')),
             has_note=Exists(RecordNote.objects.filter(object_type='Student', object_id=OuterRef('pk'), is_resolved=False)),
@@ -134,6 +134,7 @@ class StudentsView(APIView):
         birth_date = request.data.get('birth_date') or None
 
         student = Student.objects.create(
+            institution=institution,
             last_name=last_name,
             first_name=first_name,
             middle_name=(request.data.get('middle_name') or '').strip(),
@@ -295,7 +296,7 @@ class StudentDeleteRequestView(APIView):
         if not institution:
             return Response({'error': 'Нет активной организации'}, status=400)
         try:
-            student = Student.objects.get(pk=pk, faculty__institution=institution)
+            student = Student.objects.get(pk=pk, institution=institution)
         except Student.DoesNotExist:
             return Response({'error': 'Не найдено'}, status=404)
         reason = (request.data.get('reason') or '').strip() or f'Удаление студента: {student}'
@@ -318,7 +319,7 @@ class StudentTransferView(APIView):
             return Response({'error': 'Нет активной организации'}, status=400)
         try:
             student = Student.objects.select_related('faculty', 'group').get(
-                pk=pk, faculty__institution=institution
+                pk=pk, institution=institution
             )
         except Student.DoesNotExist:
             return Response({'error': 'Студент не найден'}, status=404)
@@ -353,7 +354,7 @@ class StudentParentsView(APIView):
         if not institution:
             return Response({'error': 'Нет активной организации'}, status=400)
         try:
-            student = Student.objects.get(pk=pk, faculty__institution=institution)
+            student = Student.objects.get(pk=pk, institution=institution)
         except Student.DoesNotExist:
             return Response({'error': 'Студент не найден'}, status=404)
 
@@ -413,8 +414,8 @@ class StudentParentDetailView(APIView):
             return Response({'error': 'Нет активной организации'}, status=400)
         try:
             sp = StudentParent.objects.select_related(
-                'student__faculty', 'parent'
-            ).get(pk=sp_pk, student_id=pk, student__faculty__institution=institution)
+                'student', 'parent'
+            ).get(pk=sp_pk, student_id=pk, student__institution=institution)
         except StudentParent.DoesNotExist:
             return Response({'error': 'Не найдено'}, status=404)
 
@@ -431,8 +432,8 @@ class StudentTransferInstitutionView(APIView):
             return Response({'error': 'Доступ запрещён'}, status=403)
         try:
             student = Student.objects.select_related(
-                'faculty', 'group', 'faculty__institution'
-            ).get(pk=pk, faculty__institution__owner=request.user)
+                'faculty', 'group', 'institution'
+            ).get(pk=pk, institution__owner=request.user)
         except Student.DoesNotExist:
             return Response({'error': 'Студент не найден'}, status=404)
 

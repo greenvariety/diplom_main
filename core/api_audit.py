@@ -159,6 +159,20 @@ class AuditLogView(APIView):
         elif period == 'month':
             qs = qs.filter(created_at__gte=now - timedelta(days=30))
 
+        from datetime import datetime
+        date_from = request.GET.get('date_from', '')
+        date_to = request.GET.get('date_to', '')
+        if date_from:
+            try:
+                qs = qs.filter(created_at__date__gte=datetime.strptime(date_from, '%Y-%m-%d').date())
+            except ValueError:
+                pass
+        if date_to:
+            try:
+                qs = qs.filter(created_at__date__lte=datetime.strptime(date_to, '%Y-%m-%d').date())
+            except ValueError:
+                pass
+
         user_id = request.GET.get('user_id', '')
         if user_id:
             try:

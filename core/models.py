@@ -169,6 +169,10 @@ class Student(models.Model):
         verbose_name='Статус'
     )
     is_flagged = models.BooleanField(default=False, verbose_name='Отмечено')
+    institution = models.ForeignKey(
+        'Institution', on_delete=models.CASCADE, null=True, blank=True,
+        related_name='students', verbose_name='Организация'
+    )
     group = models.ForeignKey(
         Group, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='students', verbose_name='Группа'

@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState, useRef } from 'react';
 import { STATUSES, STUDENTS, GROUPS, FACULTIES, EMPLOYEES, I } from './data.jsx';
 import { Badge, Avatar } from './shell.jsx';
-import { useToast, FadingError, Field, LoadButton, Combobox, PasswordInput } from './utils.jsx';
+import { useToast, FadingError, Field, LoadButton, Combobox, PasswordInput, PasswordRules, PasswordStrength } from './utils.jsx';
 import api from './api.js';
 
 /* ============================================================
@@ -917,6 +917,7 @@ function UserFormModal({ data, onClose }) {
   const [institutionIds, setInstitutionIds] = useState(user?.institution_ids || []);
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
+  const [pwFocus, setPwFocus] = useState(false);
   const [err, setErr] = useState('');
 
   useEffect(() => {
@@ -1007,17 +1008,24 @@ function UserFormModal({ data, onClose }) {
           </select>
         </Field>
         {!isEdit && <>
-          <Field label="Пароль" required error={err && (!password || pwdErrs.length) ? (err || null) : null}>
-            <input className={`input ${err && (!password || pwdErrs.length) ? 'is-error' : ''}`} type="password" value={password} onChange={e => { setPassword(e.target.value.replace(/[^\x00-\x7F]/g, '')); setErr(''); }} />
+          <Field label="Пароль" required error={err && (!password || pwdErrs.length) ? (err || null) : null} className="field-full">
+            <PasswordInput
+              value={password}
+              onChange={v => { setPassword(v); setErr(''); }}
+              onFocus={() => setPwFocus(true)}
+              onBlur={() => setPwFocus(false)}
+              hasError={!!(err && (!password || pwdErrs.length))}
+            />
           </Field>
-          <Field label="Повторите пароль" required error={err && password && password !== password2 ? err : null}>
-            <input className={`input ${err && password && password !== password2 ? 'is-error' : ''}`} type="password" value={password2} onChange={e => { setPassword2(e.target.value.replace(/[^\x00-\x7F]/g, '')); setErr(''); }} />
+          <PasswordRules value={password} show={pwFocus || !!password} />
+          {password && <PasswordStrength value={password} />}
+          <Field label="Повторите пароль" required error={err && password && password !== password2 ? err : null} className="field-full">
+            <PasswordInput
+              value={password2}
+              onChange={v => { setPassword2(v); setErr(''); }}
+              hasError={!!(err && password && password !== password2)}
+            />
           </Field>
-          {password && pwdErrs.length > 0 && (
-            <div className="field field-full">
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Пароль должен содержать: {pwdErrs.join(', ')}</div>
-            </div>
-          )}
         </>}
         <div className="field field-full">
           <label className="field-label">Привязать к сотруднику</label>

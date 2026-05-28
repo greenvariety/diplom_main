@@ -23,11 +23,78 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
   const [q, setQ] = useState('');
   const [userFilter, setUserFilter] = useState('');
   const [actionFilter, setActionFilter] = useState('');
+  const [exportModal, setExportModal] = useState(false);
+  const [expTypes, setExpTypes] = useState({ students: true, employees: false, groups: false });
+  const [expFaculty, setExpFaculty] = useState('');
+  const [expGroup, setExpGroup] = useState('');
+  const [expDateFrom, setExpDateFrom] = useState('');
+  const [expDateTo, setExpDateTo] = useState('');
+  const [expFaculties, setExpFaculties] = useState([]);
+  const [expGroups, setExpGroups] = useState([]);
+  const [expLoading, setExpLoading] = useState(false);
+  const toast = useToast();
   const sort = useSortable({ key: 'ts', dir: 'desc' }, 'owner-dash-audit');
 
   useEffect(() => {
     api.get('/dashboard/').then(r => setDashData(r.data)).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (exportModal) {
+      api.get('/faculties/').then(r => setExpFaculties(r.data)).catch(() => {});
+    }
+  }, [exportModal]);
+
+  useEffect(() => {
+    if (expFaculty) {
+      api.get(`/groups/?faculty_id=${expFaculty}`).then(r => setExpGroups(r.data)).catch(() => {});
+    } else {
+      setExpGroups([]); setExpGroup('');
+    }
+  }, [expFaculty]);
+
+  const doExport = async () => {
+    setExpLoading(true);
+    try {
+      const allRows = [];
+      if (expTypes.students) {
+        const params = new URLSearchParams({ page_size: 10000 });
+        if (expFaculty) params.set('faculty_id', expFaculty);
+        if (expGroup) params.set('group_id', expGroup);
+        const r = await api.get(`/students/?${params}`);
+        (r.data.results || []).forEach(s => allRows.push({
+          Тип: 'Студент', ФИО: `${s.last_name} ${s.first_name} ${s.middle_name}`.trim(),
+          Статус: s.status, Факультет: s.faculty_short || '', Группа: s.group_name || '',
+          Телефон: s.phone || '', Email: s.email || '',
+        }));
+      }
+      if (expTypes.employees) {
+        const r = await api.get('/employees/?page_size=10000');
+        (r.data.results || []).forEach(e => allRows.push({
+          Тип: 'Сотрудник', ФИО: e.full_name, Статус: '',
+          Факультет: '', Группа: '', Телефон: e.phone || '', Email: e.email || '',
+        }));
+      }
+      if (expTypes.groups) {
+        const params = new URLSearchParams();
+        if (expFaculty) params.set('faculty_id', expFaculty);
+        const r = await api.get(`/groups/?${params}`);
+        (r.data || []).forEach(g => allRows.push({
+          Тип: 'Группа', ФИО: g.name, Статус: '', Факультет: g.faculty_short || '',
+          Группа: g.year, Телефон: '', Email: '',
+        }));
+      }
+      const header = Object.keys(allRows[0] || { Тип:'', ФИО:'', Статус:'', Факультет:'', Группа:'', Телефон:'', Email:'' });
+      const csv = [header.join(','), ...allRows.map(r => header.map(h => `"${(r[h]||'').toString().replace(/"/g,'""')}"`).join(','))].join('\n');
+      const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'export.csv'; a.click();
+      URL.revokeObjectURL(url);
+      setExportModal(false);
+      toast.push('Экспорт выполнен', { kind: 'ok' });
+    } catch { toast.push('Ошибка при экспорте', { kind: 'err' }); }
+    setExpLoading(false);
+  };
 
   const stats = dashData?.stats || {};
   const ALL_AUDIT = dashData?.recent_audit || [];
@@ -62,8 +129,45 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
       <PageHead
         title="Дашборд"
         sub="Сводка по системе"
-        actions={<button className="btn btn-primary btn-sm">{I.excel}Настроить экспорт в Excel</button>}
+        actions={<button className="btn btn-primary btn-sm" onClick={() => setExportModal(true)}>{I.excel}Настроить экспорт</button>}
       />
+      {exportModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'var(--surface)', borderRadius: 12, padding: 28, minWidth: 420, maxWidth: 520, boxShadow: 'var(--shadow-lg)' }}>
+            <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 16 }}>Настройки экспорта</div>
+            <div style={{ marginBottom: 14 }}>
+              <div className="field-label" style={{ marginBottom: 6 }}>Что экспортировать</div>
+              <div style={{ display: 'flex', gap: 16 }}>
+                {[['students','Студенты'],['employees','Сотрудники'],['groups','Группы']].map(([k,l]) => (
+                  <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 14 }}>
+                    <input type="checkbox" checked={expTypes[k]} onChange={e => setExpTypes(t => ({...t,[k]:e.target.checked}))} />{l}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="form-grid" style={{ marginBottom: 14 }}>
+              <div className="field">
+                <label className="field-label">Факультет</label>
+                <select className="select" value={expFaculty} onChange={e => setExpFaculty(e.target.value)}>
+                  <option value="">Все</option>
+                  {expFaculties.map(f => <option key={f.id} value={f.id}>{f.short_name}</option>)}
+                </select>
+              </div>
+              <div className="field">
+                <label className="field-label">Группа</label>
+                <select className="select" value={expGroup} onChange={e => setExpGroup(e.target.value)} disabled={!expFaculty}>
+                  <option value="">Все</option>
+                  {expGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>
+              <button className="btn btn-secondary" onClick={() => setExportModal(false)}>Отмена</button>
+              <button className="btn btn-primary btn-sm" onClick={doExport} disabled={expLoading || !Object.values(expTypes).some(Boolean)}>{expLoading ? 'Загрузка…' : `${I.excel}Скачать CSV`}</button>
+            </div>
+          </div>
+        </div>
+      )}
       {!currentUser?.institution && (
         <div className="banner banner-warn">
           {I.building}
@@ -457,19 +561,37 @@ function StudentList({ currentUser, openModal, onNavigate }) {
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ results: [], count: 0, num_pages: 1 });
   const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterFaculty, setFilterFaculty] = useState('');
+  const [filterGroup, setFilterGroup] = useState('');
+  const [faculties, setFaculties] = useState([]);
+  const [groups, setGroups] = useState([]);
   const sort = useSortable({ key: null, dir: 'asc' }, 'students-list');
+
+  useEffect(() => { api.get('/faculties/').then(r => setFaculties(r.data)).catch(() => {}); }, []);
+  useEffect(() => {
+    if (filterFaculty) {
+      api.get(`/groups/?faculty_id=${filterFaculty}`).then(r => setGroups(r.data)).catch(() => {});
+    } else {
+      setGroups([]);
+      setFilterGroup('');
+    }
+  }, [filterFaculty]);
 
   const load = () => {
     setLoading(true);
     const params = new URLSearchParams({ page });
     if (q) params.set('search', q);
+    if (filterStatus) params.set('status', filterStatus);
+    if (filterFaculty) params.set('faculty_id', filterFaculty);
+    if (filterGroup) params.set('group_id', filterGroup);
     api.get(`/students/?${params}`).then(r => {
       setData(r.data);
       setLoading(false);
     }).catch(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [page]);
+  useEffect(() => { load(); }, [page, filterStatus, filterFaculty, filterGroup]);
 
   const handleSearch = () => { setPage(1); load(); };
 
@@ -483,7 +605,8 @@ function StudentList({ currentUser, openModal, onNavigate }) {
     }
   };
 
-  const reset = () => { setQ(''); setPage(1); setTimeout(load, 0); };
+  const hasFilters = q || filterStatus || filterFaculty || filterGroup;
+  const reset = () => { setQ(''); setFilterStatus(''); setFilterFaculty(''); setFilterGroup(''); setPage(1); };
 
   return (
     <Shell currentUser={currentUser} active="students" onNavigate={onNavigate} openModal={openModal}>
@@ -504,7 +627,30 @@ function StudentList({ currentUser, openModal, onNavigate }) {
           </div>
         </div>
         <button className="btn btn-primary" style={{ height: 36 }} onClick={handleSearch}>Найти</button>
-        <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset}>Сбросить</button>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset} disabled={!hasFilters}>Сбросить</button>
+      </div>
+      <div className="filters" style={{ marginTop: -8 }}>
+        <div className="field">
+          <label className="field-label">Статус</label>
+          <select className="select" value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }}>
+            <option value="">Все</option>
+            {Object.entries(STATUSES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+          </select>
+        </div>
+        <div className="field">
+          <label className="field-label">Факультет</label>
+          <select className="select" value={filterFaculty} onChange={e => { setFilterFaculty(e.target.value); setFilterGroup(''); setPage(1); }}>
+            <option value="">Все</option>
+            {faculties.map(f => <option key={f.id} value={f.id}>{f.short_name}</option>)}
+          </select>
+        </div>
+        <div className="field">
+          <label className="field-label">Группа</label>
+          <select className="select" value={filterGroup} onChange={e => { setFilterGroup(e.target.value); setPage(1); }} disabled={!filterFaculty}>
+            <option value="">Все</option>
+            {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+          </select>
+        </div>
       </div>
       <div className="card">
         <div className="card-body flush">
@@ -830,23 +976,28 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ results: [], count: 0, num_pages: 1 });
   const [loading, setLoading] = useState(true);
+  const [filterPos, setFilterPos] = useState(filterPositionId || '');
+  const [positions, setPositions] = useState([]);
   const sort = useSortable({ key: null, dir: 'asc' }, 'employees-list');
+
+  useEffect(() => { api.get('/positions/').then(r => setPositions(r.data)).catch(() => {}); }, []);
 
   const load = () => {
     setLoading(true);
     const params = new URLSearchParams({ page });
     if (q) params.set('search', q);
-    if (filterPositionId) params.set('position_id', filterPositionId);
+    if (filterPos) params.set('position_id', filterPos);
     api.get(`/employees/?${params}`).then(r => {
       setData(r.data);
       setLoading(false);
     }).catch(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [page]);
+  useEffect(() => { load(); }, [page, filterPos]);
 
   const handleSearch = () => { setPage(1); load(); };
-  const reset = () => { setQ(''); setPage(1); setTimeout(load, 0); };
+  const hasFilters = q || filterPos;
+  const reset = () => { setQ(''); setFilterPos(''); setPage(1); };
 
   return (
     <Shell currentUser={currentUser} active="employees" onNavigate={onNavigate} openModal={openModal}>
@@ -856,7 +1007,7 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
         sub={loading ? 'Загрузка…' : `Всего: ${data.count} записей`}
         actions={<>
           {filterPositionId && <button className="btn btn-secondary btn-sm" onClick={() => openModal('positionForm', { position: { id: filterPositionId, name: filterPositionName }, onDone: load })}>{I.pencil}Переименовать должность</button>}
-          <button className="btn btn-primary btn-sm" onClick={() => openModal('employeeForm', { initialPositionId: filterPositionId || undefined, onDone: () => { setPage(1); load(); } })}>{I.plus}Добавить сотрудника</button>
+          <button className="btn btn-primary btn-sm" onClick={() => openModal('employeeForm', { initialPositionId: filterPos || undefined, onDone: () => { setPage(1); load(); } })}>{I.plus}Добавить сотрудника</button>
         </>}
       />
       <div className="filters">
@@ -868,8 +1019,15 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
               />
           </div>
         </div>
+        <div className="field">
+          <label className="field-label">Должность</label>
+          <select className="select" value={filterPos} onChange={e => { setFilterPos(e.target.value); setPage(1); }}>
+            <option value="">Все</option>
+            {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </div>
         <button className="btn btn-primary" style={{ height: 36 }} onClick={handleSearch}>Найти</button>
-        <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset}>Сбросить</button>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset} disabled={!hasFilters}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
@@ -1371,7 +1529,6 @@ function GroupList({ currentUser, openModal, onNavigate }) {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
-  const [search, setSearch] = useState('');
   const [filterFaculty, setFilterFaculty] = useState('');
   const [filterYear, setFilterYear] = useState('');
   const [filterHeadteacher, setFilterHeadteacher] = useState('');
@@ -1387,41 +1544,35 @@ function GroupList({ currentUser, openModal, onNavigate }) {
 
   useEffect(() => { load(); }, []);
 
-  const faculties = [...new Map(groups.filter(g => g.faculty_id).map(g => [g.faculty_id, { id: g.faculty_id, short: g.faculty_short, name: g.faculty_name }])).values()].sort((a, b) => a.short.localeCompare(b.short));
+  const faculties = [...new Map(groups.filter(g => g.faculty_id).map(g => [g.faculty_id, { id: g.faculty_id, short: g.faculty_short }])).values()].sort((a, b) => a.short.localeCompare(b.short));
   const years = [...new Set(groups.map(g => g.year))].sort((a, b) => a - b);
   const headteachers = [...new Map(groups.filter(g => g.headteacher_id).map(g => [g.headteacher_id, { id: g.headteacher_id, name: g.headteacher_name }])).values()].sort((a, b) => a.name.localeCompare(b.name));
 
   const filtered = sort.sortFn(
     groups.filter(g => {
-      if (search && !g.name.toLowerCase().includes(search.toLowerCase())) return false;
+      if (q && !g.name.toLowerCase().includes(q.toLowerCase())) return false;
       if (filterFaculty && String(g.faculty_id) !== filterFaculty) return false;
       if (filterYear && String(g.year) !== filterYear) return false;
       if (filterHeadteacher && String(g.headteacher_id) !== filterHeadteacher) return false;
       return true;
     }),
-    {
-      name: g => g.name,
-      faculty_short: g => g.faculty_short || '',
-      year: g => g.year,
-      headteacher_name: g => g.headteacher_name || '',
-      student_count: g => g.student_count,
-    }
+    { name: g => g.name, faculty_short: g => g.faculty_short || '', year: g => g.year, headteacher_name: g => g.headteacher_name || '', student_count: g => g.student_count }
   );
 
-  const hasFilters = search || filterFaculty || filterYear || filterHeadteacher;
-  const reset = () => { setQ(''); setSearch(''); setFilterFaculty(''); setFilterYear(''); setFilterHeadteacher(''); };
+  const hasFilters = q || filterFaculty || filterYear || filterHeadteacher;
+  const reset = () => { setQ(''); setFilterFaculty(''); setFilterYear(''); setFilterHeadteacher(''); };
 
   return (
     <Shell currentUser={currentUser} active="groups" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
         title="Группы"
-        sub={loading ? '…' : `Всего: ${filtered.length} записей`}
+        sub={loading ? '…' : `Всего: ${filtered.length} из ${groups.length}`}
         actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('groupForm', { onDone: load })}>{I.plus}Добавить группу</button>}
       />
       <div className="filters">
         <div className="field grow-2">
-          <label className="field-label">Поиск</label>
-          <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => { setSearch(e.target.value); }} /></div>
+          <label className="field-label">Поиск по названию</label>
+          <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} /></div>
         </div>
         <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset} disabled={!hasFilters}>Сбросить</button>
       </div>
@@ -1715,7 +1866,6 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
   const [faculties, setFaculties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
-  const [search, setSearch] = useState('');
   const sort = useSortable({ key: null, dir: 'asc' }, 'faculties-list');
 
   const load = () => {
@@ -1729,33 +1879,25 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
   useEffect(() => { load(); }, []);
 
   const displayFaculties = sort.sortFn(
-    search
-      ? faculties.filter(f => f.full_name.toLowerCase().includes(search.toLowerCase()) || f.short_name.toLowerCase().includes(search.toLowerCase()))
-      : faculties,
-    {
-      short_name: f => f.short_name,
-      full_name: f => f.full_name,
-      group_count: f => f.group_count,
-      student_count: f => f.student_count,
-    }
+    q ? faculties.filter(f => f.full_name.toLowerCase().includes(q.toLowerCase()) || f.short_name.toLowerCase().includes(q.toLowerCase())) : faculties,
+    { short_name: f => f.short_name, full_name: f => f.full_name, group_count: f => f.group_count, student_count: f => f.student_count }
   );
 
   return (
     <Shell currentUser={currentUser} active="faculties" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
         title="Факультеты"
-        sub={loading ? '…' : `Всего: ${faculties.length} записей`}
+        sub={loading ? '…' : `Всего: ${displayFaculties.length} из ${faculties.length}`}
         actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('facultyForm', { onDone: load })}>{I.plus}Добавить факультет</button>}
       />
       <div className="filters">
         <div className="field grow-2">
-          <label className="field-label">Поиск</label>
+          <label className="field-label">Поиск по названию или коду</label>
           <div className="input-with-icon">{I.search}
-            <input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && setSearch(q)} />
+            <input className="input" value={q} onChange={e => setQ(e.target.value)} />
           </div>
         </div>
-        <button className="btn btn-primary" style={{ height: 36 }} onClick={() => setSearch(q)}>Найти</button>
-        <button className="btn btn-ghost" style={{ height: 36 }} onClick={() => { setQ(''); setSearch(''); }}>Сбросить</button>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={() => setQ('')} disabled={!q}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
@@ -1802,7 +1944,7 @@ function UserList({ currentUser, openModal, onNavigate }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
-  const [search, setSearch] = useState('');
+  const [filterRole, setFilterRole] = useState('');
   const sort = useSortable({ key: null, dir: 'asc' }, 'users-list');
 
   const load = () => {
@@ -1821,6 +1963,10 @@ function UserList({ currentUser, openModal, onNavigate }) {
     }
   };
 
+  const ROLES = [{ v: 'owner', l: 'Владелец' }, { v: 'admin', l: 'Администратор' }, { v: 'teacher', l: 'Преподаватель' }];
+  const hasFilters = q || filterRole;
+  const reset = () => { setQ(''); setFilterRole(''); };
+
   return (
     <Shell currentUser={currentUser} active="users" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
@@ -1831,11 +1977,17 @@ function UserList({ currentUser, openModal, onNavigate }) {
         <div className="field grow-2">
           <label className="field-label">Поиск</label>
           <div className="input-with-icon">{I.search}
-            <input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && setSearch(q)} />
+            <input className="input" value={q} onChange={e => setQ(e.target.value)} />
           </div>
         </div>
-        <button className="btn btn-primary" style={{ height: 36 }} onClick={() => setSearch(q)}>Найти</button>
-        <button className="btn btn-ghost" style={{ height: 36 }} onClick={() => { setQ(''); setSearch(''); }}>Сбросить</button>
+        <div className="field">
+          <label className="field-label">Роль</label>
+          <select className="select" value={filterRole} onChange={e => setFilterRole(e.target.value)}>
+            <option value="">Все</option>
+            {ROLES.map(r => <option key={r.v} value={r.v}>{r.l}</option>)}
+          </select>
+        </div>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset} disabled={!hasFilters}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
@@ -1854,7 +2006,11 @@ function UserList({ currentUser, openModal, onNavigate }) {
               </tr></thead>
               <tbody>
                 {loading ? <SkeletonRows cols={7} /> : sort.sortFn(
-                  users.filter(u => !search || (u.employee_name || '').toLowerCase().includes(search.toLowerCase()) || u.username.toLowerCase().includes(search.toLowerCase())),
+                  users.filter(u => {
+                    if (q && !(u.employee_name || '').toLowerCase().includes(q.toLowerCase()) && !u.username.toLowerCase().includes(q.toLowerCase())) return false;
+                    if (filterRole && u.role !== filterRole) return false;
+                    return true;
+                  }),
                   {
                     employee_name: u => u.employee_name || '',
                     username: u => u.username,
@@ -1885,6 +2041,7 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
   const [reqs, setReqs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
+  const [filterType, setFilterType] = useState('');
   const toast = useToast();
   const sort = useSortable({ key: null, dir: 'asc' }, 'delreq-list');
 
@@ -1909,9 +2066,14 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
     }
   };
 
+  const typeOpts = [...new Set(reqs.map(r => r.type_label).filter(Boolean))].sort();
   const lq = q.toLowerCase();
   const filtered = sort.sortFn(
-    q ? reqs.filter(r => [r.object_repr, r.author, r.type_label, r.reason].some(v => v?.toLowerCase().includes(lq))) : reqs,
+    reqs.filter(r => {
+      if (q && ![r.object_repr, r.author, r.type_label, r.reason].some(v => v?.toLowerCase().includes(lq))) return false;
+      if (filterType && r.type_label !== filterType) return false;
+      return true;
+    }),
     {
       type_label: r => r.type_label || '',
       object_repr: r => r.object_repr || '',
@@ -1920,16 +2082,25 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
     }
   );
 
+  const hasFilters = q || filterType;
+  const reset = () => { setQ(''); setFilterType(''); };
+
   return (
     <Shell currentUser={currentUser} active="delreq" openModal={openModal} onNavigate={onNavigate} onLogout={onLogout}>
       <PageHead title="Заявки на удаление" sub={loading ? 'Загрузка…' : `Всего: ${reqs.length} записей`} />
       <div className="filters">
         <div className="field grow-2">
           <label className="field-label">Поиск</label>
-          <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && setQ(q)} /></div>
+          <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} /></div>
         </div>
-        <button className="btn btn-primary" style={{ height: 36 }} onClick={() => setQ(q)}>Найти</button>
-        <button className="btn btn-ghost" style={{ height: 36 }} onClick={() => setQ('')}>Сбросить</button>
+        <div className="field">
+          <label className="field-label">Тип объекта</label>
+          <select className="select" value={filterType} onChange={e => setFilterType(e.target.value)}>
+            <option value="">Все</option>
+            {typeOpts.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </div>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset} disabled={!hasFilters}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
@@ -1976,39 +2147,116 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
 
 function AuditLog({ currentUser, openModal, onNavigate }) {
   const [q, setQ] = useState('');
+  const [filterAction, setFilterAction] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ results: [], count: 0, num_pages: 1 });
   const [loading, setLoading] = useState(true);
+  const [exportModal, setExportModal] = useState(false);
+  const [expFrom, setExpFrom] = useState('');
+  const [expTo, setExpTo] = useState('');
+  const [expLoading, setExpLoading] = useState(false);
+  const toast = useToast();
   const sort = useSortable({ key: null, dir: 'asc' }, 'audit-list');
 
   const load = () => {
     setLoading(true);
     const params = new URLSearchParams({ page });
     if (q) params.set('search', q);
+    if (filterAction) params.set('action', filterAction);
+    if (dateFrom) params.set('date_from', dateFrom);
+    if (dateTo) params.set('date_to', dateTo);
     api.get(`/audit-log/?${params}`).then(r => {
       setData(r.data);
       setLoading(false);
     }).catch(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [page]);
+  useEffect(() => { load(); }, [page, filterAction, dateFrom, dateTo]);
 
   const handleSearch = () => { setPage(1); load(); };
-  const reset = () => { setQ(''); setPage(1); setTimeout(load, 0); };
+  const hasFilters = q || filterAction || dateFrom || dateTo;
+  const reset = () => { setQ(''); setFilterAction(''); setDateFrom(''); setDateTo(''); setPage(1); };
+
+  const doExport = async () => {
+    setExpLoading(true);
+    try {
+      const params = new URLSearchParams({ page_size: 10000 });
+      if (expFrom) params.set('date_from', expFrom);
+      if (expTo) params.set('date_to', expTo);
+      const r = await api.get(`/audit-log/?${params}`);
+      const rows = r.data.results || [];
+      const csv = ['Дата и время,Пользователь,Роль,Действие,Объект',
+        ...rows.map(a => [a.ts, a.user, a.role, a.label, a.obj].map(v => `"${(v||'').replace(/"/g,'""')}"`).join(','))
+      ].join('\n');
+      const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `audit_${expFrom || 'all'}_${expTo || 'all'}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setExportModal(false);
+      toast.push('Экспорт выполнен', { kind: 'ok' });
+    } catch {
+      toast.push('Ошибка при экспорте', { kind: 'err' });
+    }
+    setExpLoading(false);
+  };
 
   return (
     <Shell currentUser={currentUser} active="audit" onNavigate={onNavigate} openModal={openModal}>
       <PageHead title="Журнал изменений"
         sub={loading ? 'Загрузка…' : `Всего: ${data.count} записей`}
-        actions={<button className="btn btn-secondary btn-sm">{I.excel}Экспорт</button>}
+        actions={<button className="btn btn-sm" style={{ background: 'var(--good-bg)', color: 'var(--good-fg)', border: 'none' }} onClick={() => { setExpFrom(dateFrom); setExpTo(dateTo); setExportModal(true); }}>{I.excel}Экспорт в CSV</button>}
       />
+      {exportModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'var(--surface)', borderRadius: 12, padding: 28, minWidth: 360, boxShadow: 'var(--shadow-lg)' }}>
+            <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 16 }}>Экспорт журнала изменений</div>
+            <div className="form-grid">
+              <div className="field">
+                <label className="field-label">Дата с</label>
+                <input className="input" type="date" value={expFrom} onChange={e => setExpFrom(e.target.value)} />
+              </div>
+              <div className="field">
+                <label className="field-label">Дата по</label>
+                <input className="input" type="date" value={expTo} onChange={e => setExpTo(e.target.value)} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 20, justifyContent: 'flex-end' }}>
+              <button className="btn btn-secondary" onClick={() => setExportModal(false)}>Отмена</button>
+              <button className="btn btn-sm" style={{ background: 'var(--good-bg)', color: 'var(--good-fg)', border: 'none' }} onClick={doExport} disabled={expLoading}>{expLoading ? 'Загрузка…' : 'Скачать CSV'}</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="filters">
         <div className="field grow-2">
           <label className="field-label">Поиск</label>
           <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearch()} /></div>
         </div>
+        <div className="field">
+          <label className="field-label">Действие</label>
+          <select className="select" value={filterAction} onChange={e => { setFilterAction(e.target.value); setPage(1); }}>
+            <option value="">Все</option>
+            <option value="create">Создание</option>
+            <option value="update">Изменение</option>
+            <option value="delete">Удаление</option>
+            <option value="transfer">Перевод</option>
+          </select>
+        </div>
+        <div className="field">
+          <label className="field-label">Дата с</label>
+          <input className="input" type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); }} style={{ height: 36 }} />
+        </div>
+        <div className="field">
+          <label className="field-label">Дата по</label>
+          <input className="input" type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); }} style={{ height: 36 }} />
+        </div>
         <button className="btn btn-primary" style={{ height: 36 }} onClick={handleSearch}>Найти</button>
-        <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset}>Сбросить</button>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset} disabled={!hasFilters}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
@@ -2082,6 +2330,7 @@ function ParentList({ currentUser, openModal, onNavigate }) {
   useEffect(() => { load(); }, [page]);
 
   const handleSearch = () => { setPage(1); load(); };
+  const hasFilters = q;
   const reset = () => { setQ(''); setPage(1); setTimeout(load, 0); };
 
   const handleDeleteRequest = async (p) => {
@@ -2110,7 +2359,7 @@ function ParentList({ currentUser, openModal, onNavigate }) {
           </div>
         </div>
         <button className="btn btn-primary" style={{ height: 36 }} onClick={handleSearch}>Найти</button>
-        <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset}>Сбросить</button>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset} disabled={!hasFilters}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
@@ -2433,7 +2682,6 @@ function SubjectList({ currentUser, openModal, onNavigate }) {
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
-  const [search, setSearch] = useState('');
   const sort = useSortable({ key: 'name', dir: 'asc' }, 'subjects-list');
 
   const load = () => {
@@ -2455,13 +2703,12 @@ function SubjectList({ currentUser, openModal, onNavigate }) {
       />
       <div className="filters">
         <div className="field grow-2">
-          <label className="field-label">Поиск</label>
+          <label className="field-label">Поиск по названию</label>
           <div className="input-with-icon">{I.search}
-            <input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && setSearch(q)} />
+            <input className="input" value={q} onChange={e => setQ(e.target.value)} />
           </div>
         </div>
-        <button className="btn btn-primary" style={{ height: 36 }} onClick={() => setSearch(q)}>Найти</button>
-        <button className="btn btn-ghost" style={{ height: 36 }} onClick={() => { setQ(''); setSearch(''); }}>Сбросить</button>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={() => setQ('')} disabled={!q}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
@@ -2475,7 +2722,7 @@ function SubjectList({ currentUser, openModal, onNavigate }) {
                 <th style={{ width: 40 }}></th>
               </tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={3} /> : sort.sortFn(subjects.filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase())), {
+                {loading ? <SkeletonRows cols={3} /> : sort.sortFn(subjects.filter(s => !q || s.name.toLowerCase().includes(q.toLowerCase())), {
                     name: s => s.name,
                   }).map((s, idx) => (
                   <tr key={s.id} className="row-link" onClick={() => onNavigate('subject-detail', { subjectId: s.id })}>
@@ -2498,7 +2745,6 @@ function PositionList({ currentUser, openModal, onNavigate }) {
   const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
-  const [search, setSearch] = useState('');
   const sort = useSortable({ key: null, dir: 'asc' }, 'positions-list');
 
   const load = () => {
@@ -2512,11 +2758,8 @@ function PositionList({ currentUser, openModal, onNavigate }) {
   useEffect(() => { load(); }, []);
 
   const filtered = sort.sortFn(
-    search ? positions.filter(p => p.name.toLowerCase().includes(search.toLowerCase())) : positions,
-    {
-      name: p => p.name,
-      employee_count: p => p.employee_count,
-    }
+    q ? positions.filter(p => p.name.toLowerCase().includes(q.toLowerCase())) : positions,
+    { name: p => p.name, employee_count: p => p.employee_count }
   );
 
   return (
@@ -2528,11 +2771,10 @@ function PositionList({ currentUser, openModal, onNavigate }) {
       />
       <div className="filters">
         <div className="field grow-2">
-          <label className="field-label">Поиск</label>
-          <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && setSearch(q)} /></div>
+          <label className="field-label">Поиск по названию</label>
+          <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} /></div>
         </div>
-        <button className="btn btn-primary" style={{ height: 36 }} onClick={() => setSearch(q)}>Найти</button>
-        <button className="btn btn-ghost" style={{ height: 36 }} onClick={() => { setQ(''); setSearch(''); }}>Сбросить</button>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={() => setQ('')} disabled={!q}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
