@@ -1474,7 +1474,7 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
       {group.headteacher_name && (
         <div className="banner banner-info">
           {I.user}
-          <div className="banner-body"><strong>Классный руководитель:</strong> {group.headteacher_name}</div>
+          <div className="banner-body"><strong>Классный руководитель:</strong> <span className="link-text" style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => onNavigate('employee-detail', { employeeId: group.headteacher_id })}>{group.headteacher_name}</span></div>
         </div>
       )}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
@@ -1490,7 +1490,7 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
                   <tr><td colSpan={2} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>Студенты не добавлены</td></tr>
                 ) : group.students.map(s => (
                   <tr key={s.id}>
-                    <td className="fwm">{s.last_name} {s.first_name} {s.middle_name}</td>
+                    <td className="fwm" style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => onNavigate('student-detail', { studentId: s.id })}>{s.last_name} {s.first_name} {s.middle_name}</td>
                     <td><Badge status={s.status} /></td>
                   </tr>
                 ))}
@@ -1510,8 +1510,8 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
               ) : group.subjects.map(a => (
                 <div key={a.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between' }}>
                   <div>
-                    <div className="fwm" style={{ fontSize: 13 }}>{a.subject_name}</div>
-                    <div className="muted" style={{ fontSize: 11 }}>{a.employee_name}</div>
+                    <div className="fwm" style={{ fontSize: 13, cursor: 'pointer', textDecoration: 'underline' }} onClick={() => onNavigate('subjects')}>{a.subject_name}</div>
+                    <div className="muted" style={{ fontSize: 11, cursor: 'pointer', textDecoration: 'underline' }} onClick={() => onNavigate('employee-detail', { employeeId: a.employee_id })}>{a.employee_name}</div>
                   </div>
                   <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleRemoveSubject(a.id)}>{I.x}</button>
                 </div>
