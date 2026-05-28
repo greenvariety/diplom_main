@@ -541,6 +541,8 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 .banner .icon { margin-top: 2px; flex-shrink: 0; }
 .banner-body { flex: 1; }
 .banner-body strong { font-weight: 600; }
+.banner-link { cursor: pointer; transition: filter .12s; }
+.banner-link:hover { filter: brightness(0.94); }
 
 /* ============================================================
    Login

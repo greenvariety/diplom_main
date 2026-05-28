@@ -1472,7 +1472,7 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
         </>}
       />
       {group.headteacher_name && (
-        <div className="banner banner-info" style={{ cursor: 'pointer' }} onClick={() => onNavigate('employee-detail', { employeeId: group.headteacher_id })}>
+        <div className="banner banner-info banner-link" onClick={() => onNavigate('employee-detail', { employeeId: group.headteacher_id })}>
           {I.user}
           <div className="banner-body"><strong>Классный руководитель:</strong> {group.headteacher_name}</div>
           {I.chevr}
