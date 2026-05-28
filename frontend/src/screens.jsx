@@ -2164,11 +2164,7 @@ function ParentDetail({ currentUser, openModal, onNavigate, parentId }) {
                 <tbody>
                   {parent.students?.map(s => (
                     <tr key={s.sp_id}>
-                      <td className="fwm">
-                        <a href="#" onClick={e => { e.preventDefault(); onNavigate('student-detail', { studentId: s.student_id }); }}>
-                          {s.student_name}
-                        </a>
-                      </td>
+                      <td className="fwm">{s.student_name}</td>
                       <td>{s.relation_display}</td>
                       <td>{s.group_name || '-'}</td>
                       <td>
