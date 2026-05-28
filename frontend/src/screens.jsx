@@ -1596,13 +1596,11 @@ function FacultyDetail({ currentUser, openModal, onNavigate, facultyId }) {
         </div>
         <div className="card">
           <div className="card-head"><div className="title">Сведения</div></div>
-          <div style={{ borderTop: '1px solid var(--border)' }}>
-            <dl className="kv">
-              <dt>Аббревиатура</dt><dd className="mono">{faculty.short_name}</dd>
-              <dt>Групп</dt><dd className="mono">{faculty.group_count}</dd>
-              <dt>Студентов</dt><dd className="mono">{faculty.student_count}</dd>
-              {faculty.created_at && <><dt>Основан</dt><dd>{faculty.created_at}</dd></>}
-            </dl>
+          <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14 }}>
+            <div><span style={{ color: 'var(--text-muted)' }}>Аббревиатура: </span><span className="mono">{faculty.short_name}</span></div>
+            <div><span style={{ color: 'var(--text-muted)' }}>Групп: </span><span className="mono">{faculty.group_count}</span></div>
+            <div><span style={{ color: 'var(--text-muted)' }}>Студентов: </span><span className="mono">{faculty.student_count}</span></div>
+            {faculty.created_at && <div><span style={{ color: 'var(--text-muted)' }}>Основан: </span><span>{faculty.created_at}</span></div>}
           </div>
         </div>
       </div>
