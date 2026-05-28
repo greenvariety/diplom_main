@@ -338,7 +338,7 @@ function DashboardAdmin({ currentUser, onNavigate, onLogout, openModal }) {
         </div>
         <div className="card">
           <div className="card-head" style={{ flexWrap: 'wrap', gap: 8 }}>
-            <div className="title">{I.history}<span>Последние действия</span><span className="muted" style={{ fontWeight: 400, fontSize: 12, marginLeft: 6 }}>· {filtered.length}</span></div>
+            <div className="title">{I.history}<span>Последние действия</span><span className="muted" style={{ fontWeight: 400, fontSize: 12, marginLeft: 6 }}>: {filtered.length}</span></div>
             <div style={{ display: 'flex', gap: 8 }}>
               <div className="input-with-icon" style={{ width: 200 }}>
                 {I.search}<input className="input" style={{ height: 30 }} value={q} onChange={e => setQ(e.target.value)} placeholder="Поиск…" />
@@ -1488,7 +1488,7 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
         <div className="card">
           <div className="card-head">
-            <div className="title">Студенты <span className="muted" style={{ fontWeight: 400 }}>· {group.students.length}</span></div>
+            <div className="title">Студенты <span className="muted" style={{ fontWeight: 400 }}>: {group.students.length}</span></div>
           </div>
           <div className="card-body flush">
             <table className="tbl">
@@ -1510,7 +1510,7 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
         <div>
           <div className="card">
             <div className="card-head">
-              <div className="title">Предметы <span className="muted" style={{ fontWeight: 400 }}>· {group.subjects.length}</span></div>
+              <div className="title">Предметы <span className="muted" style={{ fontWeight: 400 }}>: {group.subjects.length}</span></div>
               <button className="btn btn-secondary btn-sm" onClick={() => openModal('assignSubject', { groupId, onDone: load })}>{I.plus}</button>
             </div>
             <div className="card-body" style={{ display: 'grid', gap: 8 }}>
@@ -1582,7 +1582,7 @@ function FacultyDetail({ currentUser, openModal, onNavigate, facultyId }) {
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
         <div className="card">
           <div className="card-head">
-            <div className="title">Группы <span className="muted" style={{ fontWeight: 400 }}>· {faculty.groups.length}</span></div>
+            <div className="title">Группы <span className="muted" style={{ fontWeight: 400 }}>: {faculty.groups.length}</span></div>
             <button className="btn btn-secondary btn-sm" onClick={() => openModal('groupForm', { onDone: load, facultyId: faculty.id })}>{I.plus}Добавить группу</button>
           </div>
           <div className="card-body flush">
@@ -2244,7 +2244,7 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId }) {
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
         <div className="card">
           <div className="card-head">
-            <div className="title">Группы <span className="muted" style={{ fontWeight: 400 }}>· {subject.assignments.length}</span></div>
+            <div className="title">Группы <span className="muted" style={{ fontWeight: 400 }}>: {subject.assignments.length}</span></div>
           </div>
           <div className="card-body flush">
             {subject.assignments.length === 0 ? (
@@ -2266,7 +2266,7 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId }) {
         </div>
         <div className="card">
           <div className="card-head">
-            <div className="title">Преподаватели <span className="muted" style={{ fontWeight: 400 }}>· {uniqueTeachers.length}</span></div>
+            <div className="title">Преподаватели <span className="muted" style={{ fontWeight: 400 }}>: {uniqueTeachers.length}</span></div>
           </div>
           <div className="card-body flush">
             {uniqueTeachers.length === 0 ? (
