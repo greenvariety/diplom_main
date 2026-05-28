@@ -1,11 +1,11 @@
-﻿import { StrictMode, useState, useEffect } from 'react';
+﻿import { StrictMode, useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 import { ToastProvider, useToast, LoadButton } from './utils.jsx';
 import { I } from './data.jsx';
 import { LoginScreen, RegisterScreen, EmailVerifyScreen, RecoverPasswordScreen } from './auth.jsx';
 import { Shell } from './shell.jsx';
-import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, FacultyList, GroupList, GroupDetail, StudentList, StudentDetail, EmployeeList, EmployeeDetail, PositionList, ParentList, ParentDetail, SubjectList, UserList, DeleteRequests, AuditLog } from './screens.jsx';
+import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, FacultyList, FacultyDetail, GroupList, GroupDetail, StudentList, StudentDetail, EmployeeList, EmployeeDetail, PositionList, ParentList, ParentDetail, SubjectList, UserList, DeleteRequests, AuditLog } from './screens.jsx';
 import { OrgFormModal, FacultyFormModal, FacultyDetailModal, GroupFormModal, AssignSubjectModal, StudentFormModal, TransferModal, UploadDocModal, ParentFormModal, ParentAddStudentModal, DeleteConfirmModal, EmployeeFormModal, EmployeeAssignSubjectModal, PositionFormModal, SubjectFormModal, UserFormModal, UserSetPasswordModal, ApproveDeleteModal, AuditDiffModal, LogoutModal, OrgDeleteConfirmModal, OwnerDirectDeleteModal, NoteModal } from './modals.jsx';
 import api from './api.js';
 import { HtmlTasksPanel } from './dev-tasks.jsx';
@@ -282,9 +282,34 @@ function AppShell({ onLogout }) {
   };
 
   const handleNavigate = (screen, extra = null) => {
+    window.history.pushState({ screen, extra }, '');
     setCurrentScreen(screen);
     setNavExtra(extra);
   };
+
+  useEffect(() => {
+    window.history.replaceState({ screen: 'dashboard', extra: null }, '');
+
+    const handlePopState = (e) => {
+      const screen = e.state?.screen || 'dashboard';
+      const extra = e.state?.extra || null;
+      setCurrentScreen(screen);
+      setNavExtra(extra);
+    };
+
+    const handleKeyDown = (e) => {
+      if (!e.altKey) return;
+      if (e.key === 'ArrowLeft') { e.preventDefault(); window.history.back(); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); window.history.forward(); }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const openModal = (name, data) => setModal({ name, data });
   const closeModal = () => setModal(null);
@@ -400,6 +425,10 @@ function AppShell({ onLogout }) {
 
     if (currentScreen === 'faculties') {
       return <FacultyList {...sharedProps} />;
+    }
+
+    if (currentScreen === 'faculty-detail') {
+      return <FacultyDetail {...sharedProps} facultyId={navExtra?.facultyId} />;
     }
 
     if (currentScreen === 'groups') {

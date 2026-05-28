@@ -1524,6 +1524,92 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
   );
 }
 
+function FacultyDetail({ currentUser, openModal, onNavigate, facultyId }) {
+  const [faculty, setFaculty] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = () => {
+    setLoading(true);
+    api.get(`/faculties/${facultyId}/`).then(r => {
+      setFaculty(r.data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  };
+
+  useEffect(() => { if (facultyId) load(); }, [facultyId]);
+
+  if (loading || !faculty) {
+    return (
+      <Shell currentUser={currentUser} active="faculties" onNavigate={onNavigate} openModal={openModal}>
+        <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>Загрузка…</div>
+      </Shell>
+    );
+  }
+
+  const handleDeleteRequest = async () => {
+    if (!confirm(`Отправить заявку на удаление факультета «${faculty.full_name}»?`)) return;
+    try {
+      await api.post(`/faculties/${facultyId}/delete-request/`, { reason: `Удаление факультета: ${faculty.full_name}` });
+      onNavigate('faculties');
+    } catch (e) {
+      alert(e.response?.data?.error || 'Ошибка при отправке заявки');
+    }
+  };
+
+  return (
+    <Shell currentUser={currentUser} active="faculties" onNavigate={onNavigate} openModal={openModal}>
+      <PageHead
+        crumbs={[{ label: 'Факультеты', href: true, onClick: () => onNavigate('faculties') }, { label: faculty.short_name }]}
+        title={faculty.full_name}
+        sub={`Код: ${faculty.short_name}`}
+        actions={<>
+          <button className="btn btn-secondary btn-sm" onClick={() => openModal('facultyForm', { faculty, onDone: load })}>{I.pencil}Редактировать</button>
+          {currentUser?.role === 'owner'
+            ? <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: faculty.full_name, type: 'факультет', url: `/faculties/${facultyId}/`, onDone: () => onNavigate('faculties') })}>{I.trash}Удалить</button>
+            : <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Подать заявку</button>
+          }
+        </>}
+      />
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+        <div className="card">
+          <div className="card-head">
+            <div className="title">Группы <span className="muted" style={{ fontWeight: 400 }}>· {faculty.groups.length}</span></div>
+            <button className="btn btn-secondary btn-sm" onClick={() => openModal('groupForm', { onDone: load })}>{I.plus}Добавить группу</button>
+          </div>
+          <div className="card-body flush">
+            <table className="tbl">
+              <thead><tr><th>Название</th><th>Год набора</th><th>Студентов</th><th>Кл. руководитель</th></tr></thead>
+              <tbody>
+                {faculty.groups.length === 0 ? (
+                  <tr><td colSpan={4} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>Групп нет</td></tr>
+                ) : faculty.groups.map(g => (
+                  <tr key={g.id} className="row-link" onClick={() => onNavigate('group-detail', { groupId: g.id })}>
+                    <td className="fwm">{g.name}</td>
+                    <td className="mono">{g.year}</td>
+                    <td className="mono">{g.student_count}</td>
+                    <td className="muted">{g.headteacher_name || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-head"><div className="title">Сведения</div></div>
+          <div style={{ borderTop: '1px solid var(--border)' }}>
+            <dl className="kv">
+              <dt>Аббревиатура</dt><dd className="mono">{faculty.short_name}</dd>
+              <dt>Групп</dt><dd className="mono">{faculty.group_count}</dd>
+              <dt>Студентов</dt><dd className="mono">{faculty.student_count}</dd>
+              {faculty.created_at && <><dt>Основан</dt><dd>{faculty.created_at}</dd></>}
+            </dl>
+          </div>
+        </div>
+      </div>
+    </Shell>
+  );
+}
+
 function FacultyList({ currentUser, openModal, onNavigate }) {
   const [faculties, setFaculties] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1589,7 +1675,7 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
               ) : displayFaculties.length === 0 ? (
                 <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Факультеты не найдены</td></tr>
               ) : displayFaculties.map((f, idx) => (
-                <tr key={f.id} className="row-link" onClick={() => openModal('facultyDetail', { faculty: f, onDone: load, currentRole: currentUser?.role })}>
+                <tr key={f.id} className="row-link" onClick={() => onNavigate('faculty-detail', { facultyId: f.id })}>
                   <td className="mono muted">{idx + 1}</td>
                   <td className="mono">{f.short_name}</td>
                   <td className="fwm">{f.full_name}</td>
@@ -2259,7 +2345,7 @@ export {
   StudentList, StudentDetail,
   EmployeeList, EmployeeDetail,
   GroupList, GroupDetail,
-  FacultyList,
+  FacultyList, FacultyDetail,
   UserList, DeleteRequests, AuditLog,
   ParentList, ParentDetail, SubjectList, PositionList,
 };

@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import Faculty, Student, DeleteRequest
+from .models import Faculty, Student, Group, DeleteRequest
 from .utils import log_action
 
 
@@ -70,6 +70,25 @@ class FacultyDetailView(APIView):
             return Faculty.objects.get(pk=pk, institution=request.user.institution)
         except Faculty.DoesNotExist:
             return None
+
+    def get(self, request, pk):
+        faculty = self._get_faculty(request, pk)
+        if not faculty:
+            return Response({'error': 'Не найдено'}, status=404)
+        groups = Group.objects.filter(faculty=faculty).order_by('group_number')
+        groups_data = [
+            {
+                'id': g.pk,
+                'name': g.name,
+                'year': g.year,
+                'student_count': g.students.count(),
+                'headteacher_name': str(g.headteacher) if g.headteacher_id else None,
+            }
+            for g in groups
+        ]
+        data = _faculty_data(faculty)
+        data['groups'] = groups_data
+        return Response(data)
 
     def patch(self, request, pk):
         err = _admin_only(request)
