@@ -38,6 +38,7 @@ ACTION_MAP = {
     'created': ('create', 'Создал', 'badge-ok'),
     'updated': ('update', 'Изменил', 'badge-warn'),
     'deleted': ('delete', 'Удалил', 'badge-bad'),
+    'transferred': ('transfer', 'Перевёл студента', 'badge-info'),
 }
 
 ROLE_LABELS = {
@@ -145,7 +146,7 @@ class AuditLogView(APIView):
 
         action = request.GET.get('action', '')
         if action:
-            db_action = {'create': 'created', 'update': 'updated', 'delete': 'deleted'}.get(action)
+            db_action = {'create': 'created', 'update': 'updated', 'delete': 'deleted', 'transfer': 'transferred'}.get(action)
             if db_action:
                 qs = qs.filter(action=db_action)
 

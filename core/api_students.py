@@ -323,7 +323,7 @@ class StudentTransferView(APIView):
         student.status = 'transferred'
         student.save()
 
-        log_action(request.user, 'updated', student,
+        log_action(request.user, 'transferred', student,
                    old_data={'group': old_group_name},
                    new_data={'group': new_group.name, 'status': 'transferred'},
                    institution=institution)
@@ -450,7 +450,7 @@ class StudentTransferInstitutionView(APIView):
         student.status = 'transferred'
         student.save()
 
-        log_action(request.user, 'updated', student,
+        log_action(request.user, 'transferred', student,
                    old_data={'institution': old_inst, 'faculty': old_fac, 'group': old_grp},
                    new_data={'institution': target_faculty.institution.name, 'faculty': target_faculty.full_name,
                              'group': target_group.name if target_group else None, 'status': 'transferred'},

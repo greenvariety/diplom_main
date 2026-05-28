@@ -778,6 +778,7 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
                       <option value="create">Создание</option>
                       <option value="update">Изменение</option>
                       <option value="delete">Удаление</option>
+                      <option value="transfer">Перевод</option>
                     </select>
                   </div>
                   {auditLoading ? (
