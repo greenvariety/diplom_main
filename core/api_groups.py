@@ -5,6 +5,10 @@ from .models import Group, Faculty, Employee, Subject, GroupSubjectEmployee, Del
 from .utils import log_action
 
 
+def _emp_incomplete(e):
+    return not all([e.position_id, e.birth_date, e.phone, e.email, e.photo])
+
+
 def _group_data(g):
     return {
         'id': g.pk,
@@ -16,6 +20,7 @@ def _group_data(g):
         'faculty_short': g.faculty.short_name if g.faculty_id else '',
         'headteacher_id': g.headteacher_id,
         'headteacher_name': str(g.headteacher) if g.headteacher_id else None,
+        'headteacher_warn_incomplete': _emp_incomplete(g.headteacher) if g.headteacher_id else False,
         'student_count': g.students.count(),
         'is_flagged': g.is_flagged,
         'warn_incomplete': g.headteacher_id is None,
@@ -123,6 +128,7 @@ class GroupDetailView(APIView):
                 'subject_name': a.subject.name,
                 'employee_id': a.employee_id,
                 'employee_name': str(a.employee),
+                'employee_warn_incomplete': _emp_incomplete(a.employee) if a.employee_id else False,
             }
             for a in group.subject_assignments.select_related('subject', 'employee').all()
         ]

@@ -1121,7 +1121,12 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                 ? <img src={employee.photo} alt="" style={{ width: 96, height: 96, borderRadius: 16, objectFit: 'cover' }} className="avatar-zoomy" />
                 : <Avatar name={employee.full_name} size="lg" className="avatar-zoomy" />
               }
-              <h3 style={{ marginTop: 14, marginBottom: 6 }}>{employee.last_name} {employee.first_name}</h3>
+              <h3 style={{ marginTop: 14, marginBottom: 6 }}>
+                {employee.last_name} {employee.first_name}
+                {employee.warn_incomplete && (
+                  <span title="Заполнены не все данные" style={{ marginLeft: 6, color: 'var(--bad-fg)', fontWeight: 700, fontSize: 16 }}>!</span>
+                )}
+              </h3>
               <div className="muted" style={{ fontSize: 13, marginBottom: 12 }}>{employee.middle_name}</div>
               {employee.position_name && (
                 <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
@@ -1512,7 +1517,12 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
               <tr className="row-link" onClick={() => onNavigate('employee-detail', { employeeId: group.headteacher_id })}>
                 <td className="muted" style={{ width: 32 }}>{I.user}</td>
                 <td className="muted" style={{ width: 180 }}>Классный руководитель</td>
-                <td className="fwm">{group.headteacher_name}</td>
+                <td className="fwm">
+                  {group.headteacher_name}
+                  {group.headteacher_warn_incomplete && (
+                    <span title="Заполнены не все данные" style={{ marginLeft: 6, color: 'var(--bad-fg)', fontWeight: 700, fontSize: 14 }}>!</span>
+                  )}
+                </td>
                 <td style={{ width: 32 }}>{I.chevr}</td>
               </tr>
             </tbody>
@@ -1560,7 +1570,12 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
                 <div key={a.id} style={{ borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center' }}>
                   <div style={{ flex: 1, padding: '8px 0' }}>
                     <div className="fwm" style={{ fontSize: 13, cursor: 'pointer' }} onClick={() => onNavigate('subject-detail', { subjectId: a.subject_id })}>{a.subject_name}</div>
-                    <div className="muted" style={{ fontSize: 11, cursor: 'pointer' }} onClick={() => onNavigate('employee-detail', { employeeId: a.employee_id })}>{a.employee_name}</div>
+                    <div className="muted" style={{ fontSize: 11, cursor: 'pointer' }} onClick={() => onNavigate('employee-detail', { employeeId: a.employee_id })}>
+                      {a.employee_name}
+                      {a.employee_warn_incomplete && (
+                        <span title="Заполнены не все данные" style={{ marginLeft: 4, color: 'var(--bad-fg)', fontWeight: 700 }}>!</span>
+                      )}
+                    </div>
                   </div>
                   <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleRemoveSubject(a.id)}>{I.x}</button>
                 </div>
@@ -2276,7 +2291,7 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId, filterEm
   for (const a of subject.assignments) {
     if (!seenIds.has(a.employee_id)) {
       seenIds.add(a.employee_id);
-      uniqueTeachers.push({ id: a.employee_id, name: a.employee_name });
+      uniqueTeachers.push({ id: a.employee_id, name: a.employee_name, warn_incomplete: a.employee_warn_incomplete });
     }
   }
 
@@ -2361,7 +2376,12 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId, filterEm
                       name: t => t.name || '',
                     }).map(t => (
                       <tr key={t.id} className="row-link" onClick={() => onNavigate('employee-detail', { employeeId: t.id })}>
-                        <td className="fwm">{t.name}</td>
+                        <td className="fwm">
+                          {t.name}
+                          {t.warn_incomplete && (
+                            <span title="Заполнены не все данные" style={{ marginLeft: 6, color: 'var(--bad-fg)', fontWeight: 700, fontSize: 14 }}>!</span>
+                          )}
+                        </td>
                         <td>{I.chevr}</td>
                       </tr>
                     ))}

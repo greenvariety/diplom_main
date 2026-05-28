@@ -4,6 +4,10 @@ from .models import Subject, Employee, Student
 from .utils import log_action
 
 
+def _emp_incomplete(e):
+    return not all([e.position_id, e.birth_date, e.phone, e.email, e.photo])
+
+
 class SubjectsView(APIView):
     def get(self, request):
         institution = request.user.institution
@@ -49,6 +53,7 @@ class SubjectDetailView(APIView):
                     'group_name': a.group.name,
                     'employee_id': a.employee_id,
                     'employee_name': a.employee.full_name(),
+                    'employee_warn_incomplete': _emp_incomplete(a.employee),
                 }
                 for a in assignments
             ],
