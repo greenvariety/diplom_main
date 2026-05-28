@@ -1,33 +1,17 @@
 # HTML.md - задачи по правке интерфейса
 
-~~## 1. Смотри добавь вкладку какие предметы ведет! То есть ты назначаешь предмет, а при переходе на него увидшь в каких группах она ведет! То есть если два препода ведут один предмет, то ей будет отображены только ее группы!~~
+## ~~1. Бля сделай обычной надписью это!~~
 
 ```html
-<div class="card-head" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);"><div class="title">Ведёт предметы</div><button class="btn btn-secondary btn-sm"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button></div>
+<div class="banner banner-info" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg><div class="banner-body" style="">При переводе студент получает статус «Переведён» и привязывается к новой группе и факультету.</div></div>
 ```
 
 ---
 
-~~## 2. Сделай крч на везде таких вкладках сортировку как и на основных! Во всех вкладках если что!~~
+## 2. Я крч студента перевел и у него пишется действие изменил, а я бы именно сделал, что перевел студента!
 
 ```html
-<th style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">Преподаватель</th>
-```
-
----
-
-~~## 3. Тут вот тоже~~
-
-```html
-<th style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">Преподаватель</th>
-```
-
----
-
-~~## 4. Как здесь крч!~~
-
-```html
-<th class="sortable " style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);"><span style="display: inline-flex; align-items: center;">Название<span class="sort-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 10 12 5 17 10"></polyline><polyline points="7 14 12 19 17 14"></polyline></svg></span></span></th>
+<td style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);"><a href="#" style="">Показать</a></td>
 ```
 
 ---

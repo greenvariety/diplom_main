@@ -1173,7 +1173,7 @@ function TransferModal({ data, onClose }) {
         <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
         <LoadButton className="btn btn-primary" onClick={submit}>{I.swap}Перевести</LoadButton>
       </>}>
-      <div className="banner banner-info">{I.info}<div className="banner-body">При переводе студент получает статус «Переведён» и привязывается к новой группе и факультету.</div></div>
+      <p style={{ fontSize: 13, color: '#6c757d', marginBottom: 12 }}>При переводе студент получает статус «Переведён» и привязывается к новой группе и факультету.</p>
       {isOwner && (
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, cursor: 'pointer', fontSize: 14 }}>
           <input type="checkbox" checked={crossOrg} onChange={e => { setCrossOrg(e.target.checked); setErr(''); setTouched(false); setGroupId(''); setTargetOrgId(''); setTargetFacultyId(''); setTargetGroupId(''); }} />
