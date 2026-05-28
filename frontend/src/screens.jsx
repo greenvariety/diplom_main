@@ -1591,7 +1591,7 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
               ) : displayFaculties.map((f, idx) => (
                 <tr key={f.id} className="row-link" onClick={() => openModal('facultyDetail', { faculty: f, onDone: load, currentRole: currentUser?.role })}>
                   <td className="mono muted">{idx + 1}</td>
-                  <td><span className="badge badge-neutral mono" style={{ padding: '1px 6px', borderRadius: 'var(--radius-sm)' }}>{f.short_name}</span></td>
+                  <td className="mono">{f.short_name}</td>
                   <td className="fwm">{f.full_name}</td>
                   <td className="mono">{f.group_count}</td>
                   <td className="mono">{f.student_count}</td>
