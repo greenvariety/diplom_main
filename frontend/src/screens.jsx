@@ -491,7 +491,7 @@ function StudentList({ currentUser, openModal, onNavigate }) {
         title="Студенты"
         sub={loading ? 'Загрузка…' : `Всего: ${data.count} записей`}
         actions={<>
-          <button className="btn btn-primary btn-sm" onClick={() => openModal('studentForm', { onDone: () => { setPage(1); load(); } })}>{I.plus}</button>
+          <button className="btn btn-primary btn-sm" onClick={() => openModal('studentForm', { onDone: () => { setPage(1); load(); } })}>{I.plus}Добавить студента</button>
         </>}
       />
       <div className="filters">
@@ -1394,7 +1394,7 @@ function GroupList({ currentUser, openModal, onNavigate }) {
       <PageHead
         title="Группы"
         sub={loading ? '…' : `Всего: ${filtered.length} записей`}
-        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('groupForm', { onDone: load })}>{I.plus}</button>}
+        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('groupForm', { onDone: load })}>{I.plus}Добавить группу</button>}
       />
       <div className="filters">
         <div className="field grow-2">
@@ -1695,7 +1695,7 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
       <PageHead
         title="Факультеты"
         sub={loading ? '…' : `Всего: ${faculties.length} записей`}
-        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('facultyForm', { onDone: load })}>{I.plus}</button>}
+        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('facultyForm', { onDone: load })}>{I.plus}Добавить факультет</button>}
       />
       <div className="filters">
         <div className="field grow-2">
@@ -2048,7 +2048,7 @@ function ParentList({ currentUser, openModal, onNavigate }) {
       <PageHead
         title="Опекуны и родители"
         sub={loading ? 'Загрузка…' : `Всего: ${data.count} записей`}
-        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('parentForm', { onDone: () => { setPage(1); load(); } })}>{I.plus}</button>}
+        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('parentForm', { onDone: () => { setPage(1); load(); } })}>{I.plus}Добавить опекуна</button>}
       />
       <div className="filters">
         <div className="field grow-2">
@@ -2395,7 +2395,7 @@ function SubjectList({ currentUser, openModal, onNavigate }) {
       <PageHead
         title="Предметы"
         sub={loading ? 'Загрузка…' : `Всего: ${subjects.length} записей`}
-        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('subjectForm', { onDone: load })}>{I.plus}</button>}
+        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('subjectForm', { onDone: load })}>{I.plus}Добавить предмет</button>}
       />
       <div className="filters">
         <div className="field grow-2">
@@ -2468,7 +2468,7 @@ function PositionList({ currentUser, openModal, onNavigate }) {
       <PageHead
         title="Должности"
         sub={loading ? 'Загрузка…' : `Всего: ${positions.length} записей`}
-        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('positionForm', { onDone: load })}>{I.plus}</button>}
+        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('positionForm', { onDone: load })}>{I.plus}Добавить должность</button>}
       />
       <div className="filters">
         <div className="field grow-2">
