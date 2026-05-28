@@ -1624,7 +1624,7 @@ function FacultyDetailModal({ data, onClose, openModal }) {
   };
 
   return (
-    <Modal title={f.full_name || f.name} sub={`Код: ${f.short_name || f.code}`} onClose={onClose}
+    <Modal title={f.full_name || f.name} onClose={onClose}
       footer={<>
         {currentRole === 'owner'
           ? <button className="btn btn-danger" onClick={() => { onClose(); openModal('ownerDirectDelete', { name: f.full_name, type: 'факультет', url: `/faculties/${f.id}/`, onDone }); }}>{I.trash}Удалить</button>
@@ -1635,6 +1635,7 @@ function FacultyDetailModal({ data, onClose, openModal }) {
         <button className="btn btn-primary" onClick={() => openModal('facultyForm', { faculty: f, onDone })}>{I.pencil}Редактировать</button>
       </>}>
       <dl className="kv" style={{ padding: 0 }}>
+        <dt>Код</dt><dd className="mono">{f.short_name || f.code || '-'}</dd>
         <dt>Групп</dt><dd className="mono">{f.group_count ?? f.groups ?? '-'}</dd>
         <dt>Студентов</dt><dd className="mono">{f.student_count ?? f.students ?? '-'}</dd>
       </dl>
