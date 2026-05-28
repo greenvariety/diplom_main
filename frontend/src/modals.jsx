@@ -1384,21 +1384,45 @@ function UploadDocModal({ data, onClose }) {
 }
 
 function AssignSubjectModal({ data, onClose }) {
-  const { groupId, onDone } = data || {};
+  const { groupId: preGroupId, subjectId: preSubjectId, subjectName: preSubjectName, onDone } = data || {};
+  const isSubjectFixed = !!preSubjectId;
+  const isGroupFixed = !!preGroupId;
+
   const [subjects, setSubjects] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [employees, setEmployees] = useState([]);
-  const [subjectId, setSubjectId] = useState('');
+  const [subjectId, setSubjectId] = useState(preSubjectId?.toString() || '');
+  const [groupId, setGroupId] = useState(preGroupId?.toString() || '');
   const [employeeId, setEmployeeId] = useState('');
+  const [employeesFallback, setEmployeesFallback] = useState(false);
   const [err, setErr] = useState('');
   const toast = useToast();
 
   useEffect(() => {
-    api.get('/subjects/').then(r => setSubjects(r.data)).catch(() => {});
-    api.get('/employees/').then(r => setEmployees(r.data)).catch(() => {});
+    if (!isSubjectFixed) api.get('/subjects/').then(r => setSubjects(r.data)).catch(() => {});
+    if (!isGroupFixed) api.get('/groups/').then(r => setGroups(r.data)).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!subjectId) { setEmployees([]); setEmployeesFallback(false); return; }
+    api.get(`/subjects/${subjectId}/employees/`).then(r => {
+      if (r.data.length > 0) {
+        setEmployees(r.data);
+        setEmployeesFallback(false);
+      } else {
+        api.get('/employees/').then(r2 => {
+          setEmployees(r2.data);
+          setEmployeesFallback(true);
+        }).catch(() => {});
+      }
+    }).catch(() => {});
+    setEmployeeId('');
+    setErr('');
+  }, [subjectId]);
 
   const save = async () => {
     if (!subjectId) { setErr('Выберите предмет'); return; }
+    if (!groupId) { setErr('Выберите группу'); return; }
     if (!employeeId) { setErr('Выберите преподавателя'); return; }
     setErr('');
     try {
@@ -1418,17 +1442,34 @@ function AssignSubjectModal({ data, onClose }) {
     <Modal title="Назначить предмет" onClose={onClose}
       footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>Назначить</LoadButton></>}>
       <div className="form-grid">
-        <Field label="Предмет" required>
-          <select className="select" value={subjectId} onChange={e => { setSubjectId(e.target.value); setErr(''); }}>
-            <option value="">- Выберите предмет -</option>
-            {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
-        </Field>
+        {isSubjectFixed ? (
+          <Field label="Предмет">
+            <div style={{ padding: '6px 0', fontWeight: 500 }}>{preSubjectName}</div>
+          </Field>
+        ) : (
+          <Field label="Предмет" required>
+            <select className="select" value={subjectId} onChange={e => { setSubjectId(e.target.value); setErr(''); }}>
+              <option value="">- Выберите предмет -</option>
+              {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </Field>
+        )}
+        {!isGroupFixed && (
+          <Field label="Группа" required>
+            <select className="select" value={groupId} onChange={e => { setGroupId(e.target.value); setErr(''); }}>
+              <option value="">- Выберите группу -</option>
+              {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+            </select>
+          </Field>
+        )}
         <Field label="Преподаватель" required>
-          <select className="select" value={employeeId} onChange={e => { setEmployeeId(e.target.value); setErr(''); }}>
+          <select className="select" value={employeeId} onChange={e => { setEmployeeId(e.target.value); setErr(''); }} disabled={!subjectId}>
             <option value="">- Выберите преподавателя -</option>
             {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
           </select>
+          {employeesFallback && subjectId && (
+            <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 4 }}>Показаны все сотрудники - для этого предмета ещё нет назначенных преподавателей</div>
+          )}
         </Field>
         {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
       </div>

@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import Subject
+from .models import Subject, Employee
 from .utils import log_action
 
 
@@ -28,6 +28,28 @@ class SubjectsView(APIView):
 
 
 class SubjectDetailView(APIView):
+    def get(self, request, pk):
+        institution = request.user.institution
+        try:
+            subject = Subject.objects.get(pk=pk, institution=institution)
+        except Subject.DoesNotExist:
+            return Response({'error': 'Не найдено'}, status=404)
+        assignments = subject.group_assignments.select_related('group', 'group__faculty', 'employee').order_by('group__year', 'group__group_number')
+        return Response({
+            'id': subject.pk,
+            'name': subject.name,
+            'assignments': [
+                {
+                    'id': a.pk,
+                    'group_id': a.group_id,
+                    'group_name': a.group.name,
+                    'employee_id': a.employee_id,
+                    'employee_name': a.employee.full_name(),
+                }
+                for a in assignments
+            ],
+        })
+
     def patch(self, request, pk):
         if request.user.role not in ('owner', 'admin'):
             return Response({'error': 'Доступ запрещён'}, status=403)
@@ -61,3 +83,17 @@ class SubjectDetailView(APIView):
                    old_data={'name': subject.name}, institution=institution)
         subject.delete()
         return Response(status=204)
+
+
+class SubjectEmployeesView(APIView):
+    def get(self, request, pk):
+        institution = request.user.institution
+        try:
+            subject = Subject.objects.get(pk=pk, institution=institution)
+        except Subject.DoesNotExist:
+            return Response({'error': 'Не найдено'}, status=404)
+        employee_ids = subject.group_assignments.values_list('employee_id', flat=True).distinct()
+        employees = Employee.objects.filter(
+            pk__in=employee_ids, institution=institution
+        ).order_by('last_name', 'first_name', 'middle_name')
+        return Response([{'id': e.pk, 'full_name': e.full_name()} for e in employees])

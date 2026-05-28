@@ -2245,18 +2245,31 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId }) {
         <div className="card">
           <div className="card-head">
             <div className="title">Группы<span className="muted" style={{ fontWeight: 700 }}>: {subject.assignments.length}</span></div>
+            {['owner', 'admin'].includes(currentUser?.role) && (
+              <button className="btn btn-secondary btn-sm" onClick={() => openModal('assignSubject', { subjectId, subjectName: subject.name, onDone: load })}>{I.plus}</button>
+            )}
           </div>
           <div className="card-body flush">
             {subject.assignments.length === 0 ? (
-              <EmptyState icon={I.book} title="Предмет не назначен ни одной группе" sub="Назначьте предмет через карточку группы" />
+              <EmptyState icon={I.book} title="Предмет не назначен ни одной группе" sub="Нажмите + чтобы назначить группу" />
             ) : (
               <table className="tbl">
-                <thead><tr><th>Группа</th><th>Преподаватель</th></tr></thead>
+                <thead><tr><th>Группа</th><th>Преподаватель</th>{['owner', 'admin'].includes(currentUser?.role) && <th style={{ width: 40 }}></th>}</tr></thead>
                 <tbody>
                   {subject.assignments.map(a => (
-                    <tr key={a.id} className="row-link" onClick={() => onNavigate('group-detail', { groupId: a.group_id })}>
-                      <td className="fwm">{a.group_name}</td>
-                      <td className="muted">{a.employee_name}</td>
+                    <tr key={a.id}>
+                      <td className="fwm" style={{ cursor: 'pointer' }} onClick={() => onNavigate('group-detail', { groupId: a.group_id })}>{a.group_name}</td>
+                      <td className="muted" style={{ cursor: 'pointer' }} onClick={() => onNavigate('group-detail', { groupId: a.group_id })}>{a.employee_name}</td>
+                      {['owner', 'admin'].includes(currentUser?.role) && (
+                        <td onClick={e => e.stopPropagation()}>
+                          <button className="btn btn-ghost btn-icon btn-sm" title="Убрать" onClick={async () => {
+                            try {
+                              await api.delete(`/groups/${a.group_id}/subjects/${a.id}/`);
+                              load();
+                            } catch { toast.push('Ошибка при удалении', { kind: 'err' }); }
+                          }}>{I.x}</button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
