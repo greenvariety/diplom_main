@@ -2285,6 +2285,7 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId }) {
         <div className="card">
           <div className="card-head">
             <div className="title">Преподаватели<span className="muted" style={{ fontWeight: 700 }}>: {uniqueTeachers.length}</span></div>
+            <button className="btn btn-secondary btn-sm" onClick={() => openModal('assignSubject', { subjectId, subjectName: subject.name, onDone: load })}>{I.plus}</button>
           </div>
           <div className="card-body flush">
             {uniqueTeachers.length === 0 ? (
