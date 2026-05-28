@@ -8,7 +8,7 @@
 
 ---
 
-## 2. Где плюс чтобы доавиьб препода
+## ~~2. Где плюс чтобы доавиьб препода~~
 
 ```html
 <div class="card-head" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);"><div class="title">Преподаватели<span class="muted" style="font-weight: 700;">: 1</span></div></div>
