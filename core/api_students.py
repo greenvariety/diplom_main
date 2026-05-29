@@ -65,7 +65,8 @@ class StudentsView(APIView):
             qs = qs.filter(
                 Q(last_name__icontains=search) |
                 Q(first_name__icontains=search) |
-                Q(middle_name__icontains=search)
+                Q(middle_name__icontains=search) |
+                Q(group__name__icontains=search)
             )
 
         status = request.query_params.get('status', '')

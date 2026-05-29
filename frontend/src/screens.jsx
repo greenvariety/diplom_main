@@ -619,7 +619,7 @@ function StudentList({ currentUser, openModal, onNavigate }) {
       />
       <div className="filters">
         <div className="field grow-2">
-          <label className="field-label">Поиск по ФИО</label>
+          <label className="field-label">Поиск</label>
           <div className="input-with-icon">{I.search}
             <input className="input" value={q} onChange={e => setQ(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
@@ -1012,7 +1012,7 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
       />
       <div className="filters">
         <div className="field grow-2">
-          <label className="field-label">Поиск по ФИО</label>
+          <label className="field-label">Поиск</label>
           <div className="input-with-icon">{I.search}
             <input className="input" value={q} onChange={e => setQ(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
@@ -1552,7 +1552,7 @@ function GroupList({ currentUser, openModal, onNavigate }) {
 
   const filtered = sort.sortFn(
     groups.filter(g => {
-      if (q && !g.name.toLowerCase().includes(q.toLowerCase())) return false;
+      if (q && ![g.name, g.headteacher_name, g.faculty_short, g.faculty_name].some(v => v?.toLowerCase().includes(q.toLowerCase()))) return false;
       if (filterFaculty && String(g.faculty_id) !== filterFaculty) return false;
       if (filterYear && String(g.year) !== filterYear) return false;
       if (filterHeadteacher && String(g.headteacher_id) !== filterHeadteacher) return false;
@@ -1573,7 +1573,7 @@ function GroupList({ currentUser, openModal, onNavigate }) {
       />
       <div className="filters">
         <div className="field grow-2">
-          <label className="field-label">Поиск по названию</label>
+          <label className="field-label">Поиск</label>
           <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} /></div>
         </div>
         <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset} disabled={!hasFilters}>Сбросить</button>

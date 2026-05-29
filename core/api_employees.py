@@ -60,7 +60,8 @@ class EmployeesView(APIView):
             qs = qs.filter(
                 Q(last_name__icontains=search) |
                 Q(first_name__icontains=search) |
-                Q(middle_name__icontains=search)
+                Q(middle_name__icontains=search) |
+                Q(position__name__icontains=search)
             )
 
         position_id = request.query_params.get('position_id', '')
