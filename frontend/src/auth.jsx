@@ -897,4 +897,4 @@ function TermsScreen({ onBack }) {
   );
 }
 
-export { LoginScreen, RegisterScreen, EmailVerifyScreen, RecoverPasswordScreen, TermsScreen };
+export { LoginScreen, RegisterScreen, EmailVerifyScreen, RecoverPasswordScreen, TermsScreen, CodeInput };

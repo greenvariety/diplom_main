@@ -11,6 +11,7 @@ class MeView(APIView):
             'id': user.pk,
             'username': user.username,
             'display_name': user.display_name,
+            'email': user.email or '',
             'role': user.role,
             'institution': {
                 'id': institution.pk,

@@ -107,9 +107,8 @@ function TopbarSearch({ onNavigate }) {
   );
 }
 
-function UserChip({ currentUser, onLogout, openModal }) {
+function UserChip({ currentUser, onLogout, openModal, onNavigate }) {
   const { open, setOpen, wrapRef } = useDropdown();
-  const toast = useToast();
   const name = currentUser?.display_name || currentUser?.username || '-';
   const role = currentUser?.role || 'admin';
   return (
@@ -128,11 +127,8 @@ function UserChip({ currentUser, onLogout, openModal }) {
             <div style={{ fontWeight: 600, fontSize: 13 }}>{name}</div>
             <div className="muted" style={{ fontSize: 11 }}>{ROLE_LABEL[role] || role}</div>
           </div>
-          <div className="dd-item" onClick={() => { setOpen(false); toast.push('Открыт профиль', { kind: 'info' }); }}>
+          <div className="dd-item" onClick={() => { setOpen(false); onNavigate && onNavigate('profile'); }}>
             {I.user}<span>Профиль</span>
-          </div>
-          <div className="dd-item" onClick={() => { setOpen(false); toast.push('Открыта смена пароля', { kind: 'info' }); }}>
-            {I.shield}<span>Сменить пароль</span>
           </div>
           <div className="dd-sep" />
           <div className="dd-item danger" onClick={() => { setOpen(false); openModal && openModal('logout'); }}>
@@ -231,7 +227,7 @@ function Shell({ currentUser, role: roleProp, active, onNavigate, onLogout, open
           )}
         </div>
         <div className="topbar-right">
-          <UserChip currentUser={mockUser} onLogout={onLogout} openModal={openModal} />
+          <UserChip currentUser={mockUser} onLogout={onLogout} openModal={openModal} onNavigate={onNavigate} />
         </div>
       </div>
       <nav className="sidebar">
