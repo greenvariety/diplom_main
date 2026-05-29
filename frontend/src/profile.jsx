@@ -1,8 +1,17 @@
 import { useState, useEffect } from 'react';
 import { I } from './data.jsx';
 import { PasswordRules, PasswordStrength, PasswordInput, FadingError, Field, LoadButton } from './utils.jsx';
-import { CodeInput } from './auth.jsx';
+import { CodeInput, RecoverPasswordScreen } from './auth.jsx';
 import api from './api.js';
+
+function daysSince(isoStr) {
+  if (!isoStr) return null;
+  const diff = Math.floor((Date.now() - new Date(isoStr)) / 86400000);
+  if (diff === 0) return 'сегодня';
+  if (diff === 1) return '1 день назад';
+  if (diff < 5) return `${diff} дня назад`;
+  return `${diff} дней назад`;
+}
 
 function TabBar({ tab, setTab }) {
   const tabs = [
@@ -116,7 +125,7 @@ function TabData({ currentUser, onUserUpdated }) {
 }
 
 /* ── Вкладка: Пароль ────────────────────────────────────────── */
-function TabPassword() {
+function TabPassword({ currentUser, onShowRecover }) {
   const [cur, setCur] = useState('');
   const [p1, setP1] = useState('');
   const [p2, setP2] = useState('');
@@ -124,8 +133,12 @@ function TabPassword() {
   const [pwFocus, setPwFocus] = useState(false);
   const [p2Touched, setP2Touched] = useState(false);
   const [curErr, setCurErr] = useState('');
+  const [wrongPassword, setWrongPassword] = useState(false);
   const [formErr, setFormErr] = useState('');
   const [saved, setSaved] = useState(false);
+
+  const changedAt = currentUser?.password_changed_at;
+  const changedLabel = changedAt ? daysSince(changedAt) : null;
 
   const p1Err = !p1 ? 'Введите новый пароль'
     : p1.length < 8 ? 'Минимум 8 символов'
@@ -139,8 +152,7 @@ function TabPassword() {
   const save = async () => {
     setSubmitted(true);
     setP2Touched(true);
-    setCurErr('');
-    setFormErr('');
+    setCurErr(''); setWrongPassword(false); setFormErr('');
 
     if (!cur) { setCurErr('Введите текущий пароль'); return; }
     if (p1Err) { setFormErr(p1Err); return; }
@@ -153,13 +165,14 @@ function TabPassword() {
       setSaved(true);
       setCur(''); setP1(''); setP2('');
       setSubmitted(false); setP2Touched(false);
-      setCurErr(''); setFormErr('');
+      setCurErr(''); setWrongPassword(false); setFormErr('');
       setTimeout(() => setSaved(false), 3000);
     } catch (e) {
       const data = e.response?.data;
       const msg = data?.error || 'Ошибка смены пароля';
       if (data?.field === 'current_password') {
         setCurErr(msg);
+        setWrongPassword(true);
       } else {
         setFormErr(msg);
       }
@@ -168,16 +181,38 @@ function TabPassword() {
 
   return (
     <div style={{ maxWidth: 480 }}>
+      {changedLabel && (
+        <div style={{ marginBottom: 16, padding: '10px 14px', background: 'var(--surface-alt)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          {I.history}
+          <span>Пароль последний раз изменён <strong style={{ color: 'var(--text)' }}>{changedLabel}</strong></span>
+        </div>
+      )}
+
       <div className="field">
         <label className="field-label">Текущий пароль</label>
         <PasswordInput
           value={cur}
-          onChange={v => { setCur(v); setCurErr(''); setFormErr(''); setSaved(false); }}
+          onChange={v => { setCur(v); setCurErr(''); setWrongPassword(false); setFormErr(''); setSaved(false); }}
           onBlur={() => { if (!cur) setCurErr('Введите текущий пароль'); }}
           hasError={!!curErr}
           autoComplete="current-password"
         />
-        {curErr && <div className="field-error" style={{ marginTop: 4 }}>{I.alert}{curErr}</div>}
+        {curErr && (
+          <div className="field-error" style={{ marginTop: 4 }}>
+            {I.alert}{curErr}
+            {wrongPassword && (
+              <span style={{ marginLeft: 8 }}>
+                <a
+                  href="#"
+                  onClick={e => { e.preventDefault(); onShowRecover && onShowRecover(); }}
+                  style={{ color: 'inherit', textDecoration: 'underline', fontWeight: 500 }}
+                >
+                  Забыли пароль?
+                </a>
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="field" style={{ marginTop: 16 }}>
@@ -367,6 +402,7 @@ function TabEmail({ currentUser, onUserUpdated }) {
 function ProfileScreen({ currentUser: initUser, onNavigate, onUserUpdated }) {
   const [tab, setTab] = useState('data');
   const [user, setUser] = useState(initUser);
+  const [showRecover, setShowRecover] = useState(false);
 
   const handleUpdated = (data) => {
     setUser(u => ({ ...u, ...data }));
@@ -374,6 +410,15 @@ function ProfileScreen({ currentUser: initUser, onNavigate, onUserUpdated }) {
   };
 
   const goBack = () => onNavigate(user?.institution ? 'dashboard' : 'org-picker');
+
+  if (showRecover) {
+    return (
+      <RecoverPasswordScreen
+        onBack={() => setShowRecover(false)}
+        onDone={() => { setShowRecover(false); }}
+      />
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', minHeight: '100vh', background: 'var(--bg)', fontFamily: 'var(--font)', padding: '32px 24px' }}>
@@ -394,7 +439,7 @@ function ProfileScreen({ currentUser: initUser, onNavigate, onUserUpdated }) {
             </div>
             <TabBar tab={tab} setTab={setTab} />
             {tab === 'data'     && <TabData     currentUser={user} onUserUpdated={handleUpdated} />}
-            {tab === 'password' && <TabPassword />}
+            {tab === 'password' && <TabPassword currentUser={user} onShowRecover={() => setShowRecover(true)} />}
             {tab === 'email'    && <TabEmail    currentUser={user} onUserUpdated={handleUpdated} />}
           </div>
         </div>

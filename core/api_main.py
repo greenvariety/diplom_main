@@ -13,6 +13,7 @@ class MeView(APIView):
             'display_name': user.display_name,
             'email': user.email or '',
             'role': user.role,
+            'password_changed_at': user.password_changed_at.isoformat() if user.password_changed_at else None,
             'institution': {
                 'id': institution.pk,
                 'name': institution.name,

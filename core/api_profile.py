@@ -69,7 +69,7 @@ class ProfileChangePasswordView(APIView):
         if not re.search(r'[_\-!@#$%^&*+.,;:?]', new_password):
             return Response({'error': 'Нужен хотя бы один спецсимвол', 'field': 'new_password'}, status=400)
         if user.check_password(new_password):
-            return Response({'error': 'Новый пароль совпадает со старым', 'field': 'new_password'}, status=400)
+            return Response({'error': 'Нельзя использовать старый пароль', 'field': 'new_password'}, status=400)
 
         user.set_password(new_password)
         user.password_changed_at = timezone.now()
