@@ -380,7 +380,7 @@ function ProfileScreen({ currentUser: initUser, onNavigate, onLogout, openModal,
         title="Профиль"
         sub={user?.username}
         actions={
-          <button className="btn btn-secondary btn-sm" onClick={() => onNavigate('dashboard')}>
+          <button className="btn btn-secondary btn-sm" onClick={() => onNavigate(user?.institution ? 'dashboard' : 'org-picker')}>
             {I.back} Назад
           </button>
         }

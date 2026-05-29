@@ -56,7 +56,7 @@ function AuthFlow({ onAuthenticated }) {
    OrgPickerScreen - выбор / создание / управление организациями
    Показывается после логина и при клике на название орг в топбаре.
    ============================================================ */
-function OrgPickerScreen({ user, onOrgSelected, onLogout, onBack }) {
+function OrgPickerScreen({ user, onOrgSelected, onLogout, onBack, onProfile }) {
   const toast = useToast();
   const [orgs, setOrgs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -116,11 +116,16 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout, onBack }) {
   );
 
   const footer = (
-    <div className="modal-foot" style={{ padding: '10px 16px' }}>
+    <div className="modal-foot" style={{ padding: '10px 16px', gap: 8 }}>
       {onBack && (
         <button className="btn btn-secondary btn-sm" onClick={onBack}>{I.back} Назад</button>
       )}
-      <button className="btn btn-ghost btn-sm" onClick={onLogout} style={{ color: 'var(--text-muted)', fontSize: 12, marginLeft: onBack ? 'auto' : 0 }}>
+      {onProfile && (
+        <button className="btn btn-ghost btn-sm" onClick={onProfile} style={{ fontSize: 12 }}>
+          {I.user} Профиль
+        </button>
+      )}
+      <button className="btn btn-ghost btn-sm" onClick={onLogout} style={{ color: 'var(--text-muted)', fontSize: 12, marginLeft: 'auto' }}>
         {I.logout} Выйти из аккаунта
       </button>
     </div>
@@ -394,16 +399,33 @@ function AppShell({ onLogout }) {
     );
   }
 
-  if (currentUser._showPicker || !currentUser.institution) {
-    return <OrgPickerScreen user={currentUser} onOrgSelected={() => loadUser(true)} onLogout={handleLogout} />;
-  }
-
   const sharedProps = {
     currentUser,
     onNavigate: handleNavigate,
     onLogout: handleLogout,
     openModal,
   };
+
+  const goToProfile = () => {
+    setCurrentUser(u => ({ ...u, _showPicker: false }));
+    setCurrentScreen('profile');
+  };
+
+  if (currentScreen === 'profile') {
+    return (
+      <>
+        <ProfileScreen
+          {...sharedProps}
+          onUserUpdated={(data) => setCurrentUser(u => ({ ...u, ...data }))}
+        />
+        {renderModal()}
+      </>
+    );
+  }
+
+  if (currentUser._showPicker || !currentUser.institution) {
+    return <OrgPickerScreen user={currentUser} onOrgSelected={() => loadUser(true)} onLogout={handleLogout} onProfile={goToProfile} />;
+  }
 
   const renderScreen = () => {
     if (currentScreen === 'dashboard') {
@@ -420,6 +442,7 @@ function AppShell({ onLogout }) {
           onOrgSelected={() => { loadUser(true); handleNavigate('dashboard'); }}
           onLogout={handleLogout}
           onBack={() => handleNavigate('dashboard')}
+          onProfile={() => handleNavigate('profile')}
         />
       );
     }
@@ -486,15 +509,6 @@ function AppShell({ onLogout }) {
 
     if (currentScreen === 'audit') {
       return <AuditLog {...sharedProps} />;
-    }
-
-    if (currentScreen === 'profile') {
-      return (
-        <ProfileScreen
-          {...sharedProps}
-          onUserUpdated={(data) => setCurrentUser(u => ({ ...u, ...data }))}
-        />
-      );
     }
 
     return (
