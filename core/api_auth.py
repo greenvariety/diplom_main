@@ -64,7 +64,7 @@ class LoginView(APIView):
                 'username': user.username,
                 'role': user.role,
                 'full_name': user.display_name,
-                'institution': {'id': institution.pk, 'name': institution.name} if institution else None,
+                'institution': {'id': institution.pk, 'name': institution.name, 'code': institution.code} if institution else None,
             }
         })
 

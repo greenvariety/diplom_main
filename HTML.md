@@ -1,9 +1,9 @@
 # HTML.md - задачи по правке интерфейса
 
-~~## 1. Тут где на поле зайти в профиль???* (переделано: добавлен пункт "Мой профиль" в боковое меню)~~
+~~## 1. Сделай так, чтобы тут код был вместо названия, ну аббревиатура! Или крч просто я написал ГПБОУ, в коде оно так, но в названии Гпбоу и как вот так сделатиь чтобы можно было оставить именно ГПБОУ~~
 
 ```html
-<div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: var(--font); flex-direction: column; background-image: ; background-position-x: ; background-position-y: ; background-size: ; background-repeat: ; background-attachment: ; background-origin: ; background-clip: ; background-color: rgba(231, 76, 60, 0.08); padding: 24px; outline: rgb(231, 76, 60) solid 2px;">
+<button class="btn btn-ghost" title="Управление организациями" style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); padding: 4px 10px; border-radius: 6px; outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">
 ```
 
 ---
