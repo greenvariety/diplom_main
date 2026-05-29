@@ -16,7 +16,7 @@
 
 ---
 
-## 3. промто посмотри как сделаны стуленты
+~~## 3. промто посмотри как сделаны стуленты~~
 
 ```html
 <select class="select" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);"><option value="">Все</option><option value="create">Создание</option><option value="update">Изменение</option><option value="delete">Удаление</option><option value="transfer">Перевод</option></select>

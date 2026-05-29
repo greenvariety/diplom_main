@@ -2239,6 +2239,10 @@ function AuditLog({ currentUser, openModal, onNavigate }) {
           <label className="field-label">Поиск</label>
           <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearch()} /></div>
         </div>
+        <button className="btn btn-primary" style={{ height: 36 }} onClick={handleSearch}>Найти</button>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset} disabled={!hasFilters}>Сбросить</button>
+      </div>
+      <div className="filters" style={{ marginTop: -8 }}>
         <div className="field">
           <label className="field-label">Действие</label>
           <select className="select" value={filterAction} onChange={e => { setFilterAction(e.target.value); setPage(1); }}>
@@ -2257,8 +2261,6 @@ function AuditLog({ currentUser, openModal, onNavigate }) {
           <label className="field-label">Дата по</label>
           <input className="input" type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); }} style={{ height: 36 }} />
         </div>
-        <button className="btn btn-primary" style={{ height: 36 }} onClick={handleSearch}>Найти</button>
-        <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset} disabled={!hasFilters}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
