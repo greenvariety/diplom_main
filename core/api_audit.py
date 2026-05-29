@@ -231,7 +231,20 @@ class AuditLogExportView(APIView):
             'user', 'user__employee', 'user__employee__position'
         )
         qs = _apply_filters(qs, request)
-        rows = [_serialize(log) for log in qs.order_by('-created_at')[:10000]]
+
+        sort_map = {
+            'ts': 'created_at',
+            'user': 'user__username',
+            'label': 'action',
+            'obj': 'object_type',
+        }
+        sort_key = request.GET.get('sort_key', 'ts')
+        sort_dir = request.GET.get('sort_dir', 'desc')
+        order_field = sort_map.get(sort_key, 'created_at')
+        prefix = '' if sort_dir == 'asc' else '-'
+        qs = qs.order_by(f'{prefix}{order_field}')
+
+        rows = [_serialize(log) for log in qs[:10000]]
 
         import openpyxl
         from openpyxl.styles import Font, PatternFill
@@ -240,14 +253,14 @@ class AuditLogExportView(APIView):
         ws = wb.active
         ws.title = 'Журнал изменений'
 
-        headers = ['N', 'Дата и время', 'Логин', 'ФИО', 'Роль', 'Должность', 'Действие', 'Тип объекта', 'Объект']
+        headers = ['N', 'Дата и время', 'Логин', 'ФИО', 'Роль', 'Должность', 'Действие', 'Тип объекта', 'Объект', 'Поле', 'Было', 'Стало']
         ws.append(headers)
         for cell in ws[1]:
             cell.font = Font(bold=True)
             cell.fill = PatternFill('solid', fgColor='D9D9D9')
 
         for i, a in enumerate(rows, 1):
-            ws.append([
+            base = [
                 i,
                 a['ts'],
                 a['user'],
@@ -257,9 +270,15 @@ class AuditLogExportView(APIView):
                 a['label'],
                 a['obj_type'],
                 a['obj_name'] or a['obj'],
-            ])
+            ]
+            changes = a.get('changes', [])
+            if changes:
+                for ch in changes:
+                    ws.append(base + [ch['label'], str(ch['from']), str(ch['to'])])
+            else:
+                ws.append(base + ['', '', ''])
 
-        col_widths = [5, 20, 16, 24, 16, 20, 14, 18, 30]
+        col_widths = [5, 20, 16, 24, 16, 20, 14, 18, 30, 22, 22, 22]
         for i, width in enumerate(col_widths, 1):
             ws.column_dimensions[ws.cell(1, i).column_letter].width = width
 

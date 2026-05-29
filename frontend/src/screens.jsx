@@ -2194,7 +2194,7 @@ function AuditLog({ currentUser, openModal, onNavigate }) {
   const doExport = async () => {
     setExpLoading(true);
     try {
-      const r = await api.get(`/audit-log/export/?${buildParams()}`, { responseType: 'blob' });
+      const r = await api.get(`/audit-log/export/?${buildParams({ sort_key: sort.sort.key || 'ts', sort_dir: sort.sort.dir || 'desc' })}`, { responseType: 'blob' });
       const url = URL.createObjectURL(r.data);
       const link = document.createElement('a');
       link.href = url;
