@@ -176,10 +176,24 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
     if (expSelected.length === 0) return;
     setExpLoading(true);
     try {
+      const STATUS_RU = {
+        pending_review: 'На рассмотрении', pending_enrollment: 'На зачисление',
+        enrolled: 'Зачислен', pending_expulsion: 'На отчисление', expelled: 'Отчислен',
+      };
+      const fmtDate = d => d ? d.split('-').reverse().join('.') : '';
+      const dateFrom = expDateFrom ? new Date(expDateFrom) : null;
+      const dateTo   = expDateTo   ? new Date(expDateTo)   : null;
+      const inRange  = d => {
+        if (!d) return true;
+        const dt = new Date(d);
+        if (dateFrom && dt < dateFrom) return false;
+        if (dateTo   && dt > dateTo)   return false;
+        return true;
+      };
+
       const allRows = [];
       const seenStudents = new Set(), seenEmployees = new Set(), seenGroups = new Set();
-      const dateFrom = expDateFrom ? new Date(expDateFrom) : null;
-      const dateTo = expDateTo ? new Date(expDateTo) : null;
+      const row = (obj) => allRows.push(obj);
 
       for (const item of expSelected) {
         if (item.type === 'students') {
@@ -188,20 +202,37 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
           else if (item.faculty_id) params.set('faculty_id', item.faculty_id);
           const r = await api.get(`/students/?${params}`);
           (r.data.results || []).forEach(s => {
-            if (seenStudents.has(s.id)) return;
-            if (s.birth_date && dateFrom && new Date(s.birth_date) < dateFrom) return;
-            if (s.birth_date && dateTo && new Date(s.birth_date) > dateTo) return;
+            if (seenStudents.has(s.id) || !inRange(s.birth_date)) return;
             seenStudents.add(s.id);
-            allRows.push({ Тип: 'Студент', ФИО: `${s.last_name} ${s.first_name} ${s.middle_name}`.trim(), Статус: s.status, Факультет: s.faculty_short || '', Группа: s.group_name || '', 'Дата рождения': s.birth_date || '', Телефон: s.phone || '', Email: s.email || '' });
+            row({
+              Тип: 'Студент',
+              Наименование: `${s.last_name} ${s.first_name} ${s.middle_name}`.trim(),
+              Статус: STATUS_RU[s.status] || s.status,
+              Факультет: s.faculty_short || '',
+              Группа: s.group_name || '',
+              Должность: '',
+              'Дата рождения': fmtDate(s.birth_date),
+              Телефон: s.phone || '',
+              Email: s.email || '',
+            });
           });
         }
         if (item.type === 'employees' && !seenEmployees.has('all')) {
           seenEmployees.add('all');
           const r = await api.get('/employees/?page_size=10000');
           (r.data.results || []).forEach(e => {
-            if (e.birth_date && dateFrom && new Date(e.birth_date) < dateFrom) return;
-            if (e.birth_date && dateTo && new Date(e.birth_date) > dateTo) return;
-            allRows.push({ Тип: 'Сотрудник', ФИО: e.full_name, Статус: '', Факультет: '', Группа: '', 'Дата рождения': e.birth_date || '', Телефон: e.phone || '', Email: e.email || '' });
+            if (!inRange(e.birth_date)) return;
+            row({
+              Тип: 'Сотрудник',
+              Наименование: e.full_name,
+              Статус: '',
+              Факультет: '',
+              Группа: '',
+              Должность: e.position_name || '',
+              'Дата рождения': fmtDate(e.birth_date),
+              Телефон: e.phone || '',
+              Email: e.email || '',
+            });
           });
         }
         if (item.type === 'groups') {
@@ -213,19 +244,31 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
           data.forEach(g => {
             if (seenGroups.has(g.id)) return;
             seenGroups.add(g.id);
-            allRows.push({ Тип: 'Группа', ФИО: g.name, Статус: '', Факультет: g.faculty_short || '', Группа: g.year || '', 'Дата рождения': '', Телефон: '', Email: '' });
+            row({
+              Тип: 'Группа',
+              Наименование: g.name,
+              Статус: '',
+              Факультет: g.faculty_short || '',
+              Группа: g.year ? `${g.year} г.` : '',
+              Должность: '',
+              'Дата рождения': '',
+              Телефон: '',
+              Email: '',
+            });
           });
         }
       }
 
       if (allRows.length === 0) { toast.push('Нет данных для экспорта', { kind: 'warn' }); setExpLoading(false); return; }
 
-      const header = Object.keys(allRows[0]);
-      const fmtDate = d => d ? d.split('-').reverse().join('.') : '';
+      const header = ['Тип', 'Наименование', 'Статус', 'Факультет', 'Группа', 'Должность', 'Дата рождения', 'Телефон', 'Email'];
       const periodLine = (expDateFrom || expDateTo)
         ? `"Период: ${fmtDate(expDateFrom) || '...'} - ${fmtDate(expDateTo) || '...'}"\n`
         : '';
-      const csv = periodLine + [header.join(','), ...allRows.map(r => header.map(h => `"${(r[h] || '').toString().replace(/"/g, '""')}"`).join(','))].join('\n');
+      const csv = periodLine + [
+        header.join(','),
+        ...allRows.map(r => header.map(h => `"${(r[h] || '').toString().replace(/"/g, '""')}"`).join(',')),
+      ].join('\n');
       const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = 'export.csv'; a.click();
