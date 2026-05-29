@@ -1982,6 +1982,9 @@ function UserList({ currentUser, openModal, onNavigate }) {
             <input className="input" value={q} onChange={e => setQ(e.target.value)} />
           </div>
         </div>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset} disabled={!hasFilters}>Сбросить</button>
+      </div>
+      <div className="filters" style={{ marginTop: -8 }}>
         <div className="field">
           <label className="field-label">Роль</label>
           <select className="select" value={filterRole} onChange={e => setFilterRole(e.target.value)}>
@@ -1989,7 +1992,6 @@ function UserList({ currentUser, openModal, onNavigate }) {
             {ROLES.map(r => <option key={r.v} value={r.v}>{r.l}</option>)}
           </select>
         </div>
-        <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset} disabled={!hasFilters}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
@@ -2095,6 +2097,9 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
           <label className="field-label">Поиск</label>
           <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} /></div>
         </div>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset} disabled={!hasFilters}>Сбросить</button>
+      </div>
+      <div className="filters" style={{ marginTop: -8 }}>
         <div className="field">
           <label className="field-label">Тип объекта</label>
           <select className="select" value={filterType} onChange={e => setFilterType(e.target.value)}>
@@ -2102,7 +2107,6 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
             {typeOpts.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
-        <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset} disabled={!hasFilters}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
