@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useEffect, useRef } from 'react';
+﻿import { useState, useMemo, useEffect } from 'react';
 import { STATUSES, STUDENTS, EMPLOYEES, GROUPS, FACULTIES, AUDIT, ORGS, I } from './data.jsx';
 import { Shell, PageHead, Badge, Avatar } from './shell.jsx';
 import { StatNumber, useToast, useDropdown, Field, EmptyState, SkeletonRows, LoadButton, Combobox, Pager, usePager, useSortable, SortHeader } from './utils.jsx';
@@ -8,21 +8,6 @@ import api from './api.js';
    Dashboards
    ============================================================ */
 
-function TreeCheck({ state, onChange }) {
-  const ref = useRef();
-  useEffect(() => {
-    if (ref.current) ref.current.indeterminate = state === 'indeterminate';
-  }, [state]);
-  return (
-    <input
-      ref={ref}
-      type="checkbox"
-      checked={state !== 'unchecked'}
-      onChange={onChange}
-      style={{ cursor: 'pointer', flexShrink: 0, margin: 0 }}
-    />
-  );
-}
 
 function Stat({ label, value, icon, trend, onClick }) {
   return (
@@ -40,14 +25,13 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
   const [userFilter, setUserFilter] = useState('');
   const [actionFilter, setActionFilter] = useState('');
   const [exportModal, setExportModal] = useState(false);
-  const [expTab, setExpTab] = useState('students');
-  const [expEnabled, setExpEnabled] = useState({ students: true, employees: false, groups: false });
   const [expFaculties, setExpFaculties] = useState([]);
   const [expGroupsCache, setExpGroupsCache] = useState({});
-  const [expExpanded, setExpExpanded] = useState(new Set());
   const [expLoadingFacs, setExpLoadingFacs] = useState(new Set());
-  const [uncheckedFacs, setUncheckedFacs] = useState(new Set());
-  const [uncheckedGrps, setUncheckedGrps] = useState(new Set());
+  const [expLeftExpanded, setExpLeftExpanded] = useState(new Set());
+  const [expLeftHighlight, setExpLeftHighlight] = useState(null);
+  const [expRightHighlight, setExpRightHighlight] = useState(null);
+  const [expSelected, setExpSelected] = useState([]);
   const [expLoading, setExpLoading] = useState(false);
   const toast = useToast();
   const sort = useSortable({ key: 'ts', dir: 'desc' }, 'owner-dash-audit');
@@ -63,19 +47,18 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
   }, [exportModal]);
 
   const openExportModal = () => {
-    setUncheckedFacs(new Set());
-    setUncheckedGrps(new Set());
-    setExpExpanded(new Set());
+    setExpLeftExpanded(new Set(['students-root', 'employees-root', 'groups-root']));
+    setExpLeftHighlight(null);
+    setExpRightHighlight(null);
+    setExpSelected([]);
     setExportModal(true);
   };
 
-  const toggleExpand = (facId) => {
-    const next = new Set(expExpanded);
-    if (next.has(facId)) {
-      next.delete(facId);
-    } else {
-      next.add(facId);
-      if (!expGroupsCache[facId]) {
+  const toggleLeftExpand = (key, facId) => {
+    const next = new Set(expLeftExpanded);
+    if (next.has(key)) { next.delete(key); } else {
+      next.add(key);
+      if (facId && !expGroupsCache[facId]) {
         setExpLoadingFacs(s => new Set([...s, facId]));
         api.get(`/groups/?faculty_id=${facId}`).then(r => {
           setExpGroupsCache(c => ({ ...c, [facId]: r.data }));
@@ -83,109 +66,115 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
         }).catch(() => setExpLoadingFacs(s => { const n = new Set(s); n.delete(facId); return n; }));
       }
     }
-    setExpExpanded(next);
+    setExpLeftExpanded(next);
   };
 
-  const getFacState = (facId) => {
-    if (uncheckedFacs.has(facId)) return 'unchecked';
-    const grps = expGroupsCache[facId];
-    if (!grps || grps.length === 0) return 'checked';
-    const anyUnchecked = grps.some(g => uncheckedGrps.has(g.id));
-    if (!anyUnchecked) return 'checked';
-    const allUnchecked = grps.every(g => uncheckedGrps.has(g.id));
-    return allUnchecked ? 'unchecked' : 'indeterminate';
-  };
-
-  const toggleFac = (facId) => {
-    const grps = expGroupsCache[facId] || [];
-    if (uncheckedFacs.has(facId)) {
-      const nf = new Set(uncheckedFacs); nf.delete(facId);
-      const ng = new Set(uncheckedGrps); grps.forEach(g => ng.delete(g.id));
-      setUncheckedFacs(nf); setUncheckedGrps(ng);
-    } else {
-      const nf = new Set(uncheckedFacs); nf.add(facId);
-      const ng = new Set(uncheckedGrps); grps.forEach(g => ng.delete(g.id));
-      setUncheckedFacs(nf); setUncheckedGrps(ng);
-    }
-  };
-
-  const toggleGrp = (facId, grpId) => {
-    const grps = expGroupsCache[facId] || [];
-    if (uncheckedGrps.has(grpId)) {
-      const ng = new Set(uncheckedGrps); ng.delete(grpId);
-      const nf = new Set(uncheckedFacs);
-      if (nf.has(facId)) {
-        nf.delete(facId);
-        grps.forEach(g => { if (g.id !== grpId) ng.add(g.id); });
+  const buildLeftTree = () => {
+    const items = [];
+    const facNodes = (typeKey, typeName) => {
+      if (expFaculties.length === 0) {
+        items.push({ key: `${typeKey}-loading`, label: 'Загрузка...', isLoading: true, depth: 1 });
+        return;
       }
-      setUncheckedFacs(nf); setUncheckedGrps(ng);
-    } else {
-      const ng = new Set(uncheckedGrps); ng.add(grpId);
-      const nf = new Set(uncheckedFacs);
-      if (grps.length > 0 && grps.every(g => ng.has(g.id))) {
-        nf.add(facId); grps.forEach(g => ng.delete(g.id));
-      }
-      setUncheckedFacs(nf); setUncheckedGrps(ng);
+      expFaculties.forEach(fac => {
+        const facKey = `${typeKey}-fac-${fac.id}`;
+        const facName = fac.short_name || fac.full_name;
+        items.push({ key: facKey, label: facName, isFolder: true, type: typeKey, faculty_id: fac.id, fullLabel: `${typeName} - ${facName}`, depth: 1 });
+        if (expLeftExpanded.has(facKey)) {
+          if (expLoadingFacs.has(fac.id)) {
+            items.push({ key: `${facKey}-loading`, label: 'Загрузка...', isLoading: true, depth: 2 });
+          } else {
+            const grps = expGroupsCache[fac.id] || [];
+            grps.length === 0
+              ? items.push({ key: `${facKey}-empty`, label: 'Нет групп', isEmpty: true, depth: 2 })
+              : grps.forEach(g => items.push({ key: `${facKey}-grp-${g.id}`, label: g.name, type: typeKey, faculty_id: fac.id, group_id: g.id, fullLabel: `${typeName} - ${facName} - ${g.name}`, depth: 2 }));
+          }
+        }
+      });
+    };
+    items.push({ key: 'students-root', label: 'Студенты', isFolder: true, depth: 0 });
+    if (expLeftExpanded.has('students-root')) {
+      items.push({ key: 'students-all', label: 'Все студенты', type: 'students', fullLabel: 'Студенты (все)', depth: 1 });
+      facNodes('students', 'Студенты');
     }
+    items.push({ key: 'employees-root', label: 'Сотрудники', isFolder: true, depth: 0 });
+    if (expLeftExpanded.has('employees-root')) {
+      items.push({ key: 'employees-all', label: 'Все сотрудники', type: 'employees', fullLabel: 'Сотрудники (все)', depth: 1 });
+    }
+    items.push({ key: 'groups-root', label: 'Группы', isFolder: true, depth: 0 });
+    if (expLeftExpanded.has('groups-root')) {
+      items.push({ key: 'groups-all', label: 'Все группы', type: 'groups', fullLabel: 'Группы (все)', depth: 1 });
+      facNodes('groups', 'Группы');
+    }
+    return items;
   };
 
-  const noneUnchecked = uncheckedFacs.size === 0 && uncheckedGrps.size === 0;
-  const allFacsUnchecked = expFaculties.length > 0 && uncheckedFacs.size === expFaculties.length;
-  const rootState = allFacsUnchecked ? 'unchecked' : (noneUnchecked ? 'checked' : 'indeterminate');
+  const leftTree = buildLeftTree();
+  const selectedKeys = new Set(expSelected.map(i => i.key));
 
-  const toggleAll = () => {
-    if (rootState === 'unchecked') {
-      setUncheckedFacs(new Set()); setUncheckedGrps(new Set());
-    } else {
-      setUncheckedFacs(new Set(expFaculties.map(f => f.id))); setUncheckedGrps(new Set());
-    }
+  const moveToRight = (item) => {
+    if (!item || !item.type || item.isLoading || item.isEmpty) return;
+    if (selectedKeys.has(item.key)) return;
+    const entry = { key: item.key, label: item.fullLabel || item.label, type: item.type, faculty_id: item.faculty_id, group_id: item.group_id };
+    setExpSelected(prev => [...prev, entry]);
+    setExpLeftHighlight(item.key);
   };
+
+  const moveHighlightedToRight = () => {
+    const item = leftTree.find(i => i.key === expLeftHighlight);
+    if (item) moveToRight(item);
+  };
+
+  const moveAllToRight = () => {
+    const toAdd = leftTree.filter(i => i.type && !i.isLoading && !i.isEmpty && !selectedKeys.has(i.key));
+    if (toAdd.length === 0) return;
+    setExpSelected(prev => [...prev, ...toAdd.map(i => ({ key: i.key, label: i.fullLabel || i.label, type: i.type, faculty_id: i.faculty_id, group_id: i.group_id }))]);
+  };
+
+  const removeHighlighted = () => {
+    if (!expRightHighlight) return;
+    setExpSelected(prev => { const next = prev.filter(i => i.key !== expRightHighlight); setExpRightHighlight(next.length ? next[next.length - 1].key : null); return next; });
+  };
+
+  const clearRight = () => { setExpSelected([]); setExpRightHighlight(null); };
 
   const doExport = async () => {
-    if (!Object.values(expEnabled).some(Boolean)) return;
+    if (expSelected.length === 0) return;
     setExpLoading(true);
     try {
       const allRows = [];
-      if (expEnabled.students) {
-        const r = await api.get('/students/?page_size=10000');
-        (r.data.results || [])
-          .filter(s => {
-            if (s.faculty_id && uncheckedFacs.has(s.faculty_id)) return false;
-            if (s.group_id && uncheckedGrps.has(s.group_id)) return false;
-            return true;
-          })
-          .forEach(s => allRows.push({
-            Тип: 'Студент', ФИО: `${s.last_name} ${s.first_name} ${s.middle_name}`.trim(),
-            Статус: s.status, Факультет: s.faculty_short || '', Группа: s.group_name || '',
-            Телефон: s.phone || '', Email: s.email || '',
-          }));
+      const seenStudents = new Set(), seenEmployees = new Set(), seenGroups = new Set();
+      for (const item of expSelected) {
+        if (item.type === 'students') {
+          const params = new URLSearchParams({ page_size: 10000 });
+          if (item.group_id) params.set('group_id', item.group_id);
+          else if (item.faculty_id) params.set('faculty_id', item.faculty_id);
+          const r = await api.get(`/students/?${params}`);
+          (r.data.results || []).forEach(s => {
+            if (seenStudents.has(s.id)) return;
+            seenStudents.add(s.id);
+            allRows.push({ Тип: 'Студент', ФИО: `${s.last_name} ${s.first_name} ${s.middle_name}`.trim(), Статус: s.status, Факультет: s.faculty_short || '', Группа: s.group_name || '', Телефон: s.phone || '', Email: s.email || '' });
+          });
+        }
+        if (item.type === 'employees' && !seenEmployees.has('all')) {
+          seenEmployees.add('all');
+          const r = await api.get('/employees/?page_size=10000');
+          (r.data.results || []).forEach(e => allRows.push({ Тип: 'Сотрудник', ФИО: e.full_name, Статус: '', Факультет: '', Группа: '', Телефон: e.phone || '', Email: e.email || '' }));
+        }
+        if (item.type === 'groups') {
+          const params = new URLSearchParams();
+          if (item.faculty_id) params.set('faculty_id', item.faculty_id);
+          const r = await api.get(`/groups/?${params}`);
+          let data = r.data || [];
+          if (item.group_id) data = data.filter(g => g.id === item.group_id);
+          data.forEach(g => {
+            if (seenGroups.has(g.id)) return;
+            seenGroups.add(g.id);
+            allRows.push({ Тип: 'Группа', ФИО: g.name, Статус: '', Факультет: g.faculty_short || '', Группа: g.year || '', Телефон: '', Email: '' });
+          });
+        }
       }
-      if (expEnabled.employees) {
-        const r = await api.get('/employees/?page_size=10000');
-        (r.data.results || []).forEach(e => allRows.push({
-          Тип: 'Сотрудник', ФИО: e.full_name, Статус: '',
-          Факультет: '', Группа: '', Телефон: e.phone || '', Email: e.email || '',
-        }));
-      }
-      if (expEnabled.groups) {
-        const r = await api.get('/groups/');
-        (r.data || [])
-          .filter(g => {
-            if (g.faculty_id && uncheckedFacs.has(g.faculty_id)) return false;
-            if (uncheckedGrps.has(g.id)) return false;
-            return true;
-          })
-          .forEach(g => allRows.push({
-            Тип: 'Группа', ФИО: g.name, Статус: '',
-            Факультет: g.faculty_short || '', Группа: g.year || '',
-            Телефон: '', Email: '',
-          }));
-      }
-      if (allRows.length === 0) {
-        toast.push('Нет данных для экспорта', { kind: 'warn' });
-        setExpLoading(false);
-        return;
-      }
+      if (allRows.length === 0) { toast.push('Нет данных для экспорта', { kind: 'warn' }); setExpLoading(false); return; }
       const header = Object.keys(allRows[0]);
       const csv = [header.join(','), ...allRows.map(r => header.map(h => `"${(r[h] || '').toString().replace(/"/g, '""')}"`).join(','))].join('\n');
       const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -235,125 +224,133 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
       />
       {exportModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: 'var(--surface)', borderRadius: 12, width: 560, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-lg)' }}>
+          <div style={{ background: 'var(--surface)', borderRadius: 12, width: 740, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-lg)' }}>
 
-            <div style={{ padding: '20px 24px 0', fontWeight: 700, fontSize: 16 }}>Настройка экспорта</div>
-
-            {/* Вкладки */}
-            <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', padding: '12px 24px 0', gap: 2 }}>
-              {[['students','Студенты'],['employees','Сотрудники'],['groups','Группы']].map(([key, label]) => (
-                <button
-                  key={key}
-                  onClick={() => setExpTab(key)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 7,
-                    padding: '8px 14px', border: 'none', background: 'none', cursor: 'pointer',
-                    fontSize: 14, fontWeight: expTab === key ? 600 : 400,
-                    color: expTab === key ? 'var(--primary)' : 'var(--muted)',
-                    borderBottom: expTab === key ? '2px solid var(--primary)' : '2px solid transparent',
-                    marginBottom: -1, borderRadius: '4px 4px 0 0',
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={expEnabled[key]}
-                    onClick={e => e.stopPropagation()}
-                    onChange={e => setExpEnabled(t => ({ ...t, [key]: e.target.checked }))}
-                    style={{ cursor: 'pointer' }}
-                  />
-                  {label}
-                </button>
-              ))}
+            <div style={{ padding: '18px 22px 14px', fontWeight: 700, fontSize: 16, borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              Настройка экспорта
+              <button onClick={() => setExportModal(false)} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: 'var(--muted)', lineHeight: 1 }}>×</button>
             </div>
 
-            {/* Дерево */}
-            <div style={{ flex: 1, overflow: 'auto', padding: '14px 24px', minHeight: 200 }}>
-              {expTab === 'employees' ? (
-                <div style={{ color: 'var(--muted)', fontSize: 14, padding: '16px 0', lineHeight: 1.6 }}>
-                  Сотрудники будут включены в экспорт полностью, без фильтрации по факультетам или группам.
+            {/* Двухпанельная область */}
+            <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+
+              {/* Левая панель - доступные поля */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)' }}>
+                <div style={{ padding: '8px 14px', fontSize: 12, fontWeight: 600, color: 'var(--muted)', borderBottom: '1px solid var(--border)', background: 'var(--surface-raised, var(--surface))' }}>
+                  Доступно
                 </div>
-              ) : (
-                <div>
-                  <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>
-                    {expTab === 'students' ? 'Выберите факультеты и группы для экспорта студентов:' : 'Выберите факультеты и группы для экспорта:'}
-                  </div>
+                <div style={{ flex: 1, overflow: 'auto', padding: '6px 0' }}>
+                  {leftTree.map(item => {
+                    const indent = item.depth * 16 + 8;
+                    const isHL = expLeftHighlight === item.key;
+                    const alreadyAdded = selectedKeys.has(item.key);
+                    if (item.isLoading) return (
+                      <div key={item.key} style={{ paddingLeft: indent + 16, paddingTop: 3, paddingBottom: 3, fontSize: 13, color: 'var(--muted)' }}>Загрузка...</div>
+                    );
+                    if (item.isEmpty) return (
+                      <div key={item.key} style={{ paddingLeft: indent + 16, paddingTop: 3, paddingBottom: 3, fontSize: 13, color: 'var(--muted)', fontStyle: 'italic' }}>Нет групп</div>
+                    );
+                    return (
+                      <div
+                        key={item.key}
+                        onClick={() => { if (!item.isFolder || item.type) setExpLeftHighlight(item.key); }}
+                        onDoubleClick={() => moveToRight(item)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 5,
+                          paddingLeft: indent, paddingRight: 8, paddingTop: 3, paddingBottom: 3,
+                          cursor: item.isFolder && !item.type ? 'default' : 'pointer',
+                          background: isHL ? 'var(--primary)' : 'transparent',
+                          color: isHL ? '#fff' : (alreadyAdded ? 'var(--muted)' : 'inherit'),
+                          fontSize: item.depth === 0 ? 13 : 13,
+                          fontWeight: item.depth === 0 ? 600 : 400,
+                          userSelect: 'none',
+                        }}
+                      >
+                        {item.isFolder && (
+                          <span
+                            onClick={e => { e.stopPropagation(); toggleLeftExpand(item.key, item.faculty_id || null); }}
+                            style={{ fontSize: 10, width: 14, flexShrink: 0, color: isHL ? '#fff' : 'var(--muted)' }}
+                          >
+                            {expLeftExpanded.has(item.key) ? '▾' : '▸'}
+                          </span>
+                        )}
+                        {!item.isFolder && <span style={{ width: 14, flexShrink: 0 }} />}
+                        <span style={{ fontSize: item.depth === 0 ? 13 : 13 }}>{item.label}</span>
+                        {alreadyAdded && <span style={{ fontSize: 11, marginLeft: 'auto', color: isHL ? 'rgba(255,255,255,.7)' : 'var(--muted)' }}>- добавлено</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
 
-                  {/* "Все" */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', marginBottom: 2 }}>
-                    <TreeCheck state={rootState} onChange={toggleAll} />
-                    <span
-                      style={{ fontSize: 14, fontWeight: 600, cursor: 'pointer', userSelect: 'none' }}
-                      onClick={toggleAll}
-                    >
-                      Все факультеты
-                    </span>
-                  </div>
+              {/* Кнопки переноса */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '0 10px', width: 46, flexShrink: 0 }}>
+                {[
+                  { label: '>', title: 'Добавить выбранное', onClick: moveHighlightedToRight, disabled: !expLeftHighlight || selectedKeys.has(expLeftHighlight) },
+                  { label: '>>', title: 'Добавить все', onClick: moveAllToRight, disabled: leftTree.filter(i => i.type && !i.isLoading && !i.isEmpty && !selectedKeys.has(i.key)).length === 0 },
+                  { label: '<', title: 'Убрать выбранное', onClick: removeHighlighted, disabled: !expRightHighlight },
+                  { label: '<<', title: 'Убрать все', onClick: clearRight, disabled: expSelected.length === 0 },
+                ].map(btn => (
+                  <button
+                    key={btn.label}
+                    title={btn.title}
+                    onClick={btn.onClick}
+                    disabled={btn.disabled}
+                    style={{
+                      width: 32, height: 26, border: '1px solid var(--border)',
+                      borderRadius: 4, background: 'var(--surface)', cursor: btn.disabled ? 'default' : 'pointer',
+                      fontSize: 11, fontWeight: 700, color: btn.disabled ? 'var(--muted)' : 'var(--fg)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    {btn.label}
+                  </button>
+                ))}
+              </div>
 
-                  {expFaculties.length === 0
-                    ? <div style={{ color: 'var(--muted)', fontSize: 13, paddingLeft: 24 }}>Загрузка...</div>
-                    : expFaculties.map(fac => {
-                        const facState = getFacState(fac.id);
-                        const isExpanded = expExpanded.has(fac.id);
-                        const grps = expGroupsCache[fac.id];
-                        const isLoadingGrps = expLoadingFacs.has(fac.id);
+              {/* Правая панель - выбранное */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ padding: '8px 14px', fontSize: 12, fontWeight: 600, color: 'var(--muted)', borderBottom: '1px solid var(--border)', background: 'var(--surface-raised, var(--surface))' }}>
+                  Выбрано для экспорта
+                </div>
+                <div style={{ flex: 1, overflow: 'auto', padding: '6px 0' }}>
+                  {expSelected.length === 0
+                    ? <div style={{ padding: '16px 14px', fontSize: 13, color: 'var(--muted)', fontStyle: 'italic' }}>Перенесите элементы из левого списка</div>
+                    : expSelected.map(item => {
+                        const isHL = expRightHighlight === item.key;
+                        const typeColor = item.type === 'students' ? '#3b82f6' : item.type === 'employees' ? '#10b981' : '#f59e0b';
                         return (
-                          <div key={fac.id} style={{ marginLeft: 22 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 0' }}>
-                              <button
-                                onClick={() => toggleExpand(fac.id)}
-                                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', width: 16, flexShrink: 0, color: 'var(--muted)', fontSize: 11, lineHeight: 1 }}
-                              >
-                                {isExpanded ? '▾' : '▸'}
-                              </button>
-                              <TreeCheck state={facState} onChange={() => toggleFac(fac.id)} />
-                              <span
-                                style={{ fontSize: 14, cursor: 'pointer', userSelect: 'none' }}
-                                onClick={() => toggleExpand(fac.id)}
-                              >
-                                {fac.short_name || fac.full_name}
-                              </span>
-                            </div>
-                            {isExpanded && (
-                              <div style={{ marginLeft: 38 }}>
-                                {isLoadingGrps
-                                  ? <div style={{ color: 'var(--muted)', fontSize: 12, padding: '3px 0' }}>Загрузка...</div>
-                                  : grps && grps.length > 0
-                                    ? grps.map(g => (
-                                        <div key={g.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '2px 0' }}>
-                                          <TreeCheck
-                                            state={uncheckedFacs.has(fac.id) || uncheckedGrps.has(g.id) ? 'unchecked' : 'checked'}
-                                            onChange={() => toggleGrp(fac.id, g.id)}
-                                          />
-                                          <span style={{ fontSize: 13 }}>{g.name}</span>
-                                        </div>
-                                      ))
-                                    : <div style={{ color: 'var(--muted)', fontSize: 12, padding: '2px 0' }}>Групп нет</div>
-                                }
-                              </div>
-                            )}
+                          <div
+                            key={item.key}
+                            onClick={() => setExpRightHighlight(item.key)}
+                            onDoubleClick={() => { setExpSelected(prev => prev.filter(i => i.key !== item.key)); if (expRightHighlight === item.key) setExpRightHighlight(null); }}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 8,
+                              padding: '4px 14px', cursor: 'pointer',
+                              background: isHL ? 'var(--primary)' : 'transparent',
+                              color: isHL ? '#fff' : 'inherit',
+                              userSelect: 'none',
+                            }}
+                          >
+                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: isHL ? '#fff' : typeColor, flexShrink: 0 }} />
+                            <span style={{ fontSize: 13, flex: 1 }}>{item.label}</span>
                           </div>
                         );
                       })
                   }
                 </div>
-              )}
+              </div>
+
             </div>
 
             {/* Подвал */}
-            <div style={{ padding: '12px 24px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ fontSize: 13, color: 'var(--muted)' }}>
-                {noneUnchecked
-                  ? 'Все данные выбраны'
-                  : `Исключено: ${[uncheckedFacs.size > 0 && `${uncheckedFacs.size} фак.`, uncheckedGrps.size > 0 && `${uncheckedGrps.size} гр.`].filter(Boolean).join(', ')}`
-                }
+            <div style={{ padding: '10px 22px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                {expSelected.length === 0 ? 'Ничего не выбрано' : `Выбрано позиций: ${expSelected.length}`}
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn btn-secondary" onClick={() => setExportModal(false)}>Отмена</button>
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={doExport}
-                  disabled={expLoading || !Object.values(expEnabled).some(Boolean)}
-                >
+                <button className="btn btn-primary btn-sm" onClick={doExport} disabled={expLoading || expSelected.length === 0}>
                   {expLoading ? 'Загрузка...' : `${I.excel}Скачать CSV`}
                 </button>
               </div>
