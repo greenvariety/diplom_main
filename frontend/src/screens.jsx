@@ -32,6 +32,8 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
   const [expLeftHighlight, setExpLeftHighlight] = useState(null);
   const [expRightHighlight, setExpRightHighlight] = useState(null);
   const [expSelected, setExpSelected] = useState([]);
+  const [expDateFrom, setExpDateFrom] = useState('');
+  const [expDateTo, setExpDateTo] = useState('');
   const [expLoading, setExpLoading] = useState(false);
   const toast = useToast();
   const sort = useSortable({ key: 'ts', dir: 'desc' }, 'owner-dash-audit');
@@ -51,6 +53,8 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
     setExpLeftHighlight(null);
     setExpRightHighlight(null);
     setExpSelected([]);
+    setExpDateFrom('');
+    setExpDateTo('');
     setExportModal(true);
   };
 
@@ -144,6 +148,9 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
     try {
       const allRows = [];
       const seenStudents = new Set(), seenEmployees = new Set(), seenGroups = new Set();
+      const dateFrom = expDateFrom ? new Date(expDateFrom) : null;
+      const dateTo = expDateTo ? new Date(expDateTo) : null;
+
       for (const item of expSelected) {
         if (item.type === 'students') {
           const params = new URLSearchParams({ page_size: 10000 });
@@ -152,14 +159,20 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
           const r = await api.get(`/students/?${params}`);
           (r.data.results || []).forEach(s => {
             if (seenStudents.has(s.id)) return;
+            if (s.birth_date && dateFrom && new Date(s.birth_date) < dateFrom) return;
+            if (s.birth_date && dateTo && new Date(s.birth_date) > dateTo) return;
             seenStudents.add(s.id);
-            allRows.push({ Тип: 'Студент', ФИО: `${s.last_name} ${s.first_name} ${s.middle_name}`.trim(), Статус: s.status, Факультет: s.faculty_short || '', Группа: s.group_name || '', Телефон: s.phone || '', Email: s.email || '' });
+            allRows.push({ Тип: 'Студент', ФИО: `${s.last_name} ${s.first_name} ${s.middle_name}`.trim(), Статус: s.status, Факультет: s.faculty_short || '', Группа: s.group_name || '', 'Дата рождения': s.birth_date || '', Телефон: s.phone || '', Email: s.email || '' });
           });
         }
         if (item.type === 'employees' && !seenEmployees.has('all')) {
           seenEmployees.add('all');
           const r = await api.get('/employees/?page_size=10000');
-          (r.data.results || []).forEach(e => allRows.push({ Тип: 'Сотрудник', ФИО: e.full_name, Статус: '', Факультет: '', Группа: '', Телефон: e.phone || '', Email: e.email || '' }));
+          (r.data.results || []).forEach(e => {
+            if (e.birth_date && dateFrom && new Date(e.birth_date) < dateFrom) return;
+            if (e.birth_date && dateTo && new Date(e.birth_date) > dateTo) return;
+            allRows.push({ Тип: 'Сотрудник', ФИО: e.full_name, Статус: '', Факультет: '', Группа: '', 'Дата рождения': e.birth_date || '', Телефон: e.phone || '', Email: e.email || '' });
+          });
         }
         if (item.type === 'groups') {
           const params = new URLSearchParams();
@@ -170,13 +183,19 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
           data.forEach(g => {
             if (seenGroups.has(g.id)) return;
             seenGroups.add(g.id);
-            allRows.push({ Тип: 'Группа', ФИО: g.name, Статус: '', Факультет: g.faculty_short || '', Группа: g.year || '', Телефон: '', Email: '' });
+            allRows.push({ Тип: 'Группа', ФИО: g.name, Статус: '', Факультет: g.faculty_short || '', Группа: g.year || '', 'Дата рождения': '', Телефон: '', Email: '' });
           });
         }
       }
+
       if (allRows.length === 0) { toast.push('Нет данных для экспорта', { kind: 'warn' }); setExpLoading(false); return; }
+
       const header = Object.keys(allRows[0]);
-      const csv = [header.join(','), ...allRows.map(r => header.map(h => `"${(r[h] || '').toString().replace(/"/g, '""')}"`).join(','))].join('\n');
+      const fmtDate = d => d ? d.split('-').reverse().join('.') : '';
+      const periodLine = (expDateFrom || expDateTo)
+        ? `"Период: ${fmtDate(expDateFrom) || '...'} - ${fmtDate(expDateTo) || '...'}"\n`
+        : '';
+      const csv = periodLine + [header.join(','), ...allRows.map(r => header.map(h => `"${(r[h] || '').toString().replace(/"/g, '""')}"`).join(','))].join('\n');
       const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = 'export.csv'; a.click();
@@ -313,12 +332,15 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
                 <div style={{ padding: '8px 14px', fontSize: 12, fontWeight: 600, color: 'var(--muted)', borderBottom: '1px solid var(--border)', background: 'var(--surface-raised, var(--surface))' }}>
                   Выбрано для экспорта
                 </div>
-                <div style={{ flex: 1, overflow: 'auto', padding: '6px 0' }}>
+                <div style={{ flex: 1, overflow: 'auto', padding: '4px 0' }}>
                   {expSelected.length === 0
                     ? <div style={{ padding: '16px 14px', fontSize: 13, color: 'var(--muted)', fontStyle: 'italic' }}>Перенесите элементы из левого списка</div>
                     : expSelected.map(item => {
                         const isHL = expRightHighlight === item.key;
-                        const typeColor = item.type === 'students' ? '#3b82f6' : item.type === 'employees' ? '#10b981' : '#f59e0b';
+                        const TYPE_META = { students: { label: 'Студ.', color: '#3b82f6' }, employees: { label: 'Сотр.', color: '#10b981' }, groups: { label: 'Гр.', color: '#f59e0b' } };
+                        const meta = TYPE_META[item.type] || { label: '?', color: '#888' };
+                        const parts = item.label.split(' - ');
+                        const mainLabel = parts.length > 1 ? parts.slice(1).join(' - ') : parts[0];
                         return (
                           <div
                             key={item.key}
@@ -326,14 +348,29 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
                             onDoubleClick={() => { setExpSelected(prev => prev.filter(i => i.key !== item.key)); if (expRightHighlight === item.key) setExpRightHighlight(null); }}
                             style={{
                               display: 'flex', alignItems: 'center', gap: 8,
-                              padding: '4px 14px', cursor: 'pointer',
+                              padding: '5px 10px 5px 12px', cursor: 'pointer',
                               background: isHL ? 'var(--primary)' : 'transparent',
                               color: isHL ? '#fff' : 'inherit',
-                              userSelect: 'none',
+                              userSelect: 'none', borderBottom: '1px solid var(--border)',
                             }}
                           >
-                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: isHL ? '#fff' : typeColor, flexShrink: 0 }} />
-                            <span style={{ fontSize: 13, flex: 1 }}>{item.label}</span>
+                            <span style={{
+                              fontSize: 10, padding: '1px 5px', borderRadius: 4, flexShrink: 0, fontWeight: 700,
+                              background: isHL ? 'rgba(255,255,255,.25)' : meta.color + '22',
+                              color: isHL ? '#fff' : meta.color,
+                              border: `1px solid ${isHL ? 'rgba(255,255,255,.4)' : meta.color + '66'}`,
+                            }}>
+                              {meta.label}
+                            </span>
+                            <span style={{ fontSize: 13, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.label}>
+                              {mainLabel}
+                            </span>
+                            <button
+                              onClick={e => { e.stopPropagation(); setExpSelected(prev => prev.filter(i => i.key !== item.key)); if (expRightHighlight === item.key) setExpRightHighlight(null); }}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', fontSize: 14, lineHeight: 1, color: isHL ? '#fff' : 'var(--muted)', flexShrink: 0 }}
+                            >
+                              ×
+                            </button>
                           </div>
                         );
                       })
@@ -341,6 +378,33 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
                 </div>
               </div>
 
+            </div>
+
+            {/* Период */}
+            <div style={{ padding: '10px 22px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 13, color: 'var(--muted)', flexShrink: 0 }}>Период:</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+                <input
+                  type="date"
+                  className="input"
+                  value={expDateFrom}
+                  onChange={e => setExpDateFrom(e.target.value)}
+                  style={{ fontSize: 13, padding: '4px 8px', width: 150 }}
+                />
+                <span style={{ color: 'var(--muted)', fontSize: 13 }}>-</span>
+                <input
+                  type="date"
+                  className="input"
+                  value={expDateTo}
+                  onChange={e => setExpDateTo(e.target.value)}
+                  style={{ fontSize: 13, padding: '4px 8px', width: 150 }}
+                />
+                {(expDateFrom || expDateTo) && (
+                  <button onClick={() => { setExpDateFrom(''); setExpDateTo(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--muted)' }}>
+                    очистить
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Подвал */}
@@ -351,7 +415,7 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn btn-secondary" onClick={() => setExportModal(false)}>Отмена</button>
                 <button className="btn btn-primary btn-sm" onClick={doExport} disabled={expLoading || expSelected.length === 0}>
-                  {expLoading ? 'Загрузка...' : `${I.excel}Скачать CSV`}
+                  {expLoading ? 'Загрузка...' : <>{I.excel}Скачать CSV</>}
                 </button>
               </div>
             </div>
