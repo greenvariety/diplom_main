@@ -71,12 +71,7 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
   }, [exportModal]);
 
   const openExportModal = () => {
-    const baseExpanded = new Set(['students-root', 'employees-root', 'groups-root']);
-    expFaculties.forEach(fac => {
-      baseExpanded.add(`students-fac-${fac.id}`);
-      baseExpanded.add(`groups-fac-${fac.id}`);
-    });
-    setExpLeftExpanded(baseExpanded);
+    setExpLeftExpanded(new Set()); // всё свёрнуто
     setExpLeftHighlight(null);
     setExpLeftHover(null);
     setExpRightHighlight(null);
@@ -316,72 +311,72 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
         actions={<button className="btn btn-primary btn-sm" onClick={openExportModal}>{I.excel}Настроить экспорт</button>}
       />
       {exportModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: 'var(--surface)', borderRadius: 12, width: 740, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-lg)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'var(--surface)', borderRadius: 10, width: 760, height: 520, display: 'flex', flexDirection: 'column', boxShadow: '0 8px 40px rgba(0,0,0,.18)' }}>
 
-            <div style={{ padding: '18px 22px 14px', fontWeight: 700, fontSize: 16, borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              Настройка экспорта
-              <button onClick={() => setExportModal(false)} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: 'var(--muted)', lineHeight: 1 }}>×</button>
+            {/* Заголовок */}
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+              <span style={{ fontWeight: 600, fontSize: 15 }}>Настройка экспорта</span>
+              <button onClick={() => setExportModal(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--muted)', lineHeight: 1, padding: '0 4px' }}>×</button>
             </div>
 
             {/* Двухпанельная область */}
-            <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+            <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
-              {/* Левая панель - доступные поля */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)' }}>
-                <div style={{ padding: '8px 14px', fontSize: 12, fontWeight: 600, color: 'var(--muted)', borderBottom: '1px solid var(--border)', background: 'var(--surface-raised, var(--surface))' }}>
+              {/* Левая панель */}
+              <div style={{ width: 300, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)', flexShrink: 0 }}>
+                <div style={{ padding: '7px 12px', fontSize: 11, fontWeight: 600, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--muted)', borderBottom: '1px solid var(--border)', background: 'var(--surface-2,rgba(0,0,0,.02))' }}>
                   Доступно
                 </div>
-                <div style={{ flex: 1, overflow: 'auto', padding: '4px 0' }}>
+                <div style={{ flex: 1, overflow: 'auto' }}>
                   {leftTree.map(item => {
-                    const indent = item.depth * 16 + 8;
-                    const isHL = expLeftHighlight === item.key;
+                    const isHL  = expLeftHighlight === item.key;
                     const isHov = expLeftHover === item.key;
-                    const alreadyAdded = selectedKeys.has(item.key);
-                    const isRootFolder = item.isFolder && !item.type;
+                    const added = selectedKeys.has(item.key);
+                    const isRoot = item.isFolder && !item.type;
+                    const pl = item.depth === 0 ? 10 : item.depth === 1 ? 26 : 42;
+
                     if (item.isLoading) return (
-                      <div key={item.key} style={{ paddingLeft: indent + 22, paddingTop: 3, paddingBottom: 3, fontSize: 12, color: 'var(--muted)', fontStyle: 'italic' }}>Загрузка...</div>
+                      <div key={item.key} style={{ paddingLeft: pl + 18, height: 28, display: 'flex', alignItems: 'center', fontSize: 12, color: 'var(--muted)', fontStyle: 'italic' }}>
+                        Загрузка...
+                      </div>
                     );
                     if (item.isEmpty) return (
-                      <div key={item.key} style={{ paddingLeft: indent + 22, paddingTop: 3, paddingBottom: 3, fontSize: 12, color: 'var(--muted)', fontStyle: 'italic' }}>Нет групп</div>
+                      <div key={item.key} style={{ paddingLeft: pl + 18, height: 28, display: 'flex', alignItems: 'center', fontSize: 12, color: 'var(--muted)', fontStyle: 'italic' }}>
+                        Нет групп
+                      </div>
                     );
-                    let bg = 'transparent';
-                    if (isHL) bg = 'var(--primary)';
-                    else if (isHov && !isRootFolder) bg = 'rgba(var(--primary-rgb, 59,130,246),.08)';
+
                     return (
                       <div
                         key={item.key}
-                        onClick={() => {
-                          if (isRootFolder) { toggleLeftExpand(item.key, null); }
-                          else { setExpLeftHighlight(item.key); }
-                        }}
-                        onDoubleClick={() => { if (!isRootFolder) moveToRight(item); }}
+                        onClick={() => isRoot ? toggleLeftExpand(item.key, null) : setExpLeftHighlight(item.key)}
+                        onDoubleClick={() => !isRoot && moveToRight(item)}
                         onMouseEnter={() => setExpLeftHover(item.key)}
                         onMouseLeave={() => setExpLeftHover(null)}
                         style={{
-                          display: 'flex', alignItems: 'center', gap: 6,
-                          paddingLeft: indent, paddingRight: 8, paddingTop: 4, paddingBottom: 4,
-                          cursor: isRootFolder ? 'pointer' : 'pointer',
-                          background: bg,
-                          color: isHL ? '#fff' : (alreadyAdded && !isRootFolder ? 'var(--muted)' : 'inherit'),
+                          height: 30, display: 'flex', alignItems: 'center', gap: 4,
+                          paddingLeft: pl, paddingRight: 10,
+                          cursor: 'pointer', userSelect: 'none',
+                          background: isHL ? 'var(--primary)' : isHov ? 'rgba(0,0,0,.04)' : 'transparent',
+                          color: isHL ? '#fff' : added && !isRoot ? 'var(--muted)' : 'var(--fg)',
+                          fontSize: item.depth === 0 ? 13 : 13,
                           fontWeight: item.depth === 0 ? 600 : 400,
-                          fontSize: 13,
-                          userSelect: 'none',
-                          transition: 'background .1s',
+                          borderBottom: item.depth === 0 && !expLeftExpanded.has(item.key) ? '1px solid var(--border)' : 'none',
                         }}
                       >
                         {item.isFolder
                           ? <span
                               onClick={e => { e.stopPropagation(); toggleLeftExpand(item.key, item.faculty_id || null); }}
-                              style={{ fontSize: 10, width: 16, flexShrink: 0, color: isHL ? '#fff' : 'var(--muted)', textAlign: 'center' }}
+                              style={{ fontSize: 9, width: 14, textAlign: 'center', flexShrink: 0, color: isHL ? '#fff' : 'var(--muted)', marginRight: 2 }}
                             >
-                              {expLeftExpanded.has(item.key) ? '▾' : '▸'}
+                              {expLeftExpanded.has(item.key) ? '▼' : '▶'}
                             </span>
                           : <span style={{ width: 16, flexShrink: 0 }} />
                         }
-                        <span style={{ flex: 1 }}>{item.label}</span>
-                        {alreadyAdded && !isRootFolder && (
-                          <span style={{ fontSize: 10, color: isHL ? 'rgba(255,255,255,.65)' : 'var(--muted)' }}>добавлено</span>
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
+                        {added && !isRoot && (
+                          <span style={{ fontSize: 10, color: isHL ? 'rgba(255,255,255,.6)' : 'var(--muted)', flexShrink: 0 }}>✓</span>
                         )}
                       </div>
                     );
@@ -389,82 +384,66 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
                 </div>
               </div>
 
-              {/* Кнопки переноса */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '0 10px', width: 46, flexShrink: 0 }}>
+              {/* Кнопки */}
+              <div style={{ width: 48, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, flexShrink: 0 }}>
                 {[
-                  { label: '>', title: 'Добавить выбранное', onClick: moveHighlightedToRight, disabled: !expLeftHighlight || selectedKeys.has(expLeftHighlight) },
-                  { label: '>>', title: 'Добавить все', onClick: moveAllToRight, disabled: leftTree.filter(i => i.type && !i.isLoading && !i.isEmpty && !selectedKeys.has(i.key)).length === 0 },
-                  { label: '<', title: 'Убрать выбранное', onClick: removeHighlighted, disabled: !expRightHighlight },
-                  { label: '<<', title: 'Убрать все', onClick: clearRight, disabled: expSelected.length === 0 },
-                ].map(btn => (
-                  <button
-                    key={btn.label}
-                    title={btn.title}
-                    onClick={btn.onClick}
-                    disabled={btn.disabled}
-                    style={{
-                      width: 32, height: 26, border: '1px solid var(--border)',
-                      borderRadius: 4, background: 'var(--surface)', cursor: btn.disabled ? 'default' : 'pointer',
-                      fontSize: 11, fontWeight: 700, color: btn.disabled ? 'var(--muted)' : 'var(--fg)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}
-                  >
-                    {btn.label}
-                  </button>
+                  { label: '→',  title: 'Добавить',     fn: moveHighlightedToRight, off: !expLeftHighlight || selectedKeys.has(expLeftHighlight) },
+                  { label: '⇒',  title: 'Добавить все', fn: moveAllToRight,         off: leftTree.filter(i => i.type && !i.isLoading && !i.isEmpty && !selectedKeys.has(i.key)).length === 0 },
+                  { label: '←',  title: 'Убрать',       fn: removeHighlighted,      off: !expRightHighlight },
+                  { label: '⇐',  title: 'Убрать все',   fn: clearRight,             off: expSelected.length === 0 },
+                ].map(b => (
+                  <button key={b.label} title={b.title} onClick={b.fn} disabled={b.off}
+                    style={{ width: 30, height: 26, border: '1px solid var(--border)', borderRadius: 5,
+                      background: b.off ? 'transparent' : 'var(--surface)',
+                      cursor: b.off ? 'default' : 'pointer', fontSize: 13,
+                      color: b.off ? 'var(--muted)' : 'var(--fg)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >{b.label}</button>
                 ))}
               </div>
 
-              {/* Правая панель - выбранное */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div style={{ padding: '8px 14px', fontSize: 12, fontWeight: 600, color: 'var(--muted)', borderBottom: '1px solid var(--border)', background: 'var(--surface-raised, var(--surface))' }}>
+              {/* Правая панель */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <div style={{ padding: '7px 12px', fontSize: 11, fontWeight: 600, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--muted)', borderBottom: '1px solid var(--border)', background: 'var(--surface-2,rgba(0,0,0,.02))' }}>
                   Выбрано для экспорта
                 </div>
-                <div style={{ flex: 1, overflow: 'auto', padding: '4px 0' }}>
+                <div style={{ flex: 1, overflow: 'auto' }}>
                   {expSelected.length === 0
-                    ? <div style={{ padding: '16px 14px', fontSize: 13, color: 'var(--muted)', fontStyle: 'italic' }}>Перенесите элементы из левого списка</div>
+                    ? <div style={{ padding: '24px 16px', fontSize: 13, color: 'var(--muted)', textAlign: 'center', lineHeight: 1.6 }}>
+                        Выберите элементы слева<br/>и нажмите →
+                      </div>
                     : expSelected.map(item => {
-                        const isHL = expRightHighlight === item.key;
+                        const isHL  = expRightHighlight === item.key;
                         const isHov = expRightHover === item.key;
-                        const TYPE_META = { students: { label: 'Студ.', color: '#3b82f6' }, employees: { label: 'Сотр.', color: '#10b981' }, groups: { label: 'Гр.', color: '#f59e0b' } };
-                        const meta = TYPE_META[item.type] || { label: '?', color: '#888' };
+                        const COLORS = { students: '#3b82f6', employees: '#10b981', groups: '#f59e0b' };
+                        const LABELS = { students: 'Студенты', employees: 'Сотрудники', groups: 'Группы' };
+                        const c = COLORS[item.type] || '#888';
                         const parts = item.label.split(' - ');
-                        const mainLabel = parts.length > 1 ? parts.slice(1).join(' - ') : parts[0];
-                        let bg = 'transparent';
-                        if (isHL) bg = 'var(--primary)';
-                        else if (isHov) bg = 'rgba(59,130,246,.06)';
+                        const sub  = parts.length > 1 ? parts[0] : LABELS[item.type] || '';
+                        const main = parts.length > 1 ? parts.slice(1).join(' - ') : parts[0];
                         return (
-                          <div
-                            key={item.key}
+                          <div key={item.key}
                             onClick={() => setExpRightHighlight(item.key)}
-                            onDoubleClick={() => { setExpSelected(prev => prev.filter(i => i.key !== item.key)); if (expRightHighlight === item.key) setExpRightHighlight(null); }}
+                            onDoubleClick={() => { setExpSelected(p => p.filter(i => i.key !== item.key)); if (expRightHighlight === item.key) setExpRightHighlight(null); }}
                             onMouseEnter={() => setExpRightHover(item.key)}
                             onMouseLeave={() => setExpRightHover(null)}
                             style={{
-                              display: 'flex', alignItems: 'center', gap: 8,
-                              padding: '5px 10px 5px 12px', cursor: 'pointer',
-                              background: bg,
-                              color: isHL ? '#fff' : 'inherit',
-                              userSelect: 'none', borderBottom: '1px solid var(--border)',
-                              transition: 'background .1s',
+                              height: 36, display: 'flex', alignItems: 'center', gap: 10,
+                              padding: '0 10px 0 12px', cursor: 'pointer', userSelect: 'none',
+                              background: isHL ? 'var(--primary)' : isHov ? 'rgba(0,0,0,.03)' : 'transparent',
+                              color: isHL ? '#fff' : 'var(--fg)',
+                              borderBottom: '1px solid var(--border)',
                             }}
                           >
-                            <span style={{
-                              fontSize: 10, padding: '1px 5px', borderRadius: 4, flexShrink: 0, fontWeight: 700,
-                              background: isHL ? 'rgba(255,255,255,.25)' : meta.color + '22',
-                              color: isHL ? '#fff' : meta.color,
-                              border: `1px solid ${isHL ? 'rgba(255,255,255,.4)' : meta.color + '66'}`,
-                            }}>
-                              {meta.label}
-                            </span>
-                            <span style={{ fontSize: 13, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.label}>
-                              {mainLabel}
-                            </span>
+                            <span style={{ width: 3, height: 20, borderRadius: 2, background: isHL ? 'rgba(255,255,255,.5)' : c, flexShrink: 0 }} />
+                            <div style={{ flex: 1, overflow: 'hidden' }}>
+                              <div style={{ fontSize: 12, color: isHL ? 'rgba(255,255,255,.7)' : 'var(--muted)', lineHeight: 1.2 }}>{sub}</div>
+                              <div style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{main}</div>
+                            </div>
                             <button
-                              onClick={e => { e.stopPropagation(); setExpSelected(prev => prev.filter(i => i.key !== item.key)); if (expRightHighlight === item.key) setExpRightHighlight(null); }}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', fontSize: 15, lineHeight: 1, color: isHL ? '#fff' : 'var(--muted)', flexShrink: 0, opacity: isHov || isHL ? 1 : 0.4 }}
-                            >
-                              ×
-                            </button>
+                              onClick={e => { e.stopPropagation(); setExpSelected(p => p.filter(i => i.key !== item.key)); if (expRightHighlight === item.key) setExpRightHighlight(null); }}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, lineHeight: 1, color: isHL ? '#fff' : 'var(--muted)', opacity: isHov || isHL ? 1 : 0, padding: '0 2px', flexShrink: 0 }}
+                            >×</button>
                           </div>
                         );
                       })
@@ -474,40 +453,19 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
 
             </div>
 
-            {/* Период */}
-            <div style={{ padding: '10px 22px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 13, color: 'var(--muted)', flexShrink: 0 }}>Период:</span>
+            {/* Период + подвал */}
+            <div style={{ borderTop: '1px solid var(--border)', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
-                <input
-                  type="date"
-                  className="input"
-                  value={expDateFrom}
-                  onChange={e => setExpDateFrom(e.target.value)}
-                  style={{ fontSize: 13, padding: '4px 8px', width: 150 }}
-                />
-                <span style={{ color: 'var(--muted)', fontSize: 13 }}>-</span>
-                <input
-                  type="date"
-                  className="input"
-                  value={expDateTo}
-                  onChange={e => setExpDateTo(e.target.value)}
-                  style={{ fontSize: 13, padding: '4px 8px', width: 150 }}
-                />
+                <span style={{ fontSize: 12, color: 'var(--muted)', flexShrink: 0 }}>Период:</span>
+                <input type="date" className="input" value={expDateFrom} onChange={e => setExpDateFrom(e.target.value)} style={{ fontSize: 12, padding: '4px 8px', width: 136 }} />
+                <span style={{ color: 'var(--muted)', fontSize: 12 }}>—</span>
+                <input type="date" className="input" value={expDateTo} onChange={e => setExpDateTo(e.target.value)} style={{ fontSize: 12, padding: '4px 8px', width: 136 }} />
                 {(expDateFrom || expDateTo) && (
-                  <button onClick={() => { setExpDateFrom(''); setExpDateTo(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--muted)' }}>
-                    очистить
-                  </button>
+                  <button onClick={() => { setExpDateFrom(''); setExpDateTo(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'var(--muted)' }}>очистить</button>
                 )}
               </div>
-            </div>
-
-            {/* Подвал */}
-            <div style={{ padding: '10px 22px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-                {expSelected.length === 0 ? 'Ничего не выбрано' : `Выбрано позиций: ${expSelected.length}`}
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn btn-secondary" onClick={() => setExportModal(false)}>Отмена</button>
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                <button className="btn btn-secondary btn-sm" onClick={() => setExportModal(false)}>Отмена</button>
                 <button className="btn btn-primary btn-sm" onClick={doExport} disabled={expLoading || expSelected.length === 0}>
                   {expLoading ? 'Загрузка...' : <>{I.excel}Скачать CSV</>}
                 </button>
