@@ -1019,6 +1019,10 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
               />
           </div>
         </div>
+        <button className="btn btn-primary" style={{ height: 36 }} onClick={handleSearch}>Найти</button>
+        <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset} disabled={!hasFilters}>Сбросить</button>
+      </div>
+      <div className="filters" style={{ marginTop: -8 }}>
         <div className="field">
           <label className="field-label">Должность</label>
           <select className="select" value={filterPos} onChange={e => { setFilterPos(e.target.value); setPage(1); }}>
@@ -1026,8 +1030,6 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
             {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
-        <button className="btn btn-primary" style={{ height: 36 }} onClick={handleSearch}>Найти</button>
-        <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset} disabled={!hasFilters}>Сбросить</button>
       </div>
       <div className="card">
         <div className="card-body flush">
