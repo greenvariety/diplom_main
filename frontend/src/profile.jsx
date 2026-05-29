@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Shell, PageHead } from './shell.jsx';
 import { I } from './data.jsx';
 import { PasswordRules, PasswordStrength, PasswordInput, FadingError, Field, LoadButton } from './utils.jsx';
 import { CodeInput } from './auth.jsx';
@@ -365,7 +364,7 @@ function TabEmail({ currentUser, onUserUpdated }) {
 }
 
 /* ── Основной компонент ─────────────────────────────────────── */
-function ProfileScreen({ currentUser: initUser, onNavigate, onLogout, openModal, onUserUpdated }) {
+function ProfileScreen({ currentUser: initUser, onNavigate, onUserUpdated }) {
   const [tab, setTab] = useState('data');
   const [user, setUser] = useState(initUser);
 
@@ -374,26 +373,33 @@ function ProfileScreen({ currentUser: initUser, onNavigate, onLogout, openModal,
     onUserUpdated && onUserUpdated(data);
   };
 
+  const goBack = () => onNavigate(user?.institution ? 'dashboard' : 'org-picker');
+
   return (
-    <Shell currentUser={user} active="profile" onNavigate={onNavigate} onLogout={onLogout} openModal={openModal}>
-      <PageHead
-        title="Профиль"
-        sub={user?.username}
-        actions={
-          <button className="btn btn-secondary btn-sm" onClick={() => onNavigate(user?.institution ? 'dashboard' : 'org-picker')}>
-            {I.back} Назад
-          </button>
-        }
-      />
-      <div className="card" style={{ marginTop: 8 }}>
-        <div className="card-body" style={{ padding: '20px 24px' }}>
-          <TabBar tab={tab} setTab={setTab} />
-          {tab === 'data'     && <TabData     currentUser={user} onUserUpdated={handleUpdated} />}
-          {tab === 'password' && <TabPassword />}
-          {tab === 'email'    && <TabEmail    currentUser={user} onUserUpdated={handleUpdated} />}
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', minHeight: '100vh', background: 'var(--bg)', fontFamily: 'var(--font)', padding: '32px 24px' }}>
+      <div style={{ width: '100%', maxWidth: 560 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+          <img src="/logo.png" style={{ width: 36, height: 36, objectFit: 'contain', borderRadius: '50%' }} alt="" />
+          <div style={{ fontWeight: 600 }}>АИСК</div>
+          <div style={{ marginLeft: 'auto' }}>
+            <button className="btn btn-secondary btn-sm" onClick={goBack}>{I.back} Назад</button>
+          </div>
+        </div>
+
+        <div className="card screen-fade-in">
+          <div className="card-body" style={{ padding: '24px 28px' }}>
+            <div style={{ marginBottom: 20 }}>
+              <h2 style={{ margin: 0 }}>Мой профиль</h2>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>{user?.display_name || user?.username}</div>
+            </div>
+            <TabBar tab={tab} setTab={setTab} />
+            {tab === 'data'     && <TabData     currentUser={user} onUserUpdated={handleUpdated} />}
+            {tab === 'password' && <TabPassword />}
+            {tab === 'email'    && <TabEmail    currentUser={user} onUserUpdated={handleUpdated} />}
+          </div>
         </div>
       </div>
-    </Shell>
+    </div>
   );
 }
 
