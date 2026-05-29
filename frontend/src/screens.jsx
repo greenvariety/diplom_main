@@ -26,6 +26,7 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
   const [actionFilter, setActionFilter] = useState('');
   const [exportModal, setExportModal] = useState(false);
   const [expFaculties, setExpFaculties] = useState([]);
+  const [expFacultiesLoaded, setExpFacultiesLoaded] = useState(false);
   const [expGroupsCache, setExpGroupsCache] = useState({});
   const [expLoadingFacs, setExpLoadingFacs] = useState(new Set());
   const [expLeftExpanded, setExpLeftExpanded] = useState(new Set());
@@ -45,34 +46,32 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
   }, []);
 
   useEffect(() => {
-    if (exportModal && expFaculties.length === 0) {
-      api.get('/faculties/').then(r => {
-        const facs = r.data;
-        setExpFaculties(facs);
-        // Раскрываем все факультеты сразу
-        setExpLeftExpanded(prev => {
-          const next = new Set(prev);
-          facs.forEach(fac => {
-            next.add(`students-fac-${fac.id}`);
-            next.add(`groups-fac-${fac.id}`);
-          });
-          return next;
-        });
-        // Загружаем группы всех факультетов параллельно
+    if (!exportModal) return;
+    if (expFacultiesLoaded) return;
+    api.get('/faculties/').then(r => {
+      const facs = r.data || [];
+      setExpFaculties(facs);
+      setExpFacultiesLoaded(true);
+      setExpLeftExpanded(prev => {
+        const next = new Set(prev);
         facs.forEach(fac => {
-          setExpLoadingFacs(s => new Set([...s, fac.id]));
-          api.get(`/groups/?faculty_id=${fac.id}`).then(gr => {
-            setExpGroupsCache(c => ({ ...c, [fac.id]: gr.data }));
-            setExpLoadingFacs(s => { const n = new Set(s); n.delete(fac.id); return n; });
-          }).catch(() => setExpLoadingFacs(s => { const n = new Set(s); n.delete(fac.id); return n; }));
+          next.add(`students-fac-${fac.id}`);
+          next.add(`groups-fac-${fac.id}`);
         });
-      }).catch(() => {});
-    }
+        return next;
+      });
+      facs.forEach(fac => {
+        setExpLoadingFacs(s => new Set([...s, fac.id]));
+        api.get(`/groups/?faculty_id=${fac.id}`).then(gr => {
+          setExpGroupsCache(c => ({ ...c, [fac.id]: gr.data }));
+          setExpLoadingFacs(s => { const n = new Set(s); n.delete(fac.id); return n; });
+        }).catch(() => setExpLoadingFacs(s => { const n = new Set(s); n.delete(fac.id); return n; }));
+      });
+    }).catch(() => { setExpFacultiesLoaded(true); });
   }, [exportModal]);
 
   const openExportModal = () => {
     const baseExpanded = new Set(['students-root', 'employees-root', 'groups-root']);
-    // Если факультеты уже загружены — раскрываем их тоже
     expFaculties.forEach(fac => {
       baseExpanded.add(`students-fac-${fac.id}`);
       baseExpanded.add(`groups-fac-${fac.id}`);
@@ -85,6 +84,7 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
     setExpSelected([]);
     setExpDateFrom('');
     setExpDateTo('');
+    setExpLoading(false);
     setExportModal(true);
   };
 
@@ -106,10 +106,11 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
   const buildLeftTree = () => {
     const items = [];
     const facNodes = (typeKey, typeName) => {
-      if (expFaculties.length === 0) {
+      if (!expFacultiesLoaded) {
         items.push({ key: `${typeKey}-loading`, label: 'Загрузка...', isLoading: true, depth: 1 });
         return;
       }
+      if (expFaculties.length === 0) return; // нет факультетов — просто ничего не показываем
       expFaculties.forEach(fac => {
         const facKey = `${typeKey}-fac-${fac.id}`;
         const facName = fac.short_name || fac.full_name;
