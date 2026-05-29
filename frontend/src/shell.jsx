@@ -190,7 +190,7 @@ NAV_BY_ROLE.superadmin = NAV_BY_ROLE.owner;
 function Shell({ currentUser, role: roleProp, active, onNavigate, onLogout, openModal, children }) {
   const role = currentUser?.role || roleProp || 'admin';
   const nav = NAV_BY_ROLE[role] || NAV_BY_ROLE.admin;
-  const institutionName = currentUser?.institution?.code || currentUser?.institution?.name || '';
+  const institutionName = currentUser?.institution?.code || '';
   const mockUser = currentUser || { role, username: role, display_name: role };
   const [pendingCount, setPendingCount] = useState(0);
 
