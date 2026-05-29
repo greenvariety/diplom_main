@@ -121,10 +121,11 @@ function TabPassword() {
   const [cur, setCur] = useState('');
   const [p1, setP1] = useState('');
   const [p2, setP2] = useState('');
-  const [touched, setTouched] = useState({});
+  const [submitted, setSubmitted] = useState(false);
   const [pwFocus, setPwFocus] = useState(false);
   const [p2Touched, setP2Touched] = useState(false);
-  const [errs, setErrs] = useState({});
+  const [curErr, setCurErr] = useState('');
+  const [formErr, setFormErr] = useState('');
   const [saved, setSaved] = useState(false);
 
   const p1Err = !p1 ? 'Введите новый пароль'
@@ -137,10 +138,14 @@ function TabPassword() {
   const p2OK = p2 && p1 === p2;
 
   const save = async () => {
-    setTouched({ cur: 1, p1: 1, p2: 1 });
+    setSubmitted(true);
     setP2Touched(true);
-    if (!cur) { setErrs({ cur: 'Введите текущий пароль' }); return; }
-    if (p1Err || p2Err) return;
+    setCurErr('');
+    setFormErr('');
+
+    if (!cur) { setCurErr('Введите текущий пароль'); return; }
+    if (p1Err) { setFormErr(p1Err); return; }
+    if (p2Err) { setFormErr(p2Err); return; }
 
     try {
       const r = await api.post('/me/change-password/', { current_password: cur, new_password: p1 });
@@ -148,39 +153,44 @@ function TabPassword() {
       localStorage.setItem('refresh_token', r.data.refresh);
       setSaved(true);
       setCur(''); setP1(''); setP2('');
-      setTouched({}); setP2Touched(false);
+      setSubmitted(false); setP2Touched(false);
+      setCurErr(''); setFormErr('');
       setTimeout(() => setSaved(false), 3000);
     } catch (e) {
       const data = e.response?.data;
-      if (data?.field === 'current_password') setErrs({ cur: data.error });
-      else if (data?.field === 'new_password') setErrs({ p1: data.error });
-      else setErrs({ p1: data?.error || 'Ошибка смены пароля' });
+      const msg = data?.error || 'Ошибка смены пароля';
+      if (data?.field === 'current_password') {
+        setCurErr(msg);
+      } else {
+        setFormErr(msg);
+      }
     }
   };
 
   return (
     <div style={{ maxWidth: 480 }}>
-      <Field label="Текущий пароль" error={touched.cur && errs.cur}>
+      <div className="field">
+        <label className="field-label">Текущий пароль</label>
         <PasswordInput
           value={cur}
-          onChange={v => { setCur(v); setErrs(e => ({ ...e, cur: null })); setSaved(false); }}
-          onBlur={() => setTouched(t => ({ ...t, cur: 1 }))}
-          hasError={!!(touched.cur && errs.cur)}
+          onChange={v => { setCur(v); setCurErr(''); setFormErr(''); setSaved(false); }}
+          onBlur={() => { if (!cur) setCurErr('Введите текущий пароль'); }}
+          hasError={!!curErr}
           autoComplete="current-password"
         />
-      </Field>
+        {curErr && <div className="field-error" style={{ marginTop: 4 }}>{I.alert}{curErr}</div>}
+      </div>
 
       <div className="field" style={{ marginTop: 16 }}>
         <label className="field-label">Новый пароль</label>
         <PasswordInput
           value={p1}
-          onChange={v => { setP1(v); setErrs(e => ({ ...e, p1: null })); setSaved(false); }}
+          onChange={v => { setP1(v); setFormErr(''); setSaved(false); }}
           onFocus={() => setPwFocus(true)}
-          onBlur={() => { setPwFocus(false); setTouched(t => ({ ...t, p1: 1 })); }}
-          hasError={!!(touched.p1 && (p1Err || errs.p1))}
+          onBlur={() => setPwFocus(false)}
+          hasError={!!(submitted && p1Err)}
           autoComplete="new-password"
         />
-        <FadingError error={(touched.p1 && !p1) ? p1Err : (errs.p1 || null)} />
         <PasswordRules value={p1} show={pwFocus || !!p1} />
         {p1 && <PasswordStrength value={p1} />}
       </div>
@@ -189,7 +199,7 @@ function TabPassword() {
         <label className="field-label">Повторите новый пароль</label>
         <PasswordInput
           value={p2}
-          onChange={v => { setP2(v); setP2Touched(true); setSaved(false); }}
+          onChange={v => { setP2(v); setP2Touched(true); setFormErr(''); setSaved(false); }}
           onBlur={() => setP2Touched(true)}
           hasError={!!(p2Touched && p2Err)}
           autoComplete="new-password"
@@ -200,8 +210,14 @@ function TabPassword() {
             Пароли совпадают
           </div>
         )}
-        <FadingError error={p2Touched && p2Err ? p2Err : null} />
+        {p2Touched && p2Err && <div className="field-error" style={{ marginTop: 4 }}>{p2Err}</div>}
       </div>
+
+      {formErr && (
+        <div className="field-error" style={{ marginTop: 12, padding: '10px 12px', borderRadius: 8 }}>
+          {I.alert}{formErr}
+        </div>
+      )}
 
       <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
         <LoadButton className="btn btn-primary" onClick={save}>{I.check} Сменить пароль</LoadButton>
