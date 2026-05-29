@@ -231,7 +231,6 @@ function Shell({ currentUser, role: roleProp, active, onNavigate, onLogout, open
           )}
         </div>
         <div className="topbar-right">
-          <button className="btn btn-ghost btn-icon" title="Уведомления">{I.bell}</button>
           <UserChip currentUser={mockUser} onLogout={onLogout} openModal={openModal} />
         </div>
       </div>
