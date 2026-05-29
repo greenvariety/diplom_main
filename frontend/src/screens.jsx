@@ -2005,11 +2005,10 @@ function UserList({ currentUser, openModal, onNavigate }) {
                 <SortHeader k="username" sort={sort}>Логин</SortHeader>
                 <SortHeader k="role" sort={sort}>Роль</SortHeader>
                 <SortHeader k="last_login" sort={sort}>Последний вход</SortHeader>
-                <th>Статус</th>
                 <th style={{ width: 40 }}></th>
               </tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={7} /> : sort.sortFn(
+                {loading ? <SkeletonRows cols={6} /> : sort.sortFn(
                   users.filter(u => {
                     if (q && !(u.employee_name || '').toLowerCase().includes(q.toLowerCase()) && !u.username.toLowerCase().includes(q.toLowerCase())) return false;
                     if (filterRole && u.role !== filterRole) return false;
@@ -2028,7 +2027,6 @@ function UserList({ currentUser, openModal, onNavigate }) {
                     <td className="mono">{u.username}</td>
                     <td><span className={`badge ${ROLE_CLS[u.role] || 'badge-neutral'}`}><span className="dot"></span>{u.role_display}</span></td>
                     <td className="mono muted">{u.last_login || 'никогда'}</td>
-                    <td>{u.is_active ? <span className="badge badge-ok"><span className="dot"></span>Активен</span> : <span className="badge badge-neutral"><span className="dot"></span>Неактивен</span>}</td>
                     <td>{u.employee_id ? I.chevr : null}</td>
                   </tr>
                 ))}
