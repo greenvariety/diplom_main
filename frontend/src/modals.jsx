@@ -1907,7 +1907,7 @@ function OrgFormModal({ data, onClose }) {
             maxLength={1000}
           />
         </Field>
-        <Field label="Аббревиатура" hint="Отображается в шапке приложения. Если не указать - сгенерируется автоматически">
+        <Field label="Код организации" hint={touched.code ? 'Если не указать - сгенерируется автоматически' : null}>
           <input
             className="input"
             value={code}
