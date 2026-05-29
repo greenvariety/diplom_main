@@ -163,6 +163,9 @@ const NAV_BY_ROLE = {
       { key: 'delreq',    label: 'Заявки на удаление',  icon: I.trash, badge: 'bad' },
       { key: 'audit',     label: 'Журнал изменений',    icon: I.history },
     ]},
+    { section: 'Аккаунт', items: [
+      { key: 'profile', label: 'Мой профиль', icon: I.user },
+    ]},
   ],
   admin: [
     { section: 'Главное', items: [{ key: 'dashboard', label: 'Дашборд', icon: I.dashboard }] },
@@ -176,12 +179,18 @@ const NAV_BY_ROLE = {
       { key: 'students',  label: 'Студенты',   icon: I.badge },
       { key: 'parents',   label: 'Опекуны',    icon: I.heart },
     ]},
+    { section: 'Аккаунт', items: [
+      { key: 'profile', label: 'Мой профиль', icon: I.user },
+    ]},
   ],
   teacher: [
     { section: 'Главное', items: [{ key: 'dashboard', label: 'Дашборд', icon: I.dashboard }] },
     { section: 'Мои данные', items: [
       { key: 'groups',   label: 'Мои группы',   icon: I.users },
       { key: 'students', label: 'Мои студенты', icon: I.badge },
+    ]},
+    { section: 'Аккаунт', items: [
+      { key: 'profile', label: 'Мой профиль', icon: I.user },
     ]},
   ],
 };

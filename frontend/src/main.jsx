@@ -406,10 +406,7 @@ function AppShell({ onLogout }) {
     openModal,
   };
 
-  const goToProfile = () => {
-    setCurrentUser(u => ({ ...u, _showPicker: false }));
-    setCurrentScreen('profile');
-  };
+  const goToProfile = () => setCurrentScreen('profile');
 
   if (currentScreen === 'profile') {
     return (
