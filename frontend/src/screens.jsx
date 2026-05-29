@@ -30,7 +30,9 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
   const [expLoadingFacs, setExpLoadingFacs] = useState(new Set());
   const [expLeftExpanded, setExpLeftExpanded] = useState(new Set());
   const [expLeftHighlight, setExpLeftHighlight] = useState(null);
+  const [expLeftHover, setExpLeftHover] = useState(null);
   const [expRightHighlight, setExpRightHighlight] = useState(null);
+  const [expRightHover, setExpRightHover] = useState(null);
   const [expSelected, setExpSelected] = useState([]);
   const [expDateFrom, setExpDateFrom] = useState('');
   const [expDateTo, setExpDateTo] = useState('');
@@ -44,14 +46,42 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
 
   useEffect(() => {
     if (exportModal && expFaculties.length === 0) {
-      api.get('/faculties/').then(r => setExpFaculties(r.data)).catch(() => {});
+      api.get('/faculties/').then(r => {
+        const facs = r.data;
+        setExpFaculties(facs);
+        // Раскрываем все факультеты сразу
+        setExpLeftExpanded(prev => {
+          const next = new Set(prev);
+          facs.forEach(fac => {
+            next.add(`students-fac-${fac.id}`);
+            next.add(`groups-fac-${fac.id}`);
+          });
+          return next;
+        });
+        // Загружаем группы всех факультетов параллельно
+        facs.forEach(fac => {
+          setExpLoadingFacs(s => new Set([...s, fac.id]));
+          api.get(`/groups/?faculty_id=${fac.id}`).then(gr => {
+            setExpGroupsCache(c => ({ ...c, [fac.id]: gr.data }));
+            setExpLoadingFacs(s => { const n = new Set(s); n.delete(fac.id); return n; });
+          }).catch(() => setExpLoadingFacs(s => { const n = new Set(s); n.delete(fac.id); return n; }));
+        });
+      }).catch(() => {});
     }
   }, [exportModal]);
 
   const openExportModal = () => {
-    setExpLeftExpanded(new Set(['students-root', 'employees-root', 'groups-root']));
+    const baseExpanded = new Set(['students-root', 'employees-root', 'groups-root']);
+    // Если факультеты уже загружены — раскрываем их тоже
+    expFaculties.forEach(fac => {
+      baseExpanded.add(`students-fac-${fac.id}`);
+      baseExpanded.add(`groups-fac-${fac.id}`);
+    });
+    setExpLeftExpanded(baseExpanded);
     setExpLeftHighlight(null);
+    setExpLeftHover(null);
     setExpRightHighlight(null);
+    setExpRightHover(null);
     setExpSelected([]);
     setExpDateFrom('');
     setExpDateTo('');
@@ -258,44 +288,57 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
                 <div style={{ padding: '8px 14px', fontSize: 12, fontWeight: 600, color: 'var(--muted)', borderBottom: '1px solid var(--border)', background: 'var(--surface-raised, var(--surface))' }}>
                   Доступно
                 </div>
-                <div style={{ flex: 1, overflow: 'auto', padding: '6px 0' }}>
+                <div style={{ flex: 1, overflow: 'auto', padding: '4px 0' }}>
                   {leftTree.map(item => {
                     const indent = item.depth * 16 + 8;
                     const isHL = expLeftHighlight === item.key;
+                    const isHov = expLeftHover === item.key;
                     const alreadyAdded = selectedKeys.has(item.key);
+                    const isRootFolder = item.isFolder && !item.type;
                     if (item.isLoading) return (
-                      <div key={item.key} style={{ paddingLeft: indent + 16, paddingTop: 3, paddingBottom: 3, fontSize: 13, color: 'var(--muted)' }}>Загрузка...</div>
+                      <div key={item.key} style={{ paddingLeft: indent + 22, paddingTop: 3, paddingBottom: 3, fontSize: 12, color: 'var(--muted)', fontStyle: 'italic' }}>Загрузка...</div>
                     );
                     if (item.isEmpty) return (
-                      <div key={item.key} style={{ paddingLeft: indent + 16, paddingTop: 3, paddingBottom: 3, fontSize: 13, color: 'var(--muted)', fontStyle: 'italic' }}>Нет групп</div>
+                      <div key={item.key} style={{ paddingLeft: indent + 22, paddingTop: 3, paddingBottom: 3, fontSize: 12, color: 'var(--muted)', fontStyle: 'italic' }}>Нет групп</div>
                     );
+                    let bg = 'transparent';
+                    if (isHL) bg = 'var(--primary)';
+                    else if (isHov && !isRootFolder) bg = 'rgba(var(--primary-rgb, 59,130,246),.08)';
                     return (
                       <div
                         key={item.key}
-                        onClick={() => { if (!item.isFolder || item.type) setExpLeftHighlight(item.key); }}
-                        onDoubleClick={() => moveToRight(item)}
+                        onClick={() => {
+                          if (isRootFolder) { toggleLeftExpand(item.key, null); }
+                          else { setExpLeftHighlight(item.key); }
+                        }}
+                        onDoubleClick={() => { if (!isRootFolder) moveToRight(item); }}
+                        onMouseEnter={() => setExpLeftHover(item.key)}
+                        onMouseLeave={() => setExpLeftHover(null)}
                         style={{
-                          display: 'flex', alignItems: 'center', gap: 5,
-                          paddingLeft: indent, paddingRight: 8, paddingTop: 3, paddingBottom: 3,
-                          cursor: item.isFolder && !item.type ? 'default' : 'pointer',
-                          background: isHL ? 'var(--primary)' : 'transparent',
-                          color: isHL ? '#fff' : (alreadyAdded ? 'var(--muted)' : 'inherit'),
-                          fontSize: item.depth === 0 ? 13 : 13,
+                          display: 'flex', alignItems: 'center', gap: 6,
+                          paddingLeft: indent, paddingRight: 8, paddingTop: 4, paddingBottom: 4,
+                          cursor: isRootFolder ? 'pointer' : 'pointer',
+                          background: bg,
+                          color: isHL ? '#fff' : (alreadyAdded && !isRootFolder ? 'var(--muted)' : 'inherit'),
                           fontWeight: item.depth === 0 ? 600 : 400,
+                          fontSize: 13,
                           userSelect: 'none',
+                          transition: 'background .1s',
                         }}
                       >
-                        {item.isFolder && (
-                          <span
-                            onClick={e => { e.stopPropagation(); toggleLeftExpand(item.key, item.faculty_id || null); }}
-                            style={{ fontSize: 10, width: 14, flexShrink: 0, color: isHL ? '#fff' : 'var(--muted)' }}
-                          >
-                            {expLeftExpanded.has(item.key) ? '▾' : '▸'}
-                          </span>
+                        {item.isFolder
+                          ? <span
+                              onClick={e => { e.stopPropagation(); toggleLeftExpand(item.key, item.faculty_id || null); }}
+                              style={{ fontSize: 10, width: 16, flexShrink: 0, color: isHL ? '#fff' : 'var(--muted)', textAlign: 'center' }}
+                            >
+                              {expLeftExpanded.has(item.key) ? '▾' : '▸'}
+                            </span>
+                          : <span style={{ width: 16, flexShrink: 0 }} />
+                        }
+                        <span style={{ flex: 1 }}>{item.label}</span>
+                        {alreadyAdded && !isRootFolder && (
+                          <span style={{ fontSize: 10, color: isHL ? 'rgba(255,255,255,.65)' : 'var(--muted)' }}>добавлено</span>
                         )}
-                        {!item.isFolder && <span style={{ width: 14, flexShrink: 0 }} />}
-                        <span style={{ fontSize: item.depth === 0 ? 13 : 13 }}>{item.label}</span>
-                        {alreadyAdded && <span style={{ fontSize: 11, marginLeft: 'auto', color: isHL ? 'rgba(255,255,255,.7)' : 'var(--muted)' }}>- добавлено</span>}
                       </div>
                     );
                   })}
@@ -337,21 +380,28 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
                     ? <div style={{ padding: '16px 14px', fontSize: 13, color: 'var(--muted)', fontStyle: 'italic' }}>Перенесите элементы из левого списка</div>
                     : expSelected.map(item => {
                         const isHL = expRightHighlight === item.key;
+                        const isHov = expRightHover === item.key;
                         const TYPE_META = { students: { label: 'Студ.', color: '#3b82f6' }, employees: { label: 'Сотр.', color: '#10b981' }, groups: { label: 'Гр.', color: '#f59e0b' } };
                         const meta = TYPE_META[item.type] || { label: '?', color: '#888' };
                         const parts = item.label.split(' - ');
                         const mainLabel = parts.length > 1 ? parts.slice(1).join(' - ') : parts[0];
+                        let bg = 'transparent';
+                        if (isHL) bg = 'var(--primary)';
+                        else if (isHov) bg = 'rgba(59,130,246,.06)';
                         return (
                           <div
                             key={item.key}
                             onClick={() => setExpRightHighlight(item.key)}
                             onDoubleClick={() => { setExpSelected(prev => prev.filter(i => i.key !== item.key)); if (expRightHighlight === item.key) setExpRightHighlight(null); }}
+                            onMouseEnter={() => setExpRightHover(item.key)}
+                            onMouseLeave={() => setExpRightHover(null)}
                             style={{
                               display: 'flex', alignItems: 'center', gap: 8,
                               padding: '5px 10px 5px 12px', cursor: 'pointer',
-                              background: isHL ? 'var(--primary)' : 'transparent',
+                              background: bg,
                               color: isHL ? '#fff' : 'inherit',
                               userSelect: 'none', borderBottom: '1px solid var(--border)',
+                              transition: 'background .1s',
                             }}
                           >
                             <span style={{
@@ -367,7 +417,7 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
                             </span>
                             <button
                               onClick={e => { e.stopPropagation(); setExpSelected(prev => prev.filter(i => i.key !== item.key)); if (expRightHighlight === item.key) setExpRightHighlight(null); }}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', fontSize: 14, lineHeight: 1, color: isHL ? '#fff' : 'var(--muted)', flexShrink: 0 }}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', fontSize: 15, lineHeight: 1, color: isHL ? '#fff' : 'var(--muted)', flexShrink: 0, opacity: isHov || isHL ? 1 : 0.4 }}
                             >
                               ×
                             </button>
