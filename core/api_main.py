@@ -17,6 +17,7 @@ class MeView(APIView):
             'institution': {
                 'id': institution.pk,
                 'name': institution.name,
+                'code': institution.code,
             } if institution else None,
         })
 
