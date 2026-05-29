@@ -8,7 +8,7 @@
 
 ---
 
-## 2. Много где пропала кнопка на вкладках, проверь и верни ее!
+~~## 2. Много где пропала кнопка на вкладках, проверь и верни ее!~~
 
 ```html
 <button class="btn btn-primary" style="height: 36px; outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">Найти</button>

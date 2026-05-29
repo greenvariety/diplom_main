@@ -1574,8 +1574,9 @@ function GroupList({ currentUser, openModal, onNavigate }) {
       <div className="filters">
         <div className="field grow-2">
           <label className="field-label">Поиск</label>
-          <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} /></div>
+          <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && setQ(q)} /></div>
         </div>
+        <button className="btn btn-primary" style={{ height: 36 }} onClick={() => {}}>Найти</button>
         <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset} disabled={!hasFilters}>Сбросить</button>
       </div>
       <div className="filters" style={{ marginTop: -8 }}>
@@ -1896,9 +1897,10 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
         <div className="field grow-2">
           <label className="field-label">Поиск по названию или коду</label>
           <div className="input-with-icon">{I.search}
-            <input className="input" value={q} onChange={e => setQ(e.target.value)} />
+            <input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && setQ(q)} />
           </div>
         </div>
+        <button className="btn btn-primary" style={{ height: 36 }} onClick={() => {}}>Найти</button>
         <button className="btn btn-ghost" style={{ height: 36 }} onClick={() => setQ('')} disabled={!q}>Сбросить</button>
       </div>
       <div className="card">
@@ -1979,9 +1981,10 @@ function UserList({ currentUser, openModal, onNavigate }) {
         <div className="field grow-2">
           <label className="field-label">Поиск</label>
           <div className="input-with-icon">{I.search}
-            <input className="input" value={q} onChange={e => setQ(e.target.value)} />
+            <input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && setQ(q)} />
           </div>
         </div>
+        <button className="btn btn-primary" style={{ height: 36 }} onClick={() => {}}>Найти</button>
         <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset} disabled={!hasFilters}>Сбросить</button>
       </div>
       <div className="filters" style={{ marginTop: -8 }}>
@@ -2093,8 +2096,9 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
       <div className="filters">
         <div className="field grow-2">
           <label className="field-label">Поиск</label>
-          <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} /></div>
+          <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && setQ(q)} /></div>
         </div>
+        <button className="btn btn-primary" style={{ height: 36 }} onClick={() => {}}>Найти</button>
         <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset} disabled={!hasFilters}>Сбросить</button>
       </div>
       <div className="filters" style={{ marginTop: -8 }}>
@@ -2711,9 +2715,10 @@ function SubjectList({ currentUser, openModal, onNavigate }) {
         <div className="field grow-2">
           <label className="field-label">Поиск по названию</label>
           <div className="input-with-icon">{I.search}
-            <input className="input" value={q} onChange={e => setQ(e.target.value)} />
+            <input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && setQ(q)} />
           </div>
         </div>
+        <button className="btn btn-primary" style={{ height: 36 }} onClick={() => {}}>Найти</button>
         <button className="btn btn-ghost" style={{ height: 36 }} onClick={() => setQ('')} disabled={!q}>Сбросить</button>
       </div>
       <div className="card">
@@ -2778,8 +2783,9 @@ function PositionList({ currentUser, openModal, onNavigate }) {
       <div className="filters">
         <div className="field grow-2">
           <label className="field-label">Поиск по названию</label>
-          <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} /></div>
+          <div className="input-with-icon">{I.search}<input className="input" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && setQ(q)} /></div>
         </div>
+        <button className="btn btn-primary" style={{ height: 36 }} onClick={() => {}}>Найти</button>
         <button className="btn btn-ghost" style={{ height: 36 }} onClick={() => setQ('')} disabled={!q}>Сбросить</button>
       </div>
       <div className="card">
