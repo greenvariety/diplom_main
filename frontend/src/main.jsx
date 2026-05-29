@@ -438,7 +438,7 @@ function AppShell({ onLogout }) {
           user={currentUser}
           onOrgSelected={() => { loadUser(true); handleNavigate('dashboard'); }}
           onLogout={handleLogout}
-          onBack={() => handleNavigate('dashboard')}
+          onBack={() => { loadUser(true); handleNavigate('dashboard'); }}
           onProfile={() => handleNavigate('profile')}
         />
       );
