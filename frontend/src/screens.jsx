@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useEffect } from 'react';
+﻿import { useState, useMemo, useEffect, useRef } from 'react';
 import { STATUSES, STUDENTS, EMPLOYEES, GROUPS, FACULTIES, AUDIT, ORGS, I } from './data.jsx';
 import { Shell, PageHead, Badge, Avatar } from './shell.jsx';
 import { StatNumber, useToast, useDropdown, Field, EmptyState, SkeletonRows, LoadButton, Combobox, Pager, usePager, useSortable, SortHeader } from './utils.jsx';
@@ -7,6 +7,22 @@ import api from './api.js';
 /* ============================================================
    Dashboards
    ============================================================ */
+
+function TreeCheck({ state, onChange }) {
+  const ref = useRef();
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = state === 'indeterminate';
+  }, [state]);
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      checked={state !== 'unchecked'}
+      onChange={onChange}
+      style={{ cursor: 'pointer', flexShrink: 0, margin: 0 }}
+    />
+  );
+}
 
 function Stat({ label, value, icon, trend, onClick }) {
   return (
@@ -24,13 +40,14 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
   const [userFilter, setUserFilter] = useState('');
   const [actionFilter, setActionFilter] = useState('');
   const [exportModal, setExportModal] = useState(false);
-  const [expTypes, setExpTypes] = useState({ students: true, employees: false, groups: false });
-  const [expFaculty, setExpFaculty] = useState('');
-  const [expGroup, setExpGroup] = useState('');
-  const [expDateFrom, setExpDateFrom] = useState('');
-  const [expDateTo, setExpDateTo] = useState('');
+  const [expTab, setExpTab] = useState('students');
+  const [expEnabled, setExpEnabled] = useState({ students: true, employees: false, groups: false });
   const [expFaculties, setExpFaculties] = useState([]);
-  const [expGroups, setExpGroups] = useState([]);
+  const [expGroupsCache, setExpGroupsCache] = useState({});
+  const [expExpanded, setExpExpanded] = useState(new Set());
+  const [expLoadingFacs, setExpLoadingFacs] = useState(new Set());
+  const [uncheckedFacs, setUncheckedFacs] = useState(new Set());
+  const [uncheckedGrps, setUncheckedGrps] = useState(new Set());
   const [expLoading, setExpLoading] = useState(false);
   const toast = useToast();
   const sort = useSortable({ key: 'ts', dir: 'desc' }, 'owner-dash-audit');
@@ -40,52 +57,137 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
   }, []);
 
   useEffect(() => {
-    if (exportModal) {
+    if (exportModal && expFaculties.length === 0) {
       api.get('/faculties/').then(r => setExpFaculties(r.data)).catch(() => {});
     }
   }, [exportModal]);
 
-  useEffect(() => {
-    if (expFaculty) {
-      api.get(`/groups/?faculty_id=${expFaculty}`).then(r => setExpGroups(r.data)).catch(() => {});
+  const openExportModal = () => {
+    setUncheckedFacs(new Set());
+    setUncheckedGrps(new Set());
+    setExpExpanded(new Set());
+    setExportModal(true);
+  };
+
+  const toggleExpand = (facId) => {
+    const next = new Set(expExpanded);
+    if (next.has(facId)) {
+      next.delete(facId);
     } else {
-      setExpGroups([]); setExpGroup('');
+      next.add(facId);
+      if (!expGroupsCache[facId]) {
+        setExpLoadingFacs(s => new Set([...s, facId]));
+        api.get(`/groups/?faculty_id=${facId}`).then(r => {
+          setExpGroupsCache(c => ({ ...c, [facId]: r.data }));
+          setExpLoadingFacs(s => { const n = new Set(s); n.delete(facId); return n; });
+        }).catch(() => setExpLoadingFacs(s => { const n = new Set(s); n.delete(facId); return n; }));
+      }
     }
-  }, [expFaculty]);
+    setExpExpanded(next);
+  };
+
+  const getFacState = (facId) => {
+    if (uncheckedFacs.has(facId)) return 'unchecked';
+    const grps = expGroupsCache[facId];
+    if (!grps || grps.length === 0) return 'checked';
+    const anyUnchecked = grps.some(g => uncheckedGrps.has(g.id));
+    if (!anyUnchecked) return 'checked';
+    const allUnchecked = grps.every(g => uncheckedGrps.has(g.id));
+    return allUnchecked ? 'unchecked' : 'indeterminate';
+  };
+
+  const toggleFac = (facId) => {
+    const grps = expGroupsCache[facId] || [];
+    if (uncheckedFacs.has(facId)) {
+      const nf = new Set(uncheckedFacs); nf.delete(facId);
+      const ng = new Set(uncheckedGrps); grps.forEach(g => ng.delete(g.id));
+      setUncheckedFacs(nf); setUncheckedGrps(ng);
+    } else {
+      const nf = new Set(uncheckedFacs); nf.add(facId);
+      const ng = new Set(uncheckedGrps); grps.forEach(g => ng.delete(g.id));
+      setUncheckedFacs(nf); setUncheckedGrps(ng);
+    }
+  };
+
+  const toggleGrp = (facId, grpId) => {
+    const grps = expGroupsCache[facId] || [];
+    if (uncheckedGrps.has(grpId)) {
+      const ng = new Set(uncheckedGrps); ng.delete(grpId);
+      const nf = new Set(uncheckedFacs);
+      if (nf.has(facId)) {
+        nf.delete(facId);
+        grps.forEach(g => { if (g.id !== grpId) ng.add(g.id); });
+      }
+      setUncheckedFacs(nf); setUncheckedGrps(ng);
+    } else {
+      const ng = new Set(uncheckedGrps); ng.add(grpId);
+      const nf = new Set(uncheckedFacs);
+      if (grps.length > 0 && grps.every(g => ng.has(g.id))) {
+        nf.add(facId); grps.forEach(g => ng.delete(g.id));
+      }
+      setUncheckedFacs(nf); setUncheckedGrps(ng);
+    }
+  };
+
+  const noneUnchecked = uncheckedFacs.size === 0 && uncheckedGrps.size === 0;
+  const allFacsUnchecked = expFaculties.length > 0 && uncheckedFacs.size === expFaculties.length;
+  const rootState = allFacsUnchecked ? 'unchecked' : (noneUnchecked ? 'checked' : 'indeterminate');
+
+  const toggleAll = () => {
+    if (rootState === 'unchecked') {
+      setUncheckedFacs(new Set()); setUncheckedGrps(new Set());
+    } else {
+      setUncheckedFacs(new Set(expFaculties.map(f => f.id))); setUncheckedGrps(new Set());
+    }
+  };
 
   const doExport = async () => {
+    if (!Object.values(expEnabled).some(Boolean)) return;
     setExpLoading(true);
     try {
       const allRows = [];
-      if (expTypes.students) {
-        const params = new URLSearchParams({ page_size: 10000 });
-        if (expFaculty) params.set('faculty_id', expFaculty);
-        if (expGroup) params.set('group_id', expGroup);
-        const r = await api.get(`/students/?${params}`);
-        (r.data.results || []).forEach(s => allRows.push({
-          Тип: 'Студент', ФИО: `${s.last_name} ${s.first_name} ${s.middle_name}`.trim(),
-          Статус: s.status, Факультет: s.faculty_short || '', Группа: s.group_name || '',
-          Телефон: s.phone || '', Email: s.email || '',
-        }));
+      if (expEnabled.students) {
+        const r = await api.get('/students/?page_size=10000');
+        (r.data.results || [])
+          .filter(s => {
+            if (s.faculty_id && uncheckedFacs.has(s.faculty_id)) return false;
+            if (s.group_id && uncheckedGrps.has(s.group_id)) return false;
+            return true;
+          })
+          .forEach(s => allRows.push({
+            Тип: 'Студент', ФИО: `${s.last_name} ${s.first_name} ${s.middle_name}`.trim(),
+            Статус: s.status, Факультет: s.faculty_short || '', Группа: s.group_name || '',
+            Телефон: s.phone || '', Email: s.email || '',
+          }));
       }
-      if (expTypes.employees) {
+      if (expEnabled.employees) {
         const r = await api.get('/employees/?page_size=10000');
         (r.data.results || []).forEach(e => allRows.push({
           Тип: 'Сотрудник', ФИО: e.full_name, Статус: '',
           Факультет: '', Группа: '', Телефон: e.phone || '', Email: e.email || '',
         }));
       }
-      if (expTypes.groups) {
-        const params = new URLSearchParams();
-        if (expFaculty) params.set('faculty_id', expFaculty);
-        const r = await api.get(`/groups/?${params}`);
-        (r.data || []).forEach(g => allRows.push({
-          Тип: 'Группа', ФИО: g.name, Статус: '', Факультет: g.faculty_short || '',
-          Группа: g.year, Телефон: '', Email: '',
-        }));
+      if (expEnabled.groups) {
+        const r = await api.get('/groups/');
+        (r.data || [])
+          .filter(g => {
+            if (g.faculty_id && uncheckedFacs.has(g.faculty_id)) return false;
+            if (uncheckedGrps.has(g.id)) return false;
+            return true;
+          })
+          .forEach(g => allRows.push({
+            Тип: 'Группа', ФИО: g.name, Статус: '',
+            Факультет: g.faculty_short || '', Группа: g.year || '',
+            Телефон: '', Email: '',
+          }));
       }
-      const header = Object.keys(allRows[0] || { Тип:'', ФИО:'', Статус:'', Факультет:'', Группа:'', Телефон:'', Email:'' });
-      const csv = [header.join(','), ...allRows.map(r => header.map(h => `"${(r[h]||'').toString().replace(/"/g,'""')}"`).join(','))].join('\n');
+      if (allRows.length === 0) {
+        toast.push('Нет данных для экспорта', { kind: 'warn' });
+        setExpLoading(false);
+        return;
+      }
+      const header = Object.keys(allRows[0]);
+      const csv = [header.join(','), ...allRows.map(r => header.map(h => `"${(r[h] || '').toString().replace(/"/g, '""')}"`).join(','))].join('\n');
       const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = 'export.csv'; a.click();
@@ -129,42 +231,134 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
       <PageHead
         title="Дашборд"
         sub="Сводка по системе"
-        actions={<button className="btn btn-primary btn-sm" onClick={() => setExportModal(true)}>{I.excel}Настроить экспорт</button>}
+        actions={<button className="btn btn-primary btn-sm" onClick={openExportModal}>{I.excel}Настроить экспорт</button>}
       />
       {exportModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: 'var(--surface)', borderRadius: 12, padding: 28, minWidth: 420, maxWidth: 520, boxShadow: 'var(--shadow-lg)' }}>
-            <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 16 }}>Настройки экспорта</div>
-            <div style={{ marginBottom: 14 }}>
-              <div className="field-label" style={{ marginBottom: 6 }}>Что экспортировать</div>
-              <div style={{ display: 'flex', gap: 16 }}>
-                {[['students','Студенты'],['employees','Сотрудники'],['groups','Группы']].map(([k,l]) => (
-                  <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 14 }}>
-                    <input type="checkbox" checked={expTypes[k]} onChange={e => setExpTypes(t => ({...t,[k]:e.target.checked}))} />{l}
-                  </label>
-                ))}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'var(--surface)', borderRadius: 12, width: 560, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-lg)' }}>
+
+            <div style={{ padding: '20px 24px 0', fontWeight: 700, fontSize: 16 }}>Настройка экспорта</div>
+
+            {/* Вкладки */}
+            <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', padding: '12px 24px 0', gap: 2 }}>
+              {[['students','Студенты'],['employees','Сотрудники'],['groups','Группы']].map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setExpTab(key)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 7,
+                    padding: '8px 14px', border: 'none', background: 'none', cursor: 'pointer',
+                    fontSize: 14, fontWeight: expTab === key ? 600 : 400,
+                    color: expTab === key ? 'var(--primary)' : 'var(--muted)',
+                    borderBottom: expTab === key ? '2px solid var(--primary)' : '2px solid transparent',
+                    marginBottom: -1, borderRadius: '4px 4px 0 0',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={expEnabled[key]}
+                    onClick={e => e.stopPropagation()}
+                    onChange={e => setExpEnabled(t => ({ ...t, [key]: e.target.checked }))}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Дерево */}
+            <div style={{ flex: 1, overflow: 'auto', padding: '14px 24px', minHeight: 200 }}>
+              {expTab === 'employees' ? (
+                <div style={{ color: 'var(--muted)', fontSize: 14, padding: '16px 0', lineHeight: 1.6 }}>
+                  Сотрудники будут включены в экспорт полностью, без фильтрации по факультетам или группам.
+                </div>
+              ) : (
+                <div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>
+                    {expTab === 'students' ? 'Выберите факультеты и группы для экспорта студентов:' : 'Выберите факультеты и группы для экспорта:'}
+                  </div>
+
+                  {/* "Все" */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', marginBottom: 2 }}>
+                    <TreeCheck state={rootState} onChange={toggleAll} />
+                    <span
+                      style={{ fontSize: 14, fontWeight: 600, cursor: 'pointer', userSelect: 'none' }}
+                      onClick={toggleAll}
+                    >
+                      Все факультеты
+                    </span>
+                  </div>
+
+                  {expFaculties.length === 0
+                    ? <div style={{ color: 'var(--muted)', fontSize: 13, paddingLeft: 24 }}>Загрузка...</div>
+                    : expFaculties.map(fac => {
+                        const facState = getFacState(fac.id);
+                        const isExpanded = expExpanded.has(fac.id);
+                        const grps = expGroupsCache[fac.id];
+                        const isLoadingGrps = expLoadingFacs.has(fac.id);
+                        return (
+                          <div key={fac.id} style={{ marginLeft: 22 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 0' }}>
+                              <button
+                                onClick={() => toggleExpand(fac.id)}
+                                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', width: 16, flexShrink: 0, color: 'var(--muted)', fontSize: 11, lineHeight: 1 }}
+                              >
+                                {isExpanded ? '▾' : '▸'}
+                              </button>
+                              <TreeCheck state={facState} onChange={() => toggleFac(fac.id)} />
+                              <span
+                                style={{ fontSize: 14, cursor: 'pointer', userSelect: 'none' }}
+                                onClick={() => toggleExpand(fac.id)}
+                              >
+                                {fac.short_name || fac.full_name}
+                              </span>
+                            </div>
+                            {isExpanded && (
+                              <div style={{ marginLeft: 38 }}>
+                                {isLoadingGrps
+                                  ? <div style={{ color: 'var(--muted)', fontSize: 12, padding: '3px 0' }}>Загрузка...</div>
+                                  : grps && grps.length > 0
+                                    ? grps.map(g => (
+                                        <div key={g.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '2px 0' }}>
+                                          <TreeCheck
+                                            state={uncheckedFacs.has(fac.id) || uncheckedGrps.has(g.id) ? 'unchecked' : 'checked'}
+                                            onChange={() => toggleGrp(fac.id, g.id)}
+                                          />
+                                          <span style={{ fontSize: 13 }}>{g.name}</span>
+                                        </div>
+                                      ))
+                                    : <div style={{ color: 'var(--muted)', fontSize: 12, padding: '2px 0' }}>Групп нет</div>
+                                }
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                  }
+                </div>
+              )}
+            </div>
+
+            {/* Подвал */}
+            <div style={{ padding: '12px 24px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: 13, color: 'var(--muted)' }}>
+                {noneUnchecked
+                  ? 'Все данные выбраны'
+                  : `Исключено: ${[uncheckedFacs.size > 0 && `${uncheckedFacs.size} фак.`, uncheckedGrps.size > 0 && `${uncheckedGrps.size} гр.`].filter(Boolean).join(', ')}`
+                }
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-secondary" onClick={() => setExportModal(false)}>Отмена</button>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={doExport}
+                  disabled={expLoading || !Object.values(expEnabled).some(Boolean)}
+                >
+                  {expLoading ? 'Загрузка...' : `${I.excel}Скачать CSV`}
+                </button>
               </div>
             </div>
-            <div className="form-grid" style={{ marginBottom: 14 }}>
-              <div className="field">
-                <label className="field-label">Факультет</label>
-                <select className="select" value={expFaculty} onChange={e => setExpFaculty(e.target.value)}>
-                  <option value="">Все</option>
-                  {expFaculties.map(f => <option key={f.id} value={f.id}>{f.short_name}</option>)}
-                </select>
-              </div>
-              <div className="field">
-                <label className="field-label">Группа</label>
-                <select className="select" value={expGroup} onChange={e => setExpGroup(e.target.value)} disabled={!expFaculty}>
-                  <option value="">Все</option>
-                  {expGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                </select>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>
-              <button className="btn btn-secondary" onClick={() => setExportModal(false)}>Отмена</button>
-              <button className="btn btn-primary btn-sm" onClick={doExport} disabled={expLoading || !Object.values(expTypes).some(Boolean)}>{expLoading ? 'Загрузка…' : `${I.excel}Скачать CSV`}</button>
-            </div>
+
           </div>
         </div>
       )}
