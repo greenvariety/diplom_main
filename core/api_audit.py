@@ -1,7 +1,8 @@
 ﻿import json
-from datetime import timedelta
+from datetime import datetime, timedelta
 from django.utils import timezone
 from django.db.models import Q
+from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import AuditLog, User
@@ -126,6 +127,68 @@ def _serialize(log):
     }
 
 
+def _apply_filters(qs, request):
+    search = request.GET.get('search', '').strip()
+    if search:
+        qs = qs.filter(
+            Q(object_type__icontains=search) |
+            Q(user__username__icontains=search) |
+            Q(user__display_name__icontains=search)
+        )
+
+    action = request.GET.get('action', '')
+    if action:
+        db_action = {'create': 'created', 'update': 'updated', 'delete': 'deleted', 'transfer': 'transferred'}.get(action)
+        if db_action:
+            qs = qs.filter(action=db_action)
+
+    period = request.GET.get('period', 'all')
+    now = timezone.now()
+    if period == 'day':
+        qs = qs.filter(created_at__gte=now - timedelta(hours=24))
+    elif period == 'week':
+        qs = qs.filter(created_at__gte=now - timedelta(days=7))
+    elif period == 'month':
+        qs = qs.filter(created_at__gte=now - timedelta(days=30))
+
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    if date_from:
+        try:
+            qs = qs.filter(created_at__date__gte=datetime.strptime(date_from, '%Y-%m-%d').date())
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            qs = qs.filter(created_at__date__lte=datetime.strptime(date_to, '%Y-%m-%d').date())
+        except ValueError:
+            pass
+
+    user_id = request.GET.get('user_id', '')
+    if user_id:
+        try:
+            qs = qs.filter(user_id=int(user_id))
+        except (ValueError, TypeError):
+            pass
+
+    role = request.GET.get('role', '')
+    if role:
+        qs = qs.filter(user__role=role)
+
+    object_type = request.GET.get('object_type', '')
+    if object_type:
+        qs = qs.filter(object_type=object_type)
+
+    object_id = request.GET.get('object_id', '')
+    if object_id:
+        try:
+            qs = qs.filter(object_id=int(object_id))
+        except (ValueError, TypeError):
+            pass
+
+    return qs
+
+
 class AuditLogView(APIView):
     def get(self, request):
         if request.user.role not in ('owner', 'admin'):
@@ -134,62 +197,10 @@ class AuditLogView(APIView):
         if not institution:
             return Response({'results': [], 'count': 0, 'num_pages': 1})
 
-        qs = AuditLog.objects.filter(institution=institution).select_related('user', 'user__employee', 'user__employee__position')
-
-        search = request.GET.get('search', '').strip()
-        if search:
-            qs = qs.filter(
-                Q(object_type__icontains=search) |
-                Q(user__username__icontains=search) |
-                Q(user__display_name__icontains=search)
-            )
-
-        action = request.GET.get('action', '')
-        if action:
-            db_action = {'create': 'created', 'update': 'updated', 'delete': 'deleted', 'transfer': 'transferred'}.get(action)
-            if db_action:
-                qs = qs.filter(action=db_action)
-
-        period = request.GET.get('period', 'all')
-        now = timezone.now()
-        if period == 'day':
-            qs = qs.filter(created_at__gte=now - timedelta(hours=24))
-        elif period == 'week':
-            qs = qs.filter(created_at__gte=now - timedelta(days=7))
-        elif period == 'month':
-            qs = qs.filter(created_at__gte=now - timedelta(days=30))
-
-        from datetime import datetime
-        date_from = request.GET.get('date_from', '')
-        date_to = request.GET.get('date_to', '')
-        if date_from:
-            try:
-                qs = qs.filter(created_at__date__gte=datetime.strptime(date_from, '%Y-%m-%d').date())
-            except ValueError:
-                pass
-        if date_to:
-            try:
-                qs = qs.filter(created_at__date__lte=datetime.strptime(date_to, '%Y-%m-%d').date())
-            except ValueError:
-                pass
-
-        user_id = request.GET.get('user_id', '')
-        if user_id:
-            try:
-                qs = qs.filter(user_id=int(user_id))
-            except (ValueError, TypeError):
-                pass
-
-        object_type = request.GET.get('object_type', '')
-        if object_type:
-            qs = qs.filter(object_type=object_type)
-
-        object_id = request.GET.get('object_id', '')
-        if object_id:
-            try:
-                qs = qs.filter(object_id=int(object_id))
-            except (ValueError, TypeError):
-                pass
+        qs = AuditLog.objects.filter(institution=institution).select_related(
+            'user', 'user__employee', 'user__employee__position'
+        )
+        qs = _apply_filters(qs, request)
 
         count = qs.count()
         try:
@@ -206,6 +217,58 @@ class AuditLogView(APIView):
             'count': count,
             'num_pages': num_pages,
         })
+
+
+class AuditLogExportView(APIView):
+    def get(self, request):
+        if request.user.role not in ('owner', 'admin'):
+            return Response({'error': 'Доступ запрещён'}, status=403)
+        institution = request.user.institution
+        if not institution:
+            return Response({'error': 'Нет организации'}, status=400)
+
+        qs = AuditLog.objects.filter(institution=institution).select_related(
+            'user', 'user__employee', 'user__employee__position'
+        )
+        qs = _apply_filters(qs, request)
+        rows = [_serialize(log) for log in qs.order_by('-created_at')[:10000]]
+
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = 'Журнал изменений'
+
+        headers = ['N', 'Дата и время', 'Логин', 'ФИО', 'Роль', 'Должность', 'Действие', 'Тип объекта', 'Объект']
+        ws.append(headers)
+        for cell in ws[1]:
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill('solid', fgColor='D9D9D9')
+
+        for i, a in enumerate(rows, 1):
+            ws.append([
+                i,
+                a['ts'],
+                a['user'],
+                a['userName'],
+                a['role'],
+                a.get('userPosition') or '',
+                a['label'],
+                a['obj_type'],
+                a['obj_name'] or a['obj'],
+            ])
+
+        col_widths = [5, 20, 16, 24, 16, 20, 14, 18, 30]
+        for i, width in enumerate(col_widths, 1):
+            ws.column_dimensions[ws.cell(1, i).column_letter].width = width
+
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename="audit_log.xlsx"'
+        wb.save(response)
+        return response
 
 
 class AuditRollbackView(APIView):

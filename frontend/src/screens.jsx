@@ -2156,56 +2156,51 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
 function AuditLog({ currentUser, openModal, onNavigate }) {
   const [q, setQ] = useState('');
   const [filterAction, setFilterAction] = useState('');
+  const [filterRole, setFilterRole] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ results: [], count: 0, num_pages: 1 });
   const [loading, setLoading] = useState(true);
-  const [exportModal, setExportModal] = useState(false);
-  const [expFrom, setExpFrom] = useState('');
-  const [expTo, setExpTo] = useState('');
   const [expLoading, setExpLoading] = useState(false);
   const toast = useToast();
   const sort = useSortable({ key: null, dir: 'asc' }, 'audit-list');
 
-  const load = () => {
-    setLoading(true);
-    const params = new URLSearchParams({ page });
+  const buildParams = (extra = {}) => {
+    const params = new URLSearchParams();
     if (q) params.set('search', q);
     if (filterAction) params.set('action', filterAction);
+    if (filterRole) params.set('role', filterRole);
     if (dateFrom) params.set('date_from', dateFrom);
     if (dateTo) params.set('date_to', dateTo);
-    api.get(`/audit-log/?${params}`).then(r => {
+    Object.entries(extra).forEach(([k, v]) => params.set(k, v));
+    return params;
+  };
+
+  const load = () => {
+    setLoading(true);
+    api.get(`/audit-log/?${buildParams({ page })}`).then(r => {
       setData(r.data);
       setLoading(false);
     }).catch(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [page, filterAction, dateFrom, dateTo]);
+  useEffect(() => { load(); }, [page, filterAction, filterRole, dateFrom, dateTo]);
 
   const handleSearch = () => { setPage(1); load(); };
-  const hasFilters = q || filterAction || dateFrom || dateTo;
-  const reset = () => { setQ(''); setFilterAction(''); setDateFrom(''); setDateTo(''); setPage(1); };
+  const hasFilters = q || filterAction || filterRole || dateFrom || dateTo;
+  const reset = () => { setQ(''); setFilterAction(''); setFilterRole(''); setDateFrom(''); setDateTo(''); setPage(1); };
 
   const doExport = async () => {
     setExpLoading(true);
     try {
-      const params = new URLSearchParams({ page_size: 10000 });
-      if (expFrom) params.set('date_from', expFrom);
-      if (expTo) params.set('date_to', expTo);
-      const r = await api.get(`/audit-log/?${params}`);
-      const rows = r.data.results || [];
-      const csv = ['Дата и время,Пользователь,Роль,Действие,Объект',
-        ...rows.map(a => [a.ts, a.user, a.role, a.label, a.obj].map(v => `"${(v||'').replace(/"/g,'""')}"`).join(','))
-      ].join('\n');
-      const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
+      const r = await api.get(`/audit-log/export/?${buildParams()}`, { responseType: 'blob' });
+      const url = URL.createObjectURL(r.data);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `audit_${expFrom || 'all'}_${expTo || 'all'}.csv`;
+      link.download = 'audit_log.xlsx';
       link.click();
       URL.revokeObjectURL(url);
-      setExportModal(false);
       toast.push('Экспорт выполнен', { kind: 'ok' });
     } catch {
       toast.push('Ошибка при экспорте', { kind: 'err' });
@@ -2217,29 +2212,8 @@ function AuditLog({ currentUser, openModal, onNavigate }) {
     <Shell currentUser={currentUser} active="audit" onNavigate={onNavigate} openModal={openModal}>
       <PageHead title="Журнал изменений"
         sub={loading ? 'Загрузка…' : `Всего: ${data.count} записей`}
-        actions={<button className="btn btn-sm" style={{ background: 'var(--good-bg)', color: 'var(--good-fg)', border: 'none' }} onClick={() => { setExpFrom(dateFrom); setExpTo(dateTo); setExportModal(true); }}>{I.excel}Экспорт в CSV</button>}
+        actions={<button className="btn btn-sm" style={{ background: 'var(--good-bg)', color: 'var(--good-fg)', border: 'none' }} onClick={doExport} disabled={expLoading}>{I.excel}{expLoading ? 'Загрузка…' : 'Экспорт в Excel'}</button>}
       />
-      {exportModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: 'var(--surface)', borderRadius: 12, padding: 28, minWidth: 360, boxShadow: 'var(--shadow-lg)' }}>
-            <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 16 }}>Экспорт журнала изменений</div>
-            <div className="form-grid">
-              <div className="field">
-                <label className="field-label">Дата с</label>
-                <input className="input" type="date" value={expFrom} onChange={e => setExpFrom(e.target.value)} />
-              </div>
-              <div className="field">
-                <label className="field-label">Дата по</label>
-                <input className="input" type="date" value={expTo} onChange={e => setExpTo(e.target.value)} />
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 20, justifyContent: 'flex-end' }}>
-              <button className="btn btn-secondary" onClick={() => setExportModal(false)}>Отмена</button>
-              <button className="btn btn-sm" style={{ background: 'var(--good-bg)', color: 'var(--good-fg)', border: 'none' }} onClick={doExport} disabled={expLoading}>{expLoading ? 'Загрузка…' : 'Скачать CSV'}</button>
-            </div>
-          </div>
-        </div>
-      )}
       <div className="filters">
         <div className="field grow-2">
           <label className="field-label">Поиск</label>
@@ -2252,11 +2226,20 @@ function AuditLog({ currentUser, openModal, onNavigate }) {
         <div className="field">
           <label className="field-label">Действие</label>
           <select className="select" value={filterAction} onChange={e => { setFilterAction(e.target.value); setPage(1); }}>
-            <option value="">Все</option>
+            <option value="">Все действия</option>
             <option value="create">Создание</option>
             <option value="update">Изменение</option>
             <option value="delete">Удаление</option>
             <option value="transfer">Перевод</option>
+          </select>
+        </div>
+        <div className="field">
+          <label className="field-label">Роль пользователя</label>
+          <select className="select" value={filterRole} onChange={e => { setFilterRole(e.target.value); setPage(1); }}>
+            <option value="">Все роли</option>
+            <option value="owner">Суперадмин</option>
+            <option value="admin">Администратор</option>
+            <option value="teacher">Преподаватель</option>
           </select>
         </div>
         <div className="field">
