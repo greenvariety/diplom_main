@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.db.models import Exists, OuterRef
+from django.db.models import Exists, OuterRef, Q
 from .models import Group, Faculty, Employee, Subject, GroupSubjectEmployee, DeleteRequest, RecordNote
 from .utils import log_action
 
@@ -52,6 +52,15 @@ class GroupsView(APIView):
             has_pending_delreq=Exists(DeleteRequest.objects.filter(object_type='Group', object_id=OuterRef('pk'), status='pending')),
             has_note=Exists(RecordNote.objects.filter(object_type='Group', object_id=OuterRef('pk'), is_resolved=False)),
         )
+
+        if request.user.is_teacher_role:
+            employee = request.user.employee
+            if not employee:
+                return Response([])
+            qs = qs.filter(
+                Q(headteacher=employee) | Q(subject_assignments__employee=employee)
+            ).distinct()
+
         faculty_id = request.query_params.get('faculty_id')
         if faculty_id:
             qs = qs.filter(faculty_id=faculty_id)

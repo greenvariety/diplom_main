@@ -36,6 +36,12 @@ def _admin_only(request):
     return None
 
 
+def _at_least_teacher(request):
+    if request.user.role not in ('owner', 'admin', 'teacher'):
+        return Response({'error': 'Доступ запрещён'}, status=403)
+    return None
+
+
 def _get_student(request, pk):
     institution = request.user.institution
     if not institution:
@@ -59,6 +65,15 @@ class StudentsView(APIView):
             has_pending_delreq=Exists(DeleteRequest.objects.filter(object_type='Student', object_id=OuterRef('pk'), status='pending')),
             has_note=Exists(RecordNote.objects.filter(object_type='Student', object_id=OuterRef('pk'), is_resolved=False)),
         )
+
+        if request.user.is_teacher_role:
+            employee = request.user.employee
+            if not employee:
+                return Response({'results': [], 'count': 0, 'num_pages': 0, 'page': 1})
+            teacher_group_ids = Group.objects.filter(
+                Q(headteacher=employee) | Q(subject_assignments__employee=employee)
+            ).values_list('pk', flat=True).distinct()
+            qs = qs.filter(group_id__in=teacher_group_ids)
 
         search = request.query_params.get('search', '').strip()
         if search:
@@ -102,7 +117,7 @@ class StudentsView(APIView):
         })
 
     def post(self, request):
-        err = _admin_only(request)
+        err = _at_least_teacher(request)
         if err:
             return err
         institution = request.user.institution
@@ -290,7 +305,7 @@ class StudentDetailView(APIView):
 
 class StudentDeleteRequestView(APIView):
     def post(self, request, pk):
-        err = _admin_only(request)
+        err = _at_least_teacher(request)
         if err:
             return err
         institution = request.user.institution

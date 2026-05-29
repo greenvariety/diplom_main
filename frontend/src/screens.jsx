@@ -713,8 +713,10 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
         title={`${student.last_name} ${student.first_name} ${student.middle_name}`}
         sub={`${student.faculty_short} · ${student.group_name || 'без группы'}`}
         actions={<>
-          <button className="btn btn-secondary btn-sm" onClick={() => openModal('studentForm', { student, onDone: load })}>{I.pencil}Редактировать</button>
-          <button className="btn btn-secondary btn-sm" onClick={() => openModal('transfer', { student, currentUser, onDone: load })}>{I.swap}Перевести</button>
+          {currentUser?.role !== 'teacher' && <>
+            <button className="btn btn-secondary btn-sm" onClick={() => openModal('studentForm', { student, onDone: load })}>{I.pencil}Редактировать</button>
+            <button className="btn btn-secondary btn-sm" onClick={() => openModal('transfer', { student, currentUser, onDone: load })}>{I.swap}Перевести</button>
+          </>}
           {currentUser?.role === 'owner'
             ? <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: `${student.last_name} ${student.first_name}`, type: 'студента', url: `/students/${student.id}/`, onDone: () => onNavigate('students') })}>{I.trash}Удалить</button>
             : <button className="btn btn-danger btn-sm" onClick={() => openModal('deleteConfirm', { name: `${student.last_name} ${student.first_name}`, type: 'студента', studentId, onDone: () => onNavigate('students') })}>{I.trash}Подать заявку</button>
@@ -733,7 +735,10 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
                 {student.last_name} {student.first_name}
               </h3>
               <div className="muted" style={{ fontSize: 13, marginBottom: 12 }}>{student.middle_name}</div>
-              <StatusDropdown value={student.status} onChange={handleStatusChange} />
+              {currentUser?.role !== 'teacher'
+                ? <StatusDropdown value={student.status} onChange={handleStatusChange} />
+                : (() => { const s = STATUSES[student.status] || { label: student.status, cls: 'badge-neutral' }; return <span className={`badge ${s.cls}`}><span className="dot"></span>{s.label}</span>; })()
+              }
             </div>
             <div style={{ borderTop: '1px solid var(--border)' }}>
               <dl className="kv">
@@ -750,7 +755,7 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
           <div className="card">
             <div className="card-head">
               <div className="title">Опекуны и родители</div>
-              <button className="btn btn-secondary btn-sm" onClick={() => openModal('parentForm', { studentId, onDone: load })}>{I.plus}</button>
+              {currentUser?.role !== 'teacher' && <button className="btn btn-secondary btn-sm" onClick={() => openModal('parentForm', { studentId, onDone: load })}>{I.plus}</button>}
             </div>
             <div className="card-body flush">
               {student.parents.length === 0 ? (
@@ -767,7 +772,7 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
                         </td>
                         <td>{p.relation_display}</td>
                         <td className="muted">{p.phone || '-'}</td>
-                        <td><button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleRemoveParent(p.id)}>{I.x}</button></td>
+                        <td>{currentUser?.role !== 'teacher' && <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleRemoveParent(p.id)}>{I.x}</button>}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -779,18 +784,20 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
           <div className="card">
             <div className="card-head">
               <div className="title">Документы</div>
-              <button className="btn btn-secondary btn-sm" onClick={() => openModal('uploadDoc', { ownerId: studentId, ownerType: 'student', onDone: load })}>{I.upload}Загрузить</button>
+              {currentUser?.role !== 'teacher' && <button className="btn btn-secondary btn-sm" onClick={() => openModal('uploadDoc', { ownerId: studentId, ownerType: 'student', onDone: load })}>{I.upload}Загрузить</button>}
             </div>
             <div className="card-body">
-              <div className={`dropzone ${over ? 'is-over' : ''}`} style={{ marginBottom: 12, padding: 16 }}
-                onDragOver={e => { e.preventDefault(); setOver(true); }}
-                onDragLeave={() => setOver(false)}
-                onDrop={handleDrop}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--text-muted)', fontSize: 13 }}>
-                  {I.upload}{over ? 'Отпустите для загрузки' : 'Перетащите файлы сюда или нажмите «Загрузить»'}
+              {currentUser?.role !== 'teacher' && (
+                <div className={`dropzone ${over ? 'is-over' : ''}`} style={{ marginBottom: 12, padding: 16 }}
+                  onDragOver={e => { e.preventDefault(); setOver(true); }}
+                  onDragLeave={() => setOver(false)}
+                  onDrop={handleDrop}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--text-muted)', fontSize: 13 }}>
+                    {I.upload}{over ? 'Отпустите для загрузки' : 'Перетащите файлы сюда или нажмите «Загрузить»'}
+                  </div>
                 </div>
-              </div>
+              )}
               {student.documents.length === 0 ? (
                 <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: '8px 0' }}>Документы не загружены</div>
               ) : (
@@ -804,7 +811,7 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
                           <div className="doc-meta">{d.uploaded_at}</div>
                         </div>
                       </a>
-                      <button className="btn btn-ghost btn-icon btn-sm" style={{ position: 'absolute', top: 4, right: 4 }} onClick={() => handleDeleteDoc(d.id)}>{I.x}</button>
+                      {currentUser?.role !== 'teacher' && <button className="btn btn-ghost btn-icon btn-sm" style={{ position: 'absolute', top: 4, right: 4 }} onClick={() => handleDeleteDoc(d.id)}>{I.x}</button>}
                     </div>
                   ))}
                 </div>
