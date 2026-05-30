@@ -941,6 +941,7 @@ const POSITION_ROLE_OPTS = [
   { value: 'teacher', label: 'Преподаватель' },
   { value: 'secretary', label: 'Секретарь' },
   { value: 'admin', label: 'Администратор' },
+  { value: 'none', label: 'Без доступа (уборщик, охранник и т.д.)' },
 ];
 
 function PositionFormModal({ data, onClose }) {

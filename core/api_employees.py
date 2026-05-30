@@ -407,6 +407,8 @@ class EmployeeAccountView(APIView):
         employee = _get_employee(request, pk)
         if not employee:
             return Response({'error': 'Не найдено'}, status=404)
+        if employee.position and employee.position.role_type == 'none':
+            return Response({'error': 'Эта должность не предусматривает доступ к системе'}, status=400)
         if User.objects.filter(employee=employee).exists():
             return Response({'error': 'У сотрудника уже есть аккаунт'}, status=400)
         username = (request.data.get('username') or '').strip()

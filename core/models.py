@@ -60,6 +60,7 @@ class Position(models.Model):
         ('admin', 'Администратор'),
         ('secretary', 'Секретарь'),
         ('teacher', 'Преподаватель'),
+        ('none', 'Без доступа'),
     ]
 
     institution = models.ForeignKey(
