@@ -45,8 +45,11 @@ type: project
 │   ├── api_documents.py     # API: документы
 │   ├── api_users.py         # API: пользователи системы
 │   ├── api_delete_requests.py # API: заявки на удаление
-│   ├── api_audit.py         # API: аудит-лог
-│   ├── utils.py             # log_action(), email-хелперы, декораторы ролей
+│   ├── api_audit.py         # API: аудит-лог (просмотр, экспорт, откат)
+│   ├── api_notes.py         # API: вопросы к записям (RecordNote)
+│   ├── api_profile.py       # API: профиль пользователя (смена пароля, email, логина)
+│   ├── api_dev.py           # API: dev-инструменты (HtmlTasks для пикера элементов)
+│   ├── utils.py             # log_action(), email-хелперы, декораторы ролей, email/phone unique
 │   ├── admin.py             # Django Admin
 │   └── management/
 │       └── commands/
@@ -60,9 +63,12 @@ type: project
 │   │   ├── shell.jsx        # Навигационная оболочка (sidebar + topbar)
 │   │   ├── screens.jsx      # Все экраны приложения
 │   │   ├── modals.jsx       # Модальные формы
+│   │   ├── profile.jsx      # Экран профиля пользователя
 │   │   ├── api.js           # Axios-клиент с JWT + автообновление токена
 │   │   ├── utils.jsx        # Field, FadingError, LoadButton, useToast и др.
 │   │   ├── data.jsx         # Иконки (I), константы
+│   │   ├── tweaks-panel.jsx # Dev-инструмент: панель правок интерфейса
+│   │   ├── dev-tasks.jsx    # Dev-инструмент: управление HTML-задачами
 │   │   └── styles.css       # Дизайн-система
 │   ├── dist/                # Собранный билд (отдаётся Django)
 │   └── vite.config.js       # Настройки Vite + proxy на Django
@@ -78,7 +84,7 @@ type: project
 
 - **SPA + API**: фронтенд — React SPA в `frontend/`, бэкенд — Django REST Framework в `core/api_*.py`. Django не рендерит HTML страниц — только отдаёт данные через `/api/`.
 - **JWT-авторизация**: access-токен (60 мин) + refresh-токен (30 дней). Хранятся в `localStorage`. Axios-интерцептор автоматически обновляет access при 401.
-- **Кастомная User-модель**: `core.User` с полем `role` (`owner` / `admin` / `teacher`). Роли проверяются в DRF-вьюхах через `request.user.role`.
+- **Кастомная User-модель**: `core.User` с полем `role` (`owner` / `admin` / `secretary` / `teacher`). Роли проверяются в DRF-вьюхах через `request.user.role`.
 - **Мультитенантность**: владелец (`owner`) создаёт учебные заведения (`Institution`). Все сущности (факультеты, сотрудники и т.д.) привязаны к `Institution` через FK.
 - **Email-верификация**: регистрация нового `owner` требует подтверждения email через 6-символьный код (модель `EmailCode`). Аналогично — восстановление пароля.
 - **Монолит**: весь бэкенд-код в одном приложении `core` — нормально для дипломного проекта.

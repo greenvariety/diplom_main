@@ -33,6 +33,7 @@ type: project
 | full_name | CharField(255) | Полное название |
 | short_name | CharField(50) | Аббревиатура |
 | created_at | DateField | Дата создания факультета, необязательно |
+| is_flagged | BooleanField | Отмечен флагом (default=False) |
 
 ### Position (Должность)
 | Поле | Тип | Описание |
@@ -40,6 +41,9 @@ type: project
 | id | PK | |
 | institution | FK → Institution | `CASCADE`, необязательно |
 | name | CharField(255) | Название |
+| role_type | CharField(20) | admin / secretary / teacher / none (default='teacher') |
+
+`role_type` определяет уровень доступа сотрудника при создании аккаунта: `admin`, `secretary`, `teacher` или `none` (без доступа к системе). `unique_together = [('institution', 'name')]`.
 
 ### Employee (Сотрудник)
 | Поле | Тип | Описание |
@@ -52,6 +56,7 @@ type: project
 | email | EmailField | |
 | photo | ImageField | `upload_to='employees/'` |
 | position | FK → Position | `on_delete=PROTECT`, необязательно |
+| is_flagged | BooleanField | Отмечен флагом (default=False) |
 
 ### Group (Группа)
 | Поле | Тип | Описание |
@@ -61,6 +66,7 @@ type: project
 | year | IntegerField | Год начала обучения |
 | faculty | FK → Faculty | `on_delete=CASCADE` |
 | headteacher | FK → Employee | Классный руководитель, `SET_NULL` |
+| is_flagged | BooleanField | Отмечен флагом (default=False) |
 
 `name` — вычисляемое свойство: `{faculty.short_name}-{group_number}-{year[-2:]}`, например `ИТ-1-23`.
 
@@ -73,8 +79,10 @@ type: project
 | phone, email | CharField/EmailField | |
 | photo | ImageField | `upload_to='students/'` |
 | status | CharField(30) | pending_review / pending_enrollment / enrolled / pending_expulsion / expelled / transferred |
+| is_flagged | BooleanField | Отмечен флагом (default=False) |
+| institution | FK → Institution | `CASCADE`, необязательно |
 | group | FK → Group | `SET_NULL` (студент без группы возможен) |
-| faculty | FK → Faculty | `CASCADE` |
+| faculty | FK → Faculty | `SET_NULL` |
 
 ### Parent (Опекун)
 | Поле | Тип | Описание |
@@ -84,6 +92,7 @@ type: project
 | last_name, first_name, middle_name | CharField(100) | |
 | birth_date, phone, email | | |
 | photo | ImageField | `upload_to='parents/'` |
+| is_flagged | BooleanField | Отмечен флагом (default=False) |
 
 ### StudentParent (Связь студент-опекун)
 | Поле | Тип | Описание |
@@ -131,12 +140,13 @@ type: project
 | username | CharField(150) | Уникальный логин |
 | display_name | CharField(150) | Отображаемое имя |
 | email | EmailField | Email пользователя |
-| role | CharField(20) | owner / admin / teacher |
+| role | CharField(20) | owner / admin / secretary / teacher |
 | institution | FK → Institution | Текущая организация пользователя, `SET_NULL` |
 | allowed_institutions | M2M → Institution | Организации с доступом (для non-owner) |
 | employee | OneToOneField → Employee | Привязка к сотруднику, `SET_NULL` |
 | is_active | BooleanField | |
 | is_staff | BooleanField | Для Django Admin |
+| password_changed_at | DateTimeField | Время последней смены пароля, необязательно |
 
 Кастомная модель: `AUTH_USER_MODEL = 'core.User'`
 
@@ -144,6 +154,7 @@ type: project
 - `is_owner` — `role == 'owner'`
 - `is_superadmin` — алиас `is_owner` (для совместимости)
 - `is_admin` — `role in ('owner', 'admin')`
+- `is_secretary` — `role == 'secretary'`
 - `is_teacher_role` — `role == 'teacher'`
 
 ### EmailCode (Email-код подтверждения)
@@ -153,7 +164,7 @@ type: project
 | email | EmailField | Получатель |
 | login | CharField(150) | Логин (для регистрации/восстановления) |
 | code | CharField(6) | 6-символьный код (хранится без дефиса: ABCDEF) |
-| purpose | CharField(20) | register / recover / delete_org |
+| purpose | CharField(20) | register / recover / delete_org / change_email |
 | payload | TextField | JSON с данными (для регистрации — данные аккаунта) |
 | expires_at | DateTimeField | Время истечения (10 минут от создания) |
 | used | BooleanField | Использован |
@@ -165,11 +176,27 @@ type: project
 |---|---|---|
 | id | PK | |
 | user | FK → User | Инициатор |
-| object_type | CharField(50) | Faculty / Group / Student / Employee / Parent |
+| object_type | CharField(50) | Faculty / Group / Position / Student / Employee / Parent |
 | object_id | IntegerField | ID удаляемого объекта |
 | reason | TextField | Причина |
 | status | CharField(20) | pending / approved / rejected |
 | created_at | DateTimeField | `auto_now_add` |
+
+### RecordNote (Вопрос по записи)
+| Поле | Тип | Описание |
+|---|---|---|
+| id | PK | |
+| institution | FK → Institution | `CASCADE` |
+| object_type | CharField(50) | Тип объекта: Student / Employee / Group и т.д. |
+| object_id | IntegerField | ID объекта |
+| question | TextField(2000) | Текст вопроса |
+| is_resolved | BooleanField | Закрыт (default=False) |
+| created_by | FK → User | Автор вопроса, `SET_NULL` |
+| created_at | DateTimeField | `auto_now_add=True` |
+| resolved_by | FK → User | Кто закрыл, `SET_NULL`, необязательно |
+| resolved_at | DateTimeField | Когда закрыт, необязательно |
+
+Правило: на одну запись (object_type + object_id + institution) может быть только один активный (незакрытый) вопрос.
 
 ### AuditLog (Журнал изменений)
 | Поле | Тип | Описание |

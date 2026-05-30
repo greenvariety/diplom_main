@@ -8,15 +8,21 @@ type: project
 
 ## Журнал изменений в системе
 
-API: `GET /api/audit-log/` (только owner)
+API: `GET /api/audit-log/` (owner и admin)
 
 Показывает записи `AuditLog` отфильтрованные по текущей организации:
 - Кто из пользователей сделал действие
-- Что за действие (создал / изменил / удалил)
+- Что за действие (создал / изменил / удалил / перевёл студента)
 - Какой объект
 - JSON данных до и после изменения
+- Пагинация: PAGE_SIZE=50
 
-Дополнительно: `GET /api/audit-log/users/` — список пользователей для фильтра.
+Admin видит записи всех пользователей кроме owner.
+
+Дополнительно:
+- `GET /api/audit-log/users/` — список пользователей для фильтра
+- `GET /api/audit-log/export/` — экспорт в Excel (owner и admin)
+- `POST /api/audit-log/<pk>/rollback/` — откат изменений (только для `action='updated'`, типы: Student/Employee/Faculty/Group/Parent)
 
 ## Django Debug Toolbar / Ошибки
 

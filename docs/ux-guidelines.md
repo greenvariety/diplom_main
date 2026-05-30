@@ -15,9 +15,12 @@ type: project
 | `shell.jsx` | Shell — навигационная оболочка (sidebar + topbar) |
 | `screens.jsx` | Все основные экраны (списки, детали) |
 | `modals.jsx` | Все модальные формы |
+| `profile.jsx` | Экран профиля (смена пароля, логина, email) |
 | `utils.jsx` | Field, FadingError, LoadButton, useToast, PasswordInput и др. |
 | `data.jsx` | Иконки (I), справочные данные |
 | `api.js` | Axios-клиент с JWT + автообновление токена |
+| `tweaks-panel.jsx` | Dev-панель: пикер элементов интерфейса для HTML.md |
+| `dev-tasks.jsx` | Dev: просмотр задач из HTML.md |
 | `styles.css` | Дизайн-система (CSS-переменные, классы) |
 
 ## Сообщения пользователю (Toast)
@@ -91,7 +94,7 @@ import { LoadButton } from './utils.jsx';
 
 ## Права в интерфейсе
 
-Видимость кнопок управляется через `user.role`:
+Видимость кнопок управляется через `user.role`. Роли: `owner` / `admin` / `secretary` / `teacher`.
 
 ```jsx
 {user.role !== 'teacher' && (
@@ -100,7 +103,12 @@ import { LoadButton } from './utils.jsx';
 {user.role === 'owner' && (
   <button onClick={openAuditLog}>Журнал</button>
 )}
+{(user.role === 'owner' || user.role === 'admin') && (
+  <button>Управление пользователями</button>
+)}
 ```
+
+Роль `secretary` — между admin и teacher: может редактировать данные и подавать заявки на удаление, но не управляет пользователями и не одобряет заявки.
 
 ## Дашборд
 

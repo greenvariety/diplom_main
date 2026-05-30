@@ -134,3 +134,21 @@ if request.user.is_teacher_role and request.user.employee:
     ).distinct()
     queryset = queryset.filter(group__in=allowed_groups)
 ```
+
+## Уникальность email и телефона для персон
+
+Перед сохранением Employee / Student / Parent проверять через хелперы из `utils.py`:
+
+```python
+from .utils import check_person_email_unique, check_person_phone_unique
+
+err = check_person_email_unique(email, exclude_employee_pk=instance.pk)
+if err:
+    return Response({'error': err}, status=400)
+
+err = check_person_phone_unique(phone, exclude_employee_pk=instance.pk)
+if err:
+    return Response({'error': err}, status=400)
+```
+
+Хелперы проверяют глобально по всем Employee, Student, Parent (и User для email). Параметры `exclude_*_pk` нужны при редактировании (чтобы не ругаться на собственный email).
