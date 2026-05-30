@@ -247,9 +247,11 @@ class GroupSubjectsView(APIView):
         except Subject.DoesNotExist:
             return Response({'error': 'Предмет не найден'}, status=404)
         try:
-            employee = Employee.objects.get(pk=employee_id, institution=institution)
+            employee = Employee.objects.select_related('position').get(pk=employee_id, institution=institution)
         except Employee.DoesNotExist:
             return Response({'error': 'Сотрудник не найден'}, status=404)
+        if not employee.position or employee.position.role_type != 'teacher':
+            return Response({'error': 'Назначать предмет можно только сотруднику с должностью преподавателя'}, status=400)
         if GroupSubjectEmployee.objects.filter(group=group, subject=subject).exists():
             return Response({'error': 'Этот предмет уже назначен группе'}, status=400)
         assignment = GroupSubjectEmployee.objects.create(group=group, subject=subject, employee=employee)

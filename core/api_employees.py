@@ -75,6 +75,10 @@ class EmployeesView(APIView):
         if position_id:
             qs = qs.filter(position_id=position_id)
 
+        role_type = request.query_params.get('role_type', '')
+        if role_type:
+            qs = qs.filter(position__role_type=role_type)
+
         # flat list for dropdowns when no page param
         if 'page' not in request.query_params:
             return Response([_employee_data(e) for e in qs])
@@ -314,6 +318,8 @@ class EmployeeSubjectsView(APIView):
         employee = _get_employee(request, pk)
         if not employee:
             return Response({'error': 'Сотрудник не найден'}, status=404)
+        if not employee.position or employee.position.role_type != 'teacher':
+            return Response({'error': 'Назначать предмет можно только сотруднику с должностью преподавателя'}, status=400)
 
         subject_id = request.data.get('subject_id')
         group_id = request.data.get('group_id')

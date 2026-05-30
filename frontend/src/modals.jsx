@@ -1591,7 +1591,7 @@ function AssignSubjectModal({ data, onClose }) {
         setEmployees(r.data);
         setEmployeesFallback(false);
       } else {
-        api.get('/employees/').then(r2 => {
+        api.get('/employees/?role_type=teacher').then(r2 => {
           setEmployees(r2.data);
           setEmployeesFallback(true);
         }).catch(() => {});
