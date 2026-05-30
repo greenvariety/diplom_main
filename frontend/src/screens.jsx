@@ -1206,6 +1206,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
         crumbs={[{ label: 'Сотрудники', href: true, onClick: () => onNavigate('employees') }, { label: employee.full_name }]}
         title={employee.full_name}
         sub={employee.position_name || 'Сотрудник'}
+        subNote={employee.position_name && employee.position_role_type ? ({ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель' }[employee.position_role_type]) : undefined}
         actions={<>
           {['owner', 'admin', 'secretary'].includes(currentUser?.role) && (
             <button className="btn btn-secondary btn-sm" onClick={() => openModal('employeeForm', { employee, onDone: load })}>{I.pencil}Редактировать</button>
@@ -1232,11 +1233,6 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
               <h3 style={{ marginTop: 14, marginBottom: 12 }}>
                 {[employee.last_name, employee.first_name, employee.middle_name].filter(Boolean).join(' ')}
               </h3>
-              {employee.position_name && (
-                <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-                  <Badge>{employee.position_name}</Badge>
-                </div>
-              )}
             </div>
             <div style={{ borderTop: '1px solid var(--border)' }}>
               <dl className="kv">

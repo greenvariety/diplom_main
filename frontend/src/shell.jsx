@@ -37,12 +37,13 @@ function Crumbs({ items }) {
   );
 }
 
-function PageHead({ crumbs, title, sub, actions }) {
+function PageHead({ crumbs, title, sub, subNote, actions }) {
   return (
     <div className="page-head">
       <div>
           <h1>{title}</h1>
         {sub && <div className="sub">{sub}</div>}
+        {subNote && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{subNote}</div>}
       </div>
       {actions && <div className="page-actions">{actions}</div>}
     </div>

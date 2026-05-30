@@ -8,7 +8,7 @@
 
 ---
 
-## 2. Убери это!
+~~## 2. Убери это!~~
 
 ```html
 <span class="badge badge-neutral " style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">Системный администратор</span>
@@ -16,7 +16,7 @@
 
 ---
 
-## 3. Под этим писать роль!
+~~## 3. Под этим писать роль!~~
 
 ```html
 <div class="sub" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">Системный администратор</div>
