@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from django.core.paginator import Paginator
 from django.db.models import Q, Exists, OuterRef
 from .models import Employee, Position, GroupSubjectEmployee, Subject, Group, Document, DeleteRequest, RecordNote, User
-from .utils import log_action
+from .utils import log_action, check_person_email_unique
 
 
 def _employee_data(e):
@@ -122,6 +122,11 @@ class EmployeesView(APIView):
             except Position.DoesNotExist:
                 return Response({'error': 'Должность не найдена'}, status=404)
 
+        email = (request.data.get('email') or '').strip()
+        email_err = check_person_email_unique(email)
+        if email_err:
+            return Response({'error': email_err, 'field': 'email'}, status=400)
+
         employee = Employee.objects.create(
             institution=institution,
             last_name=last_name,
@@ -129,7 +134,7 @@ class EmployeesView(APIView):
             middle_name=(request.data.get('middle_name') or '').strip(),
             birth_date=request.data.get('birth_date') or None,
             phone=(request.data.get('phone') or '').strip(),
-            email=(request.data.get('email') or '').strip(),
+            email=email,
             position=position,
         )
         photo = request.FILES.get('photo')
@@ -210,6 +215,11 @@ class EmployeeDetailView(APIView):
         for field in ('last_name', 'first_name', 'middle_name', 'phone', 'email'):
             if field in request.data:
                 setattr(employee, field, (request.data[field] or '').strip())
+
+        if 'email' in request.data and employee.email:
+            email_err = check_person_email_unique(employee.email, exclude_employee_pk=employee.pk)
+            if email_err:
+                return Response({'error': email_err, 'field': 'email'}, status=400)
 
         if 'birth_date' in request.data:
             employee.birth_date = request.data['birth_date'] or None

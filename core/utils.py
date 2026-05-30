@@ -221,6 +221,41 @@ def model_to_dict_safe(instance):
 
 
 # ---------------------------------------------------------------------------
+# Email uniqueness across persons
+# ---------------------------------------------------------------------------
+
+def check_person_email_unique(email, exclude_employee_pk=None, exclude_student_pk=None, exclude_parent_pk=None):
+    """
+    Returns an error message if email is already used by any employee, student, or parent
+    anywhere in the system (globally, not just within one institution).
+    Returns None if the email is free or empty.
+    """
+    if not email:
+        return None
+    from .models import Employee, Student, Parent
+
+    emp_qs = Employee.objects.filter(email__iexact=email)
+    if exclude_employee_pk:
+        emp_qs = emp_qs.exclude(pk=exclude_employee_pk)
+    if emp_qs.exists():
+        return 'Этот email уже используется другим сотрудником'
+
+    stu_qs = Student.objects.filter(email__iexact=email)
+    if exclude_student_pk:
+        stu_qs = stu_qs.exclude(pk=exclude_student_pk)
+    if stu_qs.exists():
+        return 'Этот email уже используется студентом'
+
+    par_qs = Parent.objects.filter(email__iexact=email)
+    if exclude_parent_pk:
+        par_qs = par_qs.exclude(pk=exclude_parent_pk)
+    if par_qs.exists():
+        return 'Этот email уже используется опекуном'
+
+    return None
+
+
+# ---------------------------------------------------------------------------
 # Role decorators
 # ---------------------------------------------------------------------------
 

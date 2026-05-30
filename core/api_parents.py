@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from django.core.paginator import Paginator
 from django.db.models import Q
 from .models import Parent, Student, StudentParent, DeleteRequest
-from .utils import log_action
+from .utils import log_action, check_person_email_unique
 
 
 def _parent_data(p):
@@ -94,6 +94,11 @@ class ParentsView(APIView):
         if not first_name:
             return Response({'error': 'Введите имя'}, status=400)
 
+        email = (request.data.get('email') or '').strip()
+        email_err = check_person_email_unique(email)
+        if email_err:
+            return Response({'error': email_err, 'field': 'email'}, status=400)
+
         parent = Parent.objects.create(
             institution=institution,
             last_name=last_name,
@@ -101,7 +106,7 @@ class ParentsView(APIView):
             middle_name=(request.data.get('middle_name') or '').strip(),
             birth_date=request.data.get('birth_date') or None,
             phone=(request.data.get('phone') or '').strip(),
-            email=(request.data.get('email') or '').strip(),
+            email=email,
         )
         photo = request.FILES.get('photo')
         if photo:
@@ -154,6 +159,12 @@ class ParentDetailView(APIView):
         for field in ('last_name', 'first_name', 'middle_name', 'phone', 'email'):
             if field in request.data:
                 setattr(parent, field, (request.data[field] or '').strip())
+
+        if 'email' in request.data and parent.email:
+            email_err = check_person_email_unique(parent.email, exclude_parent_pk=parent.pk)
+            if email_err:
+                return Response({'error': email_err, 'field': 'email'}, status=400)
+
         if 'birth_date' in request.data:
             parent.birth_date = request.data['birth_date'] or None
 

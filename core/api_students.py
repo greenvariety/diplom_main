@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from django.core.paginator import Paginator
 from django.db.models import Q, Count, Exists, OuterRef
 from .models import Student, Group, Faculty, Document, StudentParent, Parent, DeleteRequest, AuditLog, RecordNote
-from .utils import log_action
+from .utils import log_action, check_person_email_unique
 
 
 def _student_data(s):
@@ -149,6 +149,11 @@ class StudentsView(APIView):
 
         birth_date = request.data.get('birth_date') or None
 
+        email = (request.data.get('email') or '').strip()
+        email_err = check_person_email_unique(email)
+        if email_err:
+            return Response({'error': email_err, 'field': 'email'}, status=400)
+
         student = Student.objects.create(
             institution=institution,
             last_name=last_name,
@@ -156,7 +161,7 @@ class StudentsView(APIView):
             middle_name=(request.data.get('middle_name') or '').strip(),
             birth_date=birth_date,
             phone=(request.data.get('phone') or '').strip(),
-            email=(request.data.get('email') or '').strip(),
+            email=email,
             status=request.data.get('status', 'pending_review'),
             faculty=faculty,
             group=group,
@@ -241,6 +246,11 @@ class StudentDetailView(APIView):
         for field in ('last_name', 'first_name', 'middle_name', 'phone', 'email'):
             if field in request.data:
                 setattr(student, field, (request.data[field] or '').strip())
+
+        if 'email' in request.data and student.email:
+            email_err = check_person_email_unique(student.email, exclude_student_pk=student.pk)
+            if email_err:
+                return Response({'error': email_err, 'field': 'email'}, status=400)
 
         if 'birth_date' in request.data:
             student.birth_date = request.data['birth_date'] or None
@@ -392,13 +402,17 @@ class StudentParentsView(APIView):
             first_name = (request.data.get('first_name') or '').strip()
             if not last_name or not first_name:
                 return Response({'error': 'Введите фамилию и имя опекуна'}, status=400)
+            parent_email = (request.data.get('email') or '').strip()
+            parent_email_err = check_person_email_unique(parent_email)
+            if parent_email_err:
+                return Response({'error': parent_email_err, 'field': 'email'}, status=400)
             parent = Parent.objects.create(
                 institution=institution,
                 last_name=last_name,
                 first_name=first_name,
                 middle_name=(request.data.get('middle_name') or '').strip(),
                 phone=(request.data.get('phone') or '').strip(),
-                email=(request.data.get('email') or '').strip(),
+                email=parent_email,
             )
             photo = request.FILES.get('photo')
             if photo:
