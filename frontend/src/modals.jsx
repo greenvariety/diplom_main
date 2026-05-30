@@ -637,8 +637,8 @@ function FacultyFormModal({ data, onClose }) {
 
   const isUC = (c) => c && ((c >= 'А' && c <= 'Я') || c === 'Ё');
   const isLC = (c) => c && ((c >= 'а' && c <= 'я') || c === 'ё');
-  const autoCode = (n) => { const s = n.trim(); if (!s) return ''; const hasLower = [...s].some(c => isLC(c)); if (!hasLower) { const ws = s.split(/\s+/).filter(w => w && isUC(w[0])); return ws.flatMap(w => [...w].filter(c => isUC(c))).join('').slice(0, 50); } const r = []; let i = 0; while (i < s.length) { if (!isUC(s[i])) { i++; continue; } let j = i; while (j < s.length && isUC(s[j])) j++; for (let k = i; k < j; k++) r.push(s[k]); i = j; while (i < s.length && isLC(s[i])) i++; } return r.join('').slice(0, 50); };
-  const autoName = (n) => { let exp = ''; for (let i = 0; i < n.length; i++) { if (isUC(n[i]) && i > 0 && n[i-1] !== ' ' && isLC(n[i-1])) exp += ' '; exp += n[i]; } const s = exp.trim().replace(/\s+/g, ' '); if (!s) return s; const hasLower = [...s].some(c => isLC(c)); if (!hasLower) return s; return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); };
+  const autoCode = (n) => { const s = n.trim(); if (!s) return ''; const hasLower = [...s].some(c => isLC(c)); if (!hasLower) { const ws = s.split(/\s+/).filter(w => w && isUC(w[0])); return ws.flatMap(w => [...w].filter(c => isUC(c))).join('').slice(0, 50); } const r = []; let i = 0; while (i < s.length) { if (!isUC(s[i])) { i++; continue; } let j = i; while (j < s.length && isUC(s[j])) j++; for (let k = i; k < j; k++) r.push(s[k]); i = j; while (i < s.length && isLC(s[i])) i++; } if (r.length === 0) { return s.split(/\s+/).filter(w => w).map(w => w[0].toUpperCase()).join('').slice(0, 50); } return r.join('').slice(0, 50); };
+  const autoName = (n) => { let exp = ''; for (let i = 0; i < n.length; i++) { if (isUC(n[i]) && i > 0 && n[i-1] !== ' ' && isLC(n[i-1])) exp += ' '; exp += n[i]; } const s = exp.trim().replace(/\s+/g, ' '); if (!s) return s; return s.charAt(0).toUpperCase() + s.slice(1); };
 
   const save = async () => {
     if (!fullName.trim()) { setErr('Введите полное название'); return; }
@@ -1764,8 +1764,8 @@ function OrgFormModal({ data, onClose }) {
 
   const isUC = (c) => c && ((c >= 'А' && c <= 'Я') || c === 'Ё');
   const isLC = (c) => c && ((c >= 'а' && c <= 'я') || c === 'ё');
-  const autoCode = (n) => { const s = n.trim(); if (!s) return ''; const hasLower = [...s].some(c => isLC(c)); if (!hasLower) { const ws = s.split(/\s+/).filter(w => w && isUC(w[0])); return ws.flatMap(w => [...w].filter(c => isUC(c))).join('').slice(0, 20); } const r = []; let i = 0; while (i < s.length) { if (!isUC(s[i])) { i++; continue; } let j = i; while (j < s.length && isUC(s[j])) j++; for (let k = i; k < j; k++) r.push(s[k]); i = j; while (i < s.length && isLC(s[i])) i++; } return r.join('').slice(0, 20); };
-  const autoName = (n) => { let exp = ''; for (let i = 0; i < n.length; i++) { if (isUC(n[i]) && i > 0 && n[i-1] !== ' ' && isLC(n[i-1])) exp += ' '; exp += n[i]; } const s = exp.trim().replace(/\s+/g, ' '); if (!s) return s; const hasLower = [...s].some(c => isLC(c)); if (!hasLower) return s; return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); };
+  const autoCode = (n) => { const s = n.trim(); if (!s) return ''; const hasLower = [...s].some(c => isLC(c)); if (!hasLower) { const ws = s.split(/\s+/).filter(w => w && isUC(w[0])); return ws.flatMap(w => [...w].filter(c => isUC(c))).join('').slice(0, 20); } const r = []; let i = 0; while (i < s.length) { if (!isUC(s[i])) { i++; continue; } let j = i; while (j < s.length && isUC(s[j])) j++; for (let k = i; k < j; k++) r.push(s[k]); i = j; while (i < s.length && isLC(s[i])) i++; } if (r.length === 0) { return s.split(/\s+/).filter(w => w).map(w => w[0].toUpperCase()).join('').slice(0, 20); } return r.join('').slice(0, 20); };
+  const autoName = (n) => { let exp = ''; for (let i = 0; i < n.length; i++) { if (isUC(n[i]) && i > 0 && n[i-1] !== ' ' && isLC(n[i-1])) exp += ' '; exp += n[i]; } const s = exp.trim().replace(/\s+/g, ' '); if (!s) return s; return s.charAt(0).toUpperCase() + s.slice(1); };
   const [foundedDate, setFoundedDate] = useState(
     org?.founded_date
       ? (() => {
