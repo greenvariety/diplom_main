@@ -83,6 +83,11 @@ function validateEmail(v) {
   if (!v) return null;
   return EMAIL_RE.test(v) ? null : 'Некорректный email';
 }
+function birthDateMax(minAge) {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - minAge);
+  return d.toISOString().slice(0, 10);
+}
 
 function filterName(str) { return str.replace(/[^А-ЯЁа-яё\s\-]/g, ''); }
 function filterLogin(str) { return str.replace(/[^a-zA-Z0-9._\-]/g, ''); }
@@ -215,6 +220,7 @@ function StudentFormModal({ data, onClose }) {
   if (!vals.last_name.trim()) errs.last_name = 'Обязательно';
   if (!vals.first_name.trim()) errs.first_name = 'Обязательно';
   if (!vals.birth_date) errs.birth_date = 'Обязательно';
+  else if (vals.birth_date > birthDateMax(15)) errs.birth_date = 'Студенту должно быть не менее 15 лет';
   if (!vals.phone.trim()) errs.phone = 'Обязательно';
   else { const e = validatePhone(vals.phone); if (e) errs.phone = e; }
   if (!vals.email.trim()) errs.email = 'Обязательно';
@@ -313,7 +319,7 @@ function StudentFormModal({ data, onClose }) {
           </Field>
           <Field label="Отчество" className="field-full"><input className="input" value={vals.middle_name} onChange={e => set('middle_name', e.target.value)} maxLength={100} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); set('middle_name', (vals.middle_name + filterName(e.clipboardData.getData('text') || '')).slice(0, 100)); }} /></Field>
           <Field label="Дата рождения" required error={touched.birth_date && errs.birth_date}>
-            <input className={`input ${touched.birth_date && errs.birth_date ? 'is-error' : ''}`} type="date" value={vals.birth_date || ''} onChange={e => { set('birth_date', e.target.value); setTouched(t => ({ ...t, birth_date: 1 })); }} />
+            <input className={`input ${touched.birth_date && errs.birth_date ? 'is-error' : ''}`} type="date" value={vals.birth_date || ''} max={birthDateMax(15)} onChange={e => { set('birth_date', e.target.value); setTouched(t => ({ ...t, birth_date: 1 })); }} />
           </Field>
         </div>
       </div>
@@ -387,6 +393,7 @@ function EmployeeFormModal({ data, onClose }) {
   if (!lastName.trim()) fieldErrs.last_name = 'Обязательно';
   if (!firstName.trim()) fieldErrs.first_name = 'Обязательно';
   if (!birthDate) fieldErrs.birth_date = 'Обязательно';
+  else if (birthDate > birthDateMax(18)) fieldErrs.birth_date = 'Сотруднику должно быть не менее 18 лет';
   if (!phone.trim()) fieldErrs.phone = 'Обязательно';
   else { const e = validatePhone(phone); if (e) fieldErrs.phone = e; }
   if (!email.trim()) fieldErrs.email = 'Обязательно';
@@ -483,7 +490,7 @@ function EmployeeFormModal({ data, onClose }) {
             <input className="input" value={middleName} onChange={e => setMiddleName(e.target.value)} maxLength={100} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); setMiddleName(p => (p + filterName(e.clipboardData.getData('text') || '')).slice(0, 100)); }} />
           </Field>
           <Field label="Дата рождения" required error={touched.birth_date && fieldErrs.birth_date}>
-            <input className={`input ${touched.birth_date && fieldErrs.birth_date ? 'is-error' : ''}`} type="date" value={birthDate} onChange={e => { setBirthDate(e.target.value); touch('birth_date'); }} />
+            <input className={`input ${touched.birth_date && fieldErrs.birth_date ? 'is-error' : ''}`} type="date" value={birthDate} max={birthDateMax(18)} onChange={e => { setBirthDate(e.target.value); touch('birth_date'); }} />
           </Field>
         </div>
       </div>
@@ -701,6 +708,7 @@ function ParentFormModal({ data, onClose }) {
   const [lastName, setLastName] = useState(parent?.last_name || '');
   const [firstName, setFirstName] = useState(parent?.first_name || '');
   const [middleName, setMiddleName] = useState(parent?.middle_name || '');
+  const [birthDate, setBirthDate] = useState(parent?.birth_date || '');
   const [phone, setPhone] = useState(parent?.phone || '');
   const [email, setEmail] = useState(parent?.email || '');
   const [relationType, setRelationType] = useState('guardian');
@@ -714,6 +722,7 @@ function ParentFormModal({ data, onClose }) {
   const pErrs = {};
   if (!lastName.trim()) pErrs.last_name = 'Обязательно';
   if (!firstName.trim()) pErrs.first_name = 'Обязательно';
+  if (birthDate && birthDate > birthDateMax(18)) pErrs.birth_date = 'Опекуну должно быть не менее 18 лет';
   if (!phone.trim()) pErrs.phone = 'Обязательно';
   else { const e = validatePhone(phone); if (e) pErrs.phone = e; }
   if (!email.trim()) pErrs.email = 'Обязательно';
@@ -735,7 +744,7 @@ function ParentFormModal({ data, onClose }) {
   };
 
   const save = async () => {
-    setTouched({ last_name: 1, first_name: 1, phone: 1, email: 1 });
+    setTouched({ last_name: 1, first_name: 1, birth_date: 1, phone: 1, email: 1 });
     if (Object.keys(pErrs).length) {
       toast.push('Заполните все обязательные поля', { kind: 'err' });
       return;
@@ -746,6 +755,7 @@ function ParentFormModal({ data, onClose }) {
       fd.append('last_name', lastName.trim());
       fd.append('first_name', firstName.trim());
       fd.append('middle_name', middleName.trim());
+      fd.append('birth_date', birthDate || '');
       fd.append('phone', phone.trim());
       fd.append('email', email.trim());
       if (photo) fd.append('photo', photo);
@@ -803,6 +813,9 @@ function ParentFormModal({ data, onClose }) {
         </Field>
         <Field label="Отчество" className="field-full">
           <input className="input" value={middleName} onChange={e => setMiddleName(e.target.value)} maxLength={100} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); setMiddleName(p => (p + filterName(e.clipboardData.getData('text') || '')).slice(0, 100)); }} />
+        </Field>
+        <Field label="Дата рождения" error={touched.birth_date && pErrs.birth_date}>
+          <input className={`input ${touched.birth_date && pErrs.birth_date ? 'is-error' : ''}`} type="date" value={birthDate} max={birthDateMax(18)} onChange={e => { setBirthDate(e.target.value); touchP('birth_date'); }} />
         </Field>
         {isStudentContext && !isEdit && (
           <Field label="Связь" required>
