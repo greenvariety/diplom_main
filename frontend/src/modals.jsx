@@ -10,9 +10,9 @@ import api from './api.js';
 function applyPhoneMask(raw) {
   const digits = raw.replace(/\D/g, '');
   if (!digits) return '';
+  if (digits[0] !== '7' && digits[0] !== '8') return '';
   let n = digits;
   if (n[0] === '7') n = '8' + n.slice(1);
-  else if (n[0] === '9') n = '8' + n;
   n = n.slice(0, 11);
   if (n.length <= 1) return n;
   let r = n[0] + ' (';
