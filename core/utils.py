@@ -142,12 +142,13 @@ def _build_email_html(code, purpose):
 
 
 def send_verification_email(email, code, purpose='register'):
+    # Always print code to stdout in DEBUG so it appears in the dev launcher logs
+    if settings.DEBUG:
+        print(f'\n[EMAIL-DEV] to={email} purpose={purpose} code={_fmt_code(code)}\n', flush=True)
+
     if not settings.EMAIL_HOST_USER:
         logger.warning('send_verification_email: EMAIL_HOST_USER not set')
-        if settings.DEBUG:
-            print(f'\n[EMAIL-DEV] to={email} purpose={purpose} code={_fmt_code(code)}\n')
-            return True
-        return False
+        return settings.DEBUG
 
     try:
         from django.core.mail import send_mail
@@ -162,10 +163,7 @@ def send_verification_email(email, code, purpose='register'):
         return True
     except Exception as e:
         logger.error('send_verification_email (gmail) failed to=%s purpose=%s: %s', email, purpose, e)
-        if settings.DEBUG:
-            print(f'\n[EMAIL-DEV] SMTP failed, code for {email} ({purpose}): {_fmt_code(code)}\n')
-            return True
-        return False
+        return settings.DEBUG
 
 
 # ---------------------------------------------------------------------------

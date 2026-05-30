@@ -13,6 +13,7 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 PY   = os.path.join(BASE, 'venv', 'Scripts', 'python.exe')
 MGR  = os.path.join(BASE, 'manage.py')
 URL  = 'http://127.0.0.1:8000'
+NO_WIN = subprocess.CREATE_NO_WINDOW
 
 P = {
     'bg':      '#0f0f1a',
@@ -60,7 +61,6 @@ class App:
         r.minsize(720, 480)
         r.configure(bg=P['bg'])
 
-        # Try to set window icon
         for name in ('logo.ico', 'logo.png'):
             path = os.path.join(BASE, name)
             if os.path.exists(path):
@@ -119,13 +119,6 @@ class App:
         self.b_restart.config(state='disabled')
         self.b_stop.config(state='disabled')
 
-        self.do_build = tk.BooleanVar(value=True)
-        tk.Checkbutton(bar, text='Собирать фронтенд при старте',
-                       variable=self.do_build, bg=P['bg'], fg=P['text'],
-                       selectcolor=P['panel'], activebackground=P['bg'],
-                       activeforeground=P['text'],
-                       font=('Segoe UI', 9)).pack(side='left', padx=(10, 0))
-
         # Divider + log header
         tk.Frame(r, bg=P['accent'], height=1).pack(fill='x')
         lh = tk.Frame(r, bg=P['panel'], pady=5, padx=16)
@@ -146,14 +139,12 @@ class App:
         vsb.pack(side='right', fill='y')
         self.txt.pack(fill='both', expand=True)
 
-        # Text tags
         self.txt.tag_config('ts',   foreground=P['logdim'])
         self.txt.tag_config('sys',  foreground=P['dim'], font=('Consolas', 8))
         self.txt.tag_config('http', foreground=P['loghttp'])
         self.txt.tag_config('ok',   foreground=P['logok'])
         self.txt.tag_config('err',  foreground=P['logerr'])
         self.txt.tag_config('warn', foreground=P['logwarn'])
-        # email code highlighting
         self.txt.tag_config('emb',  foreground=P['emfg'], background=P['embg'],
                             font=('Consolas', 9, 'bold'))
         self.txt.tag_config('emc',  foreground=P['emfg'], background=P['embg'],
@@ -175,13 +166,13 @@ class App:
         if not line:
             return
 
-        # Email code – primary format: [EMAIL-DEV] to=email purpose=X code=ABC-DEF
+        # Email code – primary: [EMAIL-DEV] to=email purpose=X code=ABC-DEF
         m = re.search(r'\[EMAIL-DEV\].*?to=(\S+)\s+purpose=(\S+)\s+code=(\S+)', line)
         if m:
             self._code_box(m.group(1), m.group(2), m.group(3))
             return
 
-        # Email code – SMTP-fail fallback: code for email (purpose): ABC-DEF
+        # Email code – fallback: code for email (purpose): ABC-DEF
         m = re.search(r'\[EMAIL-DEV\].*?code for (\S+)\s*\((\S+)\):\s+(\S+)', line)
         if m:
             self._code_box(m.group(1), m.group(2), m.group(3))
@@ -224,15 +215,15 @@ class App:
 
         self.txt.config(state='normal')
         self.txt.insert('end', '\n')
-        self.txt.insert('end', f'  {sep}\n',                             'emb')
-        self.txt.insert('end', f'  КОД ПОДТВЕРЖДЕНИЯ  [{label}]\n',     'emb')
-        self.txt.insert('end', f'  Кому: {email}\n',                     'emb')
-        self.txt.insert('end',  '  \n',                                  'emb')
-        self.txt.insert('end',  '      ',                                'emb')
-        self.txt.insert('end', f'   {code}   ',                         'emc')
-        self.txt.insert('end',  '\n',                                    'emb')
-        self.txt.insert('end',  '  \n',                                  'emb')
-        self.txt.insert('end', f'  {sep}\n',                             'emb')
+        self.txt.insert('end', f'  {sep}\n',                          'emb')
+        self.txt.insert('end', f'  КОД ПОДТВЕРЖДЕНИЯ  [{label}]\n',  'emb')
+        self.txt.insert('end', f'  Кому: {email}\n',                  'emb')
+        self.txt.insert('end',  '  \n',                               'emb')
+        self.txt.insert('end',  '      ',                             'emb')
+        self.txt.insert('end', f'   {code}   ',                      'emc')
+        self.txt.insert('end',  '\n',                                 'emb')
+        self.txt.insert('end',  '  \n',                               'emb')
+        self.txt.insert('end', f'  {sep}\n',                          'emb')
         self.txt.insert('end', '\n')
         self.txt.config(state='disabled')
         self.txt.see('end')
@@ -277,8 +268,7 @@ class App:
         self._busy = True
         self.b_start.config(state='disabled')
         self._sys('Запуск...')
-        build = self.do_build.get()
-        threading.Thread(target=self._worker, args=(build,), daemon=True).start()
+        threading.Thread(target=self._worker, daemon=True).start()
 
     def _stop(self):
         if not self.proc or self._busy:
@@ -316,8 +306,10 @@ class App:
 
     def _kill(self, proc):
         try:
-            subprocess.run(['taskkill', '/F', '/T', '/PID', str(proc.pid)],
-                           capture_output=True)
+            subprocess.run(
+                ['taskkill', '/F', '/T', '/PID', str(proc.pid)],
+                capture_output=True, creationflags=NO_WIN,
+            )
         except Exception:
             try:
                 proc.terminate()
@@ -326,41 +318,20 @@ class App:
 
     # ── Background worker ─────────────────────────────────────────────────────
 
-    def _worker(self, build: bool):
+    def _worker(self):
         if not os.path.exists(PY):
             self.q.put(('sys', f'Python не найден: {PY}'))
             self.q.put(('stopped',))
             return
 
-        # npm run build
-        if build:
-            self.q.put(('sys', 'Сборка фронтенда (npm run build)...'))
-            fe = os.path.join(BASE, 'frontend')
-            try:
-                p = subprocess.Popen(
-                    'npm run build', cwd=fe, shell=True,
-                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                )
-                for raw in iter(p.stdout.readline, b''):
-                    self.q.put(('line', raw.decode('utf-8', errors='replace')))
-                p.wait()
-                if p.returncode != 0:
-                    self.q.put(('sys', f'Ошибка сборки фронтенда (код {p.returncode})'))
-                    self.q.put(('stopped',))
-                    return
-                self.q.put(('sys', 'Фронтенд собран успешно'))
-            except Exception as e:
-                self.q.put(('sys', f'npm error: {e}'))
-                self.q.put(('stopped',))
-                return
-
-        # migrate
+        # Migrate
         self.q.put(('sys', 'Применение миграций...'))
         try:
             r = subprocess.run(
                 [PY, MGR, 'migrate', '--run-syncdb'],
                 cwd=BASE, capture_output=True,
                 text=True, encoding='utf-8', errors='replace',
+                creationflags=NO_WIN,
             )
             for ln in (r.stdout + r.stderr).splitlines():
                 if ln.strip():
@@ -377,6 +348,7 @@ class App:
                 [PY, '-u', MGR, 'runserver'],
                 cwd=BASE, env=env,
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                creationflags=NO_WIN,
             )
             self.proc = proc
             self.q.put(('running',))
@@ -402,13 +374,11 @@ if __name__ == '__main__':
     try:
         main()
     except Exception as e:
-        # Write crash log if GUI fails to start
         import traceback
         log_path = os.path.join(BASE, 'launcher_crash.log')
         with open(log_path, 'a', encoding='utf-8') as f:
             f.write(f'\n--- {datetime.now()} ---\n')
             traceback.print_exc(file=f)
-        # Show error via basic tkinter messagebox
         try:
             import tkinter.messagebox as mb
             root2 = tk.Tk()
