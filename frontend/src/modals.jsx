@@ -10,16 +10,18 @@ import api from './api.js';
 function applyPhoneMask(raw) {
   const digits = raw.replace(/\D/g, '');
   if (!digits) return '';
-  if (digits[0] !== '7' && digits[0] !== '8') return '';
+  // Block single invalid first digit (user just started typing)
+  if (digits.length === 1 && digits[0] !== '7' && digits[0] !== '8') return '';
   let n = digits;
   if (n[0] === '7') n = '8' + n.slice(1);
   n = n.slice(0, 11);
   if (n.length <= 1) return n;
   let r = n[0] + ' (';
   r += n.slice(1, Math.min(4, n.length));
-  if (n.length >= 4) r += ') ' + n.slice(4, Math.min(7, n.length));
-  if (n.length >= 7) r += '-' + n.slice(7, Math.min(9, n.length));
-  if (n.length >= 9) r += '-' + n.slice(9, 11);
+  // Use > (not >=) to avoid trailing separators that cause backspace to get stuck
+  if (n.length > 4) r += ') ' + n.slice(4, Math.min(7, n.length));
+  if (n.length > 7) r += '-' + n.slice(7, Math.min(9, n.length));
+  if (n.length > 9) r += '-' + n.slice(9, 11);
   return r;
 }
 
