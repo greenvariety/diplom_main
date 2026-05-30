@@ -1524,24 +1524,23 @@ function UploadDocModal({ data, onClose }) {
     <Modal title="Загрузить документ" onClose={onClose}
       footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={submit}>{I.upload}Загрузить</LoadButton></>}>
       <label
+        style={{ display: 'block' }}
         className={`dropzone ${over ? 'is-over' : ''}`}
         onDragOver={e => { e.preventDefault(); setOver(true); }}
         onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setOver(false); }}
         onDrop={e => { e.preventDefault(); setOver(false); const f = e.dataTransfer.files?.[0]; if (f) { setFile(f); if (docType === 'other') setName(f.name); } }}
       >
-        <div style={{ pointerEvents: 'none' }}>
-          <div className="dropzone-ico">{I.upload}</div>
-          {file
-            ? <>
-                <div style={{ fontWeight: 500 }}>{file.name}</div>
-                <div className="muted" style={{ fontSize: 12 }}>{(file.size / 1024).toFixed(1)} КБ</div>
-              </>
-            : <>
-                <div style={{ fontWeight: 500, marginBottom: 4 }}>Перетащите файл сюда</div>
-                <div className="muted" style={{ fontSize: 12 }}>или нажмите чтобы выбрать · PDF, JPG до 10 МБ</div>
-              </>
-          }
-        </div>
+        <div className="dropzone-ico">{I.upload}</div>
+        {file
+          ? <>
+              <div style={{ fontWeight: 500 }}>{file.name}</div>
+              <div className="muted" style={{ fontSize: 12 }}>{(file.size / 1024).toFixed(1)} КБ</div>
+            </>
+          : <>
+              <div style={{ fontWeight: 500, marginBottom: 4 }}>Перетащите файл сюда</div>
+              <div className="muted" style={{ fontSize: 12 }}>или нажмите чтобы выбрать · PDF, JPG до 10 МБ</div>
+            </>
+        }
         <input type="file" style={{ display: 'none' }} accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={e => { const f = e.target.files?.[0]; if (f) { setFile(f); if (docType === 'other') setName(f.name); } }} />
       </label>
       <Field label="Тип документа">
