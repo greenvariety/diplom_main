@@ -842,7 +842,7 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
                     <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>История пуста</div>
                   ) : (
                     <table className="tbl">
-                      <thead><tr><th>Дата и время</th><th>Пользователь</th><th>Действие</th><th>Diff</th></tr></thead>
+                      <thead><tr><th>Дата и время</th><th>Пользователь</th><th>Действие</th><th></th></tr></thead>
                       <tbody>
                         {auditData.map(a => (
                           <tr key={a.id} className="row-link" onClick={() => openModal('auditDiff', a)}>
@@ -1398,7 +1398,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                     <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>История пуста</div>
                   ) : (
                     <table className="tbl">
-                      <thead><tr><th>Дата и время</th><th>Пользователь</th><th>Действие</th><th>Diff</th></tr></thead>
+                      <thead><tr><th>Дата и время</th><th>Пользователь</th><th>Действие</th><th></th></tr></thead>
                       <tbody>
                         {empAuditData.map(a => (
                           <tr key={a.id} className="row-link" onClick={() => openModal('auditDiff', a)}>
@@ -2163,7 +2163,7 @@ function AuditLog({ currentUser, openModal, onNavigate }) {
       <div className="card">
         <div className="card-body flush">
           {loading
-            ? <table className="tbl"><thead><tr><SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader><th>Дата и время</th><th>Пользователь</th><th>Действие</th><th>Объект</th><th style={{ width: 100 }}>Diff</th></tr></thead><tbody><SkeletonRows cols={6} /></tbody></table>
+            ? <table className="tbl"><thead><tr><SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader><th>Дата и время</th><th>Пользователь</th><th>Действие</th><th>Объект</th><th style={{ width: 40 }}></th></tr></thead><tbody><SkeletonRows cols={6} /></tbody></table>
             : data.results.length === 0
               ? <EmptyState icon={I.history} title="Записи не найдены" sub="Попробуйте изменить поисковый запрос"
                   action={<button className="btn btn-secondary btn-sm" onClick={reset}>Сбросить</button>} />
@@ -2174,7 +2174,7 @@ function AuditLog({ currentUser, openModal, onNavigate }) {
                     <SortHeader k="user" sort={sort}>Пользователь</SortHeader>
                     <SortHeader k="label" sort={sort}>Действие</SortHeader>
                     <SortHeader k="obj" sort={sort}>Объект</SortHeader>
-                    <th style={{ width: 100 }}>Diff</th>
+                    <th style={{ width: 40 }}></th>
                   </tr></thead>
                   <tbody>
                     {sort.sortFn(data.results, {
