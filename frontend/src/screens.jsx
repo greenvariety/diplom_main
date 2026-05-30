@@ -939,7 +939,7 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
       <div className="card">
         <div className="card-body flush">
           {!loading && data.results.length === 0 ? (
-            <EmptyState icon={I.search} title="Сотрудники не найдены" sub="Попробуйте изменить условия поиска" />
+            <EmptyState icon={I.search} title="Сотрудники не найдены" sub="Попробуйте изменить поисковый запрос" action={<button className="btn btn-secondary btn-sm" onClick={reset}>Сбросить</button>} />
           ) : (
             <table className="tbl">
               <thead><tr>
@@ -1509,6 +1509,9 @@ function GroupList({ currentUser, openModal, onNavigate }) {
       </div>
       <div className="card">
         <div className="card-body flush">
+          {!loading && filtered.length === 0 ? (
+            <EmptyState icon={I.search} title="Группы не найдены" sub="Попробуйте изменить поисковый запрос" action={<button className="btn btn-secondary btn-sm" onClick={reset}>Сбросить</button>} />
+          ) : (
           <table className="tbl">
             <thead><tr>
               <SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader>
@@ -1522,8 +1525,6 @@ function GroupList({ currentUser, openModal, onNavigate }) {
             <tbody>
               {loading ? (
                 <SkeletonRows cols={7} rows={4} />
-              ) : filtered.length === 0 ? (
-                <tr><td colSpan={7} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Группы не найдены</td></tr>
               ) : filtered.map((g, idx) => (
                 <tr key={g.id} className="row-link" onClick={() => onNavigate('group-detail', { groupId: g.id })}>
                   <td className="mono muted">{idx + 1}</td>
@@ -1542,6 +1543,7 @@ function GroupList({ currentUser, openModal, onNavigate }) {
               ))}
             </tbody>
           </table>
+          )}
         </div>
       </div>
     </Shell>
@@ -1810,6 +1812,9 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
       </div>
       <div className="card">
         <div className="card-body flush">
+          {!loading && displayFaculties.length === 0 ? (
+            <EmptyState icon={I.search} title="Факультеты не найдены" sub="Попробуйте изменить поисковый запрос" action={<button className="btn btn-secondary btn-sm" onClick={() => setQ('')}>Сбросить</button>} />
+          ) : (
           <table className="tbl">
             <thead>
               <tr>
@@ -1824,8 +1829,6 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
             <tbody>
               {loading ? (
                 <SkeletonRows cols={6} rows={4} />
-              ) : displayFaculties.length === 0 ? (
-                <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Факультеты не найдены</td></tr>
               ) : displayFaculties.map((f, idx) => (
                 <tr key={f.id} className="row-link" onClick={() => onNavigate('faculty-detail', { facultyId: f.id })}>
                   <td className="mono muted">{idx + 1}</td>
@@ -1838,6 +1841,7 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
               ))}
             </tbody>
           </table>
+          )}
         </div>
       </div>
     </Shell>
@@ -1904,7 +1908,7 @@ function UserList({ currentUser, openModal, onNavigate }) {
       <div className="card">
         <div className="card-body flush">
           {!loading && users.length === 0 ? (
-            <EmptyState icon={I.users} title="Пользователи не найдены" sub="Создайте аккаунт сотруднику через его карточку" />
+            <EmptyState icon={I.users} title="Пользователи не найдены" sub="Попробуйте изменить поисковый запрос" action={<button className="btn btn-secondary btn-sm" onClick={reset}>Сбросить</button>} />
           ) : (
             <table className="tbl">
               <thead><tr>
@@ -2019,6 +2023,8 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
         <div className="card-body flush">
           {loading ? (
             <table className="tbl"><thead><tr><SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader><th>Тип</th><th>Объект</th><th>Кто подал</th><th>Когда</th><th>Причина</th><th style={{ width: 200 }}>Действия</th></tr></thead><tbody><SkeletonRows cols={7} /></tbody></table>
+          ) : filtered.length === 0 ? (
+            <EmptyState icon={I.search} title="Заявки не найдены" sub="Попробуйте изменить поисковый запрос" action={hasFilters ? <button className="btn btn-secondary btn-sm" onClick={reset}>Сбросить</button> : null} />
           ) : (
             <table className="tbl">
               <thead><tr>
@@ -2031,9 +2037,7 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
                 <th style={{ width: 200 }}>Действия</th>
               </tr></thead>
               <tbody>
-                {filtered.length === 0 ? (
-                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: 32 }} className="muted">{reqs.length === 0 ? 'Нет заявок на удаление' : 'Ничего не найдено'}</td></tr>
-                ) : filtered.map((r, idx) => (
+                {filtered.map((r, idx) => (
                   <tr key={r.id}>
                     <td className="mono muted">{idx + 1}</td>
                     <td><Badge>{r.type_label}</Badge></td>
@@ -2262,7 +2266,7 @@ function ParentList({ currentUser, openModal, onNavigate }) {
       <div className="card">
         <div className="card-body flush">
           {!loading && data.results.length === 0 ? (
-            <EmptyState icon={I.search} title="Опекуны не найдены" sub="Попробуйте изменить условия поиска или добавьте нового опекуна" />
+            <EmptyState icon={I.search} title="Опекуны не найдены" sub="Попробуйте изменить поисковый запрос" action={<button className="btn btn-secondary btn-sm" onClick={reset}>Сбросить</button>} />
           ) : (
             <table className="tbl">
               <thead><tr>
