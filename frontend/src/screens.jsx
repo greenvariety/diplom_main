@@ -806,10 +806,10 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
               {currentUser?.role !== 'teacher' && (
                 <div className={`dropzone ${over ? 'is-over' : ''}`} style={{ marginBottom: 12, padding: 16 }}
                   onDragOver={e => { e.preventDefault(); setOver(true); }}
-                  onDragLeave={() => setOver(false)}
+                  onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setOver(false); }}
                   onDrop={handleDrop}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--text-muted)', fontSize: 13 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--text-muted)', fontSize: 13, pointerEvents: 'none' }}>
                     {I.upload}{over ? 'Отпустите для загрузки' : 'Перетащите файлы сюда или нажмите «Загрузить»'}
                   </div>
                 </div>

@@ -1414,6 +1414,8 @@ function ApproveDeleteModal({ data, onClose }) {
   );
 }
 
+const DOC_TYPE_LABEL = { passport: 'Паспорт', snils: 'СНИЛС', policy: 'Полис ОМС', certificate: 'Аттестат', order: 'Приказ' };
+
 function UploadDocModal({ data, onClose }) {
   const { ownerId, ownerType, onDone, file: initFile } = data || {};
   const toast = useToast();
@@ -1422,6 +1424,12 @@ function UploadDocModal({ data, onClose }) {
   const [name, setName] = useState(initFile?.name || '');
   const [docType, setDocType] = useState('other');
   const [err, setErr] = useState('');
+
+  const handleDocTypeChange = (newType) => {
+    setDocType(newType);
+    if (newType !== 'other') setName(DOC_TYPE_LABEL[newType] || '');
+    else setName('');
+  };
 
   useEffect(() => { if (initFile) setName(initFile.name); }, []);
 
@@ -1450,27 +1458,26 @@ function UploadDocModal({ data, onClose }) {
       <label
         className={`dropzone ${over ? 'is-over' : ''}`}
         onDragOver={e => { e.preventDefault(); setOver(true); }}
-        onDragLeave={() => setOver(false)}
-        onDrop={e => { e.preventDefault(); setOver(false); const f = e.dataTransfer.files?.[0]; if (f) { setFile(f); setName(f.name); } }}
+        onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setOver(false); }}
+        onDrop={e => { e.preventDefault(); setOver(false); const f = e.dataTransfer.files?.[0]; if (f) { setFile(f); if (docType === 'other') setName(f.name); } }}
       >
-        <div className="dropzone-ico">{I.upload}</div>
-        {file
-          ? <>
-              <div style={{ fontWeight: 500 }}>{file.name}</div>
-              <div className="muted" style={{ fontSize: 12 }}>{(file.size / 1024).toFixed(1)} КБ</div>
-            </>
-          : <>
-              <div style={{ fontWeight: 500, marginBottom: 4 }}>Перетащите файл сюда</div>
-              <div className="muted" style={{ fontSize: 12 }}>или нажмите чтобы выбрать · PDF, JPG до 10 МБ</div>
-            </>
-        }
-        <input type="file" style={{ display: 'none' }} accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={e => { const f = e.target.files?.[0]; if (f) { setFile(f); setName(f.name); } }} />
+        <div style={{ pointerEvents: 'none' }}>
+          <div className="dropzone-ico">{I.upload}</div>
+          {file
+            ? <>
+                <div style={{ fontWeight: 500 }}>{file.name}</div>
+                <div className="muted" style={{ fontSize: 12 }}>{(file.size / 1024).toFixed(1)} КБ</div>
+              </>
+            : <>
+                <div style={{ fontWeight: 500, marginBottom: 4 }}>Перетащите файл сюда</div>
+                <div className="muted" style={{ fontSize: 12 }}>или нажмите чтобы выбрать · PDF, JPG до 10 МБ</div>
+              </>
+          }
+        </div>
+        <input type="file" style={{ display: 'none' }} accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={e => { const f = e.target.files?.[0]; if (f) { setFile(f); if (docType === 'other') setName(f.name); } }} />
       </label>
-      <Field label="Название документа">
-        <input className="input" value={name} onChange={e => setName(e.target.value)} maxLength={255} />
-      </Field>
       <Field label="Тип документа">
-        <select className="select" value={docType} onChange={e => setDocType(e.target.value)}>
+        <select className="select" value={docType} onChange={e => handleDocTypeChange(e.target.value)}>
           <option value="passport">Паспорт</option>
           <option value="snils">СНИЛС</option>
           <option value="policy">Полис ОМС</option>
@@ -1478,6 +1485,9 @@ function UploadDocModal({ data, onClose }) {
           <option value="order">Приказ</option>
           <option value="other">Прочее</option>
         </select>
+      </Field>
+      <Field label="Название документа">
+        <input className="input" value={name} onChange={e => setName(e.target.value)} maxLength={255} disabled={docType !== 'other'} style={docType !== 'other' ? { opacity: 0.55, cursor: 'not-allowed' } : {}} />
       </Field>
       {err && <div style={{ color: 'var(--bad-fg)', fontSize: 13, marginTop: 8 }}>{err}</div>}
     </Modal>
