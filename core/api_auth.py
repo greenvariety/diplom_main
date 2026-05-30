@@ -212,6 +212,11 @@ class VerifyEmailView(APIView):
             ec.save(update_fields=['used'])
             return Response({'error': 'Пользователь с таким логином уже существует'}, status=400)
 
+        if User.objects.filter(email=data['email']).exists():
+            ec.used = True
+            ec.save(update_fields=['used'])
+            return Response({'error': 'Этот email уже зарегистрирован', 'field': 'email'}, status=400)
+
         user = User(
             username=data['login'],
             display_name=data['name'],
