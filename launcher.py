@@ -314,10 +314,27 @@ class App:
     # ── Background worker ─────────────────────────────────────────────────────
 
     def _worker(self):
+        import socket, time
+
         if not os.path.exists(PY):
             self.q.put(('sys', f'Python не найден: {PY}'))
             self.q.put(('stopped',))
             return
+
+        # Kill anything already on port 8000
+        try:
+            s = socket.socket()
+            s.settimeout(0.3)
+            s.connect(('127.0.0.1', 8000))
+            s.close()
+            self.q.put(('sys', 'Порт 8000 занят — завершаю старый процесс...'))
+            subprocess.run(
+                'for /f "tokens=5" %a in (\'netstat -ano ^| findstr :8000 ^| findstr LISTENING\') do taskkill /PID %a /F',
+                shell=True, capture_output=True, creationflags=NO_WIN,
+            )
+            time.sleep(1)
+        except (ConnectionRefusedError, OSError):
+            pass  # port is free — good
 
         # Migrate
         self.q.put(('sys', 'Применение миграций...'))
