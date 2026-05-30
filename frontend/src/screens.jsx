@@ -928,7 +928,7 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
         title="Сотрудники"
         sub={loading ? 'Загрузка…' : `Всего: ${data.count} записей`}
         actions={<>
-          {filterPositionId && <button className="btn btn-secondary btn-sm" onClick={() => openModal('positionForm', { position: { id: filterPositionId, name: filterPositionName }, onDone: load })}>{I.pencil}Переименовать должность</button>}
+          {filterPositionId && <button className="btn btn-secondary btn-sm" onClick={() => openModal('positionForm', { position: { id: filterPositionId, name: filterPositionName }, onDone: load })}>{I.pencil}Редактировать должность</button>}
           <button className="btn btn-primary btn-sm" onClick={() => openModal('employeeForm', { initialPositionId: filterPos || undefined, onDone: () => { setPage(1); load(); } })}>{I.plus}Добавить сотрудника</button>
         </>}
       />
