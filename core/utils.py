@@ -224,15 +224,15 @@ def model_to_dict_safe(instance):
 # Email uniqueness across persons
 # ---------------------------------------------------------------------------
 
-def check_person_email_unique(email, exclude_employee_pk=None, exclude_student_pk=None, exclude_parent_pk=None):
+def check_person_email_unique(email, exclude_employee_pk=None, exclude_student_pk=None, exclude_parent_pk=None, exclude_user_pk=None):
     """
-    Returns an error message if email is already used by any employee, student, or parent
-    anywhere in the system (globally, not just within one institution).
+    Returns an error message if email is already used by any employee, student, parent,
+    or user account anywhere in the system (globally).
     Returns None if the email is free or empty.
     """
     if not email:
         return None
-    from .models import Employee, Student, Parent
+    from .models import Employee, Student, Parent, User
 
     emp_qs = Employee.objects.filter(email__iexact=email)
     if exclude_employee_pk:
@@ -251,6 +251,12 @@ def check_person_email_unique(email, exclude_employee_pk=None, exclude_student_p
         par_qs = par_qs.exclude(pk=exclude_parent_pk)
     if par_qs.exists():
         return 'Этот email уже используется опекуном'
+
+    user_qs = User.objects.filter(email__iexact=email).exclude(email='')
+    if exclude_user_pk:
+        user_qs = user_qs.exclude(pk=exclude_user_pk)
+    if user_qs.exists():
+        return 'Этот email уже используется в системе'
 
     return None
 

@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User, EmailCode
-from .utils import generate_email_code, mask_email, send_verification_email
+from .utils import generate_email_code, mask_email, send_verification_email, check_person_email_unique
 
 _CODE_TTL = 10           # минут
 _RESEND_COOLDOWN = 60    # секунд
@@ -88,8 +88,11 @@ class RegisterView(APIView):
             return Response({'error': 'Введите пароль'}, status=400)
         if User.objects.filter(username=username).exists():
             return Response({'error': 'Логин уже занят. Выберите другой', 'field': 'login'}, status=400)
-        if User.objects.filter(email=email).exists():
+        if User.objects.filter(email__iexact=email).exists():
             return Response({'error': 'Этот email уже зарегистрирован', 'field': 'email'}, status=400)
+        person_err = check_person_email_unique(email)
+        if person_err:
+            return Response({'error': person_err, 'field': 'email'}, status=400)
 
         err = _register_rate_check(email)
         if err:
@@ -212,10 +215,15 @@ class VerifyEmailView(APIView):
             ec.save(update_fields=['used'])
             return Response({'error': 'Пользователь с таким логином уже существует'}, status=400)
 
-        if User.objects.filter(email=data['email']).exists():
+        if User.objects.filter(email__iexact=data['email']).exists():
             ec.used = True
             ec.save(update_fields=['used'])
             return Response({'error': 'Этот email уже зарегистрирован', 'field': 'email'}, status=400)
+        person_err = check_person_email_unique(data['email'])
+        if person_err:
+            ec.used = True
+            ec.save(update_fields=['used'])
+            return Response({'error': person_err, 'field': 'email'}, status=400)
 
         user = User(
             username=data['login'],
