@@ -2699,14 +2699,12 @@ function PositionList({ currentUser, openModal, onNavigate }) {
     { name: p => p.name, employee_count: p => p.employee_count }
   );
 
-  const canManage = ['owner', 'admin', 'secretary'].includes(currentUser?.role);
-
   return (
     <Shell currentUser={currentUser} active="positions" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
         title="Должности"
         sub={loading ? 'Загрузка…' : `Всего: ${positions.length} записей`}
-        actions={canManage ? (
+        actions={['owner', 'admin', 'secretary'].includes(currentUser?.role) ? (
           <button className="btn btn-primary btn-sm" onClick={() => openModal('positionForm', { onDone: load })}>{I.plus}Добавить должность</button>
         ) : null}
       />
@@ -2729,21 +2727,15 @@ function PositionList({ currentUser, openModal, onNavigate }) {
                 <SortHeader k="name" sort={sort}>Название</SortHeader>
                 <SortHeader k="role_type" sort={sort}>Тип роли</SortHeader>
                 <SortHeader k="employee_count" sort={sort}>Сотрудников</SortHeader>
-                {canManage && <th style={{ width: 40 }}></th>}
                 <th style={{ width: 40 }}></th>
               </tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={canManage ? 6 : 5} /> : filtered.map((p, idx) => (
+                {loading ? <SkeletonRows cols={5} /> : filtered.map((p, idx) => (
                   <tr key={p.id} className="row-link" onClick={() => onNavigate('employees', { filterPositionId: p.id, filterPositionName: p.name })}>
                     <td className="mono muted">{idx + 1}</td>
                     <td className="fwm">{p.name}</td>
                     <td>{{ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель' }[p.role_type] || p.role_type}</td>
                     <td className="mono">{p.employee_count}</td>
-                    {canManage && (
-                      <td onClick={e => e.stopPropagation()}>
-                        <button className="btn btn-ghost btn-icon btn-sm" title="Удалить" onClick={() => openModal('positionDelete', { position: p, currentRole: currentUser?.role, onDone: load })}>{I.trash}</button>
-                      </td>
-                    )}
                     <td>{I.chevr}</td>
                   </tr>
                 ))}

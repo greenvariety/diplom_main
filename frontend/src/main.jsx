@@ -7,7 +7,7 @@ import { LoginScreen, RegisterScreen, EmailVerifyScreen, RecoverPasswordScreen }
 import { Shell } from './shell.jsx';
 import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, DashboardSecretary, FacultyList, FacultyDetail, GroupList, GroupDetail, StudentList, StudentDetail, EmployeeList, EmployeeDetail, PositionList, ParentList, ParentDetail, SubjectList, SubjectDetail, UserList, DeleteRequests, AuditLog } from './screens.jsx';
 import { ProfileScreen } from './profile.jsx';
-import { OrgFormModal, FacultyFormModal, FacultyDetailModal, GroupFormModal, AssignSubjectModal, StudentFormModal, TransferModal, UploadDocModal, ParentFormModal, ParentAddStudentModal, DeleteConfirmModal, EmployeeFormModal, EmployeeAssignSubjectModal, PositionFormModal, PositionDeleteModal, SubjectFormModal, UserFormModal, UserSetPasswordModal, ApproveDeleteModal, AuditDiffModal, LogoutModal, OrgDeleteConfirmModal, OwnerDirectDeleteModal, NoteModal } from './modals.jsx';
+import { OrgFormModal, FacultyFormModal, FacultyDetailModal, GroupFormModal, AssignSubjectModal, StudentFormModal, TransferModal, UploadDocModal, ParentFormModal, ParentAddStudentModal, DeleteConfirmModal, EmployeeFormModal, EmployeeAssignSubjectModal, PositionFormModal, SubjectFormModal, UserFormModal, UserSetPasswordModal, ApproveDeleteModal, AuditDiffModal, LogoutModal, OrgDeleteConfirmModal, OwnerDirectDeleteModal, NoteModal } from './modals.jsx';
 import api from './api.js';
 import { HtmlTasksPanel } from './dev-tasks.jsx';
 
@@ -363,9 +363,6 @@ function AppShell({ onLogout }) {
     }
     if (modal.name === 'positionForm') {
       return <PositionFormModal data={modal.data} onClose={closeModal} />;
-    }
-    if (modal.name === 'positionDelete') {
-      return <PositionDeleteModal data={modal.data} onClose={closeModal} openModal={openModal} />;
     }
     if (modal.name === 'subjectForm') {
       return <SubjectFormModal data={modal.data} onClose={closeModal} />;
