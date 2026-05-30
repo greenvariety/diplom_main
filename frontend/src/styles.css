@@ -1029,7 +1029,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 .step.is-active .step-num { background: var(--accent); color: #fff; border-color: var(--accent); }
 .step.is-active { color: var(--text); font-weight: 500; }
 .step.is-done .step-num { background: var(--ok-bg); color: var(--ok-fg); border-color: var(--ok-bd); }
-.step .step-bar {
+.steps .step-bar {
   width: 28px; height: 1.5px; background: var(--border); border-radius: 999px;
 }
 

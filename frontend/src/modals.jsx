@@ -1014,6 +1014,7 @@ function UserFormModal({ data, onClose }) {
   const [password2, setPassword2] = useState('');
   const [pwFocus, setPwFocus] = useState(false);
   const [err, setErr] = useState('');
+  const [step, setStep] = useState(1);
 
   useEffect(() => {
     api.get('/employees/').then(r => setEmployees(r.data)).catch(() => {});
@@ -1040,19 +1041,29 @@ function UserFormModal({ data, onClose }) {
   };
 
   const pwdErrs = [];
-  if (!isEdit && password) {
+  if (password) {
     if (password.length < 8) pwdErrs.push('не менее 8 символов');
     if (!/[A-Za-z]/.test(password)) pwdErrs.push('латинские буквы');
     if (!/\d/.test(password)) pwdErrs.push('цифра');
+    if (!/[_\-!@#$%^&*+.,;:?]/.test(password)) pwdErrs.push('спецсимвол');
   }
+
+  const goNext = () => {
+    setErr('');
+    if (step === 1) {
+      if (!username.trim()) { setErr('Введите логин'); return; }
+      if (!displayName.trim()) { setErr('Введите ФИО'); return; }
+      setStep(2);
+    } else if (step === 2) {
+      if (!password) { setErr('Введите пароль'); return; }
+      if (pwdErrs.length) { setErr('Пароль не соответствует требованиям'); return; }
+      if (password !== password2) { setErr('Пароли не совпадают'); return; }
+      setStep(3);
+    }
+  };
 
   const save = async () => {
     setErr('');
-    if (!isEdit && !username.trim()) { setErr('Введите логин'); return; }
-    if (!isEdit && !displayName.trim()) { setErr('Введите ФИО'); return; }
-    if (!isEdit && !password) { setErr('Введите пароль'); return; }
-    if (!isEdit && pwdErrs.length) { setErr(`Пароль должен содержать: ${pwdErrs.join(', ')}`); return; }
-    if (!isEdit && password !== password2) { setErr('Пароли не совпадают'); return; }
     if (institutionIds.length === 0) { setErr('Выберите хотя бы одну организацию'); return; }
     try {
       if (isEdit) {
@@ -1081,77 +1092,134 @@ function UserFormModal({ data, onClose }) {
     }
   };
 
+  const OrgList = () => (
+    <div className="field field-full">
+      <label className="field-label">Доступ к организациям <span className="req">*</span></label>
+      {orgs.length === 0 ? (
+        <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Нет организаций</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+          {orgs.map(org => (
+            <label key={org.id} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+              <input type="checkbox" checked={institutionIds.includes(org.id)} onChange={() => toggleOrg(org.id)} />
+              <span style={{ fontWeight: 500 }}>{org.code}</span>
+              <span style={{ color: 'var(--text-muted)' }}>{org.name}</span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  // Edit mode: single-step form
+  if (isEdit) {
+    return (
+      <Modal
+        title="Редактировать пользователя"
+        sub="Учётная запись для входа в систему"
+        onClose={onClose}
+        footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton></>}
+      >
+        <div className="form-grid">
+          <Field label="ФИО" className="field-full">
+            <input className="input" value={displayName} onChange={e => { setDisplayName(e.target.value); setErr(''); }} maxLength={150} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); setDisplayName(p => (p + filterName(e.clipboardData.getData('text') || '')).slice(0, 150)); setErr(''); }} />
+          </Field>
+          <Field label="Роль" required className="field-full">
+            <select className="select" value={role} onChange={e => setRole(e.target.value)}>
+              {REAL_ROLE_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </Field>
+          <div className="field field-full">
+            <label className="field-label">Привязать к сотруднику</label>
+            <Combobox options={employeeOpts} value={employeeId} onChange={handleEmployeeChange} />
+          </div>
+          <OrgList />
+        </div>
+        {err && <div style={{ color: 'var(--bad-fg)', fontSize: 13, marginTop: 8 }}>{err}</div>}
+      </Modal>
+    );
+  }
+
+  // Create mode: 3-step wizard
+  const footerCreate = step === 1
+    ? <><button className="btn btn-secondary" onClick={onClose}>Отмена</button><div style={{ flex: 1 }} /><button className="btn btn-primary" onClick={goNext}>Далее {I.chevr}</button></>
+    : step === 2
+    ? <><button className="btn btn-secondary" onClick={() => { setErr(''); setStep(1); }}>{I.back}Назад</button><div style={{ flex: 1 }} /><button className="btn btn-primary" onClick={goNext}>Далее {I.chevr}</button></>
+    : <><button className="btn btn-secondary" onClick={() => { setErr(''); setStep(2); }}>{I.back}Назад</button><div style={{ flex: 1 }} /><LoadButton className="btn btn-primary" onClick={save}>{I.check}Создать</LoadButton></>;
+
   return (
     <Modal
-      title={isEdit ? 'Редактировать пользователя' : 'Создать пользователя'}
+      title="Создать пользователя"
       sub="Учётная запись для входа в систему"
       onClose={onClose}
-      footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>{I.check}{isEdit ? 'Сохранить' : 'Создать'}</LoadButton></>}
+      footer={footerCreate}
     >
-      <div className="form-grid">
-        {!isEdit && (
-          <Field label="Логин" required error={err && !username.trim() ? err : null} className="field-full">
-            <input className={`input ${err && !username.trim() ? 'is-error' : ''}`} value={username} onChange={e => { setUsername(e.target.value); setErr(''); }} maxLength={150} {...LOGIN_INPUT_PROPS} onPaste={e => { e.preventDefault(); setUsername(p => (p + filterLogin(e.clipboardData.getData('text') || '')).slice(0, 150)); setErr(''); }} />
-          </Field>
-        )}
-        <Field label="ФИО" required={!isEdit} error={err && !isEdit && !displayName.trim() ? err : null} className="field-full">
-          <input className={`input ${err && !isEdit && !displayName.trim() ? 'is-error' : ''}`} value={displayName} onChange={e => { setDisplayName(e.target.value); setErr(''); }} maxLength={150} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); setDisplayName(p => (p + filterName(e.clipboardData.getData('text') || '')).slice(0, 150)); setErr(''); }} />
-        </Field>
-        <Field label="Роль" required className="field-full">
-          <select className="select" value={role} onChange={e => setRole(e.target.value)}>
-            {REAL_ROLE_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-        </Field>
-        {!isEdit && <>
-          <Field label="Пароль" required error={err && (!password || pwdErrs.length) ? (err || null) : null} className="field-full">
-            <PasswordInput
-              value={password}
-              onChange={v => { setPassword(v); setErr(''); }}
-              onFocus={() => setPwFocus(true)}
-              onBlur={() => setPwFocus(false)}
-              hasError={!!(err && (!password || pwdErrs.length))}
-            />
-          </Field>
-          <PasswordRules value={password} show={pwFocus || !!password} />
-          {password && <PasswordStrength value={password} />}
-          <Field label="Повторите пароль" required error={err && password && password !== password2 ? err : null} className="field-full">
-            <PasswordInput
-              value={password2}
-              onChange={v => { setPassword2(v); setErr(''); }}
-              hasError={!!(err && password && password !== password2)}
-            />
-          </Field>
-        </>}
-        <div className="field field-full">
-          <label className="field-label">Привязать к сотруднику</label>
-          <Combobox
-            options={employeeOpts}
-            value={employeeId}
-            onChange={handleEmployeeChange}
-          />
+      <div className="steps" style={{ justifyContent: 'center', marginBottom: 20 }}>
+        <div className={`step ${step === 1 ? 'is-active' : 'is-done'}`}>
+          <div className="step-num">{step > 1 ? I.check : '1'}</div>Данные аккаунта
         </div>
-        <div className="field field-full">
-          <label className="field-label">Доступ к организациям <span className="req">*</span></label>
-          {orgs.length === 0 ? (
-            <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Нет организаций</div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
-              {orgs.map(org => (
-                <label key={org.id} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
-                  <input
-                    type="checkbox"
-                    checked={institutionIds.includes(org.id)}
-                    onChange={() => toggleOrg(org.id)}
-                  />
-                  <span style={{ fontWeight: 500 }}>{org.code}</span>
-                  <span style={{ color: 'var(--text-muted)' }}>{org.name}</span>
-                </label>
-              ))}
-            </div>
-          )}
+        <div className="step-bar"></div>
+        <div className={`step ${step === 2 ? 'is-active' : step > 2 ? 'is-done' : ''}`}>
+          <div className="step-num">{step > 2 ? I.check : '2'}</div>Пароль
+        </div>
+        <div className="step-bar"></div>
+        <div className={`step ${step === 3 ? 'is-active' : ''}`}>
+          <div className="step-num">3</div>Доступ
         </div>
       </div>
-      {err && username.trim() && (isEdit || (password && password === password2)) && <div style={{ color: 'var(--bad-fg)', fontSize: 13, marginTop: 8 }}>{err}</div>}
+
+      <div key={step} className="screen-fade-in">
+        {step === 1 && (
+          <div className="form-grid">
+            <Field label="Логин" required error={err && !username.trim() ? err : null} className="field-full">
+              <input className={`input ${err && !username.trim() ? 'is-error' : ''}`} value={username} onChange={e => { setUsername(e.target.value); setErr(''); }} maxLength={150} {...LOGIN_INPUT_PROPS} onPaste={e => { e.preventDefault(); setUsername(p => (p + filterLogin(e.clipboardData.getData('text') || '')).slice(0, 150)); setErr(''); }} />
+            </Field>
+            <Field label="ФИО" required error={err && username.trim() && !displayName.trim() ? err : null} className="field-full">
+              <input className={`input ${err && username.trim() && !displayName.trim() ? 'is-error' : ''}`} value={displayName} onChange={e => { setDisplayName(e.target.value); setErr(''); }} maxLength={150} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); setDisplayName(p => (p + filterName(e.clipboardData.getData('text') || '')).slice(0, 150)); setErr(''); }} />
+            </Field>
+            <Field label="Роль" required className="field-full">
+              <select className="select" value={role} onChange={e => setRole(e.target.value)}>
+                {REAL_ROLE_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </Field>
+            <div className="field field-full">
+              <label className="field-label">Привязать к сотруднику</label>
+              <Combobox options={employeeOpts} value={employeeId} onChange={handleEmployeeChange} />
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="form-grid">
+            <Field label="Пароль" required error={err && (!password || pwdErrs.length) ? err : null} className="field-full">
+              <PasswordInput
+                value={password}
+                onChange={v => { setPassword(v); setErr(''); }}
+                onFocus={() => setPwFocus(true)}
+                onBlur={() => setPwFocus(false)}
+                hasError={!!(err && (!password || pwdErrs.length))}
+              />
+            </Field>
+            <PasswordRules value={password} show={pwFocus || !!password} />
+            {password && <PasswordStrength value={password} />}
+            <Field label="Повторите пароль" required error={err && password && password !== password2 ? err : null} className="field-full">
+              <PasswordInput
+                value={password2}
+                onChange={v => { setPassword2(v); setErr(''); }}
+                hasError={!!(err && password && password !== password2)}
+              />
+            </Field>
+            {err && <div style={{ color: 'var(--bad-fg)', fontSize: 13, marginTop: 4 }}>{err}</div>}
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="form-grid">
+            <OrgList />
+            {err && <div style={{ color: 'var(--bad-fg)', fontSize: 13, marginTop: 8 }}>{err}</div>}
+          </div>
+        )}
+      </div>
     </Modal>
   );
 }
