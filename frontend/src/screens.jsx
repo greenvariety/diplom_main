@@ -1368,7 +1368,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
               </div>
             </div>
           )}
-          {!['admin', 'secretary'].includes(employee.position_role_type) && <div className="card">
+          {employee.position_role_type === 'teacher' && <div className="card">
             <div className="card-head">
               <div className="title">Ведёт предметы</div>
               {['owner', 'admin'].includes(currentUser?.role) && (
@@ -1399,7 +1399,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
               )}
             </div>
           </div>}
-          {!['admin', 'secretary'].includes(employee.position_role_type) && (
+          {employee.position_role_type === 'teacher' && (
             <div className="card">
               <div className="card-head"><div className="title">Прикреплённые группы</div></div>
               <div className="card-body flush">
