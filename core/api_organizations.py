@@ -167,11 +167,6 @@ class OrganizationDetailView(APIView):
         ec.used = True
         ec.save(update_fields=['used'])
 
-        # Снимаем PROTECT-блокировку: обнуляем position у ВСЕХ сотрудников с должностью из этой организации
-        from .models import Employee, Position
-        Employee.objects.filter(position__institution=org).update(position=None)
-        Position.objects.filter(institution=org).delete()
-
         log_action(request.user, 'deleted', org, old_data={'name': org.name, 'code': org.code}, institution=org)
         org.delete()
         return Response({'ok': True})

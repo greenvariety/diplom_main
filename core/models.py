@@ -101,7 +101,7 @@ class Employee(models.Model):
     photo = models.ImageField(upload_to='employees/', null=True, blank=True, verbose_name='Фото')
     is_flagged = models.BooleanField(default=False, verbose_name='Отмечено')
     position = models.ForeignKey(
-        Position, on_delete=models.PROTECT, null=True, blank=True,
+        Position, on_delete=models.SET_NULL, null=True, blank=True,
         verbose_name='Должность'
     )
 
