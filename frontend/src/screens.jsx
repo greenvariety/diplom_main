@@ -1206,7 +1206,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
         crumbs={[{ label: 'Сотрудники', href: true, onClick: () => onNavigate('employees') }, { label: employee.full_name }]}
         title={employee.full_name}
         sub={employee.position_name || 'Сотрудник'}
-        subNote={employee.position_name && employee.position_role_type ? ({ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель', none: 'Без доступа' }[employee.position_role_type]) : undefined}
+        subNote={employee.position_name && employee.position_role_type ? ({ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель', none: 'Прочие сотрудники' }[employee.position_role_type]) : undefined}
         actions={<>
           {['owner', 'admin', 'secretary'].includes(currentUser?.role) && (
             <button className="btn btn-secondary btn-sm" onClick={() => openModal('employeeForm', { employee, onDone: load })}>{I.pencil}Редактировать</button>
@@ -1244,15 +1244,13 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
           </div>
 
           {/* Account block - owner only */}
-          {currentUser?.role === 'owner' && account !== undefined && (
+          {currentUser?.role === 'owner' && account !== undefined && employee.position_role_type !== 'none' && (
             <div className="card" style={{ marginTop: 16 }}>
               <div className="card-head">
                 <div className="title">{I.key}Аккаунт</div>
               </div>
               <div className="card-body">
-                {employee.position_role_type === 'none' ? (
-                  <span className="muted" style={{ fontSize: 13 }}>Должность не предусматривает доступ к системе. Аккаунт для этого сотрудника недоступен.</span>
-                ) : !account?.exists ? (
+                {!account?.exists ? (
                   !accShowCreate ? (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span className="muted" style={{ fontSize: 13 }}>Нет аккаунта</span>
@@ -1274,7 +1272,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                       <Field label="Повторите пароль" required>
                         <input type="password" className={`input${accErr === 'Пароли не совпадают' ? ' is-error' : ''}`} value={accPassword2} onChange={e => { setAccPassword2(e.target.value.replace(/[^\x00-\x7F]/g, '')); setAccErr(''); }} maxLength={128} />
                       </Field>
-                      <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Роль: <span style={{ fontWeight: 600, color: 'var(--text)' }}>{{ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель', none: 'Без доступа' }[employee.position_role_type] || 'Не определена'}</span></div>
+                      <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Роль: <span style={{ fontWeight: 600, color: 'var(--text)' }}>{{ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель', none: 'Прочие сотрудники' }[employee.position_role_type] || 'Не определена'}</span></div>
                       {accErr && <div style={{ color: 'var(--bad-fg)', fontSize: 13 }}>{accErr}</div>}
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button className="btn btn-secondary btn-sm" onClick={() => { setAccShowCreate(false); setAccErr(''); setAccPassword(''); setAccPassword2(''); }}>Отмена</button>
@@ -1299,7 +1297,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                       </Field>
                     )}
                     {!accPassword && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: -4 }}>Оставьте пустым, чтобы не менять пароль</div>}
-                    <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Роль: <span style={{ fontWeight: 600, color: 'var(--text)' }}>{{ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель', none: 'Без доступа' }[employee.position_role_type] || 'Не определена'}</span></div>
+                    <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Роль: <span style={{ fontWeight: 600, color: 'var(--text)' }}>{{ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель', none: 'Прочие сотрудники' }[employee.position_role_type] || 'Не определена'}</span></div>
                     {accErr && <div style={{ color: 'var(--bad-fg)', fontSize: 13 }}>{accErr}</div>}
                     <LoadButton className="btn btn-primary btn-sm" loading={accSaving} onClick={handleSaveAccount}>Сохранить</LoadButton>
                   </div>
@@ -2743,7 +2741,7 @@ function PositionList({ currentUser, openModal, onNavigate }) {
                   <tr key={p.id} className="row-link" onClick={() => onNavigate('employees', { filterPositionId: p.id, filterPositionName: p.name, filterPositionRoleType: p.role_type })}>
                     <td className="mono muted">{idx + 1}</td>
                     <td className="fwm">{p.name}</td>
-                    <td>{{ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель', none: 'Без доступа' }[p.role_type] || p.role_type}</td>
+                    <td>{{ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель', none: 'Прочие сотрудники' }[p.role_type] || p.role_type}</td>
                     <td className="mono">{p.employee_count}</td>
                     <td>{I.chevr}</td>
                   </tr>
