@@ -748,10 +748,9 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
                 ? <img src={student.photo} alt="" style={{ width: 96, height: 96, borderRadius: 16, objectFit: 'cover' }} className="avatar-zoomy" />
                 : <Avatar name={`${student.last_name} ${student.first_name}`} size="lg" className="avatar-zoomy" />
               }
-              <h3 style={{ marginTop: 14, marginBottom: 6 }}>
-                {student.last_name} {student.first_name}
+              <h3 style={{ marginTop: 14, marginBottom: 12 }}>
+                {[student.last_name, student.first_name, student.middle_name].filter(Boolean).join(' ')}
               </h3>
-              <div className="muted" style={{ fontSize: 13, marginBottom: 12 }}>{student.middle_name}</div>
               {currentUser?.role !== 'teacher'
                 ? <StatusDropdown value={student.status} onChange={handleStatusChange} />
                 : (() => { const s = STATUSES[student.status] || { label: student.status, cls: 'badge-neutral' }; return <span className={`badge ${s.cls}`}><span className="dot"></span>{s.label}</span>; })()
@@ -1232,10 +1231,9 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                 ? <img src={employee.photo} alt="" style={{ width: 96, height: 96, borderRadius: 16, objectFit: 'cover' }} className="avatar-zoomy" />
                 : <Avatar name={employee.full_name} size="lg" className="avatar-zoomy" />
               }
-              <h3 style={{ marginTop: 14, marginBottom: 6 }}>
-                {employee.last_name} {employee.first_name}
+              <h3 style={{ marginTop: 14, marginBottom: 12 }}>
+                {[employee.last_name, employee.first_name, employee.middle_name].filter(Boolean).join(' ')}
               </h3>
-              <div className="muted" style={{ fontSize: 13, marginBottom: 12 }}>{employee.middle_name}</div>
               {employee.position_name && (
                 <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
                   <Badge>{employee.position_name}</Badge>
@@ -1401,6 +1399,31 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
               )}
             </div>
           </div>}
+          {!['admin', 'secretary'].includes(employee.position_role_type) && (
+            <div className="card">
+              <div className="card-head"><div className="title">Прикреплённые группы</div></div>
+              <div className="card-body flush">
+                {(() => {
+                  const groups = [...new Map((employee.subjects || []).map(s => [s.group_id, { id: s.group_id, name: s.group_name }])).values()];
+                  return groups.length === 0
+                    ? <EmptyState icon={I.users} title="Группы не назначены" sub="Назначьте предметы, чтобы прикрепить группы" />
+                    : (
+                      <table className="tbl">
+                        <thead><tr><th>Группа</th><th style={{ width: 40 }}></th></tr></thead>
+                        <tbody>
+                          {groups.map(g => (
+                            <tr key={g.id} className="row-link" onClick={() => onNavigate('group-detail', { groupId: g.id })}>
+                              <td className="fwm">{g.name}</td>
+                              <td>{I.chevr}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    );
+                })()}
+              </div>
+            </div>
+          )}
           <div className="card">
             <div className="card-head">
               <div className="title">Документы</div>
@@ -2438,10 +2461,9 @@ function ParentDetail({ currentUser, openModal, onNavigate, parentId }) {
               ? <img src={parent.photo} alt="" style={{ width: 96, height: 96, borderRadius: 16, objectFit: 'cover' }} className="avatar-zoomy" />
               : <Avatar name={parent.full_name} size="lg" className="avatar-zoomy" />
             }
-            <h3 style={{ marginTop: 14, marginBottom: 6 }}>
-              {parent.last_name} {parent.first_name}
+            <h3 style={{ marginTop: 14, marginBottom: 12 }}>
+              {[parent.last_name, parent.first_name, parent.middle_name].filter(Boolean).join(' ')}
             </h3>
-            <div className="muted" style={{ fontSize: 13 }}>{parent.middle_name}</div>
           </div>
           <div style={{ borderTop: '1px solid var(--border)' }}>
             <dl className="kv">
