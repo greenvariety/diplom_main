@@ -1325,7 +1325,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {employee.position_role_type === 'teacher' && employee.headed_groups?.length > 0 && (
+          {!['admin', 'secretary'].includes(employee.position_role_type) && employee.headed_groups?.length > 0 && (
             <div className="card">
               <div className="card-head"><div className="title">Классное руководство</div></div>
               <div className="card-body flush">
@@ -1349,7 +1349,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
               </div>
             </div>
           )}
-          {employee.position_role_type === 'teacher' && <div className="card">
+          {!['admin', 'secretary'].includes(employee.position_role_type) && <div className="card">
             <div className="card-head">
               <div className="title">Ведёт предметы</div>
               {['owner', 'admin'].includes(currentUser?.role) && (
