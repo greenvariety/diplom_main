@@ -530,7 +530,7 @@ function StudentList({ currentUser, openModal, onNavigate }) {
     <Shell currentUser={currentUser} active="students" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
         title="Студенты"
-        sub={loading ? 'Загрузка…' : `Всего: ${data.count} записей`}
+        sub={loading ? 'Загрузка…' : `Всего записей: ${data.count}`}
         actions={currentUser?.role !== 'teacher' ? (
           <button className="btn btn-primary btn-sm" onClick={() => openModal('studentForm', { onDone: () => { setPage(1); load(); } })}>{I.plus}Добавить студента</button>
         ) : null}
@@ -945,7 +945,7 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
       <PageHead
         crumbs={filterPositionId ? [{ label: 'Должности', href: true, onClick: () => onNavigate('positions') }, { label: filterPositionName }] : undefined}
         title="Сотрудники"
-        sub={loading ? 'Загрузка…' : `Всего: ${data.count} записей`}
+        sub={loading ? 'Загрузка…' : `Всего записей: ${data.count}`}
         actions={<>
           {filterPositionId && canManage && <button className="btn btn-danger btn-sm" onClick={handleDeletePosition}>{I.trash}Удалить должность</button>}
           {filterPositionId && <button className="btn btn-secondary btn-sm" onClick={() => openModal('positionForm', { position: { id: filterPositionId, name: filterPositionName, role_type: filterPositionRoleType }, onDone: load })}>{I.pencil}Редактировать должность</button>}
@@ -1515,7 +1515,7 @@ function GroupList({ currentUser, openModal, onNavigate }) {
     <Shell currentUser={currentUser} active="groups" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
         title="Группы"
-        sub={loading ? '…' : `Всего: ${filtered.length} из ${groups.length}`}
+        sub={loading ? '…' : `Всего записей: ${filtered.length}`}
         actions={currentUser?.role !== 'teacher' ? <button className="btn btn-primary btn-sm" onClick={() => openModal('groupForm', { onDone: load })}>{I.plus}Добавить группу</button> : null}
       />
       <div className="filters">
@@ -1839,7 +1839,7 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
     <Shell currentUser={currentUser} active="faculties" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
         title="Факультеты"
-        sub={loading ? '…' : `Всего: ${displayFaculties.length} из ${faculties.length}`}
+        sub={loading ? '…' : `Всего записей: ${displayFaculties.length}`}
         actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('facultyForm', { onDone: load })}>{I.plus}Добавить факультет</button>}
       />
       <div className="filters">
@@ -1926,7 +1926,7 @@ function UserList({ currentUser, openModal, onNavigate }) {
     <Shell currentUser={currentUser} active="users" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
         title="Пользователи системы"
-        sub={loading ? 'Загрузка…' : `Всего: ${users.length} записей`}
+        sub={loading ? 'Загрузка…' : `Всего записей: ${users.length}`}
       />
       <div className="filters">
         <div className="field grow-2">
@@ -2043,7 +2043,7 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
 
   return (
     <Shell currentUser={currentUser} active="delreq" openModal={openModal} onNavigate={onNavigate} onLogout={onLogout}>
-      <PageHead title="Заявки на удаление" sub={loading ? 'Загрузка…' : `Всего: ${reqs.length} записей`} />
+      <PageHead title="Заявки на удаление" sub={loading ? 'Загрузка…' : `Всего записей: ${reqs.length}`} />
       <div className="filters">
         <div className="field grow-2">
           <label className="field-label">Поиск</label>
@@ -2162,7 +2162,7 @@ function AuditLog({ currentUser, openModal, onNavigate }) {
   return (
     <Shell currentUser={currentUser} active="audit" onNavigate={onNavigate} openModal={openModal}>
       <PageHead title="Журнал изменений"
-        sub={loading ? 'Загрузка…' : `Всего: ${data.count} записей`}
+        sub={loading ? 'Загрузка…' : `Всего записей: ${data.count}`}
         actions={<button className="btn btn-sm" style={{ background: 'var(--good-bg)', color: 'var(--good-fg)', border: 'none' }} onClick={doExport} disabled={expLoading}>{I.excel}{expLoading ? 'Загрузка…' : 'Экспорт в Excel'}</button>}
       />
       <div className="filters">
@@ -2291,7 +2291,7 @@ function ParentList({ currentUser, openModal, onNavigate }) {
     <Shell currentUser={currentUser} active="parents" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
         title="Опекуны и родители"
-        sub={loading ? 'Загрузка…' : `Всего: ${data.count} записей`}
+        sub={loading ? 'Загрузка…' : `Всего записей: ${data.count}`}
         actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('parentForm', { onDone: () => { setPage(1); load(); } })}>{I.plus}Добавить опекуна</button>}
       />
       <div className="filters">
@@ -2641,7 +2641,7 @@ function SubjectList({ currentUser, openModal, onNavigate }) {
     <Shell currentUser={currentUser} active="subjects" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
         title="Предметы"
-        sub={loading ? 'Загрузка…' : `Всего: ${subjects.length} записей`}
+        sub={loading ? 'Загрузка…' : `Всего записей: ${subjects.length}`}
         actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('subjectForm', { onDone: load })}>{I.plus}Добавить предмет</button>}
       />
       <div className="filters">
@@ -2710,7 +2710,7 @@ function PositionList({ currentUser, openModal, onNavigate }) {
     <Shell currentUser={currentUser} active="positions" onNavigate={onNavigate} openModal={openModal}>
       <PageHead
         title="Должности"
-        sub={loading ? 'Загрузка…' : `Всего: ${positions.length} записей`}
+        sub={loading ? 'Загрузка…' : `Всего записей: ${positions.length}`}
         actions={['owner', 'admin', 'secretary'].includes(currentUser?.role) ? (
           <button className="btn btn-primary btn-sm" onClick={() => openModal('positionForm', { onDone: load })}>{I.plus}Добавить должность</button>
         ) : null}

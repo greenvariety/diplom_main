@@ -1,25 +1,9 @@
 # HTML.md - задачи по правке интерфейса
 
-~~## 1. Убери раздел с ролью, теперь при создании должности мы сразу выбираем роль! И препода под системным админом будет писаться роль!~~
+~~## 1. Везде убери Всего: n из n, везде где такой счетчик есть, должно быть Всего записей: n~~
 
 ```html
-<label class="field-label" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">Роль</label>
-```
-
----
-
-~~## 2. Убери это!~~
-
-```html
-<span class="badge badge-neutral " style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">Системный администратор</span>
-```
-
----
-
-~~## 3. Под этим писать роль!~~
-
-```html
-<div class="sub" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">Системный администратор</div>
+<div class="sub" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">Всего: 6 из 6</div>
 ```
 
 ---
