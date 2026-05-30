@@ -89,6 +89,8 @@ class PositionDetailView(APIView):
             position = Position.objects.get(pk=pk, institution=institution)
         except Position.DoesNotExist:
             return Response({'error': 'Не найдено'}, status=404)
+        if position.employee_set.exists():
+            return Response({'error': 'Сначала открепите всех сотрудников от этой должности'}, status=400)
         log_action(request.user, 'deleted', position,
                    old_data={'name': position.name},
                    institution=institution)
@@ -107,6 +109,8 @@ class PositionDeleteRequestView(APIView):
             position = Position.objects.get(pk=pk, institution=institution)
         except Position.DoesNotExist:
             return Response({'error': 'Не найдено'}, status=404)
+        if position.employee_set.exists():
+            return Response({'error': 'Сначала открепите всех сотрудников от этой должности'}, status=400)
         from .models import DeleteRequest
         reason = (request.data.get('reason') or '').strip() or f'Удаление должности: {position}'
         req = DeleteRequest.objects.create(
