@@ -511,9 +511,9 @@ function StudentList({ currentUser, openModal, onNavigate }) {
       <PageHead
         title="Студенты"
         sub={loading ? 'Загрузка…' : `Всего: ${data.count} записей`}
-        actions={<>
+        actions={currentUser?.role !== 'teacher' ? (
           <button className="btn btn-primary btn-sm" onClick={() => openModal('studentForm', { onDone: () => { setPage(1); load(); } })}>{I.plus}Добавить студента</button>
-        </>}
+        ) : null}
       />
       <div className="filters">
         <div className="field grow-2">
@@ -1474,7 +1474,7 @@ function GroupList({ currentUser, openModal, onNavigate }) {
       <PageHead
         title="Группы"
         sub={loading ? '…' : `Всего: ${filtered.length} из ${groups.length}`}
-        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('groupForm', { onDone: load })}>{I.plus}Добавить группу</button>}
+        actions={currentUser?.role !== 'teacher' ? <button className="btn btn-primary btn-sm" onClick={() => openModal('groupForm', { onDone: load })}>{I.plus}Добавить группу</button> : null}
       />
       <div className="filters">
         <div className="field grow-2">
@@ -1599,13 +1599,13 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
         crumbs={[{ label: 'Группы', href: true, onClick: () => onNavigate('groups') }, { label: group.name }]}
         title={group.name}
         sub={`${group.faculty_name} · Год набора ${group.year}`}
-        actions={<>
+        actions={currentUser?.role !== 'teacher' ? <>
           <button className="btn btn-secondary btn-sm" onClick={() => openModal('groupForm', { group, onDone: load })}>{I.pencil}Редактировать</button>
           {currentUser?.role === 'owner'
             ? <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: group.name, type: 'группу', url: `/groups/${groupId}/`, onDone: () => onNavigate('groups') })}>{I.trash}Удалить</button>
             : <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Подать заявку</button>
           }
-        </>}
+        </> : null}
       />
       {group.headteacher_name && (
         <div className="card" style={{ marginBottom: 16 }}>
