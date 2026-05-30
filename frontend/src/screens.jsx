@@ -1039,7 +1039,6 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
   const [account, setAccount] = useState(undefined);
   const [accShowCreate, setAccShowCreate] = useState(false);
   const [accUsername, setAccUsername] = useState('');
-  const [accRole, setAccRole] = useState('teacher');
   const [accPassword, setAccPassword] = useState('');
   const [accPassword2, setAccPassword2] = useState('');
   const [accErr, setAccErr] = useState('');
@@ -1064,7 +1063,6 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
         setAccount(r.data);
         if (r.data.exists) {
           setAccUsername(r.data.username);
-          setAccRole(r.data.role);
           setAccPassword('');
           setAccPassword2('');
         }
@@ -1156,7 +1154,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
     setAccSaving(true);
     try {
       const r = await api.post(`/employees/${employeeId}/account/`, {
-        username: accUsername.trim(), role: accRole, password: accPassword,
+        username: accUsername.trim(), role: employee.position_role_type || 'teacher', password: accPassword,
       });
       setAccount(r.data);
       setAccShowCreate(false);
@@ -1180,7 +1178,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
     }
     setAccSaving(true);
     try {
-      const payload = { username: accUsername.trim(), role: accRole };
+      const payload = { username: accUsername.trim(), role: employee.position_role_type || 'teacher' };
       if (accPassword) payload.password = accPassword;
       const r = await api.patch(`/employees/${employeeId}/account/`, payload);
       setAccount(r.data);
@@ -1260,7 +1258,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                   !accShowCreate ? (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span className="muted" style={{ fontSize: 13 }}>Нет аккаунта</span>
-                      <button className="btn btn-primary btn-sm" onClick={() => { setAccShowCreate(true); setAccUsername(''); setAccRole('teacher'); setAccPassword(''); setAccErr(''); }}>
+                      <button className="btn btn-primary btn-sm" onClick={() => { setAccShowCreate(true); setAccUsername(''); setAccPassword(''); setAccErr(''); }}>
                         Создать аккаунт
                       </button>
                     </div>
@@ -1278,22 +1276,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                       <Field label="Повторите пароль" required>
                         <input type="password" className={`input${accErr === 'Пароли не совпадают' ? ' is-error' : ''}`} value={accPassword2} onChange={e => { setAccPassword2(e.target.value.replace(/[^\x00-\x7F]/g, '')); setAccErr(''); }} maxLength={128} />
                       </Field>
-                      <Field label="Роль">
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
-                            <input type="radio" name="accRoleCreate" value="teacher" checked={accRole === 'teacher'} onChange={() => setAccRole('teacher')} />
-                            Преподаватель
-                          </label>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
-                            <input type="radio" name="accRoleCreate" value="secretary" checked={accRole === 'secretary'} onChange={() => setAccRole('secretary')} />
-                            Секретарь
-                          </label>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
-                            <input type="radio" name="accRoleCreate" value="admin" checked={accRole === 'admin'} onChange={() => setAccRole('admin')} />
-                            Администратор
-                          </label>
-                        </div>
-                      </Field>
+                      <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Роль: <span style={{ fontWeight: 600, color: 'var(--text)' }}>{{ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель' }[employee.position_role_type] || 'Не определена'}</span></div>
                       {accErr && <div style={{ color: 'var(--bad-fg)', fontSize: 13 }}>{accErr}</div>}
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button className="btn btn-secondary btn-sm" onClick={() => { setAccShowCreate(false); setAccErr(''); setAccPassword(''); setAccPassword2(''); }}>Отмена</button>
@@ -1318,22 +1301,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                       </Field>
                     )}
                     {!accPassword && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: -4 }}>Оставьте пустым, чтобы не менять пароль</div>}
-                    <Field label="Роль">
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
-                          <input type="radio" name="accRoleEdit" value="teacher" checked={accRole === 'teacher'} onChange={() => setAccRole('teacher')} />
-                          Преподаватель
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
-                          <input type="radio" name="accRoleEdit" value="secretary" checked={accRole === 'secretary'} onChange={() => setAccRole('secretary')} />
-                          Секретарь
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
-                          <input type="radio" name="accRoleEdit" value="admin" checked={accRole === 'admin'} onChange={() => setAccRole('admin')} />
-                          Администратор
-                        </label>
-                      </div>
-                    </Field>
+                    <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Роль: <span style={{ fontWeight: 600, color: 'var(--text)' }}>{{ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель' }[employee.position_role_type] || 'Не определена'}</span></div>
                     {accErr && <div style={{ color: 'var(--bad-fg)', fontSize: 13 }}>{accErr}</div>}
                     <LoadButton className="btn btn-primary btn-sm" loading={accSaving} onClick={handleSaveAccount}>Сохранить</LoadButton>
                   </div>
