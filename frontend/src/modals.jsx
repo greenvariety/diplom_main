@@ -2,6 +2,7 @@
 import { STATUSES, STUDENTS, GROUPS, FACULTIES, EMPLOYEES, I } from './data.jsx';
 import { Badge, Avatar } from './shell.jsx';
 import { useToast, FadingError, Field, LoadButton, Combobox, PasswordInput, PasswordRules, PasswordStrength } from './utils.jsx';
+import { CodeInput } from './auth.jsx';
 import api from './api.js';
 
 /* ============================================================
@@ -2088,12 +2089,22 @@ function OrgDeleteConfirmModal({ data, onClose }) {
   const [step, setStep] = useState(1);
   const [maskedEmail, setMaskedEmail] = useState('');
   const [code, setCode] = useState('');
+  const [codeKey, setCodeKey] = useState(0);
   const [shake, setShake] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [resending, setResending] = useState(false);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown(s => Math.max(0, s - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
 
   const sendCode = async () => {
     try {
       const res = await api.post(`/organizations/${org.id}/send-delete-code/`);
       setMaskedEmail(res.data.masked_email);
+      setCooldown(60);
       setStep(2);
       toast.push('Код отправлен на почту', { kind: 'ok' });
     } catch (e) {
@@ -2101,15 +2112,33 @@ function OrgDeleteConfirmModal({ data, onClose }) {
     }
   };
 
+  const resend = async () => {
+    if (cooldown > 0 || resending) return;
+    setResending(true);
+    try {
+      const res = await api.post(`/organizations/${org.id}/send-delete-code/`);
+      setMaskedEmail(res.data.masked_email);
+      setCooldown(60);
+      setCode('');
+      setCodeKey(k => k + 1);
+    } catch (e) {
+      const d = e.response?.data;
+      if (d?.retry_after) setCooldown(d.retry_after);
+      toast.push(d?.error || 'Ошибка отправки кода', { kind: 'err' });
+    } finally {
+      setResending(false);
+    }
+  };
+
   const submit = async () => {
-    if (code.trim().length !== 6) {
+    if (code.length !== 6) {
       setShake(true);
       setTimeout(() => setShake(false), 400);
       toast.push('Введите 6-значный код', { kind: 'err' });
       return;
     }
     try {
-      await api.delete(`/organizations/${org.id}/`, { data: { code: code.trim().toUpperCase() } });
+      await api.delete(`/organizations/${org.id}/`, { data: { code: code.toUpperCase() } });
       toast.push('Организация удалена', { kind: 'ok' });
       onDone && onDone(org.id);
       onClose();
@@ -2141,29 +2170,26 @@ function OrgDeleteConfirmModal({ data, onClose }) {
   return (
     <Modal title="Подтвердите удаление" kind="danger" onClose={onClose} allowOverlayClose={false}
       footer={<>
-        <button className="btn btn-secondary" onClick={() => { setStep(1); setCode(''); }}>Назад</button>
+        <button className="btn btn-secondary" onClick={() => { setStep(1); setCode(''); setCooldown(0); }}>Назад</button>
         <LoadButton className={`btn btn-danger-solid ${shake ? 'shake' : ''}`} onClick={submit}>{I.trash}Удалить навсегда</LoadButton>
       </>}>
       <div className={shake ? 'shake' : ''}>
         <p className="muted" style={{ fontSize: 13, marginBottom: 16 }}>
-          Код подтверждения отправлен на <strong>{maskedEmail}</strong>. Введите его ниже.
+          Код подтверждения отправлен на <strong>{maskedEmail}</strong>. Введите его ниже. Код действителен 10 минут.
         </p>
         <Field label="Код подтверждения" required>
-          <input
-            className={`input ${shake && code.trim().length !== 6 ? 'is-error' : ''}`}
-            value={code}
-            onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
-            style={{ fontFamily: 'var(--font-mono)', fontSize: 20, letterSpacing: '0.2em', textAlign: 'center', maxWidth: 180 }}
-            autoComplete="one-time-code"
-            maxLength={6}
-            autoFocus
-          />
+          <CodeInput key={codeKey} onChange={v => setCode(v)} hasError={shake && code.length !== 6} autoFocus />
         </Field>
-        <div style={{ marginTop: 10, fontSize: 13, color: 'var(--text-muted)' }}>
-          Не пришёл код?{' '}
-          <a href="#" onClick={e => { e.preventDefault(); sendCode(); }} style={{ color: 'var(--accent)' }}>
-            Отправить повторно
-          </a>
+        <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 12, fontSize: 13 }}>
+          <span style={{ color: 'var(--text-muted)' }}>Не пришёл код?</span>
+          <button
+            className="btn btn-secondary"
+            style={{ padding: '4px 12px', fontSize: 13, minWidth: 180 }}
+            disabled={cooldown > 0 || resending}
+            onClick={resend}
+          >
+            {cooldown > 0 ? `Отправить снова (${cooldown} сек.)` : resending ? 'Отправляем...' : 'Отправить снова'}
+          </button>
         </div>
       </div>
     </Modal>
