@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from django.core.paginator import Paginator
 from django.db.models import Q, Count, Exists, OuterRef
 from .models import Student, Group, Faculty, Document, StudentParent, Parent, DeleteRequest, AuditLog, RecordNote
-from .utils import log_action, check_person_email_unique
+from .utils import log_action, check_person_email_unique, check_person_phone_unique
 
 
 def _student_data(s):
@@ -154,13 +154,18 @@ class StudentsView(APIView):
         if email_err:
             return Response({'error': email_err, 'field': 'email'}, status=400)
 
+        phone = (request.data.get('phone') or '').strip()
+        phone_err = check_person_phone_unique(phone)
+        if phone_err:
+            return Response({'error': phone_err, 'field': 'phone'}, status=400)
+
         student = Student.objects.create(
             institution=institution,
             last_name=last_name,
             first_name=first_name,
             middle_name=(request.data.get('middle_name') or '').strip(),
             birth_date=birth_date,
-            phone=(request.data.get('phone') or '').strip(),
+            phone=phone,
             email=email,
             status=request.data.get('status', 'pending_review'),
             faculty=faculty,
@@ -251,6 +256,11 @@ class StudentDetailView(APIView):
             email_err = check_person_email_unique(student.email, exclude_student_pk=student.pk)
             if email_err:
                 return Response({'error': email_err, 'field': 'email'}, status=400)
+
+        if 'phone' in request.data and student.phone:
+            phone_err = check_person_phone_unique(student.phone, exclude_student_pk=student.pk)
+            if phone_err:
+                return Response({'error': phone_err, 'field': 'phone'}, status=400)
 
         if 'birth_date' in request.data:
             student.birth_date = request.data['birth_date'] or None
@@ -406,12 +416,16 @@ class StudentParentsView(APIView):
             parent_email_err = check_person_email_unique(parent_email)
             if parent_email_err:
                 return Response({'error': parent_email_err, 'field': 'email'}, status=400)
+            parent_phone = (request.data.get('phone') or '').strip()
+            parent_phone_err = check_person_phone_unique(parent_phone)
+            if parent_phone_err:
+                return Response({'error': parent_phone_err, 'field': 'phone'}, status=400)
             parent = Parent.objects.create(
                 institution=institution,
                 last_name=last_name,
                 first_name=first_name,
                 middle_name=(request.data.get('middle_name') or '').strip(),
-                phone=(request.data.get('phone') or '').strip(),
+                phone=parent_phone,
                 email=parent_email,
             )
             photo = request.FILES.get('photo')

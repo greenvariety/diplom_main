@@ -1,6 +1,38 @@
 ﻿from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Student, Employee, Faculty, AuditLog, DeleteRequest, Group, Subject, Parent, Position, User
+from .utils import check_person_email_unique, check_person_phone_unique
+
+
+class ValidatePersonFieldView(APIView):
+    """Check email/phone uniqueness on-the-fly for person forms."""
+    def post(self, request):
+        field = request.data.get('field', '')
+        value = (request.data.get('value') or '').strip()
+        exclude_type = request.data.get('exclude_type', '')
+        exclude_id = request.data.get('exclude_id')
+
+        kwargs = {}
+        if exclude_id:
+            try:
+                exclude_id = int(exclude_id)
+            except (TypeError, ValueError):
+                exclude_id = None
+        if exclude_type == 'student' and exclude_id:
+            kwargs['exclude_student_pk'] = exclude_id
+        elif exclude_type == 'employee' and exclude_id:
+            kwargs['exclude_employee_pk'] = exclude_id
+        elif exclude_type == 'parent' and exclude_id:
+            kwargs['exclude_parent_pk'] = exclude_id
+
+        if field == 'email':
+            error = check_person_email_unique(value, **kwargs)
+        elif field == 'phone':
+            error = check_person_phone_unique(value, **kwargs)
+        else:
+            return Response({'error': 'Неизвестное поле'}, status=400)
+
+        return Response({'error': error})
 
 
 class MeView(APIView):

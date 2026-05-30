@@ -201,7 +201,20 @@ function StudentFormModal({ data, onClose }) {
   const [photoPreview, setPhotoPreview] = useState(student?.photo || null);
   const [dragOver, setDragOver] = useState(false);
   const [err, setErr] = useState('');
+  const [serverErrs, setServerErrs] = useState({});
   const set = (k, v) => setVals(s => ({ ...s, [k]: v }));
+
+  const checkField = async (field, value) => {
+    if (!value) return;
+    try {
+      const r = await api.post('/validate-person-field/', {
+        field, value,
+        exclude_type: student ? 'student' : '',
+        exclude_id: student?.id || null,
+      });
+      setServerErrs(s => ({ ...s, [field]: r.data.error || null }));
+    } catch {}
+  };
 
   useEffect(() => {
     api.get('/faculties/').then(r => setFaculties(r.data)).catch(() => {});
@@ -272,7 +285,14 @@ function StudentFormModal({ data, onClose }) {
       onDone && onDone();
       onClose && onClose();
     } catch (e) {
-      setErr(e.response?.data?.error || 'Ошибка при сохранении');
+      const field = e.response?.data?.field;
+      const msg = e.response?.data?.error || 'Ошибка при сохранении';
+      if (field) {
+        setServerErrs(s => ({ ...s, [field]: msg }));
+        setTouched(t => ({ ...t, [field]: 1 }));
+      } else {
+        setErr(msg);
+      }
     }
   };
 
@@ -327,11 +347,11 @@ function StudentFormModal({ data, onClose }) {
       <div className="form-section">
         <div className="form-section-title">Контакты</div>
         <div className="form-grid">
-          <Field label="Телефон" required error={touched.phone && errs.phone}>
-            <PhoneInput className={`input ${touched.phone && errs.phone ? 'is-error' : ''}`} value={vals.phone} onChange={v => set('phone', v)} onBlur={() => setTouched(t => ({ ...t, phone: 1 }))} />
+          <Field label="Телефон" required error={serverErrs.phone || (touched.phone && errs.phone)}>
+            <PhoneInput className={`input ${(serverErrs.phone || (touched.phone && errs.phone)) ? 'is-error' : ''}`} value={vals.phone} onChange={v => { set('phone', v); setServerErrs(s => ({ ...s, phone: null })); }} onBlur={() => { setTouched(t => ({ ...t, phone: 1 })); checkField('phone', vals.phone); }} />
           </Field>
-          <Field label="Email" required error={touched.email && errs.email}>
-            <input className={`input ${touched.email && errs.email ? 'is-error' : ''}`} value={vals.email} onChange={e => set('email', e.target.value)} onBlur={() => setTouched(t => ({ ...t, email: 1 }))} maxLength={254} />
+          <Field label="Email" required error={serverErrs.email || (touched.email && errs.email)}>
+            <input className={`input ${(serverErrs.email || (touched.email && errs.email)) ? 'is-error' : ''}`} value={vals.email} onChange={e => { set('email', e.target.value); setServerErrs(s => ({ ...s, email: null })); }} onBlur={() => { setTouched(t => ({ ...t, email: 1 })); checkField('email', vals.email); }} maxLength={254} />
           </Field>
         </div>
       </div>
@@ -387,7 +407,20 @@ function EmployeeFormModal({ data, onClose }) {
   const [dragOver, setDragOver] = useState(false);
   const [touched, setTouched] = useState({});
   const [err, setErr] = useState('');
+  const [serverErrs, setServerErrs] = useState({});
   const touch = (f) => setTouched(t => ({ ...t, [f]: 1 }));
+
+  const checkField = async (field, value) => {
+    if (!value) return;
+    try {
+      const r = await api.post('/validate-person-field/', {
+        field, value,
+        exclude_type: employee ? 'employee' : '',
+        exclude_id: employee?.id || null,
+      });
+      setServerErrs(s => ({ ...s, [field]: r.data.error || null }));
+    } catch {}
+  };
 
   const fieldErrs = {};
   if (!lastName.trim()) fieldErrs.last_name = 'Обязательно';
@@ -446,7 +479,14 @@ function EmployeeFormModal({ data, onClose }) {
       onDone && onDone();
       onClose && onClose();
     } catch (e) {
-      setErr(e.response?.data?.error || 'Ошибка при сохранении');
+      const field = e.response?.data?.field;
+      const msg = e.response?.data?.error || 'Ошибка при сохранении';
+      if (field) {
+        setServerErrs(s => ({ ...s, [field]: msg }));
+        setTouched(t => ({ ...t, [field]: 1 }));
+      } else {
+        setErr(msg);
+      }
     }
   };
 
@@ -497,11 +537,11 @@ function EmployeeFormModal({ data, onClose }) {
       <div className="form-section">
         <div className="form-section-title">Контакты</div>
         <div className="form-grid">
-          <Field label="Телефон" required error={touched.phone && fieldErrs.phone}>
-            <PhoneInput className={`input ${touched.phone && fieldErrs.phone ? 'is-error' : ''}`} value={phone} onChange={setPhone} onBlur={() => touch('phone')} />
+          <Field label="Телефон" required error={serverErrs.phone || (touched.phone && fieldErrs.phone)}>
+            <PhoneInput className={`input ${(serverErrs.phone || (touched.phone && fieldErrs.phone)) ? 'is-error' : ''}`} value={phone} onChange={v => { setPhone(v); setServerErrs(s => ({ ...s, phone: null })); }} onBlur={() => { touch('phone'); checkField('phone', phone); }} />
           </Field>
-          <Field label="Email" required error={touched.email && fieldErrs.email}>
-            <input className={`input ${touched.email && fieldErrs.email ? 'is-error' : ''}`} value={email} onChange={e => { setEmail(e.target.value); }} onBlur={() => touch('email')} maxLength={254} />
+          <Field label="Email" required error={serverErrs.email || (touched.email && fieldErrs.email)}>
+            <input className={`input ${(serverErrs.email || (touched.email && fieldErrs.email)) ? 'is-error' : ''}`} value={email} onChange={e => { setEmail(e.target.value); setServerErrs(s => ({ ...s, email: null })); }} onBlur={() => { touch('email'); checkField('email', email); }} maxLength={254} />
           </Field>
         </div>
       </div>
@@ -717,7 +757,20 @@ function ParentFormModal({ data, onClose }) {
   const [dragOver, setDragOver] = useState(false);
   const [touched, setTouched] = useState({});
   const [err, setErr] = useState('');
+  const [serverErrs, setServerErrs] = useState({});
   const touchP = (f) => setTouched(t => ({ ...t, [f]: 1 }));
+
+  const checkField = async (field, value) => {
+    if (!value) return;
+    try {
+      const r = await api.post('/validate-person-field/', {
+        field, value,
+        exclude_type: parent ? 'parent' : '',
+        exclude_id: parent?.id || null,
+      });
+      setServerErrs(s => ({ ...s, [field]: r.data.error || null }));
+    } catch {}
+  };
 
   const pErrs = {};
   if (!lastName.trim()) pErrs.last_name = 'Обязательно';
@@ -773,7 +826,14 @@ function ParentFormModal({ data, onClose }) {
       onDone && onDone();
       onClose && onClose();
     } catch (e) {
-      setErr(e.response?.data?.error || 'Ошибка при сохранении');
+      const field = e.response?.data?.field;
+      const msg = e.response?.data?.error || 'Ошибка при сохранении';
+      if (field) {
+        setServerErrs(s => ({ ...s, [field]: msg }));
+        setTouched(t => ({ ...t, [field]: 1 }));
+      } else {
+        setErr(msg);
+      }
     }
   };
 
@@ -826,11 +886,11 @@ function ParentFormModal({ data, onClose }) {
             </select>
           </Field>
         )}
-        <Field label="Телефон" required error={touched.phone && pErrs.phone}>
-          <PhoneInput className={`input ${touched.phone && pErrs.phone ? 'is-error' : ''}`} value={phone} onChange={setPhone} onBlur={() => touchP('phone')} />
+        <Field label="Телефон" required error={serverErrs.phone || (touched.phone && pErrs.phone)}>
+          <PhoneInput className={`input ${(serverErrs.phone || (touched.phone && pErrs.phone)) ? 'is-error' : ''}`} value={phone} onChange={v => { setPhone(v); setServerErrs(s => ({ ...s, phone: null })); }} onBlur={() => { touchP('phone'); checkField('phone', phone); }} />
         </Field>
-        <Field label="Email" required error={touched.email && pErrs.email}>
-          <input className={`input ${touched.email && pErrs.email ? 'is-error' : ''}`} value={email} onChange={e => setEmail(e.target.value)} onBlur={() => touchP('email')} maxLength={254} />
+        <Field label="Email" required error={serverErrs.email || (touched.email && pErrs.email)}>
+          <input className={`input ${(serverErrs.email || (touched.email && pErrs.email)) ? 'is-error' : ''}`} value={email} onChange={e => { setEmail(e.target.value); setServerErrs(s => ({ ...s, email: null })); }} onBlur={() => { touchP('email'); checkField('email', email); }} maxLength={254} />
         </Field>
         {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
       </div>

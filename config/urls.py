@@ -6,7 +6,7 @@ from rest_framework.routers import DefaultRouter
 from core.views import serve_frontend
 from rest_framework_simplejwt.views import TokenRefreshView
 from core.api_auth import LoginView, RegisterView, LogoutView, RecoverView, VerifyEmailView, SendRecoverCodeView, ResendRegisterCodeView, CheckAvailabilityView
-from core.api_main import MeView, DashboardView
+from core.api_main import MeView, DashboardView, ValidatePersonFieldView
 from core.api_organizations import OrganizationsView, OrganizationDetailView, OrganizationSwitchView, AllowedOrganizationsView, SendOrgDeleteCodeView
 from core.api_faculties import FacultiesView, FacultyDetailView, FacultyDeleteRequestView, FacultyFlagView
 from core.api_groups import GroupsView, GroupDetailView, GroupDeleteRequestView, GroupSubjectsView, GroupSubjectDetailView, GroupFlagView
@@ -51,6 +51,7 @@ urlpatterns = [
     path('api/me/change-email/', ProfileChangeEmailView.as_view()),
     path('api/me/confirm-email/', ProfileConfirmEmailView.as_view()),
     path('api/dashboard/', DashboardView.as_view()),
+    path('api/validate-person-field/', ValidatePersonFieldView.as_view()),
     path('api/organizations/', OrganizationsView.as_view()),
     path('api/organizations/allowed/', AllowedOrganizationsView.as_view()),
     path('api/organizations/<int:pk>/', OrganizationDetailView.as_view()),

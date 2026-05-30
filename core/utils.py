@@ -261,6 +261,36 @@ def check_person_email_unique(email, exclude_employee_pk=None, exclude_student_p
     return None
 
 
+def check_person_phone_unique(phone, exclude_employee_pk=None, exclude_student_pk=None, exclude_parent_pk=None):
+    """
+    Returns an error message if phone is already used by any employee, student, or parent globally.
+    Returns None if the phone is free or empty.
+    """
+    if not phone:
+        return None
+    from .models import Employee, Student, Parent
+
+    emp_qs = Employee.objects.filter(phone=phone)
+    if exclude_employee_pk:
+        emp_qs = emp_qs.exclude(pk=exclude_employee_pk)
+    if emp_qs.exists():
+        return 'Этот номер уже используется другим сотрудником'
+
+    stu_qs = Student.objects.filter(phone=phone)
+    if exclude_student_pk:
+        stu_qs = stu_qs.exclude(pk=exclude_student_pk)
+    if stu_qs.exists():
+        return 'Этот номер уже используется студентом'
+
+    par_qs = Parent.objects.filter(phone=phone)
+    if exclude_parent_pk:
+        par_qs = par_qs.exclude(pk=exclude_parent_pk)
+    if par_qs.exists():
+        return 'Этот номер уже используется опекуном'
+
+    return None
+
+
 # ---------------------------------------------------------------------------
 # Role decorators
 # ---------------------------------------------------------------------------
