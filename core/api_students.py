@@ -117,7 +117,7 @@ class StudentsView(APIView):
         })
 
     def post(self, request):
-        err = _at_least_teacher(request)
+        err = _admin_only(request)  # owner + admin + secretary only
         if err:
             return err
         institution = request.user.institution

@@ -733,14 +733,11 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
         title={`${student.last_name} ${student.first_name} ${student.middle_name}`}
         sub={`${student.faculty_short} · ${student.group_name || 'без группы'}`}
         actions={<>
-          {currentUser?.role !== 'teacher' && <>
+          {['owner', 'admin', 'secretary'].includes(currentUser?.role) && <>
             <button className="btn btn-secondary btn-sm" onClick={() => openModal('studentForm', { student, onDone: load })}>{I.pencil}Редактировать</button>
             <button className="btn btn-secondary btn-sm" onClick={() => openModal('transfer', { student, currentUser, onDone: load })}>{I.swap}Перевести</button>
+            <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: `${student.last_name} ${student.first_name}`, type: 'студента', url: `/students/${student.id}/`, onDone: () => onNavigate('students') })}>{I.trash}Удалить</button>
           </>}
-          {currentUser?.role === 'owner'
-            ? <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: `${student.last_name} ${student.first_name}`, type: 'студента', url: `/students/${student.id}/`, onDone: () => onNavigate('students') })}>{I.trash}Удалить</button>
-            : <button className="btn btn-danger btn-sm" onClick={() => openModal('deleteConfirm', { name: `${student.last_name} ${student.first_name}`, type: 'студента', studentId, onDone: () => onNavigate('students') })}>{I.trash}Подать заявку</button>
-          }
         </>}
       />
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
@@ -2407,11 +2404,10 @@ function ParentDetail({ currentUser, openModal, onNavigate, parentId }) {
         title={parent.full_name}
         sub="Опекун / родитель"
         actions={<>
-          <button className="btn btn-secondary btn-sm" onClick={() => openModal('parentForm', { parent, onDone: load })}>{I.pencil}Редактировать</button>
-          {currentUser?.role === 'owner'
-            ? <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: parent.full_name, type: 'опекуна', url: `/parents/${parentId}/`, onDone: () => onNavigate('parents') })}>{I.trash}Удалить</button>
-            : <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Подать заявку</button>
-          }
+          {['owner', 'admin', 'secretary'].includes(currentUser?.role) && <>
+            <button className="btn btn-secondary btn-sm" onClick={() => openModal('parentForm', { parent, onDone: load })}>{I.pencil}Редактировать</button>
+            <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: parent.full_name, type: 'опекуна', url: `/parents/${parentId}/`, onDone: () => onNavigate('parents') })}>{I.trash}Удалить</button>
+          </>}
         </>}
       />
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
@@ -2708,7 +2704,9 @@ function PositionList({ currentUser, openModal, onNavigate }) {
       <PageHead
         title="Должности"
         sub={loading ? 'Загрузка…' : `Всего: ${positions.length} записей`}
-        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('positionForm', { onDone: load })}>{I.plus}Добавить должность</button>}
+        actions={['owner', 'admin', 'secretary'].includes(currentUser?.role) ? (
+          <button className="btn btn-primary btn-sm" onClick={() => openModal('positionForm', { onDone: load })}>{I.plus}Добавить должность</button>
+        ) : null}
       />
       <div className="filters">
         <div className="field grow-2">
@@ -2727,14 +2725,16 @@ function PositionList({ currentUser, openModal, onNavigate }) {
               <thead><tr>
                 <SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader>
                 <SortHeader k="name" sort={sort}>Название</SortHeader>
+                <SortHeader k="role_type" sort={sort}>Тип роли</SortHeader>
                 <SortHeader k="employee_count" sort={sort}>Сотрудников</SortHeader>
                 <th style={{ width: 40 }}></th>
               </tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={4} /> : filtered.map((p, idx) => (
+                {loading ? <SkeletonRows cols={5} /> : filtered.map((p, idx) => (
                   <tr key={p.id} className="row-link" onClick={() => onNavigate('employees', { filterPositionId: p.id, filterPositionName: p.name })}>
                     <td className="mono muted">{idx + 1}</td>
                     <td className="fwm">{p.name}</td>
+                    <td>{{ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель' }[p.role_type] || p.role_type}</td>
                     <td className="mono">{p.employee_count}</td>
                     <td>{I.chevr}</td>
                   </tr>
