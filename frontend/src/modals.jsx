@@ -182,10 +182,14 @@ function StudentFormModal({ data, onClose }) {
   const errs = {};
   if (!vals.last_name.trim()) errs.last_name = 'Обязательно';
   if (!vals.first_name.trim()) errs.first_name = 'Обязательно';
-  const phoneErr = validatePhone(vals.phone);
-  if (phoneErr) errs.phone = phoneErr;
-  const emailErr = validateEmail(vals.email);
-  if (emailErr) errs.email = emailErr;
+  if (!vals.birth_date) errs.birth_date = 'Обязательно';
+  if (!vals.phone.trim()) errs.phone = 'Обязательно';
+  else { const e = validatePhone(vals.phone); if (e) errs.phone = e; }
+  if (!vals.email.trim()) errs.email = 'Обязательно';
+  else { const e = validateEmail(vals.email); if (e) errs.email = e; }
+  if (!vals.faculty_id) errs.faculty_id = 'Выберите факультет';
+  if (!vals.group_id) errs.group_id = 'Выберите группу';
+  if (!photoPreview) errs.photo = 'Добавьте фото';
 
   const handlePhoto = (file) => {
     if (!file) return;
@@ -211,14 +215,9 @@ function StudentFormModal({ data, onClose }) {
   };
 
   const save = async () => {
-    setTouched({ last_name: 1, first_name: 1, phone: 1, email: 1 });
+    setTouched({ last_name: 1, first_name: 1, birth_date: 1, phone: 1, email: 1, faculty_id: 1, group_id: 1, photo: 1 });
     if (Object.keys(errs).length) {
-      const missing = [];
-      if (errs.last_name) missing.push('фамилию');
-      if (errs.first_name) missing.push('имя');
-      if (errs.phone) missing.push('корректный телефон');
-      if (errs.email) missing.push('корректный email');
-      toast.push(`Проверьте: ${missing.join(', ')}`, { kind: 'err' });
+      toast.push('Заполните все обязательные поля', { kind: 'err' });
       return;
     }
     setErr('');
@@ -280,6 +279,7 @@ function StudentFormModal({ data, onClose }) {
         </div>
         <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handlePhoto(e.target.files[0])} />
       </div>
+      {touched.photo && errs.photo && <div style={{ color: 'var(--bad-fg)', fontSize: 12, marginBottom: 8, marginTop: -8 }}>{errs.photo}</div>}
       <div className="form-section">
         <div className="form-section-title">Личные данные</div>
         <div className="form-grid">
@@ -290,17 +290,19 @@ function StudentFormModal({ data, onClose }) {
             <input className={`input ${touched.first_name && errs.first_name ? 'is-error' : ''}`} value={vals.first_name} onChange={e => set('first_name', e.target.value)} onBlur={() => setTouched(t => ({ ...t, first_name: 1 }))} maxLength={100} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); set('first_name', (vals.first_name + filterName(e.clipboardData.getData('text') || '')).slice(0, 100)); }} />
           </Field>
           <Field label="Отчество" className="field-full"><input className="input" value={vals.middle_name} onChange={e => set('middle_name', e.target.value)} maxLength={100} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); set('middle_name', (vals.middle_name + filterName(e.clipboardData.getData('text') || '')).slice(0, 100)); }} /></Field>
-          <Field label="Дата рождения"><input className="input" type="date" value={vals.birth_date || ''} onChange={e => set('birth_date', e.target.value)} /></Field>
+          <Field label="Дата рождения" required error={touched.birth_date && errs.birth_date}>
+            <input className={`input ${touched.birth_date && errs.birth_date ? 'is-error' : ''}`} type="date" value={vals.birth_date || ''} onChange={e => { set('birth_date', e.target.value); setTouched(t => ({ ...t, birth_date: 1 })); }} />
+          </Field>
         </div>
       </div>
 
       <div className="form-section">
         <div className="form-section-title">Контакты</div>
         <div className="form-grid">
-          <Field label="Телефон" error={touched.phone && errs.phone}>
+          <Field label="Телефон" required error={touched.phone && errs.phone}>
             <input className={`input ${touched.phone && errs.phone ? 'is-error' : ''}`} value={vals.phone} onChange={e => set('phone', applyPhoneMask(e.target.value))} onBlur={() => setTouched(t => ({ ...t, phone: 1 }))} maxLength={18} />
           </Field>
-          <Field label="Email" error={touched.email && errs.email}>
+          <Field label="Email" required error={touched.email && errs.email}>
             <input className={`input ${touched.email && errs.email ? 'is-error' : ''}`} value={vals.email} onChange={e => set('email', e.target.value)} onBlur={() => setTouched(t => ({ ...t, email: 1 }))} maxLength={254} />
           </Field>
         </div>
@@ -309,17 +311,17 @@ function StudentFormModal({ data, onClose }) {
       <div className="form-section">
         <div className="form-section-title">Учёба</div>
         <div className="form-grid">
-          <Field label="Факультет">
-            <select className="select"
+          <Field label="Факультет" required error={touched.faculty_id && errs.faculty_id}>
+            <select className={`select ${touched.faculty_id && errs.faculty_id ? 'is-error' : ''}`}
               value={vals.faculty_id}
-              onChange={e => { set('faculty_id', e.target.value); set('group_id', ''); }}>
+              onChange={e => { set('faculty_id', e.target.value); set('group_id', ''); setTouched(t => ({ ...t, faculty_id: 1 })); }}>
               <option value="">- Выберите факультет -</option>
               {faculties.map(f => <option key={f.id} value={f.id}>{f.short_name} - {f.full_name}</option>)}
             </select>
           </Field>
-          <Field label="Группа">
-            <select className="select" value={vals.group_id} onChange={e => set('group_id', e.target.value)} disabled={!vals.faculty_id}>
-              <option value="">- Без группы -</option>
+          <Field label="Группа" required error={touched.group_id && errs.group_id}>
+            <select className={`select ${touched.group_id && errs.group_id ? 'is-error' : ''}`} value={vals.group_id} onChange={e => { set('group_id', e.target.value); setTouched(t => ({ ...t, group_id: 1 })); }} disabled={!vals.faculty_id}>
+              <option value="">- Выберите группу -</option>
               {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
             </select>
           </Field>
@@ -362,10 +364,13 @@ function EmployeeFormModal({ data, onClose }) {
   const fieldErrs = {};
   if (!lastName.trim()) fieldErrs.last_name = 'Обязательно';
   if (!firstName.trim()) fieldErrs.first_name = 'Обязательно';
-  const empPhoneErr = validatePhone(phone);
-  if (empPhoneErr) fieldErrs.phone = empPhoneErr;
-  const empEmailErr = validateEmail(email);
-  if (empEmailErr) fieldErrs.email = empEmailErr;
+  if (!birthDate) fieldErrs.birth_date = 'Обязательно';
+  if (!phone.trim()) fieldErrs.phone = 'Обязательно';
+  else { const e = validatePhone(phone); if (e) fieldErrs.phone = e; }
+  if (!email.trim()) fieldErrs.email = 'Обязательно';
+  else { const e = validateEmail(email); if (e) fieldErrs.email = e; }
+  if (!positionId) fieldErrs.position_id = 'Выберите должность';
+  if (!photoPreview) fieldErrs.photo = 'Добавьте фото';
 
   useEffect(() => {
     api.get('/positions/').then(r => setPositions(r.data)).catch(() => {});
@@ -395,14 +400,9 @@ function EmployeeFormModal({ data, onClose }) {
   };
 
   const save = async () => {
-    setTouched({ last_name: 1, first_name: 1, phone: 1, email: 1 });
+    setTouched({ last_name: 1, first_name: 1, birth_date: 1, phone: 1, email: 1, position_id: 1, photo: 1 });
     if (Object.keys(fieldErrs).length) {
-      const msgs = [];
-      if (fieldErrs.last_name) msgs.push('фамилию');
-      if (fieldErrs.first_name) msgs.push('имя');
-      if (fieldErrs.phone) msgs.push('корректный телефон');
-      if (fieldErrs.email) msgs.push('корректный email');
-      toast.push(`Проверьте: ${msgs.join(', ')}`, { kind: 'err' });
+      toast.push('Заполните все обязательные поля', { kind: 'err' });
       return;
     }
     setErr('');
@@ -457,6 +457,7 @@ function EmployeeFormModal({ data, onClose }) {
         </div>
         <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handlePhoto(e.target.files[0])} />
       </div>
+      {touched.photo && fieldErrs.photo && <div style={{ color: 'var(--bad-fg)', fontSize: 12, marginBottom: 8, marginTop: -8 }}>{fieldErrs.photo}</div>}
       <div className="form-section">
         <div className="form-section-title">Личные данные</div>
         <div className="form-grid">
@@ -469,18 +470,18 @@ function EmployeeFormModal({ data, onClose }) {
           <Field label="Отчество" className="field-full">
             <input className="input" value={middleName} onChange={e => setMiddleName(e.target.value)} maxLength={100} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); setMiddleName(p => (p + filterName(e.clipboardData.getData('text') || '')).slice(0, 100)); }} />
           </Field>
-          <Field label="Дата рождения">
-            <input className="input" type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} />
+          <Field label="Дата рождения" required error={touched.birth_date && fieldErrs.birth_date}>
+            <input className={`input ${touched.birth_date && fieldErrs.birth_date ? 'is-error' : ''}`} type="date" value={birthDate} onChange={e => { setBirthDate(e.target.value); touch('birth_date'); }} />
           </Field>
         </div>
       </div>
       <div className="form-section">
         <div className="form-section-title">Контакты</div>
         <div className="form-grid">
-          <Field label="Телефон" error={touched.phone && fieldErrs.phone}>
+          <Field label="Телефон" required error={touched.phone && fieldErrs.phone}>
             <input className={`input ${touched.phone && fieldErrs.phone ? 'is-error' : ''}`} value={phone} onChange={e => setPhone(applyPhoneMask(e.target.value))} onBlur={() => touch('phone')} maxLength={18} />
           </Field>
-          <Field label="Email" error={touched.email && fieldErrs.email}>
+          <Field label="Email" required error={touched.email && fieldErrs.email}>
             <input className={`input ${touched.email && fieldErrs.email ? 'is-error' : ''}`} value={email} onChange={e => { setEmail(e.target.value); }} onBlur={() => touch('email')} maxLength={254} />
           </Field>
         </div>
@@ -488,8 +489,8 @@ function EmployeeFormModal({ data, onClose }) {
       <div className="form-section">
         <div className="form-section-title">Работа</div>
         <div className="form-grid">
-          <Field label="Должность">
-            <select className="select" value={positionId} onChange={e => setPositionId(e.target.value)}>
+          <Field label="Должность" required error={touched.position_id && fieldErrs.position_id}>
+            <select className={`select ${touched.position_id && fieldErrs.position_id ? 'is-error' : ''}`} value={positionId} onChange={e => { setPositionId(e.target.value); touch('position_id'); }}>
               <option value="">- Не указана -</option>
               {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
@@ -701,10 +702,11 @@ function ParentFormModal({ data, onClose }) {
   const pErrs = {};
   if (!lastName.trim()) pErrs.last_name = 'Обязательно';
   if (!firstName.trim()) pErrs.first_name = 'Обязательно';
-  const pPhoneErr = validatePhone(phone);
-  if (pPhoneErr) pErrs.phone = pPhoneErr;
-  const pEmailErr = validateEmail(email);
-  if (pEmailErr) pErrs.email = pEmailErr;
+  if (!phone.trim()) pErrs.phone = 'Обязательно';
+  else { const e = validatePhone(phone); if (e) pErrs.phone = e; }
+  if (!email.trim()) pErrs.email = 'Обязательно';
+  else { const e = validateEmail(email); if (e) pErrs.email = e; }
+  if (!photoPreview) pErrs.photo = 'Добавьте фото';
 
   const handlePhoto = (file) => {
     if (!file) return;
@@ -730,14 +732,9 @@ function ParentFormModal({ data, onClose }) {
   };
 
   const save = async () => {
-    setTouched({ last_name: 1, first_name: 1, phone: 1, email: 1 });
+    setTouched({ last_name: 1, first_name: 1, phone: 1, email: 1, photo: 1 });
     if (Object.keys(pErrs).length) {
-      const msgs = [];
-      if (pErrs.last_name) msgs.push('фамилию');
-      if (pErrs.first_name) msgs.push('имя');
-      if (pErrs.phone) msgs.push('корректный телефон');
-      if (pErrs.email) msgs.push('корректный email');
-      toast.push(`Проверьте: ${msgs.join(', ')}`, { kind: 'err' });
+      toast.push('Заполните все обязательные поля', { kind: 'err' });
       return;
     }
     setErr('');
@@ -794,6 +791,7 @@ function ParentFormModal({ data, onClose }) {
         </div>
         <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handlePhoto(e.target.files[0])} />
       </div>
+      {touched.photo && pErrs.photo && <div style={{ color: 'var(--bad-fg)', fontSize: 12, marginBottom: 8, marginTop: -8 }}>{pErrs.photo}</div>}
       <div className="form-grid">
         <Field label="Фамилия" required error={touched.last_name && pErrs.last_name} className="field-full">
           <input className={`input ${touched.last_name && pErrs.last_name ? 'is-error' : ''}`} value={lastName} onChange={e => { setLastName(e.target.value); setErr(''); }} onBlur={() => touchP('last_name')} maxLength={100} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); setLastName(p => (p + filterName(e.clipboardData.getData('text') || '')).slice(0, 100)); }} />
@@ -813,10 +811,10 @@ function ParentFormModal({ data, onClose }) {
             </select>
           </Field>
         )}
-        <Field label="Телефон" error={touched.phone && pErrs.phone}>
+        <Field label="Телефон" required error={touched.phone && pErrs.phone}>
           <input className={`input ${touched.phone && pErrs.phone ? 'is-error' : ''}`} value={phone} onChange={e => setPhone(applyPhoneMask(e.target.value))} onBlur={() => touchP('phone')} maxLength={18} />
         </Field>
-        <Field label="Email" error={touched.email && pErrs.email}>
+        <Field label="Email" required error={touched.email && pErrs.email}>
           <input className={`input ${touched.email && pErrs.email ? 'is-error' : ''}`} value={email} onChange={e => setEmail(e.target.value)} onBlur={() => touchP('email')} maxLength={254} />
         </Field>
         {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
