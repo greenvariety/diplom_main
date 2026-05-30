@@ -2,6 +2,7 @@
 import { STATUSES, STUDENTS, GROUPS, FACULTIES, EMPLOYEES, I } from './data.jsx';
 import { Badge, Avatar } from './shell.jsx';
 import { useToast, FadingError, Field, LoadButton, Combobox, PasswordInput, PasswordRules, PasswordStrength } from './utils.jsx';
+import { CodeInput } from './auth.jsx';
 import api from './api.js';
 
 /* ============================================================
@@ -2178,16 +2179,7 @@ function OrgDeleteConfirmModal({ data, onClose }) {
           Код подтверждения отправлен на <strong>{maskedEmail}</strong>. Введите его ниже. Код действителен 10 минут.
         </p>
         <Field label="Код подтверждения" required>
-          <input
-            key={codeKey}
-            className={`input${shake && code.length !== 6 ? ' is-error' : ''}`}
-            value={code}
-            onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
-            style={{ fontFamily: 'var(--font-mono)', fontSize: 20, letterSpacing: '0.2em', textAlign: 'center', maxWidth: 180 }}
-            autoComplete="one-time-code"
-            maxLength={6}
-            autoFocus
-          />
+          <CodeInput key={codeKey} onChange={v => setCode(v)} hasError={shake && code.length !== 6} autoFocus />
         </Field>
         <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 12, fontSize: 13 }}>
           <span style={{ color: 'var(--text-muted)' }}>Не пришёл код?</span>
