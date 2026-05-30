@@ -891,7 +891,7 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
 /* ============================================================
    Employees list / detail
    ============================================================ */
-function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, filterPositionName }) {
+function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, filterPositionName, filterPositionRoleType }) {
   const toast = useToast();
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
@@ -948,7 +948,7 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
         sub={loading ? 'Загрузка…' : `Всего: ${data.count} записей`}
         actions={<>
           {filterPositionId && canManage && <button className="btn btn-danger btn-sm" onClick={handleDeletePosition}>{I.trash}Удалить должность</button>}
-          {filterPositionId && <button className="btn btn-secondary btn-sm" onClick={() => openModal('positionForm', { position: { id: filterPositionId, name: filterPositionName }, onDone: load })}>{I.pencil}Редактировать должность</button>}
+          {filterPositionId && <button className="btn btn-secondary btn-sm" onClick={() => openModal('positionForm', { position: { id: filterPositionId, name: filterPositionName, role_type: filterPositionRoleType }, onDone: load })}>{I.pencil}Редактировать должность</button>}
           <button className="btn btn-primary btn-sm" onClick={() => openModal('employeeForm', { initialPositionId: filterPos || undefined, onDone: () => { setPage(1); load(); } })}>{I.plus}Добавить сотрудника</button>
         </>}
       />
@@ -1007,7 +1007,7 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
                     <td
                       className={e.position_id ? 'row-link' : ''}
                       style={e.position_id ? { cursor: 'pointer' } : {}}
-                      onClick={e.position_id ? ev => { ev.stopPropagation(); onNavigate('employees', { filterPositionId: e.position_id, filterPositionName: e.position_name }); } : undefined}
+                      onClick={e.position_id ? ev => { ev.stopPropagation(); onNavigate('employees', { filterPositionId: e.position_id, filterPositionName: e.position_name, filterPositionRoleType: e.position_role_type }); } : undefined}
                     >{e.position_name || <span className="muted">-</span>}</td>
                     <td className="muted">{e.phone || '-'}</td>
                     <td className="muted">{e.email || '-'}</td>
@@ -2774,7 +2774,7 @@ function PositionList({ currentUser, openModal, onNavigate }) {
               </tr></thead>
               <tbody>
                 {loading ? <SkeletonRows cols={5} /> : filtered.map((p, idx) => (
-                  <tr key={p.id} className="row-link" onClick={() => onNavigate('employees', { filterPositionId: p.id, filterPositionName: p.name })}>
+                  <tr key={p.id} className="row-link" onClick={() => onNavigate('employees', { filterPositionId: p.id, filterPositionName: p.name, filterPositionRoleType: p.role_type })}>
                     <td className="mono muted">{idx + 1}</td>
                     <td className="fwm">{p.name}</td>
                     <td>{{ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель' }[p.role_type] || p.role_type}</td>

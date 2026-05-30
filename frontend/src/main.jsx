@@ -470,7 +470,7 @@ function AppShell({ onLogout }) {
     }
 
     if (currentScreen === 'employees') {
-      return <EmployeeList {...sharedProps} filterPositionId={navExtra?.filterPositionId} filterPositionName={navExtra?.filterPositionName} />;
+      return <EmployeeList {...sharedProps} filterPositionId={navExtra?.filterPositionId} filterPositionName={navExtra?.filterPositionName} filterPositionRoleType={navExtra?.filterPositionRoleType} />;
     }
 
     if (currentScreen === 'employee-detail') {
