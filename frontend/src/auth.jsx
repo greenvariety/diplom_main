@@ -344,6 +344,7 @@ function CodeInput({ onChange, hasError, autoFocus }) {
   const refs = useRef([]);
   const [cells, setCells] = useState(['', '', '', '', '', '']);
   const cellsRef = useRef(['', '', '', '', '', '']);
+  const moving = useRef(false);
 
   const updateCells = (arr) => {
     cellsRef.current = arr;
@@ -353,10 +354,16 @@ function CodeInput({ onChange, hasError, autoFocus }) {
 
   const focusAt = (i) => {
     const el = refs.current[i];
-    if (el) { el.focus(); el.select(); }
+    if (el) {
+      moving.current = true;
+      el.focus();
+      el.select();
+    }
   };
 
   const handleFocus = (idx) => {
+    // If focus was moved programmatically (via focusAt), skip the redirect logic
+    if (moving.current) { moving.current = false; return; }
     const firstEmpty = cellsRef.current.findIndex(c => !c);
     if (firstEmpty !== -1 && firstEmpty < idx) {
       setTimeout(() => focusAt(firstEmpty), 0);
