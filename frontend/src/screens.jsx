@@ -603,7 +603,7 @@ function StudentList({ currentUser, openModal, onNavigate }) {
                       }).map((s, idx) => (
                       <tr key={s.id} className="row-link" onClick={() => onNavigate('student-detail', { studentId: s.id })}>
                         <td className="mono muted">{idx + 1}</td>
-                        <td><Avatar name={`${s.last_name} ${s.first_name}`} size="sm" /></td>
+                        <td><Avatar name={`${s.last_name} ${s.first_name}`} size="sm" src={s.photo} /></td>
                         <td className="fwm">
                           {s.last_name} {s.first_name} {s.middle_name}
                           {s.has_pending_delreq && (
@@ -783,7 +783,7 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
                   <tbody>
                     {sortParents.sortFn(student.parents).map(p => (
                       <tr key={p.id}>
-                        <td><Avatar name={p.parent_name} size="sm" /></td>
+                        <td><Avatar name={p.parent_name} size="sm" src={p.parent_photo} /></td>
                         <td className="fwm">
                           {p.parent_name}
                         </td>
@@ -998,7 +998,7 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
                   }).map((e, idx) => (
                   <tr key={e.id} className="row-link" onClick={() => onNavigate('employee-detail', { employeeId: e.id })}>
                     <td className="mono muted">{idx + 1}</td>
-                    <td><Avatar name={e.full_name} size="sm" /></td>
+                    <td><Avatar name={e.full_name} size="sm" src={e.photo} /></td>
                     <td className="fwm">
                       {e.full_name}
                       {e.has_pending_delreq && (
@@ -2341,7 +2341,7 @@ function ParentList({ currentUser, openModal, onNavigate }) {
                   }).map((p, idx) => (
                   <tr key={p.id} className="row-link" onClick={() => onNavigate('parent-detail', { parentId: p.id })}>
                     <td className="mono muted">{idx + 1}</td>
-                    <td><Avatar name={p.full_name} size="sm" /></td>
+                    <td><Avatar name={p.full_name} size="sm" src={p.photo} /></td>
                     <td className="fwm">
                       {p.full_name}
                     </td>

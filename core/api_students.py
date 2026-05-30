@@ -24,7 +24,7 @@ def _student_data(s):
         'photo': s.photo.url if s.photo else None,
         'parent_count': getattr(s, 'parent_count', None),
         'is_flagged': s.is_flagged,
-        'warn_incomplete': not all([s.birth_date, s.phone, s.email, s.photo, s.group_id]),
+        'warn_incomplete': not all([s.birth_date, s.phone, s.email, s.group_id]),
         'has_pending_delreq': getattr(s, 'has_pending_delreq', False),
         'has_note': getattr(s, 'has_note', False),
     }
@@ -201,7 +201,8 @@ class StudentDetailView(APIView):
                 'phone': sp.parent.phone,
                 'relation_type': sp.relation_type,
                 'relation_display': sp.get_relation_type_display(),
-                'parent_warn_incomplete': not all([sp.parent.birth_date, sp.parent.phone, sp.parent.email, sp.parent.photo]),
+                'parent_photo': sp.parent.photo.url if sp.parent.photo else None,
+                'parent_warn_incomplete': not all([sp.parent.birth_date, sp.parent.phone, sp.parent.email]),
             }
             for sp in sp_qs
         ]

@@ -15,9 +15,12 @@ function Badge({ status, children, className = '' }) {
   return <span className={`badge badge-neutral ${className}`}>{children}</span>;
 }
 
-function Avatar({ name, size = 'md', av = 1, className = '' }) {
+function Avatar({ name, size = 'md', av = 1, className = '', src = null }) {
   const initials = name.split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
   const cls = size === 'lg' ? 'avatar avatar-lg' : size === 'sm' ? 'avatar avatar-sm' : size === 'xl' ? 'avatar avatar-lg' : 'avatar';
+  if (src) {
+    return <span className={`${cls} ${className}`} style={{ padding: 0, overflow: 'hidden' }}><img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit', display: 'block' }} /></span>;
+  }
   return <span className={`${cls} av-${((av - 1) % 8) + 1} ${className}`}>{initials}</span>;
 }
 

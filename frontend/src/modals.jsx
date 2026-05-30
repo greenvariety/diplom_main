@@ -221,21 +221,12 @@ function StudentFormModal({ data, onClose }) {
   else { const e = validateEmail(vals.email); if (e) errs.email = e; }
   if (!vals.faculty_id) errs.faculty_id = 'Выберите факультет';
   if (!vals.group_id) errs.group_id = 'Выберите группу';
-  if (!photoPreview) errs.photo = 'Добавьте фото';
 
   const handlePhoto = (file) => {
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) { toast.push('Фото слишком большое - максимум 5 МБ', { kind: 'err' }); return; }
     const reader = new FileReader();
-    reader.onload = ev => {
-      const img = new Image();
-      img.onload = () => {
-        if (img.width > 2000 || img.height > 2000) { toast.push('Размер фото превышает 2000x2000 пикселей', { kind: 'err' }); return; }
-        setPhoto(file);
-        setPhotoPreview(ev.target.result);
-      };
-      img.src = ev.target.result;
-    };
+    reader.onload = ev => { setPhoto(file); setPhotoPreview(ev.target.result); };
     reader.readAsDataURL(file);
   };
 
@@ -247,7 +238,7 @@ function StudentFormModal({ data, onClose }) {
   };
 
   const save = async () => {
-    setTouched({ last_name: 1, first_name: 1, birth_date: 1, phone: 1, email: 1, faculty_id: 1, group_id: 1, photo: 1 });
+    setTouched({ last_name: 1, first_name: 1, birth_date: 1, phone: 1, email: 1, faculty_id: 1, group_id: 1 });
     if (Object.keys(errs).length) {
       toast.push('Заполните все обязательные поля', { kind: 'err' });
       return;
@@ -306,12 +297,11 @@ function StudentFormModal({ data, onClose }) {
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 500, fontSize: 13, marginBottom: 2 }}>Фото студента</div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{photoPreview ? 'Нажмите на квадрат, чтобы заменить фото' : 'Нажмите на квадрат или перетащите изображение'}</div>
-          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 3 }}>Максимум 5 МБ, не более 2000x2000 пикселей</div>
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 3 }}>Максимум 5 МБ</div>
           {photoPreview && <button onClick={removePhoto} style={{ marginTop: 6, fontSize: 11, color: 'var(--bad-fg)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Удалить фото</button>}
         </div>
         <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handlePhoto(e.target.files[0])} />
       </div>
-      {touched.photo && errs.photo && <div style={{ color: 'var(--bad-fg)', fontSize: 12, marginBottom: 8, marginTop: -8 }}>{errs.photo}</div>}
       <div className="form-section">
         <div className="form-section-title">Личные данные</div>
         <div className="form-grid">
@@ -402,7 +392,6 @@ function EmployeeFormModal({ data, onClose }) {
   if (!email.trim()) fieldErrs.email = 'Обязательно';
   else { const e = validateEmail(email); if (e) fieldErrs.email = e; }
   if (!positionId) fieldErrs.position_id = 'Выберите должность';
-  if (!photoPreview) fieldErrs.photo = 'Добавьте фото';
 
   useEffect(() => {
     api.get('/positions/').then(r => setPositions(r.data)).catch(() => {});
@@ -412,15 +401,7 @@ function EmployeeFormModal({ data, onClose }) {
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) { toast.push('Фото слишком большое - максимум 5 МБ', { kind: 'err' }); return; }
     const reader = new FileReader();
-    reader.onload = ev => {
-      const img = new Image();
-      img.onload = () => {
-        if (img.width > 2000 || img.height > 2000) { toast.push('Размер фото превышает 2000x2000 пикселей', { kind: 'err' }); return; }
-        setPhoto(file);
-        setPhotoPreview(ev.target.result);
-      };
-      img.src = ev.target.result;
-    };
+    reader.onload = ev => { setPhoto(file); setPhotoPreview(ev.target.result); };
     reader.readAsDataURL(file);
   };
 
@@ -432,7 +413,7 @@ function EmployeeFormModal({ data, onClose }) {
   };
 
   const save = async () => {
-    setTouched({ last_name: 1, first_name: 1, birth_date: 1, phone: 1, email: 1, position_id: 1, photo: 1 });
+    setTouched({ last_name: 1, first_name: 1, birth_date: 1, phone: 1, email: 1, position_id: 1 });
     if (Object.keys(fieldErrs).length) {
       toast.push('Заполните все обязательные поля', { kind: 'err' });
       return;
@@ -484,12 +465,11 @@ function EmployeeFormModal({ data, onClose }) {
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 500, fontSize: 13, marginBottom: 2 }}>Фото сотрудника</div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{photoPreview ? 'Нажмите на квадрат, чтобы заменить фото' : 'Нажмите на квадрат или перетащите изображение'}</div>
-          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 3 }}>Максимум 5 МБ, не более 2000x2000 пикселей</div>
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 3 }}>Максимум 5 МБ</div>
           {photoPreview && <button onClick={removePhoto} style={{ marginTop: 6, fontSize: 11, color: 'var(--bad-fg)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Удалить фото</button>}
         </div>
         <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handlePhoto(e.target.files[0])} />
       </div>
-      {touched.photo && fieldErrs.photo && <div style={{ color: 'var(--bad-fg)', fontSize: 12, marginBottom: 8, marginTop: -8 }}>{fieldErrs.photo}</div>}
       <div className="form-section">
         <div className="form-section-title">Личные данные</div>
         <div className="form-grid">
@@ -738,21 +718,12 @@ function ParentFormModal({ data, onClose }) {
   else { const e = validatePhone(phone); if (e) pErrs.phone = e; }
   if (!email.trim()) pErrs.email = 'Обязательно';
   else { const e = validateEmail(email); if (e) pErrs.email = e; }
-  if (!photoPreview) pErrs.photo = 'Добавьте фото';
 
   const handlePhoto = (file) => {
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) { toast.push('Фото слишком большое - максимум 5 МБ', { kind: 'err' }); return; }
     const reader = new FileReader();
-    reader.onload = ev => {
-      const img = new Image();
-      img.onload = () => {
-        if (img.width > 2000 || img.height > 2000) { toast.push('Размер фото превышает 2000x2000 пикселей', { kind: 'err' }); return; }
-        setPhoto(file);
-        setPhotoPreview(ev.target.result);
-      };
-      img.src = ev.target.result;
-    };
+    reader.onload = ev => { setPhoto(file); setPhotoPreview(ev.target.result); };
     reader.readAsDataURL(file);
   };
 
@@ -764,7 +735,7 @@ function ParentFormModal({ data, onClose }) {
   };
 
   const save = async () => {
-    setTouched({ last_name: 1, first_name: 1, phone: 1, email: 1, photo: 1 });
+    setTouched({ last_name: 1, first_name: 1, phone: 1, email: 1 });
     if (Object.keys(pErrs).length) {
       toast.push('Заполните все обязательные поля', { kind: 'err' });
       return;
@@ -818,12 +789,11 @@ function ParentFormModal({ data, onClose }) {
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 500, fontSize: 13, marginBottom: 2 }}>Фото опекуна</div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{photoPreview ? 'Нажмите на квадрат, чтобы заменить фото' : 'Нажмите на квадрат или перетащите изображение'}</div>
-          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 3 }}>Максимум 5 МБ, не более 2000x2000 пикселей</div>
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 3 }}>Максимум 5 МБ</div>
           {photoPreview && <button onClick={removePhoto} style={{ marginTop: 6, fontSize: 11, color: 'var(--bad-fg)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Удалить фото</button>}
         </div>
         <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handlePhoto(e.target.files[0])} />
       </div>
-      {touched.photo && pErrs.photo && <div style={{ color: 'var(--bad-fg)', fontSize: 12, marginBottom: 8, marginTop: -8 }}>{pErrs.photo}</div>}
       <div className="form-grid">
         <Field label="Фамилия" required error={touched.last_name && pErrs.last_name} className="field-full">
           <input className={`input ${touched.last_name && pErrs.last_name ? 'is-error' : ''}`} value={lastName} onChange={e => { setLastName(e.target.value); setErr(''); }} onBlur={() => touchP('last_name')} maxLength={100} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); setLastName(p => (p + filterName(e.clipboardData.getData('text') || '')).slice(0, 100)); }} />
@@ -1832,7 +1802,6 @@ function OrgFormModal({ data, onClose }) {
   const touch = (f) => setTouched(t => ({ ...t, [f]: true }));
 
   const PHOTO_MAX_MB = 5;
-  const PHOTO_MAX_PX = 2000;
 
   const handlePhoto = (file) => {
     if (!file) return;
@@ -1841,18 +1810,7 @@ function OrgFormModal({ data, onClose }) {
       return;
     }
     const reader = new FileReader();
-    reader.onload = ev => {
-      const img = new Image();
-      img.onload = () => {
-        if (img.width > PHOTO_MAX_PX || img.height > PHOTO_MAX_PX) {
-          toast.push(`Размер фото превышает ${PHOTO_MAX_PX}x${PHOTO_MAX_PX} пикселей`, { kind: 'err' });
-          return;
-        }
-        setPhoto(file);
-        setPhotoPreview(ev.target.result);
-      };
-      img.src = ev.target.result;
-    };
+    reader.onload = ev => { setPhoto(file); setPhotoPreview(ev.target.result); };
     reader.readAsDataURL(file);
   };
 
@@ -1930,7 +1888,7 @@ function OrgFormModal({ data, onClose }) {
             {photoPreview ? 'Нажмите на квадрат, чтобы заменить фото' : 'Нажмите на квадрат или перетащите изображение'}
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 3 }}>
-            Максимум 5 МБ, не более 2000x2000 пикселей
+            Максимум 5 МБ
           </div>
           {photoPreview && (
             <button

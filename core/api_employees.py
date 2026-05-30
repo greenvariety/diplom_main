@@ -21,7 +21,7 @@ def _employee_data(e):
         'position_role_type': e.position.role_type if e.position_id else None,
         'photo': e.photo.url if e.photo else None,
         'is_flagged': e.is_flagged,
-        'warn_incomplete': not all([e.position_id, e.birth_date, e.phone, e.email, e.photo]),
+        'warn_incomplete': not all([e.position_id, e.birth_date, e.phone, e.email]),
         'has_pending_delreq': getattr(e, 'has_pending_delreq', False),
         'has_note': getattr(e, 'has_note', False),
     }
