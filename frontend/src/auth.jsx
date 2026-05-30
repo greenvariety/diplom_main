@@ -343,6 +343,13 @@ function RegisterScreen({ onDone, onBack, initialVals }) {
 function CodeInput({ onChange, hasError, autoFocus }) {
   const refs = useRef([]);
   const [cells, setCells] = useState(['', '', '', '', '', '']);
+  const cellsRef = useRef(['', '', '', '', '', '']);
+
+  const updateCells = (arr) => {
+    cellsRef.current = arr;
+    setCells(arr);
+    onChange(arr.join(''));
+  };
 
   const focusAt = (i) => {
     const el = refs.current[i];
@@ -350,7 +357,7 @@ function CodeInput({ onChange, hasError, autoFocus }) {
   };
 
   const handleFocus = (idx) => {
-    const firstEmpty = cells.findIndex(c => !c);
+    const firstEmpty = cellsRef.current.findIndex(c => !c);
     if (firstEmpty !== -1 && firstEmpty < idx) {
       setTimeout(() => focusAt(firstEmpty), 0);
     }
@@ -359,15 +366,13 @@ function CodeInput({ onChange, hasError, autoFocus }) {
   const handleKeyDown = (idx, e) => {
     if (e.key === 'Backspace') {
       e.preventDefault();
-      const arr = [...cells];
+      const arr = [...cellsRef.current];
       if (arr[idx]) {
         arr[idx] = '';
-        setCells(arr);
-        onChange(arr.join(''));
+        updateCells(arr);
       } else if (idx > 0) {
         arr[idx - 1] = '';
-        setCells(arr);
-        onChange(arr.join(''));
+        updateCells(arr);
         focusAt(idx - 1);
       }
     } else if (e.key === 'ArrowLeft') {
@@ -382,10 +387,9 @@ function CodeInput({ onChange, hasError, autoFocus }) {
   const handleChange = (idx, e) => {
     const clean = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (!clean) return;
-    const arr = [...cells];
+    const arr = [...cellsRef.current];
     arr[idx] = clean[clean.length - 1];
-    setCells(arr);
-    onChange(arr.join(''));
+    updateCells(arr);
     if (idx < 5) focusAt(idx + 1);
   };
 
@@ -394,10 +398,9 @@ function CodeInput({ onChange, hasError, autoFocus }) {
     const pasted = (e.clipboardData.getData('text') || '')
       .toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6 - idx);
     if (!pasted) return;
-    const arr = [...cells];
+    const arr = [...cellsRef.current];
     pasted.split('').forEach((c, i) => { if (idx + i < 6) arr[idx + i] = c; });
-    setCells(arr);
-    onChange(arr.join(''));
+    updateCells(arr);
     focusAt(Math.min(idx + pasted.length, 5));
   };
 
