@@ -809,8 +809,8 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
                   onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setOver(false); }}
                   onDrop={handleDrop}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--text-muted)', fontSize: 13, pointerEvents: 'none' }}>
-                    {I.upload}{over ? 'Отпустите для загрузки' : 'Перетащите файлы сюда или нажмите «Загрузить»'}
+                  <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, pointerEvents: 'none' }}>
+                    {over ? 'Отпустите для загрузки' : 'Перетащите файлы сюда или нажмите «Загрузить»'}
                   </div>
                 </div>
               )}

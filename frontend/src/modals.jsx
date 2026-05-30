@@ -1495,8 +1495,7 @@ function UploadDocModal({ data, onClose }) {
 
   const handleDocTypeChange = (newType) => {
     setDocType(newType);
-    if (newType !== 'other') setName(DOC_TYPE_LABEL[newType] || '');
-    else setName('');
+    if (newType === 'other') setName('');
   };
 
   useEffect(() => { if (initFile) setName(initFile.name); }, []);
@@ -1505,14 +1504,15 @@ function UploadDocModal({ data, onClose }) {
     if (!file) { toast.push('Выберите файл', { kind: 'err' }); return; }
     setErr('');
     try {
+      const effectiveName = docType !== 'other' ? (DOC_TYPE_LABEL[docType] || file.name) : (name.trim() || file.name);
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('name', name.trim() || file.name);
+      fd.append('name', effectiveName);
       fd.append('doc_type', docType);
       fd.append('owner_type', ownerType || 'student');
       fd.append('owner_id', ownerId);
       await api.post('/documents/upload/', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-      toast.push(`Документ "${name || file.name}" загружен`, { kind: 'ok' });
+      toast.push(`Документ "${effectiveName}" загружен`, { kind: 'ok' });
       onDone && onDone();
       onClose && onClose();
     } catch (e) {
@@ -1554,9 +1554,11 @@ function UploadDocModal({ data, onClose }) {
           <option value="other">Прочее</option>
         </select>
       </Field>
-      <Field label="Название документа">
-        <input className="input" value={name} onChange={e => setName(e.target.value)} maxLength={255} disabled={docType !== 'other'} style={docType !== 'other' ? { opacity: 0.55, cursor: 'not-allowed' } : {}} />
-      </Field>
+      {docType === 'other' && (
+        <Field label="Название документа">
+          <input className="input" value={name} onChange={e => setName(e.target.value)} maxLength={255} />
+        </Field>
+      )}
       {err && <div style={{ color: 'var(--bad-fg)', fontSize: 13, marginTop: 8 }}>{err}</div>}
     </Modal>
   );
