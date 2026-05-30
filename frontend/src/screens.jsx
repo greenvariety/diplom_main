@@ -920,6 +920,26 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
   const handleSearch = () => { setPage(1); load(); };
   const hasFilters = q || filterPos;
   const reset = () => { setQ(''); setFilterPos(''); setPage(1); };
+  const canManage = ['owner', 'admin', 'secretary'].includes(currentUser?.role);
+
+  const handleDeletePosition = async () => {
+    if (currentUser?.role === 'owner') {
+      openModal('ownerDirectDelete', {
+        name: filterPositionName,
+        type: 'должность',
+        url: `/positions/${filterPositionId}/`,
+        onDone: () => onNavigate('positions'),
+      });
+    } else {
+      if (!window.confirm(`Отправить заявку на удаление должности «${filterPositionName}»?`)) return;
+      try {
+        await api.post(`/positions/${filterPositionId}/delete-request/`, { reason: `Удаление должности: ${filterPositionName}` });
+        toast.push('Заявка на удаление отправлена', { kind: 'ok' });
+      } catch (e) {
+        toast.push(e.response?.data?.error || 'Ошибка', { kind: 'err' });
+      }
+    }
+  };
 
   return (
     <Shell currentUser={currentUser} active="employees" onNavigate={onNavigate} openModal={openModal}>
@@ -928,6 +948,7 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
         title="Сотрудники"
         sub={loading ? 'Загрузка…' : `Всего: ${data.count} записей`}
         actions={<>
+          {filterPositionId && canManage && <button className="btn btn-danger btn-sm" onClick={handleDeletePosition}>{I.trash}Удалить должность</button>}
           {filterPositionId && <button className="btn btn-secondary btn-sm" onClick={() => openModal('positionForm', { position: { id: filterPositionId, name: filterPositionName }, onDone: load })}>{I.pencil}Редактировать должность</button>}
           <button className="btn btn-primary btn-sm" onClick={() => openModal('employeeForm', { initialPositionId: filterPos || undefined, onDone: () => { setPage(1); load(); } })}>{I.plus}Добавить сотрудника</button>
         </>}
