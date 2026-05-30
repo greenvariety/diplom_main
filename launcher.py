@@ -9,10 +9,10 @@ import subprocess
 from datetime import datetime
 import tkinter as tk
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-PY   = os.path.join(BASE, 'venv', 'Scripts', 'python.exe')
-MGR  = os.path.join(BASE, 'manage.py')
-URL  = 'http://127.0.0.1:8000'
+BASE   = os.path.dirname(os.path.abspath(__file__))
+PY     = os.path.join(BASE, 'venv', 'Scripts', 'python.exe')
+MGR    = os.path.join(BASE, 'manage.py')
+URL    = 'http://127.0.0.1:8000'
 NO_WIN = subprocess.CREATE_NO_WINDOW
 
 P = {
@@ -166,14 +166,8 @@ class App:
         if not line:
             return
 
-        # Email code – primary: [EMAIL-DEV] to=email purpose=X code=ABC-DEF
+        # Email code – [EMAIL-DEV] to=email purpose=X code=ABC-DEF
         m = re.search(r'\[EMAIL-DEV\].*?to=(\S+)\s+purpose=(\S+)\s+code=(\S+)', line)
-        if m:
-            self._code_box(m.group(1), m.group(2), m.group(3))
-            return
-
-        # Email code – fallback: code for email (purpose): ABC-DEF
-        m = re.search(r'\[EMAIL-DEV\].*?code for (\S+)\s*\((\S+)\):\s+(\S+)', line)
         if m:
             self._code_box(m.group(1), m.group(2), m.group(3))
             return
@@ -194,7 +188,8 @@ class App:
         elif 'warning' in low:
             tag = 'warn'
         elif any(x in line for x in ('Django version', 'Starting development server',
-                                      'Quit the server', 'System check')):
+                                      'Quit the server', 'System check',
+                                      'Watching for file', 'applying')):
             tag = 'ok'
         else:
             tag = ''
@@ -339,21 +334,24 @@ class App:
         except Exception as e:
             self.q.put(('sys', f'migrate error: {e}'))
 
-        # runserver
+        # runserver --noreload — один процесс, весь вывод идёт прямо в наш пайп
         self.q.put(('sys', f'Запуск сервера: {URL}'))
         env = os.environ.copy()
         env['PYTHONUNBUFFERED'] = '1'
         try:
             proc = subprocess.Popen(
-                [PY, '-u', MGR, 'runserver'],
+                [PY, '-u', MGR, 'runserver', '--noreload'],
                 cwd=BASE, env=env,
-                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
                 creationflags=NO_WIN,
             )
             self.proc = proc
             self.q.put(('running',))
+
             for raw in iter(proc.stdout.readline, b''):
                 self.q.put(('line', raw.decode('utf-8', errors='replace')))
+
             proc.wait()
             if self.proc is proc:
                 self.proc = None
