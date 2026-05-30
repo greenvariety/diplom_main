@@ -18,6 +18,7 @@ def _employee_data(e):
         'email': e.email,
         'position_id': e.position_id,
         'position_name': e.position.name if e.position_id else None,
+        'position_role_type': e.position.role_type if e.position_id else None,
         'photo': e.photo.url if e.photo else None,
         'is_flagged': e.is_flagged,
         'warn_incomplete': not all([e.position_id, e.birth_date, e.phone, e.email, e.photo]),
@@ -27,6 +28,12 @@ def _employee_data(e):
 
 
 def _admin_only(request):
+    if request.user.role not in ('owner', 'admin', 'secretary'):
+        return Response({'error': 'Доступ запрещён'}, status=403)
+    return None
+
+
+def _admin_or_owner(request):
     if request.user.role not in ('owner', 'admin'):
         return Response({'error': 'Доступ запрещён'}, status=403)
     return None
@@ -185,7 +192,7 @@ class EmployeeDetailView(APIView):
         return Response(data)
 
     def patch(self, request, pk):
-        err = _admin_only(request)
+        err = _admin_only(request)  # owner + admin + secretary
         if err:
             return err
         employee = _get_employee(request, pk)
@@ -234,7 +241,8 @@ class EmployeeDetailView(APIView):
         return Response(_employee_data(employee))
 
     def delete(self, request, pk):
-        if request.user.role != 'owner':
+        # Owner and admin can delete employees directly; secretary must submit a request
+        if request.user.role not in ('owner', 'admin'):
             return Response({'error': 'Доступ запрещён'}, status=403)
         password = (request.data.get('password') or '').strip()
         if not password:
@@ -254,7 +262,7 @@ class EmployeeDetailView(APIView):
 
 class EmployeeDeleteRequestView(APIView):
     def post(self, request, pk):
-        err = _admin_only(request)
+        err = _admin_only(request)  # owner + admin + secretary
         if err:
             return err
         institution = request.user.institution
@@ -265,12 +273,15 @@ class EmployeeDeleteRequestView(APIView):
         except Employee.DoesNotExist:
             return Response({'error': 'Не найдено'}, status=404)
         reason = (request.data.get('reason') or '').strip() or f'Удаление сотрудника: {employee}'
-        DeleteRequest.objects.create(
+        req = DeleteRequest.objects.create(
             user=request.user,
             object_type='Employee',
             object_id=employee.pk,
             reason=reason,
         )
+        log_action(request.user, 'created', req,
+                   new_data={'object_type': 'Employee', 'object_id': employee.pk, 'reason': reason},
+                   institution=institution)
         return Response({'ok': True})
 
 
@@ -384,7 +395,7 @@ class EmployeeAccountView(APIView):
         if User.objects.filter(username=username).exists():
             return Response({'error': 'Логин уже занят'}, status=400)
         role = request.data.get('role', 'teacher')
-        if role not in ('admin', 'teacher'):
+        if role not in ('admin', 'secretary', 'teacher'):
             return Response({'error': 'Недопустимая роль'}, status=400)
         password = (request.data.get('password') or '').strip()
         if not password:
@@ -424,7 +435,7 @@ class EmployeeAccountView(APIView):
             user.username = new_username
         if 'role' in request.data:
             role = request.data['role']
-            if role not in ('admin', 'teacher'):
+            if role not in ('admin', 'secretary', 'teacher'):
                 return Response({'error': 'Недопустимая роль'}, status=400)
             user.role = role
         new_password = (request.data.get('password') or '').strip()

@@ -56,16 +56,27 @@ class Faculty(models.Model):
 # ---------------------------------------------------------------------------
 
 class Position(models.Model):
+    ROLE_TYPE_CHOICES = [
+        ('admin', 'Администратор'),
+        ('secretary', 'Секретарь'),
+        ('teacher', 'Преподаватель'),
+    ]
+
     institution = models.ForeignKey(
         Institution, on_delete=models.CASCADE, null=True, blank=True,
         related_name='positions', verbose_name='Учебное заведение'
     )
     name = models.CharField(max_length=255, verbose_name='Название')
+    role_type = models.CharField(
+        max_length=20, choices=ROLE_TYPE_CHOICES, default='teacher',
+        verbose_name='Тип роли'
+    )
 
     class Meta:
         verbose_name = 'Должность'
         verbose_name_plural = 'Должности'
         ordering = ['name']
+        unique_together = [('institution', 'name')]
 
     def __str__(self):
         return self.name
@@ -371,6 +382,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = [
         ('owner', 'Владелец'),
         ('admin', 'Администратор'),
+        ('secretary', 'Секретарь'),
         ('teacher', 'Преподаватель'),
     ]
 
@@ -422,6 +434,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.role in ('owner', 'admin')
 
     @property
+    def is_secretary(self):
+        return self.role == 'secretary'
+
+    @property
     def is_teacher_role(self):
         return self.role == 'teacher'
 
@@ -469,6 +485,7 @@ class DeleteRequest(models.Model):
     OBJECT_TYPE_CHOICES = [
         ('Faculty', 'Факультет'),
         ('Group', 'Группа'),
+        ('Position', 'Должность'),
         ('Student', 'Студент'),
         ('Employee', 'Сотрудник'),
         ('Parent', 'Опекун'),

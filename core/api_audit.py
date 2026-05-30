@@ -45,6 +45,7 @@ ACTION_MAP = {
 ROLE_LABELS = {
     'owner': 'Суперадмин',
     'admin': 'Администратор',
+    'secretary': 'Секретарь',
     'teacher': 'Преподаватель',
 }
 
@@ -200,6 +201,9 @@ class AuditLogView(APIView):
         qs = AuditLog.objects.filter(institution=institution).select_related(
             'user', 'user__employee', 'user__employee__position'
         )
+        # Admin does not see owner's actions
+        if request.user.role == 'admin':
+            qs = qs.exclude(user__role='owner')
         qs = _apply_filters(qs, request)
 
         count = qs.count()
@@ -230,6 +234,8 @@ class AuditLogExportView(APIView):
         qs = AuditLog.objects.filter(institution=institution).select_related(
             'user', 'user__employee', 'user__employee__position'
         )
+        if request.user.role == 'admin':
+            qs = qs.exclude(user__role='owner')
         qs = _apply_filters(qs, request)
 
         sort_map = {

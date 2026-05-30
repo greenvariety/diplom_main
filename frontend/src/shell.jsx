@@ -49,7 +49,7 @@ function PageHead({ crumbs, title, sub, actions }) {
 /* ============================================================
    User chip with dropdown
    ============================================================ */
-const ROLE_LABEL = { owner: 'Владелец', superadmin: 'Суперадминистратор', admin: 'Администратор', teacher: 'Преподаватель' };
+const ROLE_LABEL = { owner: 'Владелец', superadmin: 'Суперадминистратор', admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель' };
 
 function TopbarSearch({ onNavigate }) {
   const [q, setQ] = useState('');
@@ -175,6 +175,23 @@ const NAV_BY_ROLE = {
       { key: 'employees', label: 'Сотрудники', icon: I.briefcase },
       { key: 'students',  label: 'Студенты',   icon: I.badge },
       { key: 'parents',   label: 'Опекуны',    icon: I.heart },
+    ]},
+    { section: 'Прочее', items: [
+      { key: 'positions', label: 'Должности',          icon: I.settings },
+      { key: 'audit',     label: 'Журнал изменений',   icon: I.history },
+    ]},
+  ],
+  secretary: [
+    { section: 'Главное', items: [{ key: 'dashboard', label: 'Дашборд', icon: I.dashboard }] },
+    { section: 'Люди', items: [
+      { key: 'employees', label: 'Сотрудники', icon: I.briefcase },
+      { key: 'students',  label: 'Студенты',   icon: I.badge },
+      { key: 'parents',   label: 'Опекуны',    icon: I.heart },
+    ]},
+    { section: 'Прочее', items: [
+      { key: 'positions', label: 'Должности',          icon: I.settings },
+      { key: 'groups',    label: 'Группы',              icon: I.users },
+      { key: 'delreq',    label: 'Мои заявки',          icon: I.trash, badge: 'bad' },
     ]},
   ],
   teacher: [

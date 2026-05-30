@@ -20,7 +20,7 @@ from core.api_students import (
     StudentTransferView, StudentTransferInstitutionView, StudentParentsView, StudentParentDetailView, StudentFlagView,
 )
 from core.api_documents import DocumentUploadView, DocumentDetailView
-from core.api_positions import PositionsView, PositionDetailView
+from core.api_positions import PositionsView, PositionDetailView, PositionDeleteRequestView
 from core.api_parents import (
     ParentsView, ParentDetailView, ParentDeleteRequestView,
     ParentStudentsView, ParentStudentDetailView, ParentFlagView,
@@ -86,6 +86,7 @@ urlpatterns = [
     path('api/students/<int:pk>/parents/<int:sp_pk>/', StudentParentDetailView.as_view()),
     path('api/positions/', PositionsView.as_view()),
     path('api/positions/<int:pk>/', PositionDetailView.as_view()),
+    path('api/positions/<int:pk>/delete-request/', PositionDeleteRequestView.as_view()),
     path('api/parents/', ParentsView.as_view()),
     path('api/parents/<int:pk>/', ParentDetailView.as_view()),
     path('api/parents/<int:pk>/delete-request/', ParentDeleteRequestView.as_view()),

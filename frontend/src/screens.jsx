@@ -426,6 +426,26 @@ function DashboardTeacher({ currentUser, onNavigate, onLogout, openModal }) {
   );
 }
 
+function DashboardSecretary({ currentUser, onNavigate, onLogout, openModal }) {
+  const name = currentUser?.display_name || currentUser?.username || 'Секретарь';
+  const [stats, setStats] = useState({});
+  useEffect(() => { api.get('/dashboard/').then(r => setStats(r.data?.stats || {})).catch(() => {}); }, []);
+  return (
+    <Shell currentUser={currentUser} active="dashboard" onNavigate={onNavigate} onLogout={onLogout} openModal={openModal}>
+      <PageHead
+        title={`Здравствуйте, ${name}`}
+        sub="Управление сотрудниками, студентами и опекунами"
+        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal && openModal('studentForm')}>{I.plus}Добавить студента</button>}
+      />
+      <div className="stats" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+        <Stat label="Студенты"   value={stats.students   ?? '-'} icon={I.badge}     onClick={() => onNavigate('students')} />
+        <Stat label="Сотрудники" value={stats.employees  ?? '-'} icon={I.briefcase} onClick={() => onNavigate('employees')} />
+        <Stat label="Опекуны"    value={stats.parents    ?? '-'} icon={I.heart}     onClick={() => onNavigate('parents')} />
+      </div>
+    </Shell>
+  );
+}
+
 /* ============================================================
    Status inline-dropdown
    ============================================================ */
@@ -1172,11 +1192,18 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
         title={employee.full_name}
         sub={employee.position_name || 'Сотрудник'}
         actions={<>
-          <button className="btn btn-secondary btn-sm" onClick={() => openModal('employeeForm', { employee, onDone: load })}>{I.pencil}Редактировать</button>
-          {currentUser?.role === 'owner'
-            ? <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: employee.full_name, type: 'сотрудника', url: `/employees/${employeeId}/`, onDone: () => onNavigate('employees') })}>{I.trash}Удалить</button>
-            : <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Подать заявку</button>
-          }
+          {['owner', 'admin', 'secretary'].includes(currentUser?.role) && (
+            <button className="btn btn-secondary btn-sm" onClick={() => openModal('employeeForm', { employee, onDone: load })}>{I.pencil}Редактировать</button>
+          )}
+          {currentUser?.role === 'owner' && (
+            <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: employee.full_name, type: 'сотрудника', url: `/employees/${employeeId}/`, onDone: () => onNavigate('employees') })}>{I.trash}Удалить</button>
+          )}
+          {currentUser?.role === 'admin' && (
+            <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: employee.full_name, type: 'сотрудника', url: `/employees/${employeeId}/`, onDone: () => onNavigate('employees') })}>{I.trash}Удалить</button>
+          )}
+          {currentUser?.role === 'secretary' && (
+            <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Подать заявку</button>
+          )}
         </>}
       />
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
@@ -1242,6 +1269,10 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                             Преподаватель
                           </label>
                           <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+                            <input type="radio" name="accRoleCreate" value="secretary" checked={accRole === 'secretary'} onChange={() => setAccRole('secretary')} />
+                            Секретарь
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
                             <input type="radio" name="accRoleCreate" value="admin" checked={accRole === 'admin'} onChange={() => setAccRole('admin')} />
                             Администратор
                           </label>
@@ -1278,6 +1309,10 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                           Преподаватель
                         </label>
                         <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+                          <input type="radio" name="accRoleEdit" value="secretary" checked={accRole === 'secretary'} onChange={() => setAccRole('secretary')} />
+                          Секретарь
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
                           <input type="radio" name="accRoleEdit" value="admin" checked={accRole === 'admin'} onChange={() => setAccRole('admin')} />
                           Администратор
                         </label>
@@ -1293,7 +1328,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {employee.headed_groups?.length > 0 && (
+          {employee.position_role_type === 'teacher' && employee.headed_groups?.length > 0 && (
             <div className="card">
               <div className="card-head"><div className="title">Классное руководство</div></div>
               <div className="card-body flush">
@@ -1317,10 +1352,12 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
               </div>
             </div>
           )}
-          <div className="card">
+          {employee.position_role_type === 'teacher' && <div className="card">
             <div className="card-head">
               <div className="title">Ведёт предметы</div>
-              <button className="btn btn-secondary btn-sm" onClick={() => openModal('employeeAssignSubject', { employeeId, onDone: load })}>{I.plus}</button>
+              {['owner', 'admin'].includes(currentUser?.role) && (
+                <button className="btn btn-secondary btn-sm" onClick={() => openModal('employeeAssignSubject', { employeeId, onDone: load })}>{I.plus}</button>
+              )}
             </div>
             <div className="card-body flush">
               {employee.subjects?.length === 0 ? (
@@ -1345,7 +1382,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                 </table>
               )}
             </div>
-          </div>
+          </div>}
           <div className="card">
             <div className="card-head">
               <div className="title">Документы</div>
@@ -1851,7 +1888,7 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
 /* ============================================================
    Admin: users / delete requests / audit
    ============================================================ */
-const ROLE_CLS = { owner: 'badge-bad', admin: 'badge-info', teacher: 'badge-ok' };
+const ROLE_CLS = { owner: 'badge-bad', admin: 'badge-info', secretary: 'badge-warn', teacher: 'badge-ok' };
 
 function UserList({ currentUser, openModal, onNavigate }) {
   const [users, setUsers] = useState([]);
@@ -1876,7 +1913,7 @@ function UserList({ currentUser, openModal, onNavigate }) {
     }
   };
 
-  const ROLES = [{ v: 'owner', l: 'Владелец' }, { v: 'admin', l: 'Администратор' }, { v: 'teacher', l: 'Преподаватель' }];
+  const ROLES = [{ v: 'owner', l: 'Владелец' }, { v: 'admin', l: 'Администратор' }, { v: 'secretary', l: 'Секретарь' }, { v: 'teacher', l: 'Преподаватель' }];
   const hasFilters = q || filterRole;
   const reset = () => { setQ(''); setFilterRole(''); };
 
@@ -2148,6 +2185,7 @@ function AuditLog({ currentUser, openModal, onNavigate }) {
             <option value="">Все роли</option>
             <option value="owner">Суперадмин</option>
             <option value="admin">Администратор</option>
+            <option value="secretary">Секретарь</option>
             <option value="teacher">Преподаватель</option>
           </select>
         </div>
@@ -2711,7 +2749,7 @@ function PositionList({ currentUser, openModal, onNavigate }) {
 }
 
 export {
-  DashboardOwner, DashboardSuper, DashboardAdmin, DashboardTeacher,
+  DashboardOwner, DashboardSuper, DashboardAdmin, DashboardTeacher, DashboardSecretary,
   OrganizationList,
   StudentList, StudentDetail,
   EmployeeList, EmployeeDetail,

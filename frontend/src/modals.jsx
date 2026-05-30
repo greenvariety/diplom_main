@@ -863,12 +863,19 @@ function SubjectFormModal({ data, onClose }) {
   );
 }
 
+const POSITION_ROLE_OPTS = [
+  { value: 'teacher', label: 'Преподаватель' },
+  { value: 'secretary', label: 'Секретарь' },
+  { value: 'admin', label: 'Администратор' },
+];
+
 function PositionFormModal({ data, onClose }) {
   const position = data?.position;
   const onDone = data?.onDone;
   const isEdit = !!position;
   const toast = useToast();
   const [name, setName] = useState(position?.name || '');
+  const [roleType, setRoleType] = useState(position?.role_type || 'teacher');
   const [err, setErr] = useState('');
 
   const save = async () => {
@@ -876,10 +883,10 @@ function PositionFormModal({ data, onClose }) {
     setErr('');
     try {
       if (isEdit) {
-        await api.patch(`/positions/${position.id}/`, { name: name.trim() });
+        await api.patch(`/positions/${position.id}/`, { name: name.trim(), role_type: roleType });
         toast.push('Должность обновлена', { kind: 'ok' });
       } else {
-        await api.post('/positions/', { name: name.trim() });
+        await api.post('/positions/', { name: name.trim(), role_type: roleType });
         toast.push('Должность добавлена', { kind: 'ok' });
       }
       onDone && onDone();
@@ -896,14 +903,25 @@ function PositionFormModal({ data, onClose }) {
         <Field label="Название" required error={err}>
           <input className={`input ${err && !name.trim() ? 'is-error' : ''}`} value={name} onChange={e => { setName(e.target.value); setErr(''); }} maxLength={255} />
         </Field>
+        <Field label="Тип роли" required>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {POSITION_ROLE_OPTS.map(o => (
+              <label key={o.value} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+                <input type="radio" name="positionRoleType" value={o.value} checked={roleType === o.value} onChange={() => setRoleType(o.value)} />
+                {o.label}
+              </label>
+            ))}
+          </div>
+        </Field>
       </div>
     </Modal>
   );
 }
 
 const REAL_ROLE_OPTS = [
-  { value: 'admin', label: 'Администратор' },
   { value: 'teacher', label: 'Преподаватель' },
+  { value: 'secretary', label: 'Секретарь' },
+  { value: 'admin', label: 'Администратор' },
 ];
 
 function UserFormModal({ data, onClose }) {

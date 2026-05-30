@@ -1,12 +1,13 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import DeleteRequest, Faculty, Group, Student, Employee, Parent
+from .models import DeleteRequest, Faculty, Group, Student, Employee, Parent, Position
 from .utils import log_action
 
 
 MODELS = {
     'Faculty': Faculty,
     'Group': Group,
+    'Position': Position,
     'Student': Student,
     'Employee': Employee,
     'Parent': Parent,
@@ -15,6 +16,7 @@ MODELS = {
 TYPE_LABELS = {
     'Faculty': 'Факультет',
     'Group': 'Группа',
+    'Position': 'Должность',
     'Student': 'Студент',
     'Employee': 'Сотрудник',
     'Parent': 'Опекун',
@@ -52,16 +54,17 @@ def _owner_only(request):
 
 class DeleteRequestsView(APIView):
     def get(self, request):
-        if request.user.role not in ('owner', 'admin'):
+        if request.user.role not in ('owner', 'admin', 'secretary'):
             return Response({'error': 'Доступ запрещён'}, status=403)
         institution = request.user.institution
         if not institution:
             return Response([])
-        reqs = (
-            DeleteRequest.objects
-            .filter(status='pending', user__institution=institution)
-            .select_related('user')
-        )
+        reqs = DeleteRequest.objects.filter(
+            status='pending', user__institution=institution
+        ).select_related('user')
+        # Secretary only sees their own requests
+        if request.user.role == 'secretary':
+            reqs = reqs.filter(user=request.user)
         return Response([_req_data(r) for r in reqs])
 
 
@@ -121,12 +124,12 @@ class DeleteRequestRejectView(APIView):
 
 class DeleteRequestsCountView(APIView):
     def get(self, request):
-        if request.user.role not in ('owner', 'admin'):
+        if request.user.role not in ('owner', 'admin', 'secretary'):
             return Response({'count': 0})
         institution = request.user.institution
         if not institution:
             return Response({'count': 0})
-        count = DeleteRequest.objects.filter(
-            status='pending', user__institution=institution
-        ).count()
-        return Response({'count': count})
+        qs = DeleteRequest.objects.filter(status='pending', user__institution=institution)
+        if request.user.role == 'secretary':
+            qs = qs.filter(user=request.user)
+        return Response({'count': qs.count()})

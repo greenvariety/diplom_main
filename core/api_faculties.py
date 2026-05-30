@@ -143,12 +143,15 @@ class FacultyDeleteRequestView(APIView):
         except Faculty.DoesNotExist:
             return Response({'error': 'Не найдено'}, status=404)
         reason = (request.data.get('reason') or '').strip() or f'Удаление факультета: {faculty.full_name}'
-        DeleteRequest.objects.create(
+        req = DeleteRequest.objects.create(
             user=request.user,
             object_type='Faculty',
             object_id=faculty.pk,
             reason=reason,
         )
+        log_action(request.user, 'created', req,
+                   new_data={'object_type': 'Faculty', 'object_id': faculty.pk, 'reason': reason},
+                   institution=request.user.institution)
         return Response({'ok': True})
 
 

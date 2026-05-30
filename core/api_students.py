@@ -31,13 +31,13 @@ def _student_data(s):
 
 
 def _admin_only(request):
-    if request.user.role not in ('owner', 'admin'):
+    if request.user.role not in ('owner', 'admin', 'secretary'):
         return Response({'error': 'Доступ запрещён'}, status=403)
     return None
 
 
 def _at_least_teacher(request):
-    if request.user.role not in ('owner', 'admin', 'teacher'):
+    if request.user.role not in ('owner', 'admin', 'secretary', 'teacher'):
         return Response({'error': 'Доступ запрещён'}, status=403)
     return None
 
@@ -66,7 +66,7 @@ class StudentsView(APIView):
             has_note=Exists(RecordNote.objects.filter(object_type='Student', object_id=OuterRef('pk'), is_resolved=False)),
         )
 
-        if request.user.is_teacher_role:
+        if request.user.role == 'teacher':
             employee = request.user.employee
             if not employee:
                 return Response({'results': [], 'count': 0, 'num_pages': 0, 'page': 1})
@@ -285,7 +285,8 @@ class StudentDetailView(APIView):
         return Response(_student_data(student))
 
     def delete(self, request, pk):
-        if request.user.role != 'owner':
+        # Owner, admin, and secretary can delete students directly
+        if request.user.role not in ('owner', 'admin', 'secretary'):
             return Response({'error': 'Доступ запрещён'}, status=403)
         password = (request.data.get('password') or '').strip()
         if not password:
@@ -305,7 +306,7 @@ class StudentDetailView(APIView):
 
 class StudentDeleteRequestView(APIView):
     def post(self, request, pk):
-        err = _at_least_teacher(request)
+        err = _admin_only(request)  # owner + admin + secretary
         if err:
             return err
         institution = request.user.institution
@@ -316,12 +317,15 @@ class StudentDeleteRequestView(APIView):
         except Student.DoesNotExist:
             return Response({'error': 'Не найдено'}, status=404)
         reason = (request.data.get('reason') or '').strip() or f'Удаление студента: {student}'
-        DeleteRequest.objects.create(
+        req = DeleteRequest.objects.create(
             user=request.user,
             object_type='Student',
             object_id=student.pk,
             reason=reason,
         )
+        log_action(request.user, 'created', req,
+                   new_data={'object_type': 'Student', 'object_id': student.pk, 'reason': reason},
+                   institution=institution)
         return Response({'ok': True})
 
 

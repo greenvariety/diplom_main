@@ -215,12 +215,16 @@ class GroupDeleteRequestView(APIView):
         except Group.DoesNotExist:
             return Response({'error': 'Не найдено'}, status=404)
         reason = (request.data.get('reason') or '').strip() or f'Удаление группы: {group.name}'
-        DeleteRequest.objects.create(
+        institution = request.user.institution
+        req = DeleteRequest.objects.create(
             user=request.user,
             object_type='Group',
             object_id=group.pk,
             reason=reason,
         )
+        log_action(request.user, 'created', req,
+                   new_data={'object_type': 'Group', 'object_id': group.pk, 'reason': reason},
+                   institution=institution)
         return Response({'ok': True})
 
 
