@@ -8,21 +8,53 @@ import api from './api.js';
    Phone mask helpers
    ============================================================ */
 function applyPhoneMask(raw) {
-  const digits = raw.replace(/\D/g, '');
+  let digits = raw.replace(/\D/g, '');
   if (!digits) return '';
-  // Block single invalid first digit (user just started typing)
-  if (digits.length === 1 && digits[0] !== '7' && digits[0] !== '8') return '';
-  let n = digits;
-  if (n[0] === '7') n = '8' + n.slice(1);
-  n = n.slice(0, 11);
-  if (n.length <= 1) return n;
-  let r = n[0] + ' (';
-  r += n.slice(1, Math.min(4, n.length));
-  // Use > (not >=) to avoid trailing separators that cause backspace to get stuck
-  if (n.length > 4) r += ') ' + n.slice(4, Math.min(7, n.length));
-  if (n.length > 7) r += '-' + n.slice(7, Math.min(9, n.length));
-  if (n.length > 9) r += '-' + n.slice(9, 11);
+  if (digits[0] === '7') digits = '8' + digits.slice(1);
+  if (digits[0] !== '8') return '';
+  digits = digits.slice(0, 11);
+  if (digits.length <= 1) return digits;
+  let r = digits[0] + ' (';
+  r += digits.slice(1, Math.min(4, digits.length));
+  if (digits.length > 4) r += ') ' + digits.slice(4, Math.min(7, digits.length));
+  if (digits.length > 7) r += '-' + digits.slice(7, Math.min(9, digits.length));
+  if (digits.length > 9) r += '-' + digits.slice(9, 11);
   return r;
+}
+
+function PhoneInput({ value, onChange, className, onBlur }) {
+  function handleKeyDown(e) {
+    if (e.key === 'Backspace') {
+      e.preventDefault();
+      const digits = value.replace(/\D/g, '');
+      if (!digits) return;
+      const newVal = applyPhoneMask(digits.slice(0, -1));
+      onChange(newVal);
+    }
+  }
+  function handleBeforeInput(e) {
+    if (!e.data) return;
+    const newChar = e.data.replace(/\D/g, '');
+    if (!newChar) { e.preventDefault(); return; }
+    const digits = value.replace(/\D/g, '');
+    if (digits.length === 0 && newChar[0] !== '7' && newChar[0] !== '8') {
+      e.preventDefault();
+    }
+  }
+  function handleChange(e) {
+    onChange(applyPhoneMask(e.target.value));
+  }
+  return (
+    <input
+      className={className}
+      value={value}
+      onChange={handleChange}
+      onKeyDown={handleKeyDown}
+      onBeforeInput={handleBeforeInput}
+      onBlur={onBlur}
+      maxLength={18}
+    />
+  );
 }
 
 const PHONE_RE = /^8 \(\d{3}\) \d{3}-\d{2}-\d{2}$/;
@@ -300,7 +332,7 @@ function StudentFormModal({ data, onClose }) {
         <div className="form-section-title">Контакты</div>
         <div className="form-grid">
           <Field label="Телефон" required error={touched.phone && errs.phone}>
-            <input className={`input ${touched.phone && errs.phone ? 'is-error' : ''}`} value={vals.phone} onChange={e => set('phone', applyPhoneMask(e.target.value))} onBlur={() => setTouched(t => ({ ...t, phone: 1 }))} maxLength={18} />
+            <PhoneInput className={`input ${touched.phone && errs.phone ? 'is-error' : ''}`} value={vals.phone} onChange={v => set('phone', v)} onBlur={() => setTouched(t => ({ ...t, phone: 1 }))} />
           </Field>
           <Field label="Email" required error={touched.email && errs.email}>
             <input className={`input ${touched.email && errs.email ? 'is-error' : ''}`} value={vals.email} onChange={e => set('email', e.target.value)} onBlur={() => setTouched(t => ({ ...t, email: 1 }))} maxLength={254} />
@@ -479,7 +511,7 @@ function EmployeeFormModal({ data, onClose }) {
         <div className="form-section-title">Контакты</div>
         <div className="form-grid">
           <Field label="Телефон" required error={touched.phone && fieldErrs.phone}>
-            <input className={`input ${touched.phone && fieldErrs.phone ? 'is-error' : ''}`} value={phone} onChange={e => setPhone(applyPhoneMask(e.target.value))} onBlur={() => touch('phone')} maxLength={18} />
+            <PhoneInput className={`input ${touched.phone && fieldErrs.phone ? 'is-error' : ''}`} value={phone} onChange={setPhone} onBlur={() => touch('phone')} />
           </Field>
           <Field label="Email" required error={touched.email && fieldErrs.email}>
             <input className={`input ${touched.email && fieldErrs.email ? 'is-error' : ''}`} value={email} onChange={e => { setEmail(e.target.value); }} onBlur={() => touch('email')} maxLength={254} />
@@ -812,7 +844,7 @@ function ParentFormModal({ data, onClose }) {
           </Field>
         )}
         <Field label="Телефон" required error={touched.phone && pErrs.phone}>
-          <input className={`input ${touched.phone && pErrs.phone ? 'is-error' : ''}`} value={phone} onChange={e => setPhone(applyPhoneMask(e.target.value))} onBlur={() => touchP('phone')} maxLength={18} />
+          <PhoneInput className={`input ${touched.phone && pErrs.phone ? 'is-error' : ''}`} value={phone} onChange={setPhone} onBlur={() => touchP('phone')} />
         </Field>
         <Field label="Email" required error={touched.email && pErrs.email}>
           <input className={`input ${touched.email && pErrs.email ? 'is-error' : ''}`} value={email} onChange={e => setEmail(e.target.value)} onBlur={() => touchP('email')} maxLength={254} />
