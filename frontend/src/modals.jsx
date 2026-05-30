@@ -948,6 +948,56 @@ function PositionFormModal({ data, onClose }) {
   );
 }
 
+/* ============================================================
+   PositionDeleteModal - удаление или заявка на удаление должности
+   ============================================================ */
+function PositionDeleteModal({ data, onClose, openModal }) {
+  const { position, currentRole, onDone } = data || {};
+  const toast = useToast();
+  const [reason, setReason] = useState('');
+  const [err, setErr] = useState('');
+
+  const submitRequest = async () => {
+    const r = reason.trim() || `Удаление должности: ${position?.name}`;
+    try {
+      await api.post(`/positions/${position.id}/delete-request/`, { reason: r });
+      toast.push('Заявка на удаление отправлена', { kind: 'ok' });
+      onDone && onDone();
+      onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка при отправке заявки');
+    }
+  };
+
+  return (
+    <Modal title={`Удалить должность?`} kind="danger" onClose={onClose}
+      footer={<>
+        <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
+        {currentRole === 'owner'
+          ? <button className="btn btn-danger-solid" onClick={() => { onClose(); openModal('ownerDirectDelete', { name: position?.name, type: 'должность', url: `/positions/${position?.id}/`, onDone }); }}>{I.trash}Удалить навсегда</button>
+          : <LoadButton className="btn btn-danger" onClick={submitRequest}>{I.trash}Подать заявку</LoadButton>
+        }
+      </>}>
+      {currentRole === 'owner' ? (
+        <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+          <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--bad-bg)', color: 'var(--bad-fg)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>{I.alert}</div>
+          <div>
+            <p style={{ marginBottom: 4 }}>Будет безвозвратно удалена должность <strong>{position?.name}</strong>.</p>
+            <p className="muted" style={{ fontSize: 13 }}>Сотрудники с этой должностью останутся без неё. Действие нельзя отменить.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="form-grid">
+          <p style={{ marginBottom: 8 }}>Будет создана заявка на удаление должности <strong>{position?.name}</strong>. Владелец рассмотрит её.</p>
+          <Field label="Причина (необязательно)" error={err}>
+            <textarea className={`input ${err ? 'is-error' : ''}`} rows={3} value={reason} onChange={e => { setReason(e.target.value); setErr(''); }} />
+          </Field>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
 const REAL_ROLE_OPTS = [
   { value: 'teacher', label: 'Преподаватель' },
   { value: 'secretary', label: 'Секретарь' },
@@ -2312,7 +2362,7 @@ function NoteModal({ data, onClose }) {
 
 export {
   StudentFormModal, EmployeeFormModal, GroupFormModal, FacultyFormModal,
-  ParentFormModal, ParentAddStudentModal, SubjectFormModal, PositionFormModal, UserFormModal, UserSetPasswordModal,
+  ParentFormModal, ParentAddStudentModal, SubjectFormModal, PositionFormModal, PositionDeleteModal, UserFormModal, UserSetPasswordModal,
   TransferModal, DeleteConfirmModal, ApproveDeleteModal, UploadDocModal,
   AssignSubjectModal, EmployeeAssignSubjectModal, AuditDiffModal, LogoutModal,
   StudentDetailModal, GroupDetailModal, FacultyDetailModal, EmployeeDetailModal,

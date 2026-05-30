@@ -76,6 +76,25 @@ class PositionDetailView(APIView):
                    institution=institution)
         return Response({'id': position.pk, 'name': position.name, 'role_type': position.role_type})
 
+    def delete(self, request, pk):
+        if request.user.role != 'owner':
+            return Response({'error': 'Доступ запрещён'}, status=403)
+        password = (request.data.get('password') or '').strip()
+        if not password:
+            return Response({'error': 'Введите пароль'}, status=400)
+        if not request.user.check_password(password):
+            return Response({'error': 'Неверный пароль'}, status=400)
+        institution = request.user.institution
+        try:
+            position = Position.objects.get(pk=pk, institution=institution)
+        except Position.DoesNotExist:
+            return Response({'error': 'Не найдено'}, status=404)
+        log_action(request.user, 'deleted', position,
+                   old_data={'name': position.name},
+                   institution=institution)
+        position.delete()
+        return Response({'ok': True})
+
 
 class PositionDeleteRequestView(APIView):
     def post(self, request, pk):
