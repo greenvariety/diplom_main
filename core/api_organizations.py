@@ -167,6 +167,10 @@ class OrganizationDetailView(APIView):
         ec.used = True
         ec.save(update_fields=['used'])
 
+        # Обнуляем position у сотрудников, чтобы снять PROTECT-блокировку перед каскадным удалением
+        from .models import Employee
+        Employee.objects.filter(institution=org).update(position=None)
+
         log_action(request.user, 'deleted', org, old_data={'name': org.name, 'code': org.code}, institution=org)
         org.delete()
         return Response({'ok': True})
