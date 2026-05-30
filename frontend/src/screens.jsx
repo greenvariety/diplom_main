@@ -849,7 +849,7 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
                             <td className="mono muted">{a.ts}</td>
                             <td><span className="fwm mono">{a.user}</span><div className="muted" style={{ fontSize: 11 }}>{a.userName}</div></td>
                             <td><span className={`badge ${a.cls}`}><span className="dot"></span>{a.label}</span></td>
-                            <td><a href="#" onClick={ev => { ev.preventDefault(); ev.stopPropagation(); openModal('auditDiff', a); }}>Показать</a></td>
+                            <td>{I.chevr}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1405,7 +1405,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                             <td className="mono muted">{a.ts}</td>
                             <td><span className="fwm mono">{a.user}</span><div className="muted" style={{ fontSize: 11 }}>{a.userName}</div></td>
                             <td><span className={`badge ${a.cls}`}><span className="dot"></span>{a.label}</span></td>
-                            <td><a href="#" onClick={ev => { ev.preventDefault(); ev.stopPropagation(); openModal('auditDiff', a); }}>Показать</a></td>
+                            <td>{I.chevr}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -2192,7 +2192,7 @@ function AuditLog({ currentUser, openModal, onNavigate }) {
                         </td>
                         <td><span className={`badge ${a.cls}`}><span className="dot"></span>{a.label}</span></td>
                         <td>{a.obj}</td>
-                        <td><a href="#" onClick={ev => { ev.preventDefault(); ev.stopPropagation(); openModal('auditDiff', a); }}>Показать →</a></td>
+                        <td>{I.chevr}</td>
                       </tr>
                     ))}
                   </tbody>
