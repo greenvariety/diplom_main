@@ -211,7 +211,7 @@ class EmployeeDetailView(APIView):
         return Response(data)
 
     def patch(self, request, pk):
-        err = _admin_only(request)  # owner + admin + secretary
+        err = _admin_only(request)
         if err:
             return err
         employee = _get_employee(request, pk)
@@ -270,7 +270,6 @@ class EmployeeDetailView(APIView):
         return Response(_employee_data(employee))
 
     def delete(self, request, pk):
-        # Owner and admin can delete employees directly; secretary must submit a request
         if request.user.role not in ('owner', 'admin'):
             return Response({'error': 'Доступ запрещён'}, status=403)
         password = (request.data.get('password') or '').strip()
@@ -291,7 +290,7 @@ class EmployeeDetailView(APIView):
 
 class EmployeeDeleteRequestView(APIView):
     def post(self, request, pk):
-        err = _admin_only(request)  # owner + admin + secretary
+        err = _admin_only(request)
         if err:
             return err
         institution = request.user.institution

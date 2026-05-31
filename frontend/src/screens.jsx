@@ -306,23 +306,6 @@ function DashboardTeacher({ currentUser, onNavigate, onLogout, openModal }) {
   );
 }
 
-function DashboardSecretary({ currentUser, onNavigate, onLogout, openModal }) {
-  const [stats, setStats] = useState({});
-  useEffect(() => { api.get('/dashboard/').then(r => setStats(r.data?.stats || {})).catch(() => {}); }, []);
-  return (
-    <Shell currentUser={currentUser} active="dashboard" onNavigate={onNavigate} onLogout={onLogout} openModal={openModal}>
-      <PageHead title="Дашборд" sub="Сводка по системе" />
-      <div className="stats" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
-        <Stat label="Студенты"            value={stats.students   ?? '…'} icon={I.badge}      onClick={() => onNavigate('students')} />
-        <Stat label="Сотрудники"          value={stats.employees  ?? '…'} icon={I.briefcase}  onClick={() => onNavigate('employees')} />
-        <Stat label="Опекуны"             value={stats.parents    ?? '…'} icon={I.heart}      onClick={() => onNavigate('parents')} />
-        <Stat label="Группы"              value={stats.groups     ?? '…'} icon={I.users}      onClick={() => onNavigate('groups')} />
-        <Stat label="Должности"           value={stats.positions  ?? '…'} icon={I.settings}   onClick={() => onNavigate('positions')} />
-        <Stat label="Заявки на удаление"  value={stats.pending_delreq ?? '…'} icon={I.trash}  onClick={() => onNavigate('delreq')} />
-      </div>
-    </Shell>
-  );
-}
 
 /* ============================================================
    StudentList - поиск + фильтры + пагинация (реальный API)
@@ -2662,7 +2645,7 @@ function TeacherMySubjects({ currentUser, openModal, onNavigate }) {
 }
 
 export {
-  DashboardOwner, DashboardSuper, DashboardAdmin, DashboardTeacher, DashboardSecretary,
+  DashboardOwner, DashboardSuper, DashboardAdmin, DashboardTeacher,
   OrganizationList,
   StudentList, StudentDetail,
   EmployeeList, EmployeeDetail,

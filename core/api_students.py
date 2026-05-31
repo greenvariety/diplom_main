@@ -112,7 +112,7 @@ class StudentsView(APIView):
         })
 
     def post(self, request):
-        err = _admin_only(request)  # owner + admin + secretary only
+        err = _admin_only(request)
         if err:
             return err
         institution = request.user.institution
@@ -315,7 +315,7 @@ class StudentDetailView(APIView):
 
 class StudentDeleteRequestView(APIView):
     def post(self, request, pk):
-        err = _admin_only(request)  # owner + admin + secretary
+        err = _admin_only(request)
         if err:
             return err
         institution = request.user.institution
