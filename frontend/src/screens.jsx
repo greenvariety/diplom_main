@@ -1687,9 +1687,7 @@ function UserList({ currentUser, openModal, onNavigate }) {
   useEffect(() => { load(); }, []);
 
   const handleRowClick = (u) => {
-    if (u.employee_id) {
-      onNavigate('employee-detail', { employeeId: u.employee_id });
-    }
+    openModal('userForm', { user: u, onDone: load });
   };
 
   const ROLES = [{ v: 'owner', l: 'Владелец' }, { v: 'admin', l: 'Администратор' }, { v: 'teacher', l: 'Преподаватель' }];
@@ -1747,12 +1745,12 @@ function UserList({ currentUser, openModal, onNavigate }) {
                     role: u => u.role_display || '',
                   }
                 ).map((u, idx) => (
-                  <tr key={u.id} className={u.employee_id ? 'row-link' : ''} onClick={() => handleRowClick(u)}>
+                  <tr key={u.id} className="row-link" onClick={() => handleRowClick(u)}>
                     <td className="mono muted">{idx + 1}</td>
                     <td className="fwm">{u.employee_name || <span className="muted">-</span>}</td>
                     <td className="mono">{u.username}</td>
                     <td>{u.role_display}</td>
-                    <td>{u.employee_id ? I.chevr : null}</td>
+                    <td>{I.chevr}</td>
                   </tr>
                 ))}
               </tbody>
