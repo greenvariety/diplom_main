@@ -1471,7 +1471,7 @@ function ApproveDeleteModal({ data, onClose }) {
   );
 }
 
-const DOC_TYPE_LABEL = { passport: 'Паспорт', snils: 'СНИЛС', policy: 'Полис ОМС', certificate: 'Аттестат', order: 'Приказ' };
+const DOC_TYPE_LABEL = { passport: 'Паспорт', snils: 'СНИЛС', policy: 'Полис ОМС', certificate: 'Аттестат', order: 'Приказ', other: 'Прочее' };
 
 function UploadDocModal({ data, onClose }) {
   const { ownerId, ownerType, onDone, file: initFile } = data || {};
@@ -1560,7 +1560,7 @@ function SubjectAddTeacherModal({ data, onClose }) {
   const toast = useToast();
 
   useEffect(() => {
-    api.get('/employees/').then(r => setEmployees(Array.isArray(r.data) ? r.data : (r.data.results || []))).catch(() => {});
+    api.get('/employees/?role_type=teacher').then(r => setEmployees(Array.isArray(r.data) ? r.data : (r.data.results || []))).catch(() => {});
   }, []);
 
   const available = employees.filter(e => !alreadyIds.includes(e.id));
