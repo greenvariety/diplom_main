@@ -1303,13 +1303,15 @@ function GroupList({ currentUser, openModal, onNavigate }) {
             {years.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
-        <div className="field grow-2">
-          <label className="field-label">Классный руководитель</label>
-          <select className="select" value={filterHeadteacher} onChange={e => setFilterHeadteacher(e.target.value)}>
-            <option value="">Все</option>
-            {headteachers.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-          </select>
-        </div>
+        {currentUser?.role !== 'teacher' && (
+          <div className="field grow-2">
+            <label className="field-label">Классный руководитель</label>
+            <select className="select" value={filterHeadteacher} onChange={e => setFilterHeadteacher(e.target.value)}>
+              <option value="">Все</option>
+              {headteachers.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+            </select>
+          </div>
+        )}
       </div>
       <div className="card">
         <div className="card-body flush">
@@ -1322,7 +1324,7 @@ function GroupList({ currentUser, openModal, onNavigate }) {
               <SortHeader k="name" sort={sort}>Название</SortHeader>
               <SortHeader k="faculty_short" sort={sort}>Факультет</SortHeader>
               <SortHeader k="year" sort={sort}>Год</SortHeader>
-              <SortHeader k="headteacher_name" sort={sort}>Классный руководитель</SortHeader>
+              {currentUser?.role !== 'teacher' && <SortHeader k="headteacher_name" sort={sort}>Классный руководитель</SortHeader>}
               <SortHeader k="student_count" sort={sort}>Студентов</SortHeader>
               <th style={{ width: 40 }}></th>
             </tr></thead>
@@ -1340,7 +1342,7 @@ function GroupList({ currentUser, openModal, onNavigate }) {
                   </td>
                   <td>{g.faculty_short}</td>
                   <td className="mono muted">{g.year}</td>
-                  <td>{g.headteacher_name || '-'}</td>
+                  {currentUser?.role !== 'teacher' && <td>{g.headteacher_name || '-'}</td>}
                   <td className="mono">{g.student_count}</td>
                   <td>{I.chevr}</td>
                 </tr>
