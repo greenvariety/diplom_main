@@ -1482,7 +1482,11 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
               ) : group.subjects.map(a => (
                 <div key={a.id} style={{ borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center' }}>
                   <div style={{ flex: 1, padding: '8px 0' }}>
-                    <div className="fwm" style={{ fontSize: 13, cursor: 'pointer' }} onClick={() => onNavigate('subject-detail', { subjectId: a.subject_id })}>{a.subject_name}</div>
+                    <div
+                      className="fwm"
+                      style={{ fontSize: 13, cursor: currentUser?.role !== 'teacher' ? 'pointer' : 'default' }}
+                      onClick={currentUser?.role !== 'teacher' ? () => onNavigate('subject-detail', { subjectId: a.subject_id }) : undefined}
+                    >{a.subject_name}</div>
                     <div
                       className="muted"
                       style={{ fontSize: 11, cursor: currentUser?.role !== 'teacher' ? 'pointer' : 'default' }}
