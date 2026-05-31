@@ -298,9 +298,9 @@ function DashboardTeacher({ currentUser, onNavigate, onLogout, openModal }) {
     <Shell currentUser={currentUser} active="dashboard" onNavigate={onNavigate} onLogout={onLogout} openModal={openModal}>
       <PageHead title="Дашборд" sub="Сводка по системе" />
       <div className="stats" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-        <Stat label="Группы"   value={stats.groups   ?? '…'} icon={I.users}  onClick={() => onNavigate('groups')} />
-        <Stat label="Студенты" value={stats.students  ?? '…'} icon={I.badge}  onClick={() => onNavigate('students')} />
-        <Stat label="Предметы" value={stats.subjects  ?? '…'} icon={I.book}   onClick={() => onNavigate('subjects')} />
+        <Stat label="Мои группы"   value={stats.groups   ?? '…'} icon={I.users}  onClick={() => onNavigate('groups')} />
+        <Stat label="Мои студенты" value={stats.students  ?? '…'} icon={I.badge}  onClick={() => onNavigate('students')} />
+        <Stat label="Мои предметы" value={stats.subjects  ?? '…'} icon={I.book}   onClick={() => onNavigate('my-subjects')} />
       </div>
     </Shell>
   );
