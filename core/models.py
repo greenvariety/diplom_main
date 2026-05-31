@@ -393,7 +393,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         related_name='users', verbose_name='Учебное заведение'
     )
     employee = models.OneToOneField(
-        Employee, on_delete=models.SET_NULL, null=True, blank=True,
+        Employee, on_delete=models.CASCADE, null=True, blank=True,
         related_name='user_account', verbose_name='Сотрудник'
     )
     allowed_institutions = models.ManyToManyField(

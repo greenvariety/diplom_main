@@ -1107,12 +1107,10 @@ function UserFormModal({ data, onClose }) {
   const isEdit = !!user;
   const toast = useToast();
   const [employees, setEmployees] = useState([]);
-  const [orgs, setOrgs] = useState([]);
   const [username, setUsername] = useState(user?.username || '');
   const [displayName, setDisplayName] = useState(user?.display_name || '');
   const [role, setRole] = useState(user?.role || 'teacher');
   const [employeeId, setEmployeeId] = useState(user?.employee_id ? String(user.employee_id) : '');
-  const [institutionIds, setInstitutionIds] = useState(user?.institution_ids || []);
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
   const [pwFocus, setPwFocus] = useState(false);
@@ -1122,14 +1120,7 @@ function UserFormModal({ data, onClose }) {
 
   useEffect(() => {
     api.get('/employees/').then(r => setEmployees(r.data)).catch(() => {});
-    api.get('/organizations/').then(r => setOrgs(r.data)).catch(() => {});
   }, []);
-
-  const toggleOrg = (id) => {
-    setInstitutionIds(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    );
-  };
 
   const employeeOpts = employees.map(e => ({ value: String(e.id), label: e.full_name, sub: e.position_name || '' }));
 
@@ -1158,24 +1149,22 @@ function UserFormModal({ data, onClose }) {
       if (!username.trim()) { setErr('Введите логин'); return; }
       if (!displayName.trim()) { setErr('Введите ФИО'); return; }
       setStep(2);
-    } else if (step === 2) {
-      if (!password) { setErr('Введите пароль'); return; }
-      if (pwdErrs.length) { setErr('Пароль не соответствует требованиям'); return; }
-      if (password !== password2) { setErr('Пароли не совпадают'); return; }
-      setStep(3);
     }
   };
 
   const save = async () => {
     setErr('');
-    if (institutionIds.length === 0) { setErr('Выберите хотя бы одну организацию'); return; }
+    if (!isEdit) {
+      if (!password) { setErr('Введите пароль'); return; }
+      if (pwdErrs.length) { setErr('Пароль не соответствует требованиям'); return; }
+      if (password !== password2) { setErr('Пароли не совпадают'); return; }
+    }
     try {
       if (isEdit) {
         await api.patch(`/users/${user.id}/`, {
           display_name: displayName,
           role,
           employee_id: employeeId ? parseInt(employeeId) : null,
-          institution_ids: institutionIds,
         });
         toast.push('Пользователь обновлён', { kind: 'ok' });
       } else {
@@ -1185,7 +1174,6 @@ function UserFormModal({ data, onClose }) {
           role,
           password,
           employee_id: employeeId ? parseInt(employeeId) : null,
-          institution_ids: institutionIds,
         });
         toast.push('Пользователь создан', { kind: 'ok' });
       }
@@ -1202,25 +1190,6 @@ function UserFormModal({ data, onClose }) {
       }
     }
   };
-
-  const OrgList = () => (
-    <div className="field field-full">
-      <label className="field-label">Доступ к организациям <span className="req">*</span></label>
-      {orgs.length === 0 ? (
-        <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Нет организаций</div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
-          {orgs.map(org => (
-            <label key={org.id} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
-              <input type="checkbox" checked={institutionIds.includes(org.id)} onChange={() => toggleOrg(org.id)} />
-              <span style={{ fontWeight: 500 }}>{org.code}</span>
-              <span style={{ color: 'var(--text-muted)' }}>{org.name}</span>
-            </label>
-          ))}
-        </div>
-      )}
-    </div>
-  );
 
   // Edit mode: single-step form
   if (isEdit) {
@@ -1244,7 +1213,6 @@ function UserFormModal({ data, onClose }) {
             <label className="field-label">Привязать к сотруднику</label>
             <Combobox options={employeeOpts} value={employeeId} onChange={handleEmployeeChange} />
           </div>
-          {orgs.length > 1 && <OrgList />}
         </div>
         {err && <div style={{ color: 'var(--bad-fg)', fontSize: 13, marginTop: 8 }}>{err}</div>}
       </Modal>
@@ -1254,9 +1222,7 @@ function UserFormModal({ data, onClose }) {
   // Create mode: 3-step wizard
   const footerCreate = step === 1
     ? <><button className="btn btn-secondary" onClick={onClose}>Отмена</button><div style={{ flex: 1 }} /><button className="btn btn-primary" onClick={goNext}>Далее {I.chevr}</button></>
-    : step === 2
-    ? <><button className="btn btn-secondary" onClick={() => { setErr(''); setLoginErr(''); setStep(1); }}>{I.back}Назад</button><div style={{ flex: 1 }} /><button className="btn btn-primary" onClick={goNext}>Далее {I.chevr}</button></>
-    : <><button className="btn btn-secondary" onClick={() => { setErr(''); setStep(2); }}>{I.back}Назад</button><div style={{ flex: 1 }} /><LoadButton className="btn btn-primary" onClick={save}>{I.check}Создать</LoadButton></>;
+    : <><button className="btn btn-secondary" onClick={() => { setErr(''); setLoginErr(''); setStep(1); }}>{I.back}Назад</button><div style={{ flex: 1 }} /><LoadButton className="btn btn-primary" onClick={save}>{I.check}Создать</LoadButton></>;
 
   return (
     <Modal
@@ -1270,12 +1236,8 @@ function UserFormModal({ data, onClose }) {
           <div className="step-num">{step > 1 ? I.check : '1'}</div>Данные аккаунта
         </div>
         <div className="step-bar"></div>
-        <div className={`step ${step === 2 ? 'is-active' : step > 2 ? 'is-done' : ''}`}>
-          <div className="step-num">{step > 2 ? I.check : '2'}</div>Пароль
-        </div>
-        <div className="step-bar"></div>
-        <div className={`step ${step === 3 ? 'is-active' : ''}`}>
-          <div className="step-num">3</div>Доступ
+        <div className={`step ${step === 2 ? 'is-active' : ''}`}>
+          <div className="step-num">2</div>Пароль
         </div>
       </div>
 
@@ -1324,12 +1286,6 @@ function UserFormModal({ data, onClose }) {
           </div>
         )}
 
-        {step === 3 && (
-          <div className="form-grid">
-            <OrgList />
-            {err && <div style={{ color: 'var(--bad-fg)', fontSize: 13, marginTop: 8 }}>{err}</div>}
-          </div>
-        )}
       </div>
     </Modal>
   );
@@ -1705,9 +1661,6 @@ function AuditDiffModal({ data, onClose, onNavigate }) {
   const objType = data?.obj_type || '';
   const objName = data?.obj_name || '';
   const isCreate = data?.action === 'create';
-  const isUpdate = data?.action === 'update';
-
-  const [confirmRollback, setConfirmRollback] = useState(false);
 
   const navFn = AUDIT_NAV_MAP[data?.object_type_raw];
   const isDeleted = data?.action === 'delete';
@@ -1716,18 +1669,6 @@ function AuditDiffModal({ data, onClose, onNavigate }) {
     if (!navFn || isDeleted || !onNavigate) return;
     navFn(data.object_id, onNavigate);
     onClose();
-  };
-
-  const handleRollback = async () => {
-    try {
-      await api.post(`/audit-log/${data.id}/rollback/`);
-      toast.push('Откат выполнен - данные восстановлены', { kind: 'ok' });
-      onClose();
-    } catch (e) {
-      const msg = e?.response?.data?.error || 'Ошибка при откате';
-      toast.push(msg, { kind: 'error' });
-      setConfirmRollback(false);
-    }
   };
 
   const footer = (
@@ -1743,23 +1684,7 @@ function AuditDiffModal({ data, onClose, onNavigate }) {
         </button>
       )}
       <div style={{ flex: 1 }} />
-      {isUpdate && changes.length > 0 && !confirmRollback && (
-        <button className="btn btn-danger btn-sm" onClick={() => setConfirmRollback(true)}>
-          Откатить изменение
-        </button>
-      )}
-      {confirmRollback && (
-        <>
-          <span className="muted" style={{ fontSize: 13, alignSelf: 'center' }}>Восстановить предыдущие значения?</span>
-          <LoadButton className="btn btn-danger btn-sm" onClick={handleRollback}>
-            Да, откатить
-          </LoadButton>
-          <button className="btn btn-ghost btn-sm" onClick={() => setConfirmRollback(false)}>
-            Отмена
-          </button>
-        </>
-      )}
-      {!confirmRollback && <button className="btn btn-secondary" onClick={onClose}>Закрыть</button>}
+      <button className="btn btn-secondary" onClick={onClose}>Закрыть</button>
     </>
   );
 
