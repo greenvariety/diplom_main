@@ -97,4 +97,4 @@ class NoteDetailView(APIView):
         if request.user.role != 'owner' and note.created_by_id != request.user.pk:
             return Response({'error': 'Нет доступа'}, status=403)
         note.delete()
-        return Response(status=204)
+        return Response({'ok': True})

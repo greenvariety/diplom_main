@@ -24,7 +24,7 @@ def _student_data(s):
         'photo': s.photo.url if s.photo else None,
         'parent_count': getattr(s, 'parent_count', None),
         'is_flagged': s.is_flagged,
-        'warn_incomplete': not all([s.birth_date, s.phone, s.email, s.group_id]),
+        'warn_incomplete': not all([s.birth_date, s.phone, s.email]) or (s.status != 'expelled' and not s.group_id),
         'has_pending_delreq': getattr(s, 'has_pending_delreq', False),
         'has_note': getattr(s, 'has_note', False),
     }

@@ -95,10 +95,6 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
             />
           </Field>
 
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-            <input type="checkbox" defaultChecked /> Запомнить меня на этом устройстве
-          </label>
-
           {loginError && <div className="field-error" style={{ marginTop: 4 }}>{loginError}</div>}
           <LoadButton className="btn login-btn" type="submit" onClick={submit}>Войти</LoadButton>
 
@@ -916,6 +912,10 @@ function OrgSetupScreen({ onDone }) {
   const [submitting, setSubmitting] = useState(false);
   const set = (k, v) => setVals(s => ({ ...s, [k]: v }));
 
+  const isUC = (c) => c && ((c >= 'А' && c <= 'Я') || c === 'Ё');
+  const isLC = (c) => c && ((c >= 'а' && c <= 'я') || c === 'ё');
+  const autoName = (n) => { let exp = ''; for (let i = 0; i < n.length; i++) { if (isUC(n[i]) && i > 0 && n[i-1] !== ' ' && isLC(n[i-1])) exp += ' '; exp += n[i]; } const s = exp.trim().replace(/\s+/g, ' '); if (!s) return s; const ws = s.split(' '); return ws.map((w, i) => i === 0 ? (w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()) : w.toLowerCase()).join(' '); };
+
   const errs = {};
   if (!vals.name.trim()) errs.name = 'Введите название организации';
   if (!vals.date.trim()) errs.date = 'Укажите дату основания';
@@ -926,7 +926,7 @@ function OrgSetupScreen({ onDone }) {
     setSubmitting(true);
     setErr('');
     try {
-      await api.post('/organizations/', { name: vals.name.trim(), founded_date: vals.date.trim() });
+      await api.post('/organizations/', { name: autoName(vals.name.trim()), founded_date: vals.date.trim() });
       onDone && onDone();
     } catch (e) {
       setErr(e.response?.data?.error || 'Ошибка при создании организации');
@@ -960,9 +960,11 @@ function OrgSetupScreen({ onDone }) {
                 <input
                   className={`input ${touched.name && errs.name ? 'is-error' : ''}`}
                   value={vals.name}
+                  onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }}
+                  onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); set('name', vals.name + t); }}
                   onChange={e => set('name', e.target.value)}
                   onBlur={() => setTouched(t => ({ ...t, name: 1 }))}
-                  maxLength={200}
+                  maxLength={1000}
                   autoFocus
                 />
               </Field>

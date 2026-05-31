@@ -103,7 +103,7 @@ class SubjectDetailView(APIView):
         log_action(request.user, 'deleted', subject,
                    old_data={'name': subject.name}, institution=institution)
         subject.delete()
-        return Response(status=204)
+        return Response({'ok': True})
 
 
 class SubjectEmployeesView(APIView):
