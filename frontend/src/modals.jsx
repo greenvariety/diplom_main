@@ -1551,6 +1551,48 @@ function UploadDocModal({ data, onClose }) {
   );
 }
 
+function SubjectAddTeacherModal({ data, onClose }) {
+  const { subjectId, alreadyIds = [], onDone } = data || {};
+  const [employees, setEmployees] = useState([]);
+  const [employeeId, setEmployeeId] = useState('');
+  const [err, setErr] = useState('');
+  const toast = useToast();
+
+  useEffect(() => {
+    api.get('/employees/').then(r => setEmployees(Array.isArray(r.data) ? r.data : (r.data.results || []))).catch(() => {});
+  }, []);
+
+  const available = employees.filter(e => !alreadyIds.includes(e.id));
+
+  const save = async () => {
+    if (!employeeId) { setErr('Выберите преподавателя'); return; }
+    setErr('');
+    try {
+      await api.post(`/subjects/${subjectId}/employees/`, { employee_id: parseInt(employeeId) });
+      toast.push('Преподаватель добавлен', { kind: 'ok' });
+      onDone && onDone();
+      onClose && onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка при добавлении');
+    }
+  };
+
+  return (
+    <Modal title="Добавить преподавателя" onClose={onClose}
+      footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>Добавить</LoadButton></>}>
+      <div className="form-grid">
+        <Field label="Преподаватель" required>
+          <select className="select" value={employeeId} onChange={e => { setEmployeeId(e.target.value); setErr(''); }}>
+            <option value="">- Выберите преподавателя -</option>
+            {available.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
+          </select>
+        </Field>
+        {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
+      </div>
+    </Modal>
+  );
+}
+
 function AssignSubjectModal({ data, onClose }) {
   const { groupId: preGroupId, subjectId: preSubjectId, subjectName: preSubjectName, onDone } = data || {};
   const isSubjectFixed = !!preSubjectId;
@@ -2431,7 +2473,7 @@ export {
   StudentFormModal, EmployeeFormModal, GroupFormModal, FacultyFormModal,
   ParentFormModal, ParentAddStudentModal, SubjectFormModal, PositionFormModal, UserFormModal, UserSetPasswordModal,
   DeleteConfirmModal, ApproveDeleteModal, UploadDocModal,
-  AssignSubjectModal, EmployeeAssignSubjectModal, EmployeeAddTaughtSubjectModal, EmployeeSetHeadteacherModal, AuditDiffModal, LogoutModal,
+  AssignSubjectModal, SubjectAddTeacherModal, EmployeeAssignSubjectModal, EmployeeAddTaughtSubjectModal, EmployeeSetHeadteacherModal, AuditDiffModal, LogoutModal,
   StudentDetailModal, GroupDetailModal, FacultyDetailModal, EmployeeDetailModal,
   OrgFormModal, OrgDeleteConfirmModal, OwnerDirectDeleteModal,
   NoteModal,

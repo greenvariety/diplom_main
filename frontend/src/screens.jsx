@@ -1149,7 +1149,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {employee.position_role_type === 'teacher' && (
+          {(employee.position_role_type === 'teacher' || (employee.taught_subjects || []).length > 0 || (employee.subjects || []).length > 0 || (employee.headed_groups || []).length > 0) && (
             <div className="card">
               <div className="card-head" style={{ flexWrap: 'wrap', gap: 0 }}>
                 <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid var(--border)', width: '100%' }}>
@@ -2373,14 +2373,7 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId, filterEm
     );
   }
 
-  const uniqueTeachers = [];
-  const seenIds = new Set();
-  for (const a of subject.assignments) {
-    if (!seenIds.has(a.employee_id)) {
-      seenIds.add(a.employee_id);
-      uniqueTeachers.push({ id: a.employee_id, name: a.employee_name, warn_incomplete: a.employee_warn_incomplete });
-    }
-  }
+  const uniqueTeachers = subject.teachers || [];
 
   const filteredAssignments = filterEmployeeId
     ? subject.assignments.filter(a => a.employee_id === filterEmployeeId)
@@ -2450,23 +2443,32 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId, filterEm
           <div className="card">
             <div className="card-head">
               <div className="title">Преподаватели<span className="muted" style={{ fontWeight: 700 }}>: {uniqueTeachers.length}</span></div>
-              <button className="btn btn-secondary btn-sm" onClick={() => openModal('assignSubject', { subjectId, subjectName: subject.name, onDone: load })}>{I.plus}</button>
+              {['owner', 'admin'].includes(currentUser?.role) && (
+                <button className="btn btn-secondary btn-sm" onClick={() => openModal('subjectAddTeacher', { subjectId, alreadyIds: uniqueTeachers.map(t => t.id), onDone: load })}>{I.plus}</button>
+              )}
             </div>
             <div className="card-body flush">
               {uniqueTeachers.length === 0 ? (
-                <EmptyState icon={I.user} title="Нет назначенных преподавателей" sub="Нажмите + чтобы назначить группу с преподавателем" />
+                <EmptyState icon={I.user} title="Нет назначенных преподавателей" sub="Нажмите + чтобы добавить преподавателя" />
               ) : (
                 <table className="tbl">
-                  <thead><tr><SortHeader k="name" sort={sortSubjTeachers}>Преподаватель</SortHeader><th style={{ width: 40 }}></th></tr></thead>
+                  <thead><tr><SortHeader k="full_name" sort={sortSubjTeachers}>Преподаватель</SortHeader><th style={{ width: 40 }}></th></tr></thead>
                   <tbody>
                     {sortSubjTeachers.sortFn(uniqueTeachers, {
-                      name: t => t.name || '',
+                      full_name: t => t.full_name || '',
                     }).map(t => (
                       <tr key={t.id} className="row-link" onClick={() => onNavigate('employee-detail', { employeeId: t.id })}>
-                        <td className="fwm">
-                          {t.name}
+                        <td className="fwm">{t.full_name}</td>
+                        <td onClick={e => e.stopPropagation()}>
+                          {['owner', 'admin'].includes(currentUser?.role) && (
+                            <button className="btn btn-ghost btn-icon btn-sm" title="Убрать" onClick={async () => {
+                              try {
+                                await api.delete(`/subjects/${subjectId}/employees/${t.id}/`);
+                                load();
+                              } catch { toast.push('Ошибка при удалении', { kind: 'err' }); }
+                            }}>{I.x}</button>
+                          )}
                         </td>
-                        <td>{I.chevr}</td>
                       </tr>
                     ))}
                   </tbody>

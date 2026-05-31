@@ -43,9 +43,18 @@ class SubjectDetailView(APIView):
         students = Student.objects.filter(
             group_id__in=group_ids
         ).select_related('group').order_by('last_name', 'first_name', 'middle_name')
+        teachers = subject.teachers.filter(institution=institution).select_related('position').order_by('last_name', 'first_name', 'middle_name')
         return Response({
             'id': subject.pk,
             'name': subject.name,
+            'teachers': [
+                {
+                    'id': e.pk,
+                    'full_name': e.full_name(),
+                    'warn_incomplete': _emp_incomplete(e),
+                }
+                for e in teachers
+            ],
             'assignments': [
                 {
                     'id': a.pk,
@@ -113,8 +122,42 @@ class SubjectEmployeesView(APIView):
             subject = Subject.objects.get(pk=pk, institution=institution)
         except Subject.DoesNotExist:
             return Response({'error': 'Не найдено'}, status=404)
-        employee_ids = subject.group_assignments.values_list('employee_id', flat=True).distinct()
-        employees = Employee.objects.filter(
-            pk__in=employee_ids, institution=institution
-        ).order_by('last_name', 'first_name', 'middle_name')
+        employees = subject.teachers.filter(institution=institution).order_by('last_name', 'first_name', 'middle_name')
         return Response([{'id': e.pk, 'full_name': e.full_name()} for e in employees])
+
+    def post(self, request, pk):
+        if request.user.role not in ('owner', 'admin'):
+            return Response({'error': 'Доступ запрещён'}, status=403)
+        institution = request.user.institution
+        try:
+            subject = Subject.objects.get(pk=pk, institution=institution)
+        except Subject.DoesNotExist:
+            return Response({'error': 'Не найдено'}, status=404)
+        employee_id = request.data.get('employee_id')
+        try:
+            employee = Employee.objects.get(pk=employee_id, institution=institution)
+        except Employee.DoesNotExist:
+            return Response({'error': 'Сотрудник не найден'}, status=404)
+        employee.taught_subjects.add(subject)
+        log_action(request.user, 'updated', subject,
+                   new_data={'teacher_added': employee.full_name()}, institution=institution)
+        return Response({'id': employee.pk, 'full_name': employee.full_name()}, status=201)
+
+
+class SubjectEmployeeDetailView(APIView):
+    def delete(self, request, pk, employee_pk):
+        if request.user.role not in ('owner', 'admin'):
+            return Response({'error': 'Доступ запрещён'}, status=403)
+        institution = request.user.institution
+        try:
+            subject = Subject.objects.get(pk=pk, institution=institution)
+        except Subject.DoesNotExist:
+            return Response({'error': 'Не найдено'}, status=404)
+        try:
+            employee = Employee.objects.get(pk=employee_pk, institution=institution)
+        except Employee.DoesNotExist:
+            return Response({'error': 'Сотрудник не найден'}, status=404)
+        employee.taught_subjects.remove(subject)
+        log_action(request.user, 'updated', subject,
+                   old_data={'teacher_removed': employee.full_name()}, institution=institution)
+        return Response({'ok': True})
