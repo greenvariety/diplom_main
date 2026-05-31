@@ -628,7 +628,7 @@ function GroupFormModal({ data, onClose }) {
 
   useEffect(() => {
     api.get('/faculties/').then(r => setFaculties(r.data)).catch(() => {});
-    api.get('/employees/').then(r => setEmployees(r.data)).catch(() => {});
+    api.get('/employees/?role_type=teacher').then(r => setEmployees(r.data)).catch(() => {});
   }, []);
 
   const save = async () => {

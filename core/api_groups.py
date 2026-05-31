@@ -96,9 +96,11 @@ class GroupsView(APIView):
         headteacher = None
         if headteacher_id:
             try:
-                headteacher = Employee.objects.get(pk=headteacher_id, institution=institution)
+                headteacher = Employee.objects.select_related('position').get(pk=headteacher_id, institution=institution)
             except Employee.DoesNotExist:
-                pass
+                return Response({'error': 'Сотрудник не найден'}, status=404)
+            if not headteacher.position or headteacher.position.role_type != 'teacher':
+                return Response({'error': 'Классным руководителем можно назначить только сотрудника с должностью преподавателя'}, status=400)
         group = Group.objects.create(faculty=faculty, year=year_int, headteacher=headteacher)
         log_action(request.user, 'created', group,
                    new_data={'name': group.name, 'year': group.year},
@@ -174,9 +176,12 @@ class GroupDetailView(APIView):
             hid = request.data['headteacher_id']
             if hid:
                 try:
-                    group.headteacher = Employee.objects.get(pk=hid, institution=institution)
+                    ht = Employee.objects.select_related('position').get(pk=hid, institution=institution)
                 except Employee.DoesNotExist:
-                    group.headteacher = None
+                    return Response({'error': 'Сотрудник не найден'}, status=404)
+                if not ht.position or ht.position.role_type != 'teacher':
+                    return Response({'error': 'Классным руководителем можно назначить только сотрудника с должностью преподавателя'}, status=400)
+                group.headteacher = ht
             else:
                 group.headteacher = None
         group.save()
