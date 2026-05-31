@@ -617,6 +617,48 @@ function EmployeeAssignSubjectModal({ data, onClose }) {
   );
 }
 
+function EmployeeAddTaughtSubjectModal({ data, onClose }) {
+  const { employeeId, alreadyIds = [], onDone } = data || {};
+  const [subjects, setSubjects] = useState([]);
+  const [subjectId, setSubjectId] = useState('');
+  const [err, setErr] = useState('');
+  const toast = useToast();
+
+  useEffect(() => {
+    api.get('/subjects/').then(r => setSubjects(r.data)).catch(() => {});
+  }, []);
+
+  const available = subjects.filter(s => !alreadyIds.includes(s.id));
+
+  const save = async () => {
+    if (!subjectId) { setErr('Выберите предмет'); return; }
+    setErr('');
+    try {
+      await api.post(`/employees/${employeeId}/taught-subjects/`, { subject_id: parseInt(subjectId) });
+      toast.push('Предмет добавлен', { kind: 'ok' });
+      onDone && onDone();
+      onClose && onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка при добавлении');
+    }
+  };
+
+  return (
+    <Modal title="Добавить предмет преподавателю" onClose={onClose}
+      footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>Добавить</LoadButton></>}>
+      <div className="form-grid">
+        <Field label="Предмет" required>
+          <select className="select" value={subjectId} onChange={e => { setSubjectId(e.target.value); setErr(''); }}>
+            <option value="">- Выберите предмет -</option>
+            {available.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </Field>
+        {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
+      </div>
+    </Modal>
+  );
+}
+
 function GroupFormModal({ data, onClose }) {
   const { group, onDone, facultyId: presetFacultyId } = data || {};
   const isEdit = !!group;
@@ -2478,7 +2520,7 @@ export {
   StudentFormModal, EmployeeFormModal, GroupFormModal, FacultyFormModal,
   ParentFormModal, ParentAddStudentModal, SubjectFormModal, PositionFormModal, UserFormModal, UserSetPasswordModal,
   TransferModal, DeleteConfirmModal, ApproveDeleteModal, UploadDocModal,
-  AssignSubjectModal, EmployeeAssignSubjectModal, AuditDiffModal, LogoutModal,
+  AssignSubjectModal, EmployeeAssignSubjectModal, EmployeeAddTaughtSubjectModal, AuditDiffModal, LogoutModal,
   StudentDetailModal, GroupDetailModal, FacultyDetailModal, EmployeeDetailModal,
   OrgFormModal, OrgDeleteConfirmModal, OwnerDirectDeleteModal,
   NoteModal,

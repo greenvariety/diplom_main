@@ -190,6 +190,11 @@ class EmployeeDetailView(APIView):
             for g in headed_groups
         ]
 
+        data['taught_subjects'] = [
+            {'id': s.pk, 'name': s.name}
+            for s in employee.taught_subjects.order_by('name')
+        ]
+
         docs = Document.objects.filter(owner_type='employee', owner_id=employee.pk)
         data['documents'] = [
             {
@@ -375,6 +380,62 @@ class EmployeeSubjectDetailView(APIView):
                    old_data={'subject': assignment.subject.name, 'group': assignment.group.name},
                    institution=institution)
         assignment.delete()
+        return Response({'ok': True})
+
+
+class EmployeeTaughtSubjectsView(APIView):
+    def get(self, request, pk):
+        employee = _get_employee(request, pk)
+        if not employee:
+            return Response({'error': 'Не найдено'}, status=404)
+        return Response([
+            {'id': s.pk, 'name': s.name}
+            for s in employee.taught_subjects.order_by('name')
+        ])
+
+    def post(self, request, pk):
+        err = _admin_or_owner(request)
+        if err:
+            return err
+        employee = _get_employee(request, pk)
+        if not employee:
+            return Response({'error': 'Сотрудник не найден'}, status=404)
+        if not employee.position or employee.position.role_type != 'teacher':
+            return Response({'error': 'Назначать предмет можно только преподавателю'}, status=400)
+        subject_id = request.data.get('subject_id')
+        if not subject_id:
+            return Response({'error': 'Выберите предмет'}, status=400)
+        institution = request.user.institution
+        try:
+            subject = Subject.objects.get(pk=subject_id, institution=institution)
+        except Subject.DoesNotExist:
+            return Response({'error': 'Предмет не найден'}, status=404)
+        if employee.taught_subjects.filter(pk=subject.pk).exists():
+            return Response({'error': 'Предмет уже добавлен'}, status=400)
+        employee.taught_subjects.add(subject)
+        log_action(request.user, 'updated', employee,
+                   new_data={'action': 'add_taught_subject', 'subject': subject.name},
+                   institution=institution)
+        return Response({'id': subject.pk, 'name': subject.name}, status=201)
+
+
+class EmployeeTaughtSubjectDetailView(APIView):
+    def delete(self, request, pk, subject_pk):
+        err = _admin_or_owner(request)
+        if err:
+            return err
+        employee = _get_employee(request, pk)
+        if not employee:
+            return Response({'error': 'Сотрудник не найден'}, status=404)
+        try:
+            subject = employee.taught_subjects.get(pk=subject_pk)
+        except Subject.DoesNotExist:
+            return Response({'error': 'Предмет не найден'}, status=404)
+        employee.taught_subjects.remove(subject)
+        institution = request.user.institution
+        log_action(request.user, 'updated', employee,
+                   new_data={'action': 'remove_taught_subject', 'subject': subject.name},
+                   institution=institution)
         return Response({'ok': True})
 
 

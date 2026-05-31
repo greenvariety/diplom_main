@@ -1052,8 +1052,10 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
   const [empAuditPage, setEmpAuditPage] = useState(1);
   const [empAuditTotal, setEmpAuditTotal] = useState(0);
   const [empAuditPages, setEmpAuditPages] = useState(1);
+  const [teacherTab, setTeacherTab] = useState('subjects');
   const sortEmpGroups = useSortable({ key: null, dir: 'asc' }, 'emp-groups');
   const sortEmpSubjects = useSortable({ key: null, dir: 'asc' }, 'emp-subjects');
+  const sortEmpAssignments = useSortable({ key: null, dir: 'asc' }, 'emp-assignments');
   const sortEmpDocs = useSortable({ key: null, dir: 'asc' }, 'emp-docs');
 
   const loadAccount = () => {
@@ -1308,7 +1310,120 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {!['admin', 'secretary'].includes(employee.position_role_type) && employee.headed_groups?.length > 0 && (
+          {employee.position_role_type === 'teacher' && (
+            <div className="card">
+              <div className="card-head" style={{ flexWrap: 'wrap', gap: 0 }}>
+                <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid var(--border)', width: '100%' }}>
+                  {[
+                    { key: 'subjects', label: 'Предметы' },
+                    { key: 'assignments', label: 'Назначения' },
+                    { key: 'headteacher', label: 'Классный руководитель' },
+                  ].map(t => (
+                    <button key={t.key} onClick={() => setTeacherTab(t.key)}
+                      style={{
+                        background: 'none', border: 'none', cursor: 'pointer', padding: '10px 18px',
+                        fontSize: 13, fontWeight: teacherTab === t.key ? 600 : 400,
+                        color: teacherTab === t.key ? 'var(--primary)' : 'var(--text-muted)',
+                        borderBottom: teacherTab === t.key ? '2px solid var(--primary)' : '2px solid transparent',
+                        marginBottom: -2,
+                      }}
+                    >{t.label}</button>
+                  ))}
+                  <div style={{ flex: 1 }} />
+                  {teacherTab === 'subjects' && ['owner', 'admin'].includes(currentUser?.role) && (
+                    <button className="btn btn-secondary btn-sm" style={{ margin: '6px 8px' }}
+                      onClick={() => openModal('employeeAddTaughtSubject', { employeeId, alreadyIds: (employee.taught_subjects || []).map(s => s.id), onDone: load })}>
+                      {I.plus}
+                    </button>
+                  )}
+                  {teacherTab === 'assignments' && ['owner', 'admin'].includes(currentUser?.role) && (
+                    <button className="btn btn-secondary btn-sm" style={{ margin: '6px 8px' }}
+                      onClick={() => openModal('employeeAssignSubject', { employeeId, onDone: load })}>
+                      {I.plus}
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="card-body flush">
+                {teacherTab === 'subjects' && (
+                  (employee.taught_subjects || []).length === 0
+                    ? <EmptyState icon={I.briefcase} title="Предметы не добавлены" sub="Нажмите + чтобы добавить предмет" />
+                    : (
+                      <table className="tbl">
+                        <thead><tr><SortHeader k="name" sort={sortEmpSubjects}>Предмет</SortHeader><th style={{ width: 40 }}></th></tr></thead>
+                        <tbody>
+                          {sortEmpSubjects.sortFn(employee.taught_subjects || [], { name: s => s.name || '' }).map(s => (
+                            <tr key={s.id}>
+                              <td className="fwm row-link" style={{ cursor: 'pointer' }} onClick={() => onNavigate('subject-detail', { subjectId: s.id })}>{s.name}</td>
+                              <td>
+                                {['owner', 'admin'].includes(currentUser?.role) && (
+                                  <button className="btn btn-ghost btn-icon btn-sm" title="Убрать"
+                                    onClick={async () => {
+                                      try {
+                                        await api.delete(`/employees/${employeeId}/taught-subjects/${s.id}/`);
+                                        load();
+                                      } catch { }
+                                    }}>{I.x}</button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )
+                )}
+                {teacherTab === 'assignments' && (
+                  (employee.subjects || []).length === 0
+                    ? <EmptyState icon={I.briefcase} title="Назначений нет" sub="Нажмите + чтобы назначить предмет в группу" />
+                    : (
+                      <table className="tbl">
+                        <thead><tr><SortHeader k="subject_name" sort={sortEmpAssignments}>Предмет</SortHeader><SortHeader k="group_name" sort={sortEmpAssignments}>Группа</SortHeader><th style={{ width: 40 }}></th></tr></thead>
+                        <tbody>
+                          {sortEmpAssignments.sortFn(employee.subjects || [], {
+                            subject_name: s => s.subject_name || '',
+                            group_name: s => s.group_name || '',
+                          }).map(s => (
+                            <tr key={s.assignment_id}>
+                              <td className="fwm row-link" style={{ cursor: 'pointer' }} onClick={() => onNavigate('subject-detail', { subjectId: s.subject_id })}>{s.subject_name}</td>
+                              <td className="row-link" style={{ cursor: 'pointer' }} onClick={() => onNavigate('group-detail', { groupId: s.group_id })}>{s.group_name}</td>
+                              <td>
+                                {['owner', 'admin'].includes(currentUser?.role) && (
+                                  <button className="btn btn-ghost btn-icon btn-sm" onClick={() => removeSubject(s.assignment_id)} title="Убрать">{I.x}</button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )
+                )}
+                {teacherTab === 'headteacher' && (
+                  (employee.headed_groups || []).length === 0
+                    ? <EmptyState icon={I.users} title="Нет групп" sub="Этот преподаватель не является классным руководителем" />
+                    : (
+                      <table className="tbl">
+                        <thead><tr><SortHeader k="name" sort={sortEmpGroups}>Группа</SortHeader><SortHeader k="faculty_short" sort={sortEmpGroups}>Факультет</SortHeader><SortHeader k="student_count" sort={sortEmpGroups}>Студентов</SortHeader><th style={{ width: 40 }}></th></tr></thead>
+                        <tbody>
+                          {sortEmpGroups.sortFn(employee.headed_groups, {
+                            name: g => g.name,
+                            faculty_short: g => g.faculty_short || '',
+                            student_count: g => g.student_count,
+                          }).map(g => (
+                            <tr key={g.id} className="row-link" onClick={() => onNavigate('group-detail', { groupId: g.id })}>
+                              <td className="fwm">{g.name}</td>
+                              <td>{g.faculty_short}</td>
+                              <td className="mono">{g.student_count}</td>
+                              <td>{I.chevr}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )
+                )}
+              </div>
+            </div>
+          )}
+          {!['teacher', 'admin', 'secretary'].includes(employee.position_role_type) && employee.headed_groups?.length > 0 && (
             <div className="card">
               <div className="card-head"><div className="title">Классное руководство</div></div>
               <div className="card-body flush">
@@ -1329,62 +1444,6 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                     ))}
                   </tbody>
                 </table>
-              </div>
-            </div>
-          )}
-          {employee.position_role_type === 'teacher' && <div className="card">
-            <div className="card-head">
-              <div className="title">Ведёт предметы</div>
-              {['owner', 'admin'].includes(currentUser?.role) && (
-                <button className="btn btn-secondary btn-sm" onClick={() => openModal('employeeAssignSubject', { employeeId, onDone: load })}>{I.plus}</button>
-              )}
-            </div>
-            <div className="card-body flush">
-              {employee.subjects?.length === 0 ? (
-                <EmptyState icon={I.briefcase} title="Предметы не назначены" sub="Нажмите «Назначить» чтобы добавить" />
-              ) : (
-                <table className="tbl">
-                  <thead><tr><SortHeader k="subject_name" sort={sortEmpSubjects}>Предмет</SortHeader><SortHeader k="group_name" sort={sortEmpSubjects}>Группа</SortHeader><th style={{ width: 40 }}></th></tr></thead>
-                  <tbody>
-                    {sortEmpSubjects.sortFn(employee.subjects || [], {
-                      subject_name: s => s.subject_name || '',
-                      group_name: s => s.group_name || '',
-                    }).map(s => (
-                      <tr key={s.assignment_id}>
-                        <td className="fwm row-link" style={{ cursor: 'pointer' }} onClick={() => onNavigate('subject-detail', { subjectId: s.subject_id, filterEmployeeId: employeeId })}>{s.subject_name}</td>
-                        <td className="row-link" style={{ cursor: 'pointer' }} onClick={() => onNavigate('group-detail', { groupId: s.group_id })}>{s.group_name}</td>
-                        <td>
-                          <button className="btn btn-ghost btn-icon btn-sm" onClick={() => removeSubject(s.assignment_id)} title="Убрать">{I.x}</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </div>}
-          {employee.position_role_type === 'teacher' && (
-            <div className="card">
-              <div className="card-head"><div className="title">Прикреплённые группы</div></div>
-              <div className="card-body flush">
-                {(() => {
-                  const groups = [...new Map((employee.subjects || []).map(s => [s.group_id, { id: s.group_id, name: s.group_name }])).values()];
-                  return groups.length === 0
-                    ? <EmptyState icon={I.users} title="Группы не назначены" sub="Назначьте предметы, чтобы прикрепить группы" />
-                    : (
-                      <table className="tbl">
-                        <thead><tr><th>Группа</th><th style={{ width: 40 }}></th></tr></thead>
-                        <tbody>
-                          {groups.map(g => (
-                            <tr key={g.id} className="row-link" onClick={() => onNavigate('group-detail', { groupId: g.id })}>
-                              <td className="fwm">{g.name}</td>
-                              <td>{I.chevr}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    );
-                })()}
               </div>
             </div>
           )}

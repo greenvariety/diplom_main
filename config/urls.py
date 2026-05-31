@@ -13,6 +13,7 @@ from core.api_groups import GroupsView, GroupDetailView, GroupDeleteRequestView,
 from core.api_employees import (
     EmployeesView, EmployeeDetailView, EmployeeDeleteRequestView,
     EmployeeSubjectsView, EmployeeSubjectDetailView, EmployeeFlagView, EmployeeAccountView,
+    EmployeeTaughtSubjectsView, EmployeeTaughtSubjectDetailView,
 )
 from core.api_subjects import SubjectsView, SubjectDetailView, SubjectEmployeesView
 from core.api_students import (
@@ -77,6 +78,8 @@ urlpatterns = [
     path('api/employees/<int:pk>/account/', EmployeeAccountView.as_view()),
     path('api/employees/<int:pk>/subjects/', EmployeeSubjectsView.as_view()),
     path('api/employees/<int:pk>/subjects/<int:assignment_pk>/', EmployeeSubjectDetailView.as_view()),
+    path('api/employees/<int:pk>/taught-subjects/', EmployeeTaughtSubjectsView.as_view()),
+    path('api/employees/<int:pk>/taught-subjects/<int:subject_pk>/', EmployeeTaughtSubjectDetailView.as_view()),
     path('api/subjects/', SubjectsView.as_view()),
     path('api/subjects/<int:pk>/', SubjectDetailView.as_view()),
     path('api/subjects/<int:pk>/employees/', SubjectEmployeesView.as_view()),

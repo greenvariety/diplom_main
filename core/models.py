@@ -105,6 +105,11 @@ class Employee(models.Model):
         Position, on_delete=models.SET_NULL, null=True, blank=True,
         verbose_name='Должность'
     )
+    taught_subjects = models.ManyToManyField(
+        'Subject', blank=True,
+        related_name='teachers',
+        verbose_name='Ведёт предметы'
+    )
 
     class Meta:
         verbose_name = 'Сотрудник'
