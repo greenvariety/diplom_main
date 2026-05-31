@@ -72,7 +72,8 @@ function PhotoSection({ currentUser, onUserUpdated }) {
       const r = await api.patch('/me/photo/', fd);
       onUserUpdated && onUserUpdated({ photo: r.data.photo });
     } catch (e) {
-      setErr(e.response?.data?.error || 'Ошибка загрузки');
+      const d = e.response?.data;
+      setErr(d?.error || d?.detail || (typeof d === 'string' ? d.slice(0, 120) : null) || `Ошибка загрузки (${e.response?.status ?? 'сеть'})`);
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = '';
