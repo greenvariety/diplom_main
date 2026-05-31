@@ -784,7 +784,7 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
             </div>
             <div className="card-body flush">
               {student.parents.length === 0 ? (
-                <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Опекуны не добавлены</div>
+                <EmptyState icon={I.user} title="Опекуны не добавлены" sub="Нажмите + чтобы добавить опекуна" />
               ) : (
                 <table className="tbl">
                   <thead><tr><th style={{ width: 50 }}></th><SortHeader k="parent_name" sort={sortParents}>ФИО</SortHeader><SortHeader k="relation_display" sort={sortParents}>Связь</SortHeader><SortHeader k="phone" sort={sortParents}>Телефон</SortHeader><th style={{ width: 40 }}></th></tr></thead>
@@ -1747,25 +1747,27 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
             )}
           </div>
           <div className="card-body flush">
-            <table className="tbl">
-              <thead><tr><SortHeader k="last_name" sort={sortGroupStudents}>ФИО</SortHeader><SortHeader k="status" sort={sortGroupStudents}>Статус</SortHeader><th></th></tr></thead>
-              <tbody>
-                {group.students.length === 0 ? (
-                  <tr><td colSpan={3} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>Студенты не добавлены</td></tr>
-                ) : sortGroupStudents.sortFn(group.students, {
+            {group.students.length === 0 ? (
+              <EmptyState icon={I.users} title="Студенты не добавлены" sub="Нажмите + чтобы добавить студента" />
+            ) : (
+              <table className="tbl">
+                <thead><tr><SortHeader k="last_name" sort={sortGroupStudents}>ФИО</SortHeader><SortHeader k="status" sort={sortGroupStudents}>Статус</SortHeader><th></th></tr></thead>
+                <tbody>
+                  {sortGroupStudents.sortFn(group.students, {
                     last_name: s => `${s.last_name} ${s.first_name}`,
                     status: s => s.status || '',
                   }).map(s => (
-                  <tr key={s.id} className="row-link" onClick={() => onNavigate('student-detail', { studentId: s.id })}>
-                    <td className="fwm">
-                      {s.last_name} {s.first_name} {s.middle_name}
-                    </td>
-                    <td><Badge status={s.status} /></td>
-                    <td>{I.chevr}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    <tr key={s.id} className="row-link" onClick={() => onNavigate('student-detail', { studentId: s.id })}>
+                      <td className="fwm">
+                        {s.last_name} {s.first_name} {s.middle_name}
+                      </td>
+                      <td><Badge status={s.status} /></td>
+                      <td>{I.chevr}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
         <div>
@@ -1776,7 +1778,7 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
             </div>
             <div className="card-body" style={{ display: 'grid', gap: 8 }}>
               {group.subjects.length === 0 ? (
-                <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: '8px 0' }}>Предметы не назначены</div>
+                <EmptyState icon={I.book} title="Предметы не назначены" sub="Нажмите + чтобы добавить предмет" />
               ) : group.subjects.map(a => (
                 <div key={a.id} style={{ borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center' }}>
                   <div style={{ flex: 1, padding: '8px 0' }}>
@@ -1850,27 +1852,29 @@ function FacultyDetail({ currentUser, openModal, onNavigate, facultyId }) {
             <button className="btn btn-secondary btn-sm" onClick={() => openModal('groupForm', { onDone: load, facultyId: faculty.id })}>{I.plus}</button>
           </div>
           <div className="card-body flush">
-            <table className="tbl">
-              <thead><tr><SortHeader k="name" sort={sortFacGroups}>Название</SortHeader><SortHeader k="year" sort={sortFacGroups}>Год набора</SortHeader><SortHeader k="student_count" sort={sortFacGroups}>Студентов</SortHeader><SortHeader k="headteacher_name" sort={sortFacGroups}>Кл. руководитель</SortHeader><th style={{ width: 40 }}></th></tr></thead>
-              <tbody>
-                {faculty.groups.length === 0 ? (
-                  <tr><td colSpan={5} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>Групп нет</td></tr>
-                ) : sortFacGroups.sortFn(faculty.groups, {
+            {faculty.groups.length === 0 ? (
+              <EmptyState icon={I.users} title="Групп нет" sub="Нажмите + чтобы создать группу" />
+            ) : (
+              <table className="tbl">
+                <thead><tr><SortHeader k="name" sort={sortFacGroups}>Название</SortHeader><SortHeader k="year" sort={sortFacGroups}>Год набора</SortHeader><SortHeader k="student_count" sort={sortFacGroups}>Студентов</SortHeader><SortHeader k="headteacher_name" sort={sortFacGroups}>Кл. руководитель</SortHeader><th style={{ width: 40 }}></th></tr></thead>
+                <tbody>
+                  {sortFacGroups.sortFn(faculty.groups, {
                     name: g => g.name,
                     year: g => g.year,
                     student_count: g => g.student_count,
                     headteacher_name: g => g.headteacher_name || '',
                   }).map(g => (
-                  <tr key={g.id} className="row-link" onClick={() => onNavigate('group-detail', { groupId: g.id })}>
-                    <td className="fwm">{g.name}</td>
-                    <td className="mono">{g.year}</td>
-                    <td className="mono">{g.student_count}</td>
-                    <td className="muted">{g.headteacher_name || '-'}</td>
-                    <td>{I.chevr}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    <tr key={g.id} className="row-link" onClick={() => onNavigate('group-detail', { groupId: g.id })}>
+                      <td className="fwm">{g.name}</td>
+                      <td className="mono">{g.year}</td>
+                      <td className="mono">{g.student_count}</td>
+                      <td className="muted">{g.headteacher_name || '-'}</td>
+                      <td>{I.chevr}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
         <div className="card">

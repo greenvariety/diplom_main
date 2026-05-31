@@ -1,9 +1,9 @@
 # HTML.md - задачи по правке интерфейса
 
-## ~~1. 1~~
+~~## 1. когда нчиего нет, добавь надписи как на остальных вкладках!~~
 
 ```html
-<div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: var(--font); flex-direction: column; background-image: ; background-position-x: ; background-position-y: ; background-size: ; background-repeat: ; background-attachment: ; background-origin: ; background-clip: ; background-color: rgba(231, 76, 60, 0.08); padding: 24px; outline: rgb(231, 76, 60) solid 2px;">
+<div class="empty-state" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);"><div class="empty-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg></div><h3>Предметы не добавлены</h3><div class="sub">Нажмите «Добавить» чтобы создать первый предмет</div></div>
 ```
 
 ---
