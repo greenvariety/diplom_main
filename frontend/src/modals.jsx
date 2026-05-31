@@ -1924,7 +1924,7 @@ function OrgFormModal({ data, onClose }) {
   const fileRef = useRef(null);
   const [name, setName] = useState(org?.name || '');
   const [code, setCode] = useState(org?.code || '');
-  const [codeManual, setCodeManual] = useState(false);
+  const [codeManual, setCodeManual] = useState(isEdit);
   const [description, setDescription] = useState(org?.description || '');
 
   const isUC = (c) => c && ((c >= 'А' && c <= 'Я') || c === 'Ё');
