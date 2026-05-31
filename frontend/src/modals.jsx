@@ -1441,32 +1441,46 @@ function DeleteConfirmModal({ data, onClose }) {
 
 function ApproveDeleteModal({ data, onClose }) {
   const toast = useToast();
+  const [password, setPassword] = useState('');
+  const [shake, setShake] = useState(false);
   const [err, setErr] = useState('');
+
   const submit = async () => {
+    if (!password.trim()) {
+      setShake(true); setTimeout(() => setShake(false), 400);
+      toast.push('Введите пароль', { kind: 'err' });
+      return;
+    }
     setErr('');
     try {
-      await api.post(`/delete-requests/${data.id}/approve/`);
+      await api.post(`/delete-requests/${data.id}/approve/`, { password });
       toast.push(`${data?.object_repr || 'Запись'} удалена навсегда`, { kind: 'ok' });
       data?.onDone && data.onDone();
       onClose();
     } catch (e) {
-      setErr(e.response?.data?.error || 'Ошибка при удалении');
+      const msg = e.response?.data?.error || 'Ошибка при удалении';
+      setErr(msg);
+      setShake(true); setTimeout(() => setShake(false), 400);
     }
   };
+
   return (
-    <Modal title="Подтвердить удаление?" kind="danger" onClose={onClose}
+    <Modal title="Подтвердить удаление?" kind="danger" onClose={onClose} allowOverlayClose={false}
       footer={<>
         <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
-        <LoadButton className="btn btn-danger-solid" onClick={submit}>{I.check}Удалить навсегда</LoadButton>
+        <LoadButton className={`btn btn-danger-solid ${shake ? 'shake' : ''}`} onClick={submit}>{I.trash}Удалить навсегда</LoadButton>
       </>}>
-      <div className="banner banner-bad">{I.alert}<div className="banner-body"><strong>Действие необратимо.</strong> Запись и связанные с ней данные будут удалены из системы.</div></div>
-      <dl className="kv" style={{ padding: 0, marginTop: 12 }}>
-        <dt>Тип</dt><dd><Badge>{data?.type_label || 'Объект'}</Badge></dd>
-        <dt>Объект</dt><dd className="fwm">{data?.object_repr || '-'}</dd>
-        <dt>Заявку подал</dt><dd className="mono">{data?.author || '-'} · {data?.created_at || '-'}</dd>
-        <dt>Причина</dt><dd className="muted">{data?.reason || '-'}</dd>
-      </dl>
-      {err && <div className="banner banner-bad" style={{ marginTop: 8 }}>{I.alert}<div className="banner-body">{err}</div></div>}
+      <div className={shake ? 'shake' : ''}>
+        <dl className="kv" style={{ padding: 0, marginBottom: 16 }}>
+          <dt>Подал</dt><dd className="fwm">{data?.author || '-'}</dd>
+          <dt>Роль</dt><dd className="muted">{data?.author_role || '-'}</dd>
+          <dt>Время</dt><dd className="mono muted">{data?.created_at || '-'}</dd>
+        </dl>
+        <Field label="Ваш пароль" required error={err}>
+          <input className={`input ${err ? 'is-error' : ''}`} type="password" value={password}
+            onChange={e => { setPassword(e.target.value); setErr(''); }} autoFocus />
+        </Field>
+      </div>
     </Modal>
   );
 }

@@ -35,6 +35,10 @@ def _req_data(r):
             obj_repr = str(obj)
         except model_cls.DoesNotExist:
             obj_repr = f'{type_label} (удалён)'
+    ROLE_LABELS = {
+        'owner': 'Владелец', 'admin': 'Администратор',
+        'secretary': 'Секретарь', 'teacher': 'Преподаватель',
+    }
     return {
         'id': r.pk,
         'object_type': r.object_type,
@@ -43,6 +47,7 @@ def _req_data(r):
         'object_repr': obj_repr,
         'reason': r.reason,
         'author': r.user.display_name or r.user.username,
+        'author_role': ROLE_LABELS.get(r.user.role, r.user.role),
         'created_at': r.created_at.strftime('%d.%m.%Y %H:%M'),
         'status': r.status,
     }
@@ -75,6 +80,11 @@ class DeleteRequestApproveView(APIView):
         err = _owner_only(request)
         if err:
             return err
+        password = (request.data.get('password') or '').strip()
+        if not password:
+            return Response({'error': 'Введите пароль'}, status=400)
+        if not request.user.check_password(password):
+            return Response({'error': 'Неверный пароль'}, status=400)
         institution = request.user.institution
         try:
             req = DeleteRequest.objects.select_related('user').get(
