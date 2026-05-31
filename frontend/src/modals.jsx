@@ -833,7 +833,7 @@ function FacultyFormModal({ data, onClose }) {
           <input className={`input ${errName ? 'is-error' : ''}`} value={fullName} onChange={e => { setFullName(e.target.value); setErrName(''); }} maxLength={255} onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }} onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); setFullName(fullName + t); setErrName(''); }} />
         </Field>
         <Field label="Код (аббревиатура)" required error={errCode || null}>
-          <input className={`input ${errCode ? 'is-error' : ''}`} value={shortName} onChange={e => { setShortName(e.target.value); setErrCode(''); }} maxLength={50} />
+          <input className={`input ${errCode ? 'is-error' : ''}`} value={shortName} onChange={e => { setShortName(e.target.value); setErrCode(''); }} maxLength={50} onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }} onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); setShortName(shortName + t); setErrCode(''); }} />
         </Field>
         <Field label="Год основания" error={errYear || null}>
           <input className={`input ${errYear ? 'is-error' : ''}`} type="number" value={foundedYear} min={1900} max={new Date().getFullYear() + 10} onChange={e => { setFoundedYear(e.target.value); setErrYear(''); }} onBlur={e => { const v = parseInt(e.target.value, 10); if (!isNaN(v)) { const mx = new Date().getFullYear() + 10; if (v < 1900) setFoundedYear('1900'); else if (v > mx) setFoundedYear(String(mx)); } }} maxLength={4} />
@@ -2056,6 +2056,8 @@ function OrgFormModal({ data, onClose }) {
             value={code}
             onChange={e => { setCode(e.target.value); clearErr('code'); }}
             maxLength={50}
+            onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }}
+            onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); setCode(code + t); clearErr('code'); }}
           />
         </Field>
         <Field label="Дата основания" required error={errs.date}>

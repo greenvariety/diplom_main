@@ -1,7 +1,13 @@
+import re
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Faculty, Student, Group, DeleteRequest
 from .utils import log_action
+
+
+def _has_latin(value):
+    return bool(re.search(r'[A-Za-z]', value))
 
 
 def _faculty_data(f):
@@ -53,6 +59,12 @@ class FacultiesView(APIView):
         if not short_name:
             return Response({'error': 'Введите код (аббревиатуру)'}, status=400)
         field_errors = {}
+        if _has_latin(full_name):
+            field_errors['full_name'] = 'Название должно быть на кириллице'
+        if _has_latin(short_name):
+            field_errors['short_name'] = 'Аббревиатура должна быть на кириллице'
+        if field_errors:
+            return Response(field_errors, status=400)
         if Faculty.objects.filter(institution=institution, full_name__iexact=full_name).exists():
             field_errors['full_name'] = 'Факультет с таким названием уже существует'
         if Faculty.objects.filter(institution=institution, short_name__iexact=short_name).exists():
@@ -112,6 +124,12 @@ class FacultyDetailView(APIView):
         if not short_name:
             return Response({'error': 'Введите код'}, status=400)
         field_errors = {}
+        if _has_latin(full_name):
+            field_errors['full_name'] = 'Название должно быть на кириллице'
+        if _has_latin(short_name):
+            field_errors['short_name'] = 'Аббревиатура должна быть на кириллице'
+        if field_errors:
+            return Response(field_errors, status=400)
         if Faculty.objects.filter(institution=request.user.institution, full_name__iexact=full_name).exclude(pk=pk).exists():
             field_errors['full_name'] = 'Факультет с таким названием уже существует'
         if Faculty.objects.filter(institution=request.user.institution, short_name__iexact=short_name).exclude(pk=pk).exists():

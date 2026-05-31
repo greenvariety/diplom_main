@@ -37,6 +37,10 @@ def _parse_date(raw):
     return None
 
 
+def _has_latin(value):
+    return bool(re.search(r'[A-Za-z]', value))
+
+
 def _owner_only(request):
     if request.user.role != 'owner':
         return Response({'error': 'Доступ запрещён'}, status=403)
@@ -64,6 +68,10 @@ class OrganizationsView(APIView):
             return Response({'error': 'Введите название организации'}, status=400)
         if not code:
             return Response({'error': 'Введите аббревиатуру организации'}, status=400)
+        if _has_latin(name):
+            return Response({'error': 'Название должно быть на кириллице'}, status=400)
+        if _has_latin(code):
+            return Response({'error': 'Аббревиатура должна быть на кириллице'}, status=400)
         founded_date_raw = (request.data.get('founded_date', '') or '').strip()
         if not founded_date_raw:
             return Response({'error': 'Укажите дату основания'}, status=400)
@@ -102,11 +110,15 @@ class OrganizationDetailView(APIView):
         name = request.data.get('name', '').strip()
         if not name:
             return Response({'error': 'Введите название'}, status=400)
+        if _has_latin(name):
+            return Response({'error': 'Название должно быть на кириллице'}, status=400)
         old_data = {'name': org.name, 'code': org.code}
         org.name = name
         update_fields = ['name']
         new_code = request.data.get('code', '').strip()
         if new_code:
+            if _has_latin(new_code):
+                return Response({'error': 'Аббревиатура должна быть на кириллице'}, status=400)
             org.code = new_code
             update_fields.append('code')
         description = request.data.get('description', None)
