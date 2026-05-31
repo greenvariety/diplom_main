@@ -1102,7 +1102,7 @@ const REAL_ROLE_OPTS = [
   { value: 'admin', label: 'Администратор' },
 ];
 
-function UserFormModal({ data, onClose }) {
+function UserFormModal({ data, onClose, openModal }) {
   const { user, onDone } = data || {};
   const isEdit = !!user;
   const toast = useToast();
@@ -1117,7 +1117,6 @@ function UserFormModal({ data, onClose }) {
   const [err, setErr] = useState('');
   const [loginErr, setLoginErr] = useState('');
   const [step, setStep] = useState(1);
-  const [confirmDel, setConfirmDel] = useState(false);
 
   useEffect(() => {
     api.get('/employees/').then(r => setEmployees(r.data)).catch(() => {});
@@ -1192,30 +1191,16 @@ function UserFormModal({ data, onClose }) {
     }
   };
 
-  const deleteUser = async () => {
-    try {
-      await api.delete(`/users/${user.id}/`);
-      toast.push('Пользователь удалён', { kind: 'ok' });
-      onDone && onDone();
-      onClose && onClose();
-    } catch (e) {
-      setErr(e.response?.data?.error || 'Ошибка при удалении');
-      setConfirmDel(false);
-    }
-  };
-
   // Edit mode: single-step form
   if (isEdit) {
-    const editFooter = confirmDel
-      ? <><span style={{ fontSize: 13, color: 'var(--bad-fg)', flex: 1 }}>Удалить пользователя? Сотрудник останется.</span><button className="btn btn-secondary" onClick={() => setConfirmDel(false)}>Отмена</button><LoadButton className="btn btn-danger-solid" onClick={deleteUser}>{I.trash}Да, удалить</LoadButton></>
-      : <><button className="btn btn-danger" onClick={() => setConfirmDel(true)}>{I.trash}Удалить</button><div style={{ flex: 1 }} /><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton></>;
+    const editFooter = <>
+      <button className="btn btn-danger" onClick={() => { onClose(); openModal('ownerDirectDelete', { name: user.username, type: 'пользователя', url: `/users/${user.id}/`, onDone }); }}>{I.trash}Удалить</button>
+      <div style={{ flex: 1 }} />
+      <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
+      <LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton>
+    </>;
     return (
-      <Modal
-        title="Редактировать пользователя"
-        sub="Учётная запись для входа в систему"
-        onClose={onClose}
-        footer={editFooter}
-      >
+      <Modal title="Редактировать пользователя" sub="Учётная запись для входа в систему" onClose={onClose} footer={editFooter}>
         <div className="form-grid">
           <Field label="ФИО" className="field-full">
             <input className="input" value={displayName} onChange={e => { setDisplayName(e.target.value); setErr(''); }} maxLength={150} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); setDisplayName(p => (p + filterName(e.clipboardData.getData('text') || '')).slice(0, 150)); setErr(''); }} />

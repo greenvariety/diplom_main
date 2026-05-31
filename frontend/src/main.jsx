@@ -170,7 +170,7 @@ function AppShell({ onLogout }) {
       return <SubjectFormModal data={modal.data} onClose={closeModal} />;
     }
     if (modal.name === 'userForm') {
-      return <UserFormModal data={modal.data} onClose={closeModal} />;
+      return <UserFormModal data={modal.data} onClose={closeModal} openModal={openModal} />;
     }
     if (modal.name === 'userSetPassword') {
       return <UserSetPasswordModal data={modal.data} onClose={closeModal} />;

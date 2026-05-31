@@ -161,6 +161,11 @@ class UserDetailView(APIView):
             return err
         if request.user.pk == int(pk):
             return Response({'error': 'Нельзя удалить свою учётную запись'}, status=400)
+        password = (request.data.get('password') or '').strip()
+        if not password:
+            return Response({'error': 'Введите пароль'}, status=400)
+        if not request.user.check_password(password):
+            return Response({'error': 'Неверный пароль'}, status=400)
         user = self._get_user(request, pk)
         if not user:
             return Response({'error': 'Не найдено'}, status=404)
