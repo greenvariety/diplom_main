@@ -128,7 +128,6 @@ class GroupDetailView(APIView):
                 'last_name': s.last_name,
                 'first_name': s.first_name,
                 'middle_name': s.middle_name,
-                'status': s.status,
             }
             for s in group.students.all()
         ]

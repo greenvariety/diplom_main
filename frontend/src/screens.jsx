@@ -1465,22 +1465,32 @@ function GroupList({ currentUser, openModal, onNavigate }) {
 function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
   const [group, setGroup] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const sortGroupStudents = useSortable({ key: null, dir: 'asc' }, 'group-students');
 
   const load = () => {
     setLoading(true);
+    setError(false);
     api.get(`/groups/${groupId}/`).then(r => {
       setGroup(r.data);
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(() => { setLoading(false); setError(true); });
   };
 
   useEffect(() => { if (groupId) load(); }, [groupId]);
 
-  if (loading || !group) {
+  if (loading) {
     return (
       <Shell currentUser={currentUser} active="groups" onNavigate={onNavigate} openModal={openModal}>
         <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>Загрузка…</div>
+      </Shell>
+    );
+  }
+
+  if (error || !group) {
+    return (
+      <Shell currentUser={currentUser} active="groups" onNavigate={onNavigate} openModal={openModal}>
+        <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>Не удалось загрузить группу</div>
       </Shell>
     );
   }
