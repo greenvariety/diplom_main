@@ -30,13 +30,13 @@ def _student_data(s):
 
 
 def _admin_only(request):
-    if request.user.role not in ('owner', 'admin', 'secretary'):
+    if request.user.role not in ('owner', 'admin'):
         return Response({'error': 'Доступ запрещён'}, status=403)
     return None
 
 
 def _at_least_teacher(request):
-    if request.user.role not in ('owner', 'admin', 'secretary', 'teacher'):
+    if request.user.role not in ('owner', 'admin', 'teacher'):
         return Response({'error': 'Доступ запрещён'}, status=403)
     return None
 
@@ -295,8 +295,7 @@ class StudentDetailView(APIView):
         return Response(_student_data(student))
 
     def delete(self, request, pk):
-        # Owner, admin, and secretary can delete students directly
-        if request.user.role not in ('owner', 'admin', 'secretary'):
+        if request.user.role not in ('owner', 'admin'):
             return Response({'error': 'Доступ запрещён'}, status=403)
         student = _get_student(request, pk)
         if not student:

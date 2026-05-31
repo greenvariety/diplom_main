@@ -63,7 +63,6 @@ class Faculty(models.Model):
 class Position(models.Model):
     ROLE_TYPE_CHOICES = [
         ('admin', 'Администратор'),
-        ('secretary', 'Секретарь'),
         ('teacher', 'Преподаватель'),
         ('none', 'Без доступа'),
     ]
@@ -380,7 +379,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = [
         ('owner', 'Владелец'),
         ('admin', 'Администратор'),
-        ('secretary', 'Секретарь'),
         ('teacher', 'Преподаватель'),
     ]
 
@@ -431,10 +429,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def is_admin(self):
         return self.role in ('owner', 'admin')
-
-    @property
-    def is_secretary(self):
-        return self.role == 'secretary'
 
     @property
     def is_teacher_role(self):

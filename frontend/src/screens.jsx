@@ -538,13 +538,13 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
         title={`${student.last_name} ${student.first_name} ${student.middle_name}`}
         sub={`${student.faculty_short} · ${student.group_name || 'без группы'}`}
         actions={<>
-          {['owner', 'admin', 'secretary'].includes(currentUser?.role) && (
+          {['owner', 'admin'].includes(currentUser?.role) && (
             <button className="btn btn-secondary btn-sm" onClick={() => openModal('studentForm', { student, onDone: load })}>{I.pencil}Редактировать</button>
           )}
           {currentUser?.role === 'owner' && (
             <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: `${student.last_name} ${student.first_name}`, type: 'студента', url: `/students/${student.id}/`, onDone: () => onNavigate('students') })}>{I.trash}Удалить</button>
           )}
-          {['admin', 'secretary'].includes(currentUser?.role) && (
+          {currentUser?.role === 'admin' && (
             <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Подать заявку</button>
           )}
         </>}
@@ -679,7 +679,7 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
   const handleSearch = () => { setPage(1); load(); };
   const hasFilters = q || filterPos || filterRole;
   const reset = () => { setQ(''); setFilterPos(''); setFilterRole(''); setPage(1); };
-  const canManage = ['owner', 'admin', 'secretary'].includes(currentUser?.role);
+  const canManage = ['owner', 'admin'].includes(currentUser?.role);
 
   const handleDeletePosition = async () => {
     if (currentUser?.role === 'owner') {
@@ -737,7 +737,6 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
           <select className="select" value={filterRole} onChange={e => { setFilterRole(e.target.value); setPage(1); }}>
             <option value="">Все</option>
             <option value="admin">Администратор</option>
-            <option value="secretary">Секретарь</option>
             <option value="teacher">Преподаватель</option>
             <option value="none">Без доступа</option>
           </select>
@@ -763,7 +762,7 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
                 {loading ? <SkeletonRows cols={8} /> : sort.sortFn(data.results, {
                     full_name: e => e.full_name || '',
                     position_name: e => e.position_name || '',
-                    position_role_type: e => ({ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель', none: 'Без доступа' }[e.position_role_type] || ''),
+                    position_role_type: e => ({ admin: 'Администратор', teacher: 'Преподаватель', none: 'Без доступа' }[e.position_role_type] || ''),
                     phone: e => e.phone || '',
                     email: e => e.email || '',
                   }).map((e, idx) => (
@@ -781,7 +780,7 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
                       style={e.position_id ? { cursor: 'pointer' } : {}}
                       onClick={e.position_id ? ev => { ev.stopPropagation(); onNavigate('employees', { filterPositionId: e.position_id, filterPositionName: e.position_name, filterPositionRoleType: e.position_role_type }); } : undefined}
                     >{e.position_name || <span className="muted">-</span>}</td>
-                    <td className="muted">{{ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель', none: 'Без доступа' }[e.position_role_type] || <span className="muted">-</span>}</td>
+                    <td className="muted">{{ admin: 'Администратор', teacher: 'Преподаватель', none: 'Без доступа' }[e.position_role_type] || <span className="muted">-</span>}</td>
                     <td className="muted">{e.phone || '-'}</td>
                     <td className="muted">{e.email || '-'}</td>
                     <td>{I.chevr}</td>
@@ -957,13 +956,13 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
         title={employee.full_name}
         sub={employee.position_name || 'Сотрудник'}
         actions={<>
-          {['owner', 'admin', 'secretary'].includes(currentUser?.role) && (
+          {['owner', 'admin'].includes(currentUser?.role) && (
             <button className="btn btn-secondary btn-sm" onClick={() => openModal('employeeForm', { employee, onDone: load })}>{I.pencil}Редактировать</button>
           )}
           {currentUser?.role === 'owner' && (
             <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: employee.full_name, type: 'сотрудника', url: `/employees/${employeeId}/`, onDone: () => onNavigate('employees') })}>{I.trash}Удалить</button>
           )}
-          {['admin', 'secretary'].includes(currentUser?.role) && (
+          {currentUser?.role === 'admin' && (
             <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Подать заявку</button>
           )}
         </>}
@@ -1018,7 +1017,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                       <Field label="Повторите пароль" required>
                         <input type="password" className={`input${accErr === 'Пароли не совпадают' ? ' is-error' : ''}`} value={accPassword2} onChange={e => { setAccPassword2(e.target.value.replace(/[^\x00-\x7F]/g, '')); setAccErr(''); }} maxLength={128} />
                       </Field>
-                      <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Роль: <span style={{ fontWeight: 600, color: 'var(--text)' }}>{{ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель', none: 'Прочие сотрудники' }[employee.position_role_type] || 'Не определена'}</span></div>
+                      <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Роль: <span style={{ fontWeight: 600, color: 'var(--text)' }}>{{ admin: 'Администратор', teacher: 'Преподаватель', none: 'Прочие сотрудники' }[employee.position_role_type] || 'Не определена'}</span></div>
                       {accErr && <div style={{ color: 'var(--bad-fg)', fontSize: 13 }}>{accErr}</div>}
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button className="btn btn-secondary btn-sm" onClick={() => { setAccShowCreate(false); setAccErr(''); setAccPassword(''); setAccPassword2(''); }}>Отмена</button>
@@ -1043,7 +1042,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                       </Field>
                     )}
                     {!accPassword && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: -4 }}>Оставьте пустым, чтобы не менять пароль</div>}
-                    <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Роль: <span style={{ fontWeight: 600, color: 'var(--text)' }}>{{ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель', none: 'Прочие сотрудники' }[employee.position_role_type] || 'Не определена'}</span></div>
+                    <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Роль: <span style={{ fontWeight: 600, color: 'var(--text)' }}>{{ admin: 'Администратор', teacher: 'Преподаватель', none: 'Прочие сотрудники' }[employee.position_role_type] || 'Не определена'}</span></div>
                     {accErr && <div style={{ color: 'var(--bad-fg)', fontSize: 13 }}>{accErr}</div>}
                     <LoadButton className="btn btn-primary btn-sm" loading={accSaving} onClick={handleSaveAccount}>Сохранить</LoadButton>
                   </div>
@@ -1173,7 +1172,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
               </div>
             </div>
           )}
-          {!['teacher', 'admin', 'secretary'].includes(employee.position_role_type) && employee.headed_groups?.length > 0 && (
+          {!['teacher', 'admin'].includes(employee.position_role_type) && employee.headed_groups?.length > 0 && (
             <div className="card">
               <div className="card-head"><div className="title">Классное руководство</div></div>
               <div className="card-body flush">
@@ -1668,7 +1667,7 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
 /* ============================================================
    Admin: users / delete requests / audit
    ============================================================ */
-const ROLE_CLS = { owner: 'badge-bad', admin: 'badge-info', secretary: 'badge-warn', teacher: 'badge-ok' };
+const ROLE_CLS = { owner: 'badge-bad', admin: 'badge-info', teacher: 'badge-ok' };
 
 function UserList({ currentUser, openModal, onNavigate }) {
   const [users, setUsers] = useState([]);
@@ -1693,7 +1692,7 @@ function UserList({ currentUser, openModal, onNavigate }) {
     }
   };
 
-  const ROLES = [{ v: 'owner', l: 'Владелец' }, { v: 'admin', l: 'Администратор' }, { v: 'secretary', l: 'Секретарь' }, { v: 'teacher', l: 'Преподаватель' }];
+  const ROLES = [{ v: 'owner', l: 'Владелец' }, { v: 'admin', l: 'Администратор' }, { v: 'teacher', l: 'Преподаватель' }];
   const hasFilters = q || filterRole;
   const reset = () => { setQ(''); setFilterRole(''); };
 
@@ -1975,7 +1974,6 @@ function AuditLog({ currentUser, openModal, onNavigate }) {
             <option value="">Все роли</option>
             <option value="owner">Суперадмин</option>
             <option value="admin">Администратор</option>
-            <option value="secretary">Секретарь</option>
             <option value="teacher">Преподаватель</option>
           </select>
         </div>
@@ -2197,13 +2195,13 @@ function ParentDetail({ currentUser, openModal, onNavigate, parentId }) {
         title={parent.full_name}
         sub="Опекун / родитель"
         actions={<>
-          {['owner', 'admin', 'secretary'].includes(currentUser?.role) && (
+          {['owner', 'admin'].includes(currentUser?.role) && (
             <button className="btn btn-secondary btn-sm" onClick={() => openModal('parentForm', { parent, onDone: load })}>{I.pencil}Редактировать</button>
           )}
           {currentUser?.role === 'owner' && (
             <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: parent.full_name, type: 'опекуна', url: `/parents/${parentId}/`, onDone: () => onNavigate('parents') })}>{I.trash}Удалить</button>
           )}
-          {['admin', 'secretary'].includes(currentUser?.role) && (
+          {currentUser?.role === 'admin' && (
             <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Подать заявку</button>
           )}
         </>}
@@ -2329,7 +2327,7 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId, filterEm
           {currentUser?.role === 'owner' && (
             <button className="btn btn-danger btn-sm" onClick={handleDelete}>{I.trash}Удалить</button>
           )}
-          {['admin', 'secretary'].includes(currentUser?.role) && (
+          {currentUser?.role === 'admin' && (
             <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Подать заявку</button>
           )}
         </> : null}
@@ -2514,7 +2512,7 @@ function PositionList({ currentUser, openModal, onNavigate }) {
       <PageHead
         title="Должности"
         sub={loading ? 'Загрузка…' : `Всего записей: ${positions.length}`}
-        actions={['owner', 'admin', 'secretary'].includes(currentUser?.role) ? (
+        actions={['owner', 'admin'].includes(currentUser?.role) ? (
           <button className="btn btn-primary btn-sm" onClick={() => openModal('positionForm', { onDone: load })}>{I.plus}Добавить должность</button>
         ) : null}
       />
@@ -2544,7 +2542,7 @@ function PositionList({ currentUser, openModal, onNavigate }) {
                   <tr key={p.id} className="row-link" onClick={() => onNavigate('employees', { filterPositionId: p.id, filterPositionName: p.name, filterPositionRoleType: p.role_type })}>
                     <td className="mono muted">{idx + 1}</td>
                     <td className="fwm">{p.name}</td>
-                    <td>{{ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель', none: 'Прочие сотрудники' }[p.role_type] || p.role_type}</td>
+                    <td>{{ admin: 'Администратор', teacher: 'Преподаватель', none: 'Прочие сотрудники' }[p.role_type] || p.role_type}</td>
                     <td className="mono">{p.employee_count}</td>
                     <td>{I.chevr}</td>
                   </tr>

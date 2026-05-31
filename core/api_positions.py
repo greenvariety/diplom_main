@@ -6,7 +6,7 @@ from .utils import log_action
 
 
 def _can_manage(request):
-    return request.user.role in ('owner', 'admin', 'secretary')
+    return request.user.role in ('owner', 'admin')
 
 
 class PositionsView(APIView):
@@ -40,7 +40,7 @@ class PositionsView(APIView):
         if not name:
             return Response({'error': 'Введите название должности'}, status=400)
         role_type = request.data.get('role_type', 'teacher')
-        if role_type not in ('admin', 'secretary', 'teacher', 'none'):
+        if role_type not in ('admin', 'teacher', 'none'):
             return Response({'error': 'Недопустимый тип роли'}, status=400)
         if Position.objects.filter(institution=institution, name=name).exists():
             return Response({'error': 'Должность с таким названием уже существует'}, status=400)
@@ -63,7 +63,7 @@ class PositionDetailView(APIView):
         if not name:
             return Response({'error': 'Введите название'}, status=400)
         role_type = request.data.get('role_type', position.role_type)
-        if role_type not in ('admin', 'secretary', 'teacher', 'none'):
+        if role_type not in ('admin', 'teacher', 'none'):
             return Response({'error': 'Недопустимый тип роли'}, status=400)
         if Position.objects.filter(institution=institution, name=name).exclude(pk=pk).exists():
             return Response({'error': 'Должность с таким названием уже существует'}, status=400)

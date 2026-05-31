@@ -37,7 +37,7 @@ def _req_data(r):
             obj_repr = f'{type_label} (удалён)'
     ROLE_LABELS = {
         'owner': 'Владелец', 'admin': 'Администратор',
-        'secretary': 'Секретарь', 'teacher': 'Преподаватель',
+        'teacher': 'Преподаватель',
     }
     return {
         'id': r.pk,
@@ -61,7 +61,7 @@ def _owner_only(request):
 
 class DeleteRequestsView(APIView):
     def get(self, request):
-        if request.user.role not in ('owner', 'admin', 'secretary'):
+        if request.user.role not in ('owner', 'admin'):
             return Response({'error': 'Доступ запрещён'}, status=403)
         institution = request.user.institution
         if not institution:
@@ -69,9 +69,6 @@ class DeleteRequestsView(APIView):
         reqs = DeleteRequest.objects.filter(
             status='pending', user__institution=institution
         ).select_related('user')
-        # Secretary only sees their own requests
-        if request.user.role == 'secretary':
-            reqs = reqs.filter(user=request.user)
         return Response([_req_data(r) for r in reqs])
 
 
@@ -136,7 +133,7 @@ class DeleteRequestRejectView(APIView):
 
 class DeleteRequestCancelView(APIView):
     def post(self, request, pk):
-        if request.user.role not in ('admin', 'secretary'):
+        if request.user.role not in ('admin',):
             return Response({'error': 'Доступ запрещён'}, status=403)
         institution = request.user.institution
         try:
@@ -157,12 +154,10 @@ class DeleteRequestCancelView(APIView):
 
 class DeleteRequestsCountView(APIView):
     def get(self, request):
-        if request.user.role not in ('owner', 'admin', 'secretary'):
+        if request.user.role not in ('owner', 'admin'):
             return Response({'count': 0})
         institution = request.user.institution
         if not institution:
             return Response({'count': 0})
         qs = DeleteRequest.objects.filter(status='pending', user__institution=institution)
-        if request.user.role == 'secretary':
-            qs = qs.filter(user=request.user)
         return Response({'count': qs.count()})

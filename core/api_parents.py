@@ -23,7 +23,7 @@ def _parent_data(p):
 
 
 def _admin_only(request):
-    if request.user.role not in ('owner', 'admin', 'secretary'):
+    if request.user.role not in ('owner', 'admin'):
         return Response({'error': 'Доступ запрещён'}, status=403)
     return None
 
@@ -194,8 +194,7 @@ class ParentDetailView(APIView):
         return Response(_parent_data(parent))
 
     def delete(self, request, pk):
-        # Owner, admin, and secretary can delete parents directly
-        if request.user.role not in ('owner', 'admin', 'secretary'):
+        if request.user.role not in ('owner', 'admin'):
             return Response({'error': 'Доступ запрещён'}, status=403)
         password = (request.data.get('password') or '').strip()
         if not password:
@@ -300,7 +299,7 @@ class ParentStudentDetailView(APIView):
 
 class ParentFlagView(APIView):
     def post(self, request, pk):
-        if request.user.role not in ('owner', 'admin', 'secretary'):
+        if request.user.role not in ('owner', 'admin'):
             return Response({'error': 'Доступ запрещён'}, status=403)
         parent = _get_parent(request, pk)
         if not parent:

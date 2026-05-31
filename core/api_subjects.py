@@ -117,7 +117,7 @@ class SubjectDetailView(APIView):
 
 class SubjectDeleteRequestView(APIView):
     def post(self, request, pk):
-        if request.user.role not in ('owner', 'admin', 'secretary'):
+        if request.user.role not in ('owner', 'admin'):
             return Response({'error': 'Доступ запрещён'}, status=403)
         institution = request.user.institution
         if not institution:

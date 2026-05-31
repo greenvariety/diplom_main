@@ -1,0 +1,57 @@
+﻿venv\Scripts\python.exe : Watching for file changes with StatReloader
+строка:1 знак:37
++ ... Программа'; venv\Scripts\python.exe manage.py runserver 8000 2>&1 | O ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Watching for fi...th StatReloader:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+C:\─шяыюьэр  ЁрсюЄр\╧ЁюуЁрььр\core\models.py changed, reloading.
+Performing system checks...
+
+System check identified no issues (0 silenced).
+May 31, 2026 - 20:36:27
+Django version 4.2, using settings 'config.settings'
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CTRL-BREAK.
+
+Watching for file changes with StatReloader
+C:\─шяыюьэр  ЁрсюЄр\╧ЁюуЁрььр\core\utils.py changed, reloading.
+Performing system checks...
+
+System check identified no issues (0 silenced).
+May 31, 2026 - 20:40:42
+Django version 4.2, using settings 'config.settings'
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CTRL-BREAK.
+
+Watching for file changes with StatReloader
+C:\─шяыюьэр  ЁрсюЄр\╧ЁюуЁрььр\core\utils.py changed, reloading.
+Performing system checks...
+
+System check identified no issues (0 silenced).
+May 31, 2026 - 20:45:09
+Django version 4.2, using settings 'config.settings'
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CTRL-BREAK.
+
+Watching for file changes with StatReloader
+Performing system checks...
+
+System check identified no issues (0 silenced).
+May 31, 2026 - 20:45:14
+Django version 4.2, using settings 'config.settings'
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CTRL-BREAK.
+
+C:\─шяыюьэр  ЁрсюЄр\╧ЁюуЁрььр\core\api_users.py changed, reloading.
+Watching for file changes with StatReloader
+C:\─шяыюьэр  ЁрсюЄр\╧ЁюуЁрььр\core\api_organizations.py changed, reloading.
+Performing system checks...
+
+System check identified no issues (0 silenced).
+May 31, 2026 - 20:45:19
+Django version 4.2, using settings 'config.settings'
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CTRL-BREAK.
+
+Watching for file changes with StatReloader

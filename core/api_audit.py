@@ -45,7 +45,6 @@ ACTION_MAP = {
 ROLE_LABELS = {
     'owner': 'Суперадмин',
     'admin': 'Администратор',
-    'secretary': 'Секретарь',
     'teacher': 'Преподаватель',
 }
 

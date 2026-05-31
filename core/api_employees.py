@@ -28,7 +28,7 @@ def _employee_data(e):
 
 
 def _admin_only(request):
-    if request.user.role not in ('owner', 'admin', 'secretary'):
+    if request.user.role not in ('owner', 'admin'):
         return Response({'error': 'Доступ запрещён'}, status=403)
     return None
 
@@ -484,7 +484,7 @@ class EmployeeAccountView(APIView):
         if User.objects.filter(username=username).exists():
             return Response({'error': 'Логин уже занят'}, status=400)
         role = request.data.get('role', 'teacher')
-        if role not in ('admin', 'secretary', 'teacher'):
+        if role not in ('admin', 'teacher'):
             return Response({'error': 'Недопустимая роль'}, status=400)
         password = (request.data.get('password') or '').strip()
         if not password:
@@ -524,7 +524,7 @@ class EmployeeAccountView(APIView):
             user.username = new_username
         if 'role' in request.data:
             role = request.data['role']
-            if role not in ('admin', 'secretary', 'teacher'):
+            if role not in ('admin', 'teacher'):
                 return Response({'error': 'Недопустимая роль'}, status=400)
             user.role = role
         new_password = (request.data.get('password') or '').strip()

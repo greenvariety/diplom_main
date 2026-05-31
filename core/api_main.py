@@ -71,7 +71,7 @@ class DashboardView(APIView):
             subjects_qs = Subject.objects.filter(institution=institution)
             parents_qs = Parent.objects.filter(institution=institution)
             positions_qs = Position.objects.filter(institution=institution)
-            users_qs = User.objects.filter(institution=institution)
+            users_qs = User.objects.filter(allowed_institutions=institution)
             audit_total = AuditLog.objects.filter(institution=institution).count()
             pending_delreq = DeleteRequest.objects.filter(
                 user__institution=institution, status='pending'
