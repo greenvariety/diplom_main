@@ -803,7 +803,7 @@ function FacultyFormModal({ data, onClose }) {
 
   const isUC = (c) => c && ((c >= 'А' && c <= 'Я') || c === 'Ё');
   const isLC = (c) => c && ((c >= 'а' && c <= 'я') || c === 'ё');
-  const autoCode = (n) => { const s = n.trim(); if (!s) return ''; const hasLower = [...s].some(c => isLC(c)); if (!hasLower) { const ws = s.split(/\s+/).filter(w => w && isUC(w[0])); return ws.flatMap(w => [...w].filter(c => isUC(c))).join('').slice(0, 50); } const r = []; let i = 0; while (i < s.length) { if (!isUC(s[i])) { i++; continue; } let j = i; while (j < s.length && isUC(s[j])) j++; for (let k = i; k < j; k++) r.push(s[k]); i = j; while (i < s.length && isLC(s[i])) i++; } if (r.length === 0) { return s.split(/\s+/).filter(w => w).map(w => w[0].toUpperCase()).join('').slice(0, 50); } return r.join('').slice(0, 50); };
+  const autoCode = (n) => { const STOP = new Set(['и','в','на','из','от','до','за','для','при','по','над','под','без','об','о','у','к','с','а','но','или','со','во']); const s = n.trim(); if (!s) return ''; const hasLower = [...s].some(c => isLC(c)); if (!hasLower) { const ws = s.split(/\s+/).filter(w => w && isUC(w[0]) && !STOP.has(w.toLowerCase())); return ws.flatMap(w => [...w].filter(c => isUC(c))).join('').slice(0, 50); } const r = []; let i = 0; while (i < s.length) { if (!isUC(s[i])) { i++; continue; } let j = i; while (j < s.length && isUC(s[j])) j++; let wordEnd = j; while (wordEnd < s.length && isLC(s[wordEnd])) wordEnd++; const word = s.slice(i, wordEnd); if (!STOP.has(word.toLowerCase())) { for (let k = i; k < j; k++) r.push(s[k]); } i = wordEnd; } if (r.length === 0) { return s.split(/\s+/).filter(w => w && !STOP.has(w.toLowerCase())).map(w => w[0].toUpperCase()).join('').slice(0, 50); } return r.join('').slice(0, 50); };
   const autoName = (n) => { let exp = ''; for (let i = 0; i < n.length; i++) { if (isUC(n[i]) && i > 0 && n[i-1] !== ' ' && isLC(n[i-1])) exp += ' '; exp += n[i]; } const s = exp.trim().replace(/\s+/g, ' '); if (!s) return s; const ws = s.split(' '); return ws.map((w, i) => i === 0 ? (w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()) : w.toLowerCase()).join(' '); };
 
   const save = async () => {
@@ -1924,12 +1924,12 @@ function OrgFormModal({ data, onClose }) {
   const fileRef = useRef(null);
   const [name, setName] = useState(org?.name || '');
   const [code, setCode] = useState(org?.code || '');
-  const [codeManual, setCodeManual] = useState(isEdit);
+  const [codeManual, setCodeManual] = useState(false);
   const [description, setDescription] = useState(org?.description || '');
 
   const isUC = (c) => c && ((c >= 'А' && c <= 'Я') || c === 'Ё');
   const isLC = (c) => c && ((c >= 'а' && c <= 'я') || c === 'ё');
-  const autoCode = (n) => { const s = n.trim(); if (!s) return ''; const hasLower = [...s].some(c => isLC(c)); if (!hasLower) { const ws = s.split(/\s+/).filter(w => w && isUC(w[0])); return ws.flatMap(w => [...w].filter(c => isUC(c))).join('').slice(0, 20); } const r = []; let i = 0; while (i < s.length) { if (!isUC(s[i])) { i++; continue; } let j = i; while (j < s.length && isUC(s[j])) j++; for (let k = i; k < j; k++) r.push(s[k]); i = j; while (i < s.length && isLC(s[i])) i++; } if (r.length === 0) { return s.split(/\s+/).filter(w => w).map(w => w[0].toUpperCase()).join('').slice(0, 20); } return r.join('').slice(0, 20); };
+  const autoCode = (n) => { const STOP = new Set(['и','в','на','из','от','до','за','для','при','по','над','под','без','об','о','у','к','с','а','но','или','со','во']); const s = n.trim(); if (!s) return ''; const hasLower = [...s].some(c => isLC(c)); if (!hasLower) { const ws = s.split(/\s+/).filter(w => w && isUC(w[0]) && !STOP.has(w.toLowerCase())); return ws.flatMap(w => [...w].filter(c => isUC(c))).join('').slice(0, 20); } const r = []; let i = 0; while (i < s.length) { if (!isUC(s[i])) { i++; continue; } let j = i; while (j < s.length && isUC(s[j])) j++; let wordEnd = j; while (wordEnd < s.length && isLC(s[wordEnd])) wordEnd++; const word = s.slice(i, wordEnd); if (!STOP.has(word.toLowerCase())) { for (let k = i; k < j; k++) r.push(s[k]); } i = wordEnd; } if (r.length === 0) { return s.split(/\s+/).filter(w => w && !STOP.has(w.toLowerCase())).map(w => w[0].toUpperCase()).join('').slice(0, 20); } return r.join('').slice(0, 20); };
   const autoName = (n) => { let exp = ''; for (let i = 0; i < n.length; i++) { if (isUC(n[i]) && i > 0 && n[i-1] !== ' ' && isLC(n[i-1])) exp += ' '; exp += n[i]; } const s = exp.trim().replace(/\s+/g, ' '); if (!s) return s; const ws = s.split(' '); return ws.map((w, i) => i === 0 ? (w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()) : w.toLowerCase()).join(' '); };
   const [foundedDate, setFoundedDate] = useState(
     org?.founded_date

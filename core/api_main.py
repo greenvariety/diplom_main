@@ -51,6 +51,9 @@ class MeView(APIView):
                 'id': institution.pk,
                 'name': institution.name,
                 'code': institution.code,
+                'founded_date': institution.founded_date.strftime('%d.%m.%Y') if institution.founded_date else None,
+                'description': institution.description or '',
+                'photo': request.build_absolute_uri(institution.photo.url) if institution.photo else None,
             } if institution else None,
         })
 

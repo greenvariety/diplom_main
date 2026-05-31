@@ -236,7 +236,7 @@ function Shell({ currentUser, role: roleProp, active, onNavigate, onLogout, open
             <button
               className="btn btn-ghost"
               style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-muted)', padding: '4px 10px', borderRadius: 6 }}
-              onClick={() => openModal && openModal('orgForm', { org: currentUser?.institution ? { id: currentUser.institution.id, code: currentUser.institution.code, name: currentUser.institution.name } : null })}
+              onClick={() => openModal && openModal('orgForm', { org: currentUser?.institution || null })}
               title="Настройки организации"
             >
               {I.building}
