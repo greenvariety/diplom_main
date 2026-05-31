@@ -117,7 +117,9 @@ function AppShell({ onLogout }) {
   const renderModal = () => {
     if (!modal) return null;
     if (modal.name === 'orgForm') {
-      return <OrgFormModal data={modal.data} onClose={closeModal} />;
+      const origOnDone = modal.data?.onDone;
+      const orgData = { ...modal.data, onDone: (d) => { origOnDone?.(d); loadUser(); } };
+      return <OrgFormModal data={orgData} onClose={closeModal} />;
     }
     if (modal.name === 'facultyForm') {
       return <FacultyFormModal data={modal.data} onClose={closeModal} />;
