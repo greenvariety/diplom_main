@@ -1,9 +1,17 @@
 # HTML.md - задачи по правке интерфейса
 
-~~## 1. когда нчиего нет, добавь надписи как на остальных вкладках!~~
+~~## 1. 1~~
 
 ```html
-<div class="empty-state" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);"><div class="empty-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg></div><h3>Предметы не добавлены</h3><div class="sub">Нажмите «Добавить» чтобы создать первый предмет</div></div>
+<div class="card" style="outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">
+```
+
+---
+
+~~## 2. 1~~
+
+```html
+<div class="card-head" style="flex-wrap: wrap; gap: 8px; outline: rgb(231, 76, 60) solid 2px; background-color: rgba(231, 76, 60, 0.08);">
 ```
 
 ---

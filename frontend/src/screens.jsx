@@ -280,164 +280,54 @@ function DashboardSuper({ currentUser, onNavigate, onLogout, openModal }) {
 }
 
 function DashboardAdmin({ currentUser, onNavigate, onLogout, openModal }) {
-  const [dashData, setDashData] = useState(null);
-  const [q, setQ] = useState('');
-  const [userFilter, setUserFilter] = useState('');
-  const sort = useSortable({ key: 'ts', dir: 'desc' }, 'admin-dash-audit');
-
-  useEffect(() => {
-    api.get('/dashboard/').then(r => setDashData(r.data)).catch(() => {});
-  }, []);
-
-  const stats = dashData?.stats || {};
-  const ALL = dashData?.recent_audit || [];
-
-  const filtered = useMemo(() => ALL.filter(a => {
-    if (q && !`${a.obj} ${a.user} ${a.userName}`.toLowerCase().includes(q.toLowerCase())) return false;
-    if (userFilter && a.user !== userFilter) return false;
-    return true;
-  }), [ALL, q, userFilter]);
-  const sorted = sort.sortFn(filtered, { ts: a => a.ts, user: a => a.user, action: a => a.label, obj: a => a.obj });
-  const pager = usePager(sorted.length, { key: 'admin-dash-audit', defaultSize: 10 });
-  const rows = pager.slice(sorted);
-
-  const userOpts = useMemo(() => {
-    const map = new Map();
-    ALL.forEach(a => map.set(a.user, { value: a.user, label: a.user, sub: a.role }));
-    return Array.from(map.values());
-  }, [ALL]);
-
+  const [stats, setStats] = useState({});
+  useEffect(() => { api.get('/dashboard/').then(r => setStats(r.data?.stats || {})).catch(() => {}); }, []);
   return (
     <Shell currentUser={currentUser} active="dashboard" onNavigate={onNavigate} onLogout={onLogout} openModal={openModal}>
-      <PageHead
-        title="Дашборд"
-        sub="Сводка по системе"
-        actions={<>
-          <button className="btn btn-secondary btn-sm">{I.excel}Экспорт</button>
-          <button className="btn btn-primary btn-sm" onClick={() => openModal && openModal('studentForm')}>{I.plus}</button>
-        </>}
-      />
-      <div className="stats">
-        <Stat label="Факультеты"  value={stats.faculties  ?? '…'} icon={I.building}  onClick={() => onNavigate('faculties')} />
-        <Stat label="Группы"      value={stats.groups     ?? '…'} icon={I.users}      onClick={() => onNavigate('groups')} />
-        <Stat label="Студенты"    value={stats.students   ?? '…'} icon={I.badge}      onClick={() => onNavigate('students')} />
-        <Stat label="Сотрудники"  value={stats.employees  ?? '…'} icon={I.briefcase}  onClick={() => onNavigate('employees')} />
-        <Stat label="Предметы"    value={stats.subjects   ?? '…'} icon={I.book}       onClick={() => onNavigate('subjects')} />
-        <Stat label="Опекуны"     value={stats.parents    ?? '…'} icon={I.heart}      onClick={() => onNavigate('parents')} />
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
-        <div className="card">
-          <div className="card-head"><div className="title">Быстрые действия</div></div>
-          <div className="card-body" style={{ display: 'grid', gap: 8 }}>
-            <button className="btn btn-secondary" style={{ height: 44, justifyContent: 'flex-start' }} onClick={() => openModal && openModal('studentForm')}>{I.plus}Добавить студента</button>
-            <button className="btn btn-secondary" style={{ height: 44, justifyContent: 'flex-start' }} onClick={() => openModal && openModal('employeeForm')}>{I.plus}Добавить сотрудника</button>
-            <button className="btn btn-secondary" style={{ height: 44, justifyContent: 'flex-start' }} onClick={() => openModal && openModal('groupForm')}>{I.plus}Создать группу</button>
-            <button className="btn btn-secondary" style={{ height: 44, justifyContent: 'flex-start' }}>{I.excel}Экспорт списка студентов</button>
-          </div>
-        </div>
-        <div className="card">
-          <div className="card-head" style={{ flexWrap: 'wrap', gap: 8 }}>
-            <div className="title">{I.history}<span>Последние действия</span><span className="muted" style={{ fontWeight: 700, fontSize: 12, marginLeft: 6 }}>: {filtered.length}</span></div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <div className="input-with-icon" style={{ width: 200 }}>
-                {I.search}<input className="input" style={{ height: 30 }} value={q} onChange={e => setQ(e.target.value)} placeholder="Поиск…" />
-              </div>
-              <div style={{ width: 160 }}>
-                <Combobox value={userFilter} onChange={setUserFilter} options={userOpts} placeholder="Все пользователи" />
-              </div>
-            </div>
-          </div>
-          <div className="card-body flush">
-            {!dashData
-              ? <SkeletonRows rows={5} cols={4} />
-              : sorted.length === 0
-                ? <EmptyState icon={I.history} title="Ничего не найдено" sub="Измените условия поиска" />
-                : <table className="tbl">
-                    <thead><tr>
-                      <SortHeader k="ts"     sort={sort}>Время</SortHeader>
-                      <SortHeader k="user"   sort={sort}>Кто</SortHeader>
-                      <SortHeader k="action" sort={sort}>Действие</SortHeader>
-                      <SortHeader k="obj"    sort={sort}>Объект</SortHeader>
-                    </tr></thead>
-                    <tbody>
-                      {rows.map((a, i) => (
-                        <tr key={pager.start + i} className="row-link">
-                          <td className="mono muted">{a.ts.slice(11)}<div style={{ fontSize: 10, color: 'var(--text-faint)' }}>{a.ts.slice(0, 10)}</div></td>
-                          <td><span className="fwm mono">{a.user}</span><div className="muted" style={{ fontSize: 11 }}>{a.userName}</div></td>
-                          <td><span className={`badge ${a.cls}`}><span className="dot"></span>{a.label}</span></td>
-                          <td>{a.obj}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-            }
-          </div>
-          {sorted.length > 0 && <Pager pager={pager} total={sorted.length} sizes={[10, 25, 50, 100]} />}
-        </div>
+      <PageHead title="Дашборд" sub="Сводка по системе" />
+      <div className="stats" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+        <Stat label="Факультеты"          value={stats.faculties  ?? '…'} icon={I.building}  onClick={() => onNavigate('faculties')} />
+        <Stat label="Группы"              value={stats.groups     ?? '…'} icon={I.users}      onClick={() => onNavigate('groups')} />
+        <Stat label="Студенты"            value={stats.students   ?? '…'} icon={I.badge}      onClick={() => onNavigate('students')} />
+        <Stat label="Сотрудники"          value={stats.employees  ?? '…'} icon={I.briefcase}  onClick={() => onNavigate('employees')} />
+        <Stat label="Предметы"            value={stats.subjects   ?? '…'} icon={I.book}       onClick={() => onNavigate('subjects')} />
+        <Stat label="Опекуны"             value={stats.parents    ?? '…'} icon={I.heart}      onClick={() => onNavigate('parents')} />
+        <Stat label="Должности"           value={stats.positions  ?? '…'} icon={I.settings}   onClick={() => onNavigate('positions')} />
+        <Stat label="Заявки на удаление"  value={stats.pending_delreq ?? '…'} icon={I.trash}  onClick={() => onNavigate('delreq')} />
+        <Stat label="Журнал изменений"    value={stats.audit      ?? '…'} icon={I.history}    onClick={() => onNavigate('audit')} />
       </div>
     </Shell>
   );
 }
 
 function DashboardTeacher({ currentUser, onNavigate, onLogout, openModal }) {
-  const name = currentUser?.display_name || currentUser?.username || 'Преподаватель';
+  const [stats, setStats] = useState({});
+  useEffect(() => { api.get('/dashboard/').then(r => setStats(r.data?.stats || {})).catch(() => {}); }, []);
   return (
     <Shell currentUser={currentUser} active="dashboard" onNavigate={onNavigate} onLogout={onLogout} openModal={openModal}>
-      <PageHead title={`Здравствуйте, ${name}`} sub="Ваши группы и предметы на текущий семестр" />
+      <PageHead title="Дашборд" sub="Сводка по системе" />
       <div className="stats" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-        <Stat label="Моих групп"     value="2"  icon={I.users} />
-        <Stat label="Моих студентов" value="53" icon={I.badge} />
-        <Stat label="Предметов"      value="3"  icon={I.book} />
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <div className="card">
-          <div className="card-head"><div className="title">Мои группы</div></div>
-          <div className="card-body" style={{ display: 'grid', gap: 8 }}>
-            {[{ name: 'ПИ-301', count: 28, fac: 'ФИТ' }, { name: 'ПИ-302', count: 25, fac: 'ФИТ' }].map(g => (
-              <div key={g.name} className="doc-tile" style={{ cursor: 'pointer' }}>
-                <div className="doc-icon">{I.users}</div>
-                <div style={{ flex: 1 }}>
-                  <div className="doc-name">{g.name}</div>
-                  <div className="doc-meta">{g.fac} · {g.count} студентов</div>
-                </div>
-                {I.chevr}
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="card">
-          <div className="card-head"><div className="title">Мои предметы</div></div>
-          <div className="card-body flush">
-            <table className="tbl">
-              <thead><tr><th>Предмет</th><th>Группа</th></tr></thead>
-              <tbody>
-                <tr><td className="fwm">Базы данных</td><td><a href="#">ПИ-301</a></td></tr>
-                <tr><td className="fwm">Веб-программирование</td><td><a href="#">ПИ-302</a></td></tr>
-                <tr><td className="fwm">Алгоритмы и структуры данных</td><td><a href="#">ПИ-301</a></td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <Stat label="Группы"   value={stats.groups   ?? '…'} icon={I.users}  onClick={() => onNavigate('groups')} />
+        <Stat label="Студенты" value={stats.students  ?? '…'} icon={I.badge}  onClick={() => onNavigate('students')} />
+        <Stat label="Предметы" value={stats.subjects  ?? '…'} icon={I.book}   onClick={() => onNavigate('subjects')} />
       </div>
     </Shell>
   );
 }
 
 function DashboardSecretary({ currentUser, onNavigate, onLogout, openModal }) {
-  const name = currentUser?.display_name || currentUser?.username || 'Секретарь';
   const [stats, setStats] = useState({});
   useEffect(() => { api.get('/dashboard/').then(r => setStats(r.data?.stats || {})).catch(() => {}); }, []);
   return (
     <Shell currentUser={currentUser} active="dashboard" onNavigate={onNavigate} onLogout={onLogout} openModal={openModal}>
-      <PageHead
-        title={`Здравствуйте, ${name}`}
-        sub="Управление сотрудниками, студентами и опекунами"
-        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal && openModal('studentForm')}>{I.plus}Добавить студента</button>}
-      />
-      <div className="stats" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-        <Stat label="Студенты"   value={stats.students   ?? '-'} icon={I.badge}     onClick={() => onNavigate('students')} />
-        <Stat label="Сотрудники" value={stats.employees  ?? '-'} icon={I.briefcase} onClick={() => onNavigate('employees')} />
-        <Stat label="Опекуны"    value={stats.parents    ?? '-'} icon={I.heart}     onClick={() => onNavigate('parents')} />
+      <PageHead title="Дашборд" sub="Сводка по системе" />
+      <div className="stats" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+        <Stat label="Студенты"            value={stats.students   ?? '…'} icon={I.badge}      onClick={() => onNavigate('students')} />
+        <Stat label="Сотрудники"          value={stats.employees  ?? '…'} icon={I.briefcase}  onClick={() => onNavigate('employees')} />
+        <Stat label="Опекуны"             value={stats.parents    ?? '…'} icon={I.heart}      onClick={() => onNavigate('parents')} />
+        <Stat label="Группы"              value={stats.groups     ?? '…'} icon={I.users}      onClick={() => onNavigate('groups')} />
+        <Stat label="Должности"           value={stats.positions  ?? '…'} icon={I.settings}   onClick={() => onNavigate('positions')} />
+        <Stat label="Заявки на удаление"  value={stats.pending_delreq ?? '…'} icon={I.trash}  onClick={() => onNavigate('delreq')} />
       </div>
     </Shell>
   );
