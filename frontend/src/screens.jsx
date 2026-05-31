@@ -1,5 +1,5 @@
 ﻿import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { STATUSES, STUDENTS, EMPLOYEES, GROUPS, FACULTIES, AUDIT, ORGS, I } from './data.jsx';
+import { STUDENTS, EMPLOYEES, GROUPS, FACULTIES, AUDIT, ORGS, I } from './data.jsx';
 import { Shell, PageHead, Badge, Avatar } from './shell.jsx';
 import { StatNumber, useToast, useDropdown, Field, EmptyState, SkeletonRows, LoadButton, Combobox, Pager, usePager, useSortable, SortHeader } from './utils.jsx';
 import api from './api.js';
@@ -442,40 +442,6 @@ function DashboardSecretary({ currentUser, onNavigate, onLogout, openModal }) {
 }
 
 /* ============================================================
-   Status inline-dropdown
-   ============================================================ */
-function StatusDropdown({ value, onChange }) {
-  const { open, setOpen, wrapRef } = useDropdown();
-  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
-  const cur = STATUSES[value] || { label: value, cls: 'badge-neutral' };
-
-  const handleOpen = useCallback(() => {
-    if (wrapRef.current) {
-      const r = wrapRef.current.getBoundingClientRect();
-      setMenuPos({ top: r.bottom + 4, left: r.left });
-    }
-    setOpen(o => !o);
-  }, [wrapRef, setOpen]);
-
-  return (
-    <div ref={wrapRef} className="dd-wrap" style={{ display: 'inline-block' }}>
-      <span className={`badge ${cur.cls} is-clickable`} onClick={handleOpen}>
-        <span className="dot"></span>{cur.label}
-      </span>
-      {open && (
-        <div className="dd-menu" style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, right: 'auto', minWidth: 220 }}>
-          {Object.entries(STATUSES).map(([k, v]) => (
-            <div key={k} className="dd-item" onClick={() => { onChange && onChange(k); setOpen(false); }}>
-              <span className={`badge ${v.cls}`} style={{ width: 'fit-content' }}><span className="dot"></span>{v.label}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ============================================================
    StudentList - поиск + фильтры + пагинация (реальный API)
    ============================================================ */
 function StudentList({ currentUser, openModal, onNavigate }) {
@@ -484,7 +450,6 @@ function StudentList({ currentUser, openModal, onNavigate }) {
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ results: [], count: 0, num_pages: 1 });
   const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState('');
   const [filterFaculty, setFilterFaculty] = useState('');
   const [filterGroup, setFilterGroup] = useState('');
   const [faculties, setFaculties] = useState([]);
@@ -505,7 +470,6 @@ function StudentList({ currentUser, openModal, onNavigate }) {
     setLoading(true);
     const params = new URLSearchParams({ page });
     if (q) params.set('search', q);
-    if (filterStatus) params.set('status', filterStatus);
     if (filterFaculty) params.set('faculty_id', filterFaculty);
     if (filterGroup) params.set('group_id', filterGroup);
     api.get(`/students/?${params}`).then(r => {
@@ -514,22 +478,12 @@ function StudentList({ currentUser, openModal, onNavigate }) {
     }).catch(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [page, filterStatus, filterFaculty, filterGroup]);
+  useEffect(() => { load(); }, [page, filterFaculty, filterGroup]);
 
   const handleSearch = () => { setPage(1); load(); };
 
-  const handleStatusChange = async (studentId, newStatus) => {
-    try {
-      await api.patch(`/students/${studentId}/`, { status: newStatus });
-      toast.push(`Статус изменён на "${STATUSES[newStatus]?.label || newStatus}"`, { kind: 'ok' });
-      load();
-    } catch {
-      toast.push('Не удалось изменить статус', { kind: 'err' });
-    }
-  };
-
-  const hasFilters = q || filterStatus || filterFaculty || filterGroup;
-  const reset = () => { setQ(''); setFilterStatus(''); setFilterFaculty(''); setFilterGroup(''); setPage(1); };
+  const hasFilters = q || filterFaculty || filterGroup;
+  const reset = () => { setQ(''); setFilterFaculty(''); setFilterGroup(''); setPage(1); };
 
   return (
     <Shell currentUser={currentUser} active="students" onNavigate={onNavigate} openModal={openModal}>
@@ -553,13 +507,6 @@ function StudentList({ currentUser, openModal, onNavigate }) {
         <button className="btn btn-ghost" style={{ height: 36 }} onClick={reset} disabled={!hasFilters}>Сбросить</button>
       </div>
       <div className="filters" style={{ marginTop: -8 }}>
-        <div className="field">
-          <label className="field-label">Статус</label>
-          <select className="select" value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }}>
-            <option value="">Все</option>
-            {Object.entries(STATUSES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-          </select>
-        </div>
         <div className="field">
           <label className="field-label">Факультет</label>
           <select className="select" value={filterFaculty} onChange={e => { setFilterFaculty(e.target.value); setFilterGroup(''); setPage(1); }}>
@@ -590,7 +537,6 @@ function StudentList({ currentUser, openModal, onNavigate }) {
                 <SortHeader k="_rownum" sort={sort} width={44}>№</SortHeader>
                 <th style={{ width: 50 }}></th>
                 <SortHeader k="last_name" sort={sort}>ФИО</SortHeader>
-                <SortHeader k="status" sort={sort}>Статус</SortHeader>
                 <SortHeader k="faculty_short" sort={sort}>Факультет</SortHeader>
                 <SortHeader k="group_name" sort={sort}>Группа</SortHeader>
                 <SortHeader k="phone" sort={sort}>Контакт</SortHeader>
@@ -601,7 +547,6 @@ function StudentList({ currentUser, openModal, onNavigate }) {
                 : <tbody>
                     {sort.sortFn(data.results, {
                         last_name: s => `${s.last_name} ${s.first_name}`,
-                        status: s => s.status || '',
                         faculty_short: s => s.faculty_short || '',
                         group_name: s => s.group_name || '',
                         phone: s => s.phone || '',
@@ -614,9 +559,6 @@ function StudentList({ currentUser, openModal, onNavigate }) {
                           {s.has_pending_delreq && (
                             <span title="Подана заявка на удаление" style={{ marginLeft: 4, color: 'var(--bad-fg)', fontSize: 13, opacity: 0.8 }}>{I.trash}</span>
                           )}
-                        </td>
-                        <td onClick={e => e.stopPropagation()}>
-                          <StatusDropdown value={s.status} onChange={v => handleStatusChange(s.id, v)} />
                         </td>
                         <td>{s.faculty_short}</td>
                         <td>{s.group_name || <span className="muted">-</span>}</td>
@@ -660,16 +602,6 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
   };
 
   useEffect(() => { if (studentId) load(); }, [studentId]);
-
-  const handleStatusChange = async (newStatus) => {
-    try {
-      await api.patch(`/students/${studentId}/`, { status: newStatus });
-      toast.push(`Статус изменён на "${STATUSES[newStatus]?.label || newStatus}"`, { kind: 'ok' });
-      load();
-    } catch {
-      toast.push('Не удалось изменить статус', { kind: 'err' });
-    }
-  };
 
   const handleRemoveParent = async (spId) => {
     if (!confirm('Убрать опекуна?')) return;
@@ -731,10 +663,6 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
               <h3 style={{ marginTop: 14, marginBottom: 12 }}>
                 {[student.last_name, student.first_name, student.middle_name].filter(Boolean).join(' ')}
               </h3>
-              {currentUser?.role !== 'teacher'
-                ? <StatusDropdown value={student.status} onChange={handleStatusChange} />
-                : (() => { const s = STATUSES[student.status] || { label: student.status, cls: 'badge-neutral' }; return <span className={`badge ${s.cls}`}><span className="dot"></span>{s.label}</span>; })()
-              }
             </div>
             <div style={{ borderTop: '1px solid var(--border)' }}>
               <dl className="kv">
@@ -917,14 +845,16 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
                 <th style={{ width: 50 }}></th>
                 <SortHeader k="full_name" sort={sort}>ФИО</SortHeader>
                 <SortHeader k="position_name" sort={sort}>Должность</SortHeader>
+                <SortHeader k="position_role_type" sort={sort}>Роль</SortHeader>
                 <SortHeader k="phone" sort={sort}>Телефон</SortHeader>
                 <SortHeader k="email" sort={sort}>Email</SortHeader>
                 <th style={{ width: 40 }}></th>
               </tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={7} /> : sort.sortFn(data.results, {
+                {loading ? <SkeletonRows cols={8} /> : sort.sortFn(data.results, {
                     full_name: e => e.full_name || '',
                     position_name: e => e.position_name || '',
+                    position_role_type: e => ({ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель' }[e.position_role_type] || ''),
                     phone: e => e.phone || '',
                     email: e => e.email || '',
                   }).map((e, idx) => (
@@ -942,6 +872,7 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
                       style={e.position_id ? { cursor: 'pointer' } : {}}
                       onClick={e.position_id ? ev => { ev.stopPropagation(); onNavigate('employees', { filterPositionId: e.position_id, filterPositionName: e.position_name, filterPositionRoleType: e.position_role_type }); } : undefined}
                     >{e.position_name || <span className="muted">-</span>}</td>
+                    <td className="muted">{{ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель' }[e.position_role_type] || <span className="muted">-</span>}</td>
                     <td className="muted">{e.phone || '-'}</td>
                     <td className="muted">{e.email || '-'}</td>
                     <td>{I.chevr}</td>
@@ -1605,17 +1536,15 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
               <EmptyState icon={I.users} title="Студенты не добавлены" sub="Нажмите + чтобы добавить студента" />
             ) : (
               <table className="tbl">
-                <thead><tr><SortHeader k="last_name" sort={sortGroupStudents}>ФИО</SortHeader><SortHeader k="status" sort={sortGroupStudents}>Статус</SortHeader><th></th></tr></thead>
+                <thead><tr><SortHeader k="last_name" sort={sortGroupStudents}>ФИО</SortHeader><th></th></tr></thead>
                 <tbody>
                   {sortGroupStudents.sortFn(group.students, {
                     last_name: s => `${s.last_name} ${s.first_name}`,
-                    status: s => s.status || '',
                   }).map(s => (
                     <tr key={s.id} className="row-link" onClick={() => onNavigate('student-detail', { studentId: s.id })}>
                       <td className="fwm">
                         {s.last_name} {s.first_name} {s.middle_name}
                       </td>
-                      <td><Badge status={s.status} /></td>
                       <td>{I.chevr}</td>
                     </tr>
                   ))}
