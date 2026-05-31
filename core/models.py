@@ -1,5 +1,9 @@
-﻿from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+﻿import os
+
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
+from django.db.models.signals import post_delete, pre_save
+from django.dispatch import receiver
 
 
 # ---------------------------------------------------------------------------
@@ -612,3 +616,86 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f'{self.user} {self.get_action_display()} {self.object_type} #{self.object_id}'
+
+
+# ---------------------------------------------------------------------------
+# Сигналы: удаление файлов с диска при удалении записи
+# ---------------------------------------------------------------------------
+
+def _delete_file(field):
+    """Удаляет файл с диска если он существует."""
+    if field and field.name:
+        try:
+            if os.path.isfile(field.path):
+                os.remove(field.path)
+        except Exception:
+            pass
+
+
+@receiver(post_delete, sender=Institution)
+def _institution_delete_files(sender, instance, **kwargs):
+    _delete_file(instance.photo)
+
+
+@receiver(post_delete, sender=Employee)
+def _employee_delete_files(sender, instance, **kwargs):
+    _delete_file(instance.photo)
+
+
+@receiver(post_delete, sender=Student)
+def _student_delete_files(sender, instance, **kwargs):
+    _delete_file(instance.photo)
+
+
+@receiver(post_delete, sender=Parent)
+def _parent_delete_files(sender, instance, **kwargs):
+    _delete_file(instance.photo)
+
+
+@receiver(post_delete, sender=User)
+def _user_delete_files(sender, instance, **kwargs):
+    _delete_file(instance.photo)
+
+
+@receiver(post_delete, sender=Document)
+def _document_delete_files(sender, instance, **kwargs):
+    _delete_file(instance.file)
+
+
+# При замене фото — удалять старое
+def _replace_old_file(sender, instance, field_name):
+    if not instance.pk:
+        return
+    try:
+        old = sender.objects.get(pk=instance.pk)
+    except sender.DoesNotExist:
+        return
+    old_file = getattr(old, field_name)
+    new_file = getattr(instance, field_name)
+    if old_file and old_file.name != getattr(new_file, 'name', None):
+        _delete_file(old_file)
+
+
+@receiver(pre_save, sender=Institution)
+def _institution_replace_photo(sender, instance, **kwargs):
+    _replace_old_file(sender, instance, 'photo')
+
+
+@receiver(pre_save, sender=Employee)
+def _employee_replace_photo(sender, instance, **kwargs):
+    _replace_old_file(sender, instance, 'photo')
+
+
+@receiver(pre_save, sender=Student)
+def _student_replace_photo(sender, instance, **kwargs):
+    _replace_old_file(sender, instance, 'photo')
+
+
+@receiver(pre_save, sender=Parent)
+def _parent_replace_photo(sender, instance, **kwargs):
+    _replace_old_file(sender, instance, 'photo')
+
+
+@receiver(pre_save, sender=User)
+def _user_replace_photo(sender, instance, **kwargs):
+    _replace_old_file(sender, instance, 'photo')
