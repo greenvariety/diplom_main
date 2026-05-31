@@ -216,7 +216,6 @@ function TabPassword({ currentUser, onShowRecover }) {
   const [pwFocus, setPwFocus] = useState(false);
   const [p2Touched, setP2Touched] = useState(false);
   const [curErr, setCurErr] = useState('');
-  const [wrongPassword, setWrongPassword] = useState(false);
   const [formErr, setFormErr] = useState('');
   const [saved, setSaved] = useState(false);
 
@@ -235,7 +234,7 @@ function TabPassword({ currentUser, onShowRecover }) {
   const save = async () => {
     setSubmitted(true);
     setP2Touched(true);
-    setCurErr(''); setWrongPassword(false); setFormErr('');
+    setCurErr(''); setFormErr('');
 
     if (!cur) { setCurErr('Введите текущий пароль'); return; }
     if (p1Err) { setFormErr(p1Err); return; }
@@ -248,14 +247,13 @@ function TabPassword({ currentUser, onShowRecover }) {
       setSaved(true);
       setCur(''); setP1(''); setP2('');
       setSubmitted(false); setP2Touched(false);
-      setCurErr(''); setWrongPassword(false); setFormErr('');
+      setCurErr(''); setFormErr('');
       setTimeout(() => setSaved(false), 3000);
     } catch (e) {
       const data = e.response?.data;
       const msg = data?.error || 'Ошибка смены пароля';
       if (data?.field === 'current_password') {
         setCurErr(msg);
-        setWrongPassword(true);
       } else {
         setFormErr(msg);
       }
@@ -275,7 +273,7 @@ function TabPassword({ currentUser, onShowRecover }) {
         <label className="field-label">Текущий пароль</label>
         <PasswordInput
           value={cur}
-          onChange={v => { setCur(v); setCurErr(''); setWrongPassword(false); setFormErr(''); setSaved(false); }}
+          onChange={v => { setCur(v); setCurErr(''); setFormErr(''); setSaved(false); }}
           onBlur={() => { if (!cur) setCurErr('Введите текущий пароль'); }}
           hasError={!!curErr}
           autoComplete="current-password"
@@ -283,19 +281,17 @@ function TabPassword({ currentUser, onShowRecover }) {
         {curErr && (
           <div className="field-error" style={{ marginTop: 4 }}>
             {I.alert}{curErr}
-            {wrongPassword && (
-              <span style={{ marginLeft: 8 }}>
-                <a
-                  href="#"
-                  onClick={e => { e.preventDefault(); onShowRecover && onShowRecover(); }}
-                  style={{ color: 'inherit', textDecoration: 'underline', fontWeight: 500 }}
-                >
-                  Забыли пароль?
-                </a>
-              </span>
-            )}
           </div>
         )}
+        <div style={{ marginTop: 6, fontSize: 13 }}>
+          <a
+            href="#"
+            onClick={e => { e.preventDefault(); onShowRecover && onShowRecover(); }}
+            style={{ color: 'var(--text-muted)' }}
+          >
+            Забыли пароль?
+          </a>
+        </div>
       </div>
 
       <div className="field" style={{ marginTop: 16 }}>
