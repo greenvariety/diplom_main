@@ -645,7 +645,7 @@ function ProfileScreen({ currentUser: initUser, onNavigate, onUserUpdated, onLog
     onUserUpdated && onUserUpdated(data);
   };
 
-  const goBack = () => onNavigate(user?.institution ? 'dashboard' : 'org-picker');
+  const goBack = () => onNavigate('dashboard');
 
   if (showRecover) {
     return (

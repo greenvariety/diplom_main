@@ -66,15 +66,6 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
         title="Дашборд"
         sub="Сводка по системе"
       />
-      {!currentUser?.institution && (
-        <div className="banner banner-warn">
-          {I.building}
-          <div className="banner-body">
-            <strong>Организация не выбрана.</strong> Выберите или создайте организацию для начала работы.{' '}
-            <a href="#" onClick={e => { e.preventDefault(); onNavigate && onNavigate('org-picker'); }} style={{ color: 'inherit', textDecoration: 'underline' }}>Управление организациями →</a>
-          </div>
-        </div>
-      )}
       {stats.pending_delreq > 0 && (
         <div className="banner banner-bad">
           {I.alert}

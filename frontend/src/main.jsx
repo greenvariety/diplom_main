@@ -55,207 +55,6 @@ function AuthFlow({ onAuthenticated }) {
   );
 }
 
-/* ============================================================
-   OrgPickerScreen - выбор / создание / управление организациями
-   Показывается после логина и при клике на название орг в топбаре.
-   ============================================================ */
-function OrgPickerScreen({ user, onOrgSelected, onLogout, onBack, onProfile }) {
-  const toast = useToast();
-  const [orgs, setOrgs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [orgModal, setOrgModal] = useState(null); // null | { org?, onDone }
-  const [deleteTarget, setDeleteTarget] = useState(null);
-
-  const load = () => {
-    setLoading(true);
-    const endpoint = user.role === 'owner' ? '/organizations/' : '/organizations/allowed/';
-    api.get(endpoint)
-      .then(r => { setOrgs(r.data); setLoading(false); })
-      .catch(() => setLoading(false));
-  };
-
-  useEffect(() => { load(); }, []);
-
-  const pickOrg = async (orgId, orgName, isActive = false) => {
-    if (isActive) { onOrgSelected(); return; }
-    try {
-      await api.post(`/organizations/${orgId}/switch/`);
-      toast.push(`Организация «${orgName}» выбрана`, { kind: 'ok' });
-      onOrgSelected();
-    } catch {
-      toast.push('Ошибка при выборе организации', { kind: 'err' });
-    }
-  };
-
-  const openCreate = () => {
-    setOrgModal({
-      org: null,
-      onDone: async (newOrg) => {
-        setOrgModal(null);
-        try {
-          await api.post(`/organizations/${newOrg.id}/switch/`);
-          onOrgSelected();
-        } catch {
-          load();
-        }
-      },
-    });
-  };
-
-  const openEdit = (org) => {
-    setOrgModal({
-      org,
-      onDone: () => { setOrgModal(null); load(); },
-    });
-  };
-
-  const deleteOrg = (org) => { setDeleteTarget(org); };
-
-  const brand = (
-    <div style={{ textAlign: 'center', marginBottom: 24 }}>
-      <img src="/logo.png" style={{ width: 44, height: 44, objectFit: 'contain', borderRadius: '50%', margin: '0 auto 10px', display: 'block' }} alt="" />
-      <div style={{ fontWeight: 600, fontSize: 15 }}>АИСК</div>
-    </div>
-  );
-
-  const footer = (
-    <div className="modal-foot" style={{ padding: '10px 16px', gap: 8 }}>
-      {onBack && (
-        <button className="btn btn-secondary btn-sm" onClick={onBack}>{I.back} Назад</button>
-      )}
-      {onProfile && (
-        <button className="btn btn-ghost btn-sm" onClick={onProfile} style={{ fontSize: 12 }}>
-          {I.user} Профиль
-        </button>
-      )}
-      <button className="btn btn-ghost btn-sm" onClick={onLogout} style={{ color: 'var(--text-muted)', fontSize: 12, marginLeft: 'auto' }}>
-        {I.logout} Выйти из аккаунта
-      </button>
-    </div>
-  );
-
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', color: 'var(--text-muted)', fontFamily: 'var(--font)' }}>
-        Загрузка…
-      </div>
-    );
-  }
-
-  if (user.role !== 'owner') {
-    if (orgs.length === 0) {
-      return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg)', fontFamily: 'var(--font)', padding: 24 }}>
-          {brand}
-          <div className="card screen-fade-in" style={{ width: '100%', maxWidth: 400 }}>
-            <div className="card-body" style={{ padding: 28, textAlign: 'center' }}>
-              <div style={{ fontSize: 36, marginBottom: 12 }}>⏳</div>
-              <h2 style={{ marginBottom: 8 }}>Ожидайте назначения</h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '0 0 20px' }}>
-                Администратор ещё не назначил вас в организацию. Обратитесь к владельцу системы.
-              </p>
-              <button className="btn btn-secondary btn-sm" onClick={onLogout}>{I.logout} Выйти</button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg)', fontFamily: 'var(--font)', padding: 24 }}>
-        {brand}
-        <div className="card screen-fade-in" style={{ width: '100%', maxWidth: 480 }}>
-          <div className="card-body" style={{ padding: 28 }}>
-            <h2 style={{ marginBottom: 6 }}>Выберите организацию</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 20 }}>Выберите организацию для работы.</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {orgs.map(org => (
-                <button
-                  key={org.id}
-                  onClick={() => pickOrg(org.id, org.name)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: 'var(--surface-alt)', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'border-color .15s, background .15s' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'var(--accent-soft)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface-alt)'; }}
-                >
-                  <div style={{ width: 36, height: 36, borderRadius: 7, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 11, flexShrink: 0 }}>{org.code}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{org.name}</div>
-                  </div>
-                  {I.chevr}
-                </button>
-              ))}
-            </div>
-          </div>
-          {footer}
-        </div>
-      </div>
-    );
-  }
-
-  const org = orgs[0] || null;
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg)', fontFamily: 'var(--font)', padding: 24 }}>
-      {brand}
-      <div className="card screen-fade-in" style={{ width: '100%', maxWidth: 480 }}>
-        <div className="card-body" style={{ padding: 28 }}>
-          {org ? (
-            <>
-              <h2 style={{ marginBottom: 6 }}>Ваша организация</h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16 }}>Войдите или отредактируйте данные организации.</p>
-              <div style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent)', borderRadius: 8, marginBottom: 16, overflow: 'hidden' }}>
-                {org.photo && (
-                  <div style={{ width: '100%', height: 110, overflow: 'hidden' }}>
-                    <img src={org.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                )}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px' }}>
-                  {!org.photo && (
-                    <div style={{ width: 36, height: 36, borderRadius: 7, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 10, flexShrink: 0, overflow: 'hidden' }}>
-                      {org.code}
-                    </div>
-                  )}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{org.name}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>
-                      {org.students} студ. · {org.employees} сотр.{org.founded_date ? ` · Основана: ${org.founded_date}` : ''}
-                    </div>
-                  </div>
-                  <button className="btn btn-ghost btn-icon btn-sm" onClick={() => openEdit(org)} title="Редактировать">{I.pencil}</button>
-                  <button className="btn btn-ghost btn-icon btn-sm" onClick={() => deleteOrg(org)} title="Удалить организацию" style={{ color: 'var(--bad-fg)' }}>{I.trash}</button>
-                </div>
-              </div>
-              <button className="btn btn-primary" onClick={() => pickOrg(org.id, org.name, true)} style={{ width: '100%', justifyContent: 'center' }}>
-                {I.check} Войти
-              </button>
-            </>
-          ) : (
-            <>
-              <h2 style={{ marginBottom: 6 }}>Создайте организацию</h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16 }}>Для начала работы создайте вашу организацию.</p>
-              <button className="btn btn-primary" onClick={openCreate} style={{ width: '100%', justifyContent: 'center' }}>
-                {I.plus} Создать организацию
-              </button>
-            </>
-          )}
-        </div>
-        {footer}
-      </div>
-      {deleteTarget && (
-        <OrgDeleteConfirmModal
-          data={{ org: deleteTarget, onDone: () => { setDeleteTarget(null); load(); } }}
-          onClose={() => setDeleteTarget(null)}
-        />
-      )}
-      {orgModal && (
-        <OrgFormModal
-          data={{ org: orgModal.org, onDone: orgModal.onDone }}
-          onClose={() => setOrgModal(null)}
-        />
-      )}
-    </div>
-  );
-}
-
 function AppShell({ onLogout }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [currentScreen, setCurrentScreen] = useState('dashboard');
@@ -263,17 +62,9 @@ function AppShell({ onLogout }) {
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null); // { name, data }
 
-  const loadUser = (afterSwitch = false) => {
+  const loadUser = () => {
     api.get('/me/').then(r => {
-      const user = r.data;
-      if (!afterSwitch) {
-        // Owner никогда не видит пикер — org создаётся при регистрации
-        // Для остальных ролей: показываем пикер для выбора организации
-        const showPicker = user.role === 'owner' ? false : true;
-        setCurrentUser({ ...user, _showPicker: showPicker });
-      } else {
-        setCurrentUser(user);
-      }
+      setCurrentUser(r.data);
       setLoading(false);
     }).catch(() => {
       localStorage.removeItem('access_token');
@@ -426,10 +217,6 @@ function AppShell({ onLogout }) {
     );
   }
 
-  if (currentUser._showPicker || !currentUser.institution) {
-    return <OrgPickerScreen user={currentUser} onOrgSelected={() => loadUser(true)} onLogout={handleLogout} onProfile={goToProfile} />;
-  }
-
   const renderScreen = () => {
     if (currentScreen === 'dashboard') {
       const role = currentUser.role;
@@ -437,18 +224,6 @@ function AppShell({ onLogout }) {
       if (role === 'secretary') return <DashboardSecretary {...sharedProps} />;
       if (role === 'admin')     return <DashboardAdmin     {...sharedProps} />;
       return <DashboardOwner {...sharedProps} />;
-    }
-
-    if (currentScreen === 'org-picker' && currentUser.role !== 'owner') {
-      return (
-        <OrgPickerScreen
-          user={currentUser}
-          onOrgSelected={() => { loadUser(true); handleNavigate('dashboard'); }}
-          onLogout={handleLogout}
-          onBack={() => { loadUser(true); handleNavigate('dashboard'); }}
-          onProfile={() => handleNavigate('profile')}
-        />
-      );
     }
 
     if (currentScreen === 'faculties') {
