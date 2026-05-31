@@ -1106,34 +1106,15 @@ function UserFormModal({ data, onClose, openModal }) {
   const { user, onDone } = data || {};
   const isEdit = !!user;
   const toast = useToast();
-  const [employees, setEmployees] = useState([]);
   const [username, setUsername] = useState(user?.username || '');
   const [displayName, setDisplayName] = useState(user?.display_name || '');
   const [role, setRole] = useState(user?.role || 'teacher');
-  const [employeeId, setEmployeeId] = useState(user?.employee_id ? String(user.employee_id) : '');
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
   const [pwFocus, setPwFocus] = useState(false);
   const [err, setErr] = useState('');
   const [loginErr, setLoginErr] = useState('');
   const [step, setStep] = useState(1);
-
-  useEffect(() => {
-    api.get('/employees/').then(r => setEmployees(r.data)).catch(() => {});
-  }, []);
-
-  const employeeOpts = employees.map(e => ({ value: String(e.id), label: e.full_name, sub: e.position_name || '' }));
-
-  const handleEmployeeChange = (val) => {
-    setEmployeeId(val);
-    if (!isEdit && val) {
-      const emp = employees.find(e => String(e.id) === val);
-      if (emp) {
-        setDisplayName(emp.full_name || '');
-        setUsername(genUsername(emp));
-      }
-    }
-  };
 
   const pwdErrs = [];
   if (password) {
@@ -1164,7 +1145,6 @@ function UserFormModal({ data, onClose, openModal }) {
         await api.patch(`/users/${user.id}/`, {
           display_name: displayName,
           role,
-          employee_id: employeeId ? parseInt(employeeId) : null,
         });
         toast.push('Пользователь обновлён', { kind: 'ok' });
       } else {
@@ -1173,7 +1153,6 @@ function UserFormModal({ data, onClose, openModal }) {
           display_name: displayName,
           role,
           password,
-          employee_id: employeeId ? parseInt(employeeId) : null,
         });
         toast.push('Пользователь создан', { kind: 'ok' });
       }
@@ -1210,10 +1189,6 @@ function UserFormModal({ data, onClose, openModal }) {
               {REAL_ROLE_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </Field>
-          <div className="field field-full">
-            <label className="field-label">Привязать к сотруднику</label>
-            <Combobox options={employeeOpts} value={employeeId} onChange={handleEmployeeChange} />
-          </div>
         </div>
         {err && <div style={{ color: 'var(--bad-fg)', fontSize: 13, marginTop: 8 }}>{err}</div>}
       </Modal>
@@ -1256,10 +1231,6 @@ function UserFormModal({ data, onClose, openModal }) {
                 {REAL_ROLE_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </Field>
-            <div className="field field-full">
-              <label className="field-label">Привязать к сотруднику</label>
-              <Combobox options={employeeOpts} value={employeeId} onChange={handleEmployeeChange} />
-            </div>
           </div>
         )}
 
