@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.paginator import Paginator
 from django.db.models import Q
-from .models import Parent, Student, StudentParent, DeleteRequest
+from .models import Parent, Student, StudentParent, DeleteRequest, Group
 from .utils import log_action, check_person_email_unique, check_person_phone_unique
 
 
@@ -47,6 +47,19 @@ class ParentsView(APIView):
             return Response([])
 
         qs = Parent.objects.filter(institution=institution)
+
+        if request.user.role == 'teacher':
+            employee = request.user.employee
+            if not employee:
+                if 'page' not in request.query_params:
+                    return Response([])
+                return Response({'results': [], 'count': 0, 'num_pages': 0, 'page': 1})
+            teacher_group_ids = Group.objects.filter(
+                Q(headteacher=employee) | Q(subject_assignments__employee=employee)
+            ).values_list('pk', flat=True).distinct()
+            teacher_student_ids = Student.objects.filter(group_id__in=teacher_group_ids).values_list('pk', flat=True)
+            allowed_parent_ids = StudentParent.objects.filter(student_id__in=teacher_student_ids).values_list('parent_id', flat=True).distinct()
+            qs = qs.filter(pk__in=allowed_parent_ids)
 
         search = request.query_params.get('search', '').strip()
         if search:

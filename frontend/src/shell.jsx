@@ -51,7 +51,7 @@ function PageHead({ crumbs, title, sub, subNote, actions }) {
    ============================================================ */
 const ROLE_LABEL = { owner: 'Владелец', superadmin: 'Суперадминистратор', admin: 'Администратор', teacher: 'Преподаватель' };
 
-function TopbarSearch({ onNavigate }) {
+function TopbarSearch({ onNavigate, role }) {
   const [q, setQ] = useState('');
   const [results, setResults] = useState([]);
   const [open, setOpen] = useState(false);
@@ -60,13 +60,23 @@ function TopbarSearch({ onNavigate }) {
   useEffect(() => {
     if (!q.trim()) { setResults([]); setOpen(false); return; }
     const t = setTimeout(() => {
-      api.get(`/students/?search=${encodeURIComponent(q)}`).then(r => {
-        setResults(r.data.results || []);
-        setOpen(true);
-      }).catch(() => {});
+      const enc = encodeURIComponent(q);
+      const searches = [
+        api.get(`/students/?search=${enc}`).then(r => (r.data.results || []).slice(0, 5).map(s => ({ ...s, _type: 'student' }))).catch(() => []),
+      ];
+      if (role === 'teacher') {
+        searches.push(
+          api.get(`/parents/?search=${enc}`).then(r => (Array.isArray(r.data) ? r.data : r.data.results || []).slice(0, 5).map(p => ({ ...p, _type: 'parent' }))).catch(() => [])
+        );
+      }
+      Promise.all(searches).then(parts => {
+        const combined = parts.flat();
+        setResults(combined);
+        setOpen(combined.length > 0);
+      });
     }, 300);
     return () => clearTimeout(t);
-  }, [q]);
+  }, [q, role]);
 
   useEffect(() => {
     const handler = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
@@ -74,9 +84,13 @@ function TopbarSearch({ onNavigate }) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const pick = (id) => {
+  const pick = (item) => {
     setQ(''); setOpen(false);
-    onNavigate && onNavigate('student-detail', { studentId: id });
+    if (item._type === 'parent') {
+      onNavigate && onNavigate('parent-detail', { parentId: item.id });
+    } else {
+      onNavigate && onNavigate('student-detail', { studentId: item.id });
+    }
   };
 
   return (
@@ -84,21 +98,28 @@ function TopbarSearch({ onNavigate }) {
       <div className="topbar-search">
         {I.search}
         <input
-          placeholder="Поиск студента…"
+          placeholder="Поиск"
           value={q}
           onChange={e => setQ(e.target.value)}
           onFocus={() => results.length && setOpen(true)}
         />
       </div>
       {open && results.length > 0 && (
-        <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, boxShadow: 'var(--shadow-md)', zIndex: 999, maxHeight: 240, overflowY: 'auto' }}>
-          {results.map(s => (
-            <div key={s.id} style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}
-              onMouseDown={() => pick(s.id)}
+        <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, boxShadow: 'var(--shadow-md)', zIndex: 999, maxHeight: 280, overflowY: 'auto' }}>
+          {results.map(item => (
+            <div key={`${item._type}-${item.id}`} style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}
+              onMouseDown={() => pick(item)}
               onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-alt)'}
               onMouseLeave={e => e.currentTarget.style.background = ''}>
-              <div style={{ fontWeight: 500, fontSize: 13 }}>{s.last_name} {s.first_name} {s.middle_name}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.faculty_short} · {s.group_name || 'без группы'}</div>
+              <div style={{ fontWeight: 500, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>{item.last_name} {item.first_name} {item.middle_name}</span>
+                <span style={{ fontSize: 10, fontWeight: 500, background: item._type === 'parent' ? 'var(--warning-bg, #fff3cd)' : 'var(--surface-alt)', color: item._type === 'parent' ? 'var(--warning, #856404)' : 'var(--text-muted)', padding: '1px 5px', borderRadius: 4, flexShrink: 0 }}>
+                  {item._type === 'parent' ? 'Опекун' : 'Студент'}
+                </span>
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                {item._type === 'student' ? `${item.faculty_short}${item.group_name ? ' · ' + item.group_name : ''}` : item.phone || item.email || ''}
+              </div>
             </div>
           ))}
         </div>
@@ -127,10 +148,14 @@ function UserChip({ currentUser, onLogout, openModal, onNavigate }) {
             <div style={{ fontWeight: 600, fontSize: 13 }}>{name}</div>
             <div className="muted" style={{ fontSize: 11 }}>{ROLE_LABEL[role] || role}</div>
           </div>
-          <div className="dd-item" onClick={() => { setOpen(false); onNavigate && onNavigate('profile'); }}>
-            {I.user}<span>Профиль</span>
-          </div>
-          <div className="dd-sep" />
+          {role === 'owner' && (
+            <>
+              <div className="dd-item" onClick={() => { setOpen(false); onNavigate && onNavigate('profile'); }}>
+                {I.user}<span>Профиль</span>
+              </div>
+              <div className="dd-sep" />
+            </>
+          )}
           <div className="dd-item danger" onClick={() => { setOpen(false); openModal && openModal('logout'); }}>
             {I.logout}<span>Выйти</span>
           </div>
@@ -232,7 +257,7 @@ function Shell({ currentUser, role: roleProp, active, onNavigate, onLogout, open
               {I.pencil}
             </button>
           ) : (
-            <TopbarSearch onNavigate={onNavigate} />
+            <TopbarSearch onNavigate={onNavigate} role={role} />
           )}
         </div>
         <div className="topbar-right">
