@@ -160,19 +160,24 @@ function OrganizationList({ currentUser, openModal, onNavigate, onUserRefresh })
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
           {orgs.map(org => (
-            <div key={org.id} className="card" style={{ border: org.active ? '2px solid var(--accent)' : '1px solid var(--border)', position: 'relative' }}>
+            <div key={org.id} className="card" style={{ border: org.active ? '2px solid var(--accent)' : '1px solid var(--border)', position: 'relative', overflow: 'hidden' }}>
               {org.active && (
-                <div style={{ position: 'absolute', top: 12, right: 12 }}>
+                <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 1 }}>
                   <span className="badge badge-ok"><span className="dot"></span>Активна</span>
+                </div>
+              )}
+              {org.photo && (
+                <div style={{ width: '100%', height: 110, overflow: 'hidden', flexShrink: 0 }}>
+                  <img src={org.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
               )}
               <div className="card-body" style={{ padding: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 8, background: org.active ? 'var(--accent)' : 'var(--surface-alt)', color: org.active ? '#fff' : 'var(--text-muted)', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 12, flexShrink: 0, border: '1px solid var(--border)', overflow: 'hidden' }}>
-                    {org.photo
-                      ? <img src={org.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} />
-                      : org.code}
-                  </div>
+                  {!org.photo && (
+                    <div style={{ width: 40, height: 40, borderRadius: 8, background: org.active ? 'var(--accent)' : 'var(--surface-alt)', color: org.active ? '#fff' : 'var(--text-muted)', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 12, flexShrink: 0, border: '1px solid var(--border)', overflow: 'hidden' }}>
+                      {org.code}
+                    </div>
+                  )}
                   <div>
                     <div className="fwm" style={{ fontSize: 14 }}>{org.name}</div>
                     <div className="muted" style={{ fontSize: 11 }}>Код: {org.code}{org.founded_date ? ` · Основана: ${org.founded_date}` : ''}</div>

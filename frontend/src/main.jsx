@@ -202,18 +202,27 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout, onBack, onProfile }) {
             <>
               <h2 style={{ marginBottom: 6 }}>Ваша организация</h2>
               <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16 }}>Войдите или отредактируйте данные организации.</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'var(--accent-soft)', border: '1px solid var(--accent)', borderRadius: 8, marginBottom: 16 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 7, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 10, flexShrink: 0, overflow: 'hidden' }}>
-                  {org.photo ? <img src={org.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : org.code}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{org.name}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>
-                    {org.students} студ. · {org.employees} сотр.{org.founded_date ? ` · Основана: ${org.founded_date}` : ''}
+              <div style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent)', borderRadius: 8, marginBottom: 16, overflow: 'hidden' }}>
+                {org.photo && (
+                  <div style={{ width: '100%', height: 110, overflow: 'hidden' }}>
+                    <img src={org.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px' }}>
+                  {!org.photo && (
+                    <div style={{ width: 36, height: 36, borderRadius: 7, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 10, flexShrink: 0, overflow: 'hidden' }}>
+                      {org.code}
+                    </div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{org.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>
+                      {org.students} студ. · {org.employees} сотр.{org.founded_date ? ` · Основана: ${org.founded_date}` : ''}
+                    </div>
+                  </div>
+                  <button className="btn btn-ghost btn-icon btn-sm" onClick={() => openEdit(org)} title="Редактировать">{I.pencil}</button>
+                  <button className="btn btn-ghost btn-icon btn-sm" onClick={() => deleteOrg(org)} title="Удалить организацию" style={{ color: 'var(--bad-fg)' }}>{I.trash}</button>
                 </div>
-                <button className="btn btn-ghost btn-icon btn-sm" onClick={() => openEdit(org)} title="Редактировать">{I.pencil}</button>
-                <button className="btn btn-ghost btn-icon btn-sm" onClick={() => deleteOrg(org)} title="Удалить организацию" style={{ color: 'var(--bad-fg)' }}>{I.trash}</button>
               </div>
               <button className="btn btn-primary" onClick={() => pickOrg(org.id, org.name, true)} style={{ width: '100%', justifyContent: 'center' }}>
                 {I.check} Войти
