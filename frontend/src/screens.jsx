@@ -1338,7 +1338,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                   )}
                   {teacherTab === 'assignments' && ['owner', 'admin'].includes(currentUser?.role) && (
                     <button className="btn btn-secondary btn-sm" style={{ margin: '6px 8px' }}
-                      onClick={() => openModal('employeeAssignSubject', { employeeId, onDone: load })}>
+                      onClick={() => openModal('employeeAssignSubject', { employeeId, taughtSubjects: employee.taught_subjects || [], onDone: load })}>
                       {I.plus}
                     </button>
                   )}

@@ -565,9 +565,8 @@ function EmployeeFormModal({ data, onClose }) {
 }
 
 function EmployeeAssignSubjectModal({ data, onClose }) {
-  const { employeeId, onDone } = data || {};
+  const { employeeId, taughtSubjects, onDone } = data || {};
   const [groups, setGroups] = useState([]);
-  const [subjects, setSubjects] = useState([]);
   const [groupId, setGroupId] = useState('');
   const [subjectId, setSubjectId] = useState('');
   const [err, setErr] = useState('');
@@ -575,8 +574,11 @@ function EmployeeAssignSubjectModal({ data, onClose }) {
 
   useEffect(() => {
     api.get('/groups/').then(r => setGroups(r.data)).catch(() => {});
-    api.get('/subjects/').then(r => setSubjects(r.data)).catch(() => {});
   }, []);
+
+  // Если переданы предметы преподавателя - показываем только их
+  const subjectOptions = taughtSubjects && taughtSubjects.length > 0 ? taughtSubjects : [];
+  const noSubjects = taughtSubjects && taughtSubjects.length === 0;
 
   const save = async () => {
     if (!groupId) { setErr('Выберите группу'); return; }
@@ -596,19 +598,24 @@ function EmployeeAssignSubjectModal({ data, onClose }) {
   };
 
   return (
-    <Modal title="Назначить предмет сотруднику" onClose={onClose}
-      footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>Назначить</LoadButton></>}>
+    <Modal title="Назначить предмет в группу" onClose={onClose}
+      footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save} disabled={noSubjects}>Назначить</LoadButton></>}>
       <div className="form-grid">
-        <Field label="Группа" required>
-          <select className="select" value={groupId} onChange={e => { setGroupId(e.target.value); setErr(''); }}>
-            <option value="">- Выберите группу -</option>
-            {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+        {noSubjects && (
+          <div className="field field-full" style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+            Сначала добавьте предметы преподавателю во вкладке «Предметы».
+          </div>
+        )}
+        <Field label="Предмет" required>
+          <select className="select" value={subjectId} onChange={e => { setSubjectId(e.target.value); setErr(''); }} disabled={noSubjects}>
+            <option value="">- Выберите предмет -</option>
+            {subjectOptions.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </Field>
-        <Field label="Предмет" required>
-          <select className="select" value={subjectId} onChange={e => { setSubjectId(e.target.value); setErr(''); }}>
-            <option value="">- Выберите предмет -</option>
-            {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+        <Field label="Группа" required>
+          <select className="select" value={groupId} onChange={e => { setGroupId(e.target.value); setErr(''); }} disabled={noSubjects}>
+            <option value="">- Выберите группу -</option>
+            {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
           </select>
         </Field>
         {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
