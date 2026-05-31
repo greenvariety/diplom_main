@@ -157,14 +157,13 @@ function OrganizationList({ currentUser, openModal, onNavigate, onUserRefresh })
                   <span className="badge badge-ok"><span className="dot"></span>Активна</span>
                 </div>
               )}
-              {org.photo && (
-                <div style={{ width: '100%', height: 110, overflow: 'hidden', flexShrink: 0 }}>
-                  <img src={org.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                </div>
-              )}
               <div className="card-body" style={{ padding: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                  {!org.photo && (
+                  {org.photo ? (
+                    <div style={{ width: 40, height: 40, borderRadius: 8, flexShrink: 0, border: '1px solid var(--border)', overflow: 'hidden' }}>
+                      <img src={org.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                  ) : (
                     <div style={{ width: 40, height: 40, borderRadius: 8, background: org.active ? 'var(--accent)' : 'var(--surface-alt)', color: org.active ? '#fff' : 'var(--text-muted)', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 12, flexShrink: 0, border: '1px solid var(--border)', overflow: 'hidden' }}>
                       {org.code}
                     </div>
@@ -649,13 +648,6 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [over, setOver] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [auditData, setAuditData] = useState([]);
-  const [auditLoading, setAuditLoading] = useState(false);
-  const [auditFilter, setAuditFilter] = useState('');
-  const [auditPage, setAuditPage] = useState(1);
-  const [auditTotal, setAuditTotal] = useState(0);
-  const [auditPages, setAuditPages] = useState(1);
   const toast = useToast();
   const sortParents = useSortable({ key: null, dir: 'asc' }, 'std-parents');
 
@@ -668,23 +660,6 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
   };
 
   useEffect(() => { if (studentId) load(); }, [studentId]);
-
-  const loadAudit = () => {
-    if (!['owner', 'admin'].includes(currentUser?.role)) return;
-    setAuditLoading(true);
-    const params = new URLSearchParams({ object_type: 'Student', object_id: studentId, page: auditPage });
-    if (auditFilter) params.set('action', auditFilter);
-    api.get(`/audit-log/?${params}`).then(r => {
-      setAuditData(r.data.results);
-      setAuditTotal(r.data.count);
-      setAuditPages(r.data.num_pages);
-      setAuditLoading(false);
-    }).catch(() => setAuditLoading(false));
-  };
-
-  useEffect(() => {
-    if (historyOpen) loadAudit();
-  }, [historyOpen, auditFilter, auditPage]);
 
   const handleStatusChange = async (newStatus) => {
     try {
@@ -840,52 +815,6 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
             </div>
           </div>
 
-          {['owner', 'admin'].includes(currentUser?.role) && (
-            <div className="card">
-              <div className="card-head" style={{ cursor: 'pointer' }} onClick={() => setHistoryOpen(o => !o)}>
-                <div className="title">{I.history}<span>История изменений</span>{auditTotal > 0 && <span className="muted" style={{ fontWeight: 400, fontSize: 12, marginLeft: 6 }}>- {auditTotal} событий</span>}</div>
-                <svg className="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: historyOpen ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}><polyline points="6 9 12 15 18 9"/></svg>
-              </div>
-              {historyOpen && (
-                <div className="card-body flush">
-                  <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 8 }}>
-                    <select className="select" style={{ width: 180, fontSize: 13 }} value={auditFilter} onChange={e => { setAuditFilter(e.target.value); setAuditPage(1); }}>
-                      <option value="">Все действия</option>
-                      <option value="create">Создание</option>
-                      <option value="update">Изменение</option>
-                      <option value="delete">Удаление</option>
-                    </select>
-                  </div>
-                  {auditLoading ? (
-                    <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Загрузка...</div>
-                  ) : auditData.length === 0 ? (
-                    <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>История пуста</div>
-                  ) : (
-                    <table className="tbl">
-                      <thead><tr><th>Дата и время</th><th>Пользователь</th><th>Действие</th><th></th></tr></thead>
-                      <tbody>
-                        {auditData.map(a => (
-                          <tr key={a.id} className="row-link" onClick={() => openModal('auditDiff', a)}>
-                            <td className="mono muted">{a.ts}</td>
-                            <td><span className="fwm mono">{a.user}</span><div className="muted" style={{ fontSize: 11 }}>{a.userName}</div></td>
-                            <td><span className={`badge ${a.cls}`}><span className="dot"></span>{a.label}</span></td>
-                            <td>{I.chevr}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                  {auditPages > 1 && (
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: 10 }}>
-                      <button className="btn btn-secondary btn-sm" disabled={auditPage <= 1} onClick={() => setAuditPage(p => p - 1)}>Назад</button>
-                      <span style={{ padding: '0 8px', lineHeight: '30px', fontSize: 13 }}>{auditPage} / {auditPages}</span>
-                      <button className="btn btn-secondary btn-sm" disabled={auditPage >= auditPages} onClick={() => setAuditPage(p => p + 1)}>Вперёд</button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </Shell>
@@ -1048,14 +977,6 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
   const [accErr, setAccErr] = useState('');
   const [accSaving, setAccSaving] = useState(false);
 
-  // Employee history state
-  const [empHistoryOpen, setEmpHistoryOpen] = useState(false);
-  const [empAuditData, setEmpAuditData] = useState([]);
-  const [empAuditLoading, setEmpAuditLoading] = useState(false);
-  const [empAuditFilter, setEmpAuditFilter] = useState('');
-  const [empAuditPage, setEmpAuditPage] = useState(1);
-  const [empAuditTotal, setEmpAuditTotal] = useState(0);
-  const [empAuditPages, setEmpAuditPages] = useState(1);
   const [teacherTab, setTeacherTab] = useState('subjects');
   const sortEmpGroups = useSortable({ key: null, dir: 'asc' }, 'emp-groups');
   const sortEmpSubjects = useSortable({ key: null, dir: 'asc' }, 'emp-subjects');
@@ -1093,23 +1014,6 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
       loadAccount();
     }
   }, [employeeId]);
-
-  const loadEmpAudit = () => {
-    if (!['owner', 'admin'].includes(currentUser?.role)) return;
-    setEmpAuditLoading(true);
-    const params = new URLSearchParams({ object_type: 'Employee', object_id: employeeId, page: empAuditPage });
-    if (empAuditFilter) params.set('action', empAuditFilter);
-    api.get(`/audit-log/?${params}`).then(r => {
-      setEmpAuditData(r.data.results);
-      setEmpAuditTotal(r.data.count);
-      setEmpAuditPages(r.data.num_pages);
-      setEmpAuditLoading(false);
-    }).catch(() => setEmpAuditLoading(false));
-  };
-
-  useEffect(() => {
-    if (empHistoryOpen) loadEmpAudit();
-  }, [empHistoryOpen, empAuditFilter, empAuditPage]);
 
   const removeSubject = async (assignmentId) => {
     try {
@@ -1487,52 +1391,6 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
             </div>
           </div>
 
-          {['owner', 'admin'].includes(currentUser?.role) && (
-            <div className="card">
-              <div className="card-head" style={{ cursor: 'pointer' }} onClick={() => setEmpHistoryOpen(o => !o)}>
-                <div className="title">{I.history}<span>История изменений</span>{empAuditTotal > 0 && <span className="muted" style={{ fontWeight: 400, fontSize: 12, marginLeft: 6 }}>- {empAuditTotal} событий</span>}</div>
-                <svg className="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: empHistoryOpen ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}><polyline points="6 9 12 15 18 9"/></svg>
-              </div>
-              {empHistoryOpen && (
-                <div className="card-body flush">
-                  <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 8 }}>
-                    <select className="select" style={{ width: 180, fontSize: 13 }} value={empAuditFilter} onChange={e => { setEmpAuditFilter(e.target.value); setEmpAuditPage(1); }}>
-                      <option value="">Все действия</option>
-                      <option value="create">Создание</option>
-                      <option value="update">Изменение</option>
-                      <option value="delete">Удаление</option>
-                    </select>
-                  </div>
-                  {empAuditLoading ? (
-                    <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Загрузка...</div>
-                  ) : empAuditData.length === 0 ? (
-                    <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>История пуста</div>
-                  ) : (
-                    <table className="tbl">
-                      <thead><tr><th>Дата и время</th><th>Пользователь</th><th>Действие</th><th></th></tr></thead>
-                      <tbody>
-                        {empAuditData.map(a => (
-                          <tr key={a.id} className="row-link" onClick={() => openModal('auditDiff', a)}>
-                            <td className="mono muted">{a.ts}</td>
-                            <td><span className="fwm mono">{a.user}</span><div className="muted" style={{ fontSize: 11 }}>{a.userName}</div></td>
-                            <td><span className={`badge ${a.cls}`}><span className="dot"></span>{a.label}</span></td>
-                            <td>{I.chevr}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                  {empAuditPages > 1 && (
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: 10 }}>
-                      <button className="btn btn-secondary btn-sm" disabled={empAuditPage <= 1} onClick={() => setEmpAuditPage(p => p - 1)}>Назад</button>
-                      <span style={{ padding: '0 8px', lineHeight: '30px', fontSize: 13 }}>{empAuditPage} / {empAuditPages}</span>
-                      <button className="btn btn-secondary btn-sm" disabled={empAuditPage >= empAuditPages} onClick={() => setEmpAuditPage(p => p + 1)}>Вперёд</button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </Shell>
