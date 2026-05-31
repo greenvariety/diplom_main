@@ -15,7 +15,7 @@ from core.api_employees import (
     EmployeeSubjectsView, EmployeeSubjectDetailView, EmployeeFlagView, EmployeeAccountView,
     EmployeeTaughtSubjectsView, EmployeeTaughtSubjectDetailView,
 )
-from core.api_subjects import SubjectsView, SubjectDetailView, SubjectEmployeesView, SubjectEmployeeDetailView
+from core.api_subjects import SubjectsView, SubjectDetailView, SubjectEmployeesView, SubjectEmployeeDetailView, SubjectDeleteRequestView
 from core.api_students import (
     StudentsView, StudentDetailView, StudentDeleteRequestView,
     StudentParentsView, StudentParentDetailView, StudentFlagView,
@@ -82,6 +82,7 @@ urlpatterns = [
     path('api/employees/<int:pk>/taught-subjects/<int:subject_pk>/', EmployeeTaughtSubjectDetailView.as_view()),
     path('api/subjects/', SubjectsView.as_view()),
     path('api/subjects/<int:pk>/', SubjectDetailView.as_view()),
+    path('api/subjects/<int:pk>/delete-request/', SubjectDeleteRequestView.as_view()),
     path('api/subjects/<int:pk>/employees/', SubjectEmployeesView.as_view()),
     path('api/subjects/<int:pk>/employees/<int:employee_pk>/', SubjectEmployeeDetailView.as_view()),
     path('api/students/', StudentsView.as_view()),

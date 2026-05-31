@@ -4,6 +4,8 @@ import { Shell, PageHead, Badge, Avatar } from './shell.jsx';
 import { StatNumber, useToast, Field, EmptyState, SkeletonRows, LoadButton, Combobox, Pager, usePager, useSortable, SortHeader } from './utils.jsx';
 import api from './api.js';
 
+const DOC_TYPE_LABEL = { passport: 'Паспорт', snils: 'СНИЛС', policy: 'Полис ОМС', certificate: 'Аттестат', order: 'Приказ', other: 'Прочее' };
+
 /* ============================================================
    Dashboards
    ============================================================ */
@@ -625,6 +627,15 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
     }
   };
 
+  const handleDeleteRequest = async () => {
+    try {
+      await api.post(`/students/${studentId}/delete-request/`, {});
+      toast.push('Заявка на удаление отправлена', { kind: 'ok' });
+    } catch {
+      toast.push('Не удалось создать заявку', { kind: 'err' });
+    }
+  };
+
   const handleDrop = (e) => {
     e.preventDefault(); setOver(false);
     const file = e.dataTransfer.files?.[0];
@@ -646,10 +657,15 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
         title={`${student.last_name} ${student.first_name} ${student.middle_name}`}
         sub={`${student.faculty_short} · ${student.group_name || 'без группы'}`}
         actions={<>
-          {['owner', 'admin', 'secretary'].includes(currentUser?.role) && <>
+          {['owner', 'admin', 'secretary'].includes(currentUser?.role) && (
             <button className="btn btn-secondary btn-sm" onClick={() => openModal('studentForm', { student, onDone: load })}>{I.pencil}Редактировать</button>
+          )}
+          {currentUser?.role === 'owner' && (
             <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: `${student.last_name} ${student.first_name}`, type: 'студента', url: `/students/${student.id}/`, onDone: () => onNavigate('students') })}>{I.trash}Удалить</button>
-          </>}
+          )}
+          {['admin', 'secretary'].includes(currentUser?.role) && (
+            <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Подать заявку</button>
+          )}
         </>}
       />
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
@@ -1059,7 +1075,6 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
         crumbs={[{ label: 'Сотрудники', href: true, onClick: () => onNavigate('employees') }, { label: employee.full_name }]}
         title={employee.full_name}
         sub={employee.position_name || 'Сотрудник'}
-        subNote={employee.position_name && employee.position_role_type ? ({ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель', none: 'Прочие сотрудники' }[employee.position_role_type]) : undefined}
         actions={<>
           {['owner', 'admin', 'secretary'].includes(currentUser?.role) && (
             <button className="btn btn-secondary btn-sm" onClick={() => openModal('employeeForm', { employee, onDone: load })}>{I.pencil}Редактировать</button>
@@ -1067,10 +1082,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
           {currentUser?.role === 'owner' && (
             <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: employee.full_name, type: 'сотрудника', url: `/employees/${employeeId}/`, onDone: () => onNavigate('employees') })}>{I.trash}Удалить</button>
           )}
-          {currentUser?.role === 'admin' && (
-            <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: employee.full_name, type: 'сотрудника', url: `/employees/${employeeId}/`, onDone: () => onNavigate('employees') })}>{I.trash}Удалить</button>
-          )}
-          {currentUser?.role === 'secretary' && (
+          {['admin', 'secretary'].includes(currentUser?.role) && (
             <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Подать заявку</button>
           )}
         </>}
@@ -1323,7 +1335,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                     }).map(d => (
                       <tr key={d.id}>
                         <td className="fwm"><a href={d.file_url} target="_blank" rel="noreferrer">{d.name}</a></td>
-                        <td>{d.doc_type || '-'}</td>
+                        <td>{DOC_TYPE_LABEL[d.doc_type] || d.doc_type || '-'}</td>
                         <td className="muted">{d.uploaded_at || '-'}</td>
                         <td><button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDeleteDoc(d.id)}>{I.x}</button></td>
                       </tr>
@@ -2293,10 +2305,15 @@ function ParentDetail({ currentUser, openModal, onNavigate, parentId }) {
         title={parent.full_name}
         sub="Опекун / родитель"
         actions={<>
-          {['owner', 'admin', 'secretary'].includes(currentUser?.role) && <>
+          {['owner', 'admin', 'secretary'].includes(currentUser?.role) && (
             <button className="btn btn-secondary btn-sm" onClick={() => openModal('parentForm', { parent, onDone: load })}>{I.pencil}Редактировать</button>
+          )}
+          {currentUser?.role === 'owner' && (
             <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: parent.full_name, type: 'опекуна', url: `/parents/${parentId}/`, onDone: () => onNavigate('parents') })}>{I.trash}Удалить</button>
-          </>}
+          )}
+          {['admin', 'secretary'].includes(currentUser?.role) && (
+            <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Подать заявку</button>
+          )}
         </>}
       />
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
@@ -2387,6 +2404,15 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId, filterEm
     }
   };
 
+  const handleDeleteRequest = async () => {
+    try {
+      await api.post(`/subjects/${subjectId}/delete-request/`, {});
+      toast.push('Заявка на удаление отправлена', { kind: 'ok' });
+    } catch {
+      toast.push('Не удалось создать заявку', { kind: 'err' });
+    }
+  };
+
   if (loading || !subject) {
     return (
       <Shell currentUser={currentUser} active="subjects" onNavigate={onNavigate} openModal={openModal}>
@@ -2408,10 +2434,12 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId, filterEm
         title={subject.name}
         actions={!filterEmployeeId ? <>
           <button className="btn btn-secondary btn-sm" onClick={() => openModal('subjectForm', { subject, onDone: load })}>{I.pencil}Редактировать</button>
-          {currentUser?.role === 'owner'
-            ? <button className="btn btn-danger btn-sm" onClick={handleDelete}>{I.trash}Удалить</button>
-            : null
-          }
+          {currentUser?.role === 'owner' && (
+            <button className="btn btn-danger btn-sm" onClick={handleDelete}>{I.trash}Удалить</button>
+          )}
+          {['admin', 'secretary'].includes(currentUser?.role) && (
+            <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Подать заявку</button>
+          )}
         </> : null}
       />
       <div style={{ display: 'grid', gridTemplateColumns: filterEmployeeId ? '1fr' : '1fr 1fr', gap: 16 }}>

@@ -490,6 +490,7 @@ class DeleteRequest(models.Model):
         ('Student', 'Студент'),
         ('Employee', 'Сотрудник'),
         ('Parent', 'Опекун'),
+        ('Subject', 'Предмет'),
     ]
 
     user = models.ForeignKey(

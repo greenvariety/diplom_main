@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import Subject, Employee, Student, GroupSubjectEmployee
+from .models import Subject, Employee, Student, GroupSubjectEmployee, DeleteRequest
 from .utils import log_action
 
 
@@ -100,7 +100,7 @@ class SubjectDetailView(APIView):
         return Response({'id': subject.pk, 'name': subject.name})
 
     def delete(self, request, pk):
-        if request.user.role not in ('owner', 'admin'):
+        if request.user.role != 'owner':
             return Response({'error': 'Доступ запрещён'}, status=403)
         institution = request.user.institution
         try:
@@ -112,6 +112,30 @@ class SubjectDetailView(APIView):
         log_action(request.user, 'deleted', subject,
                    old_data={'name': subject.name}, institution=institution)
         subject.delete()
+        return Response({'ok': True})
+
+
+class SubjectDeleteRequestView(APIView):
+    def post(self, request, pk):
+        if request.user.role not in ('owner', 'admin', 'secretary'):
+            return Response({'error': 'Доступ запрещён'}, status=403)
+        institution = request.user.institution
+        if not institution:
+            return Response({'error': 'Нет активной организации'}, status=400)
+        try:
+            subject = Subject.objects.get(pk=pk, institution=institution)
+        except Subject.DoesNotExist:
+            return Response({'error': 'Не найдено'}, status=404)
+        reason = (request.data.get('reason') or '').strip() or f'Удаление предмета: {subject.name}'
+        req = DeleteRequest.objects.create(
+            user=request.user,
+            object_type='Subject',
+            object_id=subject.pk,
+            reason=reason,
+        )
+        log_action(request.user, 'created', req,
+                   new_data={'object_type': 'Subject', 'object_id': subject.pk, 'reason': reason},
+                   institution=institution)
         return Response({'ok': True})
 
 
