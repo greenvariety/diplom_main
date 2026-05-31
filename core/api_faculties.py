@@ -1,10 +1,24 @@
 import re
+from datetime import date as date_type
 from django.db import IntegrityError
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Faculty, Student, Group, DeleteRequest
 from .utils import log_action
+
+
+def _parse_date(value):
+    """Converts 'YYYY-MM-DD' string to date object, returns None on failure."""
+    if not value:
+        return None
+    if hasattr(value, 'strftime'):
+        return value
+    try:
+        from datetime import datetime
+        return datetime.strptime(str(value)[:10], '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        return None
 
 
 def _has_latin(value):
@@ -16,7 +30,7 @@ def _faculty_data(f):
         'id': f.pk,
         'full_name': f.full_name,
         'short_name': f.short_name,
-        'created_at': f.created_at.strftime('%d.%m.%Y') if f.created_at else None,
+        'created_at': f.created_at.strftime('%d.%m.%Y') if f.created_at and hasattr(f.created_at, 'strftime') else None,
         'group_count': f.groups.count(),
         'student_count': Student.objects.filter(faculty=f).count(),
         'is_flagged': f.is_flagged,
@@ -54,7 +68,7 @@ class FacultiesView(APIView):
             return Response({'error': 'Нет активной организации'}, status=400)
         full_name = request.data.get('full_name', '').strip()
         short_name = request.data.get('short_name', '').strip()
-        created_at = request.data.get('created_at') or None
+        created_at = _parse_date(request.data.get('created_at'))
         if not full_name:
             return Response({'error': 'Введите полное название'}, status=400)
         if not short_name:
@@ -143,7 +157,7 @@ class FacultyDetailView(APIView):
         faculty.full_name = full_name
         faculty.short_name = short_name
         if 'created_at' in request.data:
-            faculty.created_at = request.data['created_at'] or None
+            faculty.created_at = _parse_date(request.data['created_at'])
         try:
             faculty.save()
         except (IntegrityError, ValueError) as e:
