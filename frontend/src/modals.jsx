@@ -234,7 +234,8 @@ function StudentFormModal({ data, onClose }) {
   if (!vals.last_name.trim()) errs.last_name = 'Обязательно';
   if (!vals.first_name.trim()) errs.first_name = 'Обязательно';
   if (!vals.birth_date) errs.birth_date = 'Обязательно';
-  else if (vals.birth_date > birthDateMax(15)) errs.birth_date = 'Студенту должно быть не менее 15 лет';
+  else if (vals.birth_date < '1900-01-01') errs.birth_date = 'Год рождения не может быть раньше 1900';
+  else if (vals.birth_date > birthDateMax(14)) errs.birth_date = 'Студенту должно быть не менее 14 лет';
   if (!vals.phone.trim()) errs.phone = 'Обязательно';
   else { const e = validatePhone(vals.phone); if (e) errs.phone = e; }
   if (!vals.email.trim()) errs.email = 'Обязательно';
@@ -340,7 +341,7 @@ function StudentFormModal({ data, onClose }) {
           </Field>
           <Field label="Отчество" className="field-full"><input className="input" value={vals.middle_name} onChange={e => set('middle_name', e.target.value)} maxLength={100} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); set('middle_name', (vals.middle_name + filterName(e.clipboardData.getData('text') || '')).slice(0, 100)); }} /></Field>
           <Field label="Дата рождения" required error={touched.birth_date && errs.birth_date}>
-            <input className={`input ${touched.birth_date && errs.birth_date ? 'is-error' : ''}`} type="date" value={vals.birth_date || ''} max={birthDateMax(15)} onChange={e => { set('birth_date', e.target.value); setTouched(t => ({ ...t, birth_date: 1 })); }} />
+            <input className={`input ${touched.birth_date && errs.birth_date ? 'is-error' : ''}`} type="date" value={vals.birth_date || ''} min="1900-01-01" max={birthDateMax(14)} onChange={e => { set('birth_date', e.target.value); setTouched(t => ({ ...t, birth_date: 1 })); }} />
           </Field>
         </div>
       </div>
@@ -427,6 +428,7 @@ function EmployeeFormModal({ data, onClose }) {
   if (!lastName.trim()) fieldErrs.last_name = 'Обязательно';
   if (!firstName.trim()) fieldErrs.first_name = 'Обязательно';
   if (!birthDate) fieldErrs.birth_date = 'Обязательно';
+  else if (birthDate < '1900-01-01') fieldErrs.birth_date = 'Год рождения не может быть раньше 1900';
   else if (birthDate > birthDateMax(18)) fieldErrs.birth_date = 'Сотруднику должно быть не менее 18 лет';
   if (!phone.trim()) fieldErrs.phone = 'Обязательно';
   else { const e = validatePhone(phone); if (e) fieldErrs.phone = e; }
@@ -531,7 +533,7 @@ function EmployeeFormModal({ data, onClose }) {
             <input className="input" value={middleName} onChange={e => setMiddleName(e.target.value)} maxLength={100} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); setMiddleName(p => (p + filterName(e.clipboardData.getData('text') || '')).slice(0, 100)); }} />
           </Field>
           <Field label="Дата рождения" required error={touched.birth_date && fieldErrs.birth_date}>
-            <input className={`input ${touched.birth_date && fieldErrs.birth_date ? 'is-error' : ''}`} type="date" value={birthDate} max={birthDateMax(18)} onChange={e => { setBirthDate(e.target.value); touch('birth_date'); }} />
+            <input className={`input ${touched.birth_date && fieldErrs.birth_date ? 'is-error' : ''}`} type="date" value={birthDate} min="1900-01-01" max={birthDateMax(18)} onChange={e => { setBirthDate(e.target.value); touch('birth_date'); }} />
           </Field>
         </div>
       </div>
@@ -631,14 +633,19 @@ function GroupFormModal({ data, onClose }) {
     api.get('/employees/?role_type=teacher').then(r => setEmployees(r.data)).catch(() => {});
   }, []);
 
+  const groupMaxYear = new Date().getFullYear() + 10;
+
   const save = async () => {
     if (!facultyId) { setErr('Выберите факультет'); return; }
     if (!year) { setErr('Укажите год начала'); return; }
+    const yr = parseInt(year, 10);
+    if (isNaN(yr) || yr < 1900) { setErr('Год не может быть раньше 1900'); return; }
+    if (yr > groupMaxYear) { setErr(`Год не может быть позже ${groupMaxYear}`); return; }
     setErr('');
     try {
       const payload = {
         faculty_id: parseInt(facultyId),
-        year: parseInt(year),
+        year: yr,
         headteacher_id: headteacherId ? parseInt(headteacherId) : null,
       };
       if (isEdit) {
@@ -671,7 +678,7 @@ function GroupFormModal({ data, onClose }) {
           </Field>
         )}
         <Field label="Год начала" required error={err && facultyId && !year ? err : null}>
-          <input className={`input ${err && facultyId && !year ? 'is-error' : ''}`} type="number" value={year} onChange={e => { setYear(e.target.value); setErr(''); }} min={2000} max={2099} />
+          <input className={`input ${err && facultyId && !year ? 'is-error' : ''}`} type="number" value={year} onChange={e => { setYear(e.target.value); setErr(''); }} min={1900} max={groupMaxYear} />
         </Field>
         <div className="field field-full">
           <label className="field-label">Классный руководитель</label>
@@ -696,6 +703,12 @@ function FacultyFormModal({ data, onClose }) {
   const [codeManual, setCodeManual] = useState(isEdit);
   const [errName, setErrName] = useState('');
   const [errCode, setErrCode] = useState('');
+  const [foundedYear, setFoundedYear] = useState(() => {
+    if (!faculty?.created_at) return '';
+    const parts = String(faculty.created_at).split('.');
+    return parts.length === 3 ? parts[2] : '';
+  });
+  const [errYear, setErrYear] = useState('');
 
   const isUC = (c) => c && ((c >= 'А' && c <= 'Я') || c === 'Ё');
   const isLC = (c) => c && ((c >= 'а' && c <= 'я') || c === 'ё');
@@ -705,14 +718,21 @@ function FacultyFormModal({ data, onClose }) {
   const save = async () => {
     if (!fullName.trim()) { setErrName('Введите полное название'); return; }
     if (!shortName.trim()) { setErrCode('Введите код факультета'); return; }
-    setErrName(''); setErrCode('');
+    if (foundedYear) {
+      const yr = parseInt(foundedYear, 10);
+      const maxYear = new Date().getFullYear() + 10;
+      if (isNaN(yr) || yr < 1900) { setErrYear('Год не может быть раньше 1900'); return; }
+      if (yr > maxYear) { setErrYear(`Год не может быть позже ${maxYear}`); return; }
+    }
+    setErrName(''); setErrCode(''); setErrYear('');
     try {
       const formattedName = autoName(fullName.trim());
+      const createdAtVal = foundedYear ? `${foundedYear}-01-01` : null;
       if (isEdit) {
-        await api.patch(`/faculties/${faculty.id}/`, { full_name: formattedName, short_name: shortName.trim() });
+        await api.patch(`/faculties/${faculty.id}/`, { full_name: formattedName, short_name: shortName.trim(), created_at: createdAtVal });
         toast.push('Факультет обновлён', { kind: 'ok' });
       } else {
-        await api.post('/faculties/', { full_name: formattedName, short_name: shortName.trim() });
+        await api.post('/faculties/', { full_name: formattedName, short_name: shortName.trim(), created_at: createdAtVal });
         toast.push('Факультет создан', { kind: 'ok' });
       }
       onDone && onDone();
@@ -737,6 +757,9 @@ function FacultyFormModal({ data, onClose }) {
         </Field>
         <Field label="Код (аббревиатура)" required error={errCode || null} hint={!isEdit && !codeManual ? 'Формируется автоматически по названию' : null}>
           <input className={`input ${errCode ? 'is-error' : ''}`} value={shortName} onChange={e => { setShortName(e.target.value.toUpperCase()); setCodeManual(true); setErrCode(''); }} maxLength={50} />
+        </Field>
+        <Field label="Год основания" error={errYear || null}>
+          <input className={`input ${errYear ? 'is-error' : ''}`} type="number" value={foundedYear} min={1900} max={new Date().getFullYear() + 10} onChange={e => { setFoundedYear(e.target.value); setErrYear(''); }} maxLength={4} />
         </Field>
       </div>
     </Modal>
@@ -779,7 +802,8 @@ function ParentFormModal({ data, onClose }) {
   const pErrs = {};
   if (!lastName.trim()) pErrs.last_name = 'Обязательно';
   if (!firstName.trim()) pErrs.first_name = 'Обязательно';
-  if (birthDate && birthDate > birthDateMax(18)) pErrs.birth_date = 'Опекуну должно быть не менее 18 лет';
+  if (birthDate && birthDate < '1900-01-01') pErrs.birth_date = 'Год рождения не может быть раньше 1900';
+  else if (birthDate && birthDate > birthDateMax(18)) pErrs.birth_date = 'Опекуну должно быть не менее 18 лет';
   if (!phone.trim()) pErrs.phone = 'Обязательно';
   else { const e = validatePhone(phone); if (e) pErrs.phone = e; }
   if (!email.trim()) pErrs.email = 'Обязательно';
@@ -879,7 +903,7 @@ function ParentFormModal({ data, onClose }) {
           <input className="input" value={middleName} onChange={e => setMiddleName(e.target.value)} maxLength={100} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); setMiddleName(p => (p + filterName(e.clipboardData.getData('text') || '')).slice(0, 100)); }} />
         </Field>
         <Field label="Дата рождения" error={touched.birth_date && pErrs.birth_date}>
-          <input className={`input ${touched.birth_date && pErrs.birth_date ? 'is-error' : ''}`} type="date" value={birthDate} max={birthDateMax(18)} onChange={e => { setBirthDate(e.target.value); touchP('birth_date'); }} />
+          <input className={`input ${touched.birth_date && pErrs.birth_date ? 'is-error' : ''}`} type="date" value={birthDate} min="1900-01-01" max={birthDateMax(18)} onChange={e => { setBirthDate(e.target.value); touchP('birth_date'); }} />
         </Field>
         {isStudentContext && !isEdit && (
           <Field label="Связь" required>
