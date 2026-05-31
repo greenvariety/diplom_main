@@ -536,7 +536,7 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
       <PageHead
         crumbs={[{ label: 'Студенты', href: true, onClick: () => onNavigate('students') }, { label: `${student.last_name} ${student.first_name}` }]}
         title={`${student.last_name} ${student.first_name} ${student.middle_name}`}
-        sub={`${student.faculty_short} · ${student.group_name || 'без группы'}`}
+        sub={currentUser?.role === 'teacher' ? (student.group_name || 'без группы') : `${student.faculty_short} · ${student.group_name || 'без группы'}`}
         actions={<>
           {['owner', 'admin'].includes(currentUser?.role) && (
             <button className="btn btn-secondary btn-sm" onClick={() => openModal('studentForm', { student, onDone: load })}>{I.pencil}Редактировать</button>
