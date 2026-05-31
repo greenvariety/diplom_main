@@ -159,6 +159,10 @@ class StudentsView(APIView):
         if phone_err:
             return Response({'error': phone_err, 'field': 'phone'}, status=400)
 
+        status = request.data.get('status', 'pending_review')
+        if group and status in ('pending_review', 'pending_enrollment'):
+            status = 'enrolled'
+
         student = Student.objects.create(
             institution=institution,
             last_name=last_name,
@@ -167,7 +171,7 @@ class StudentsView(APIView):
             birth_date=birth_date,
             phone=phone,
             email=email,
-            status=request.data.get('status', 'pending_review'),
+            status=status,
             faculty=faculty,
             group=group,
         )
@@ -266,7 +270,11 @@ class StudentDetailView(APIView):
             student.birth_date = request.data['birth_date'] or None
 
         if 'status' in request.data:
-            student.status = request.data['status']
+            new_status = request.data['status']
+            student.status = new_status
+            if new_status == 'expelled':
+                student.faculty = None
+                student.group = None
 
         if 'faculty_id' in request.data:
             fid = request.data['faculty_id']
@@ -283,6 +291,8 @@ class StudentDetailView(APIView):
                 try:
                     group = Group.objects.get(pk=gid, faculty__institution=institution)
                     student.group = group
+                    if student.status in ('pending_review', 'pending_enrollment'):
+                        student.status = 'enrolled'
                 except Group.DoesNotExist:
                     student.group = None
             else:
@@ -309,14 +319,16 @@ class StudentDetailView(APIView):
         # Owner, admin, and secretary can delete students directly
         if request.user.role not in ('owner', 'admin', 'secretary'):
             return Response({'error': 'Доступ запрещён'}, status=403)
+        student = _get_student(request, pk)
+        if not student:
+            return Response({'error': 'Не найдено'}, status=404)
+        if student.status in ('enrolled', 'pending_expulsion'):
+            return Response({'error': 'Нельзя удалить активного студента. Сначала проведите процедуру отчисления.'}, status=400)
         password = (request.data.get('password') or '').strip()
         if not password:
             return Response({'error': 'Введите пароль'}, status=400)
         if not request.user.check_password(password):
             return Response({'error': 'Неверный пароль'}, status=400)
-        student = _get_student(request, pk)
-        if not student:
-            return Response({'error': 'Не найдено'}, status=404)
         institution = request.user.institution
         log_action(request.user, 'deleted', student,
                    old_data={'full_name': str(student)},
@@ -346,42 +358,6 @@ class StudentDeleteRequestView(APIView):
         )
         log_action(request.user, 'created', req,
                    new_data={'object_type': 'Student', 'object_id': student.pk, 'reason': reason},
-                   institution=institution)
-        return Response({'ok': True})
-
-
-class StudentTransferView(APIView):
-    def post(self, request, pk):
-        err = _admin_only(request)
-        if err:
-            return err
-        institution = request.user.institution
-        if not institution:
-            return Response({'error': 'Нет активной организации'}, status=400)
-        try:
-            student = Student.objects.select_related('faculty', 'group').get(
-                pk=pk, institution=institution
-            )
-        except Student.DoesNotExist:
-            return Response({'error': 'Студент не найден'}, status=404)
-
-        group_id = request.data.get('group_id')
-        if not group_id:
-            return Response({'error': 'Укажите группу для перевода'}, status=400)
-        try:
-            new_group = Group.objects.get(pk=group_id, faculty__institution=institution)
-        except Group.DoesNotExist:
-            return Response({'error': 'Группа не найдена'}, status=404)
-
-        old_group_name = student.group.name if student.group else None
-        student.group = new_group
-        student.faculty = new_group.faculty
-        student.status = 'transferred'
-        student.save()
-
-        log_action(request.user, 'transferred', student,
-                   old_data={'group': old_group_name},
-                   new_data={'group': new_group.name, 'status': 'transferred'},
                    institution=institution)
         return Response({'ok': True})
 
@@ -472,53 +448,6 @@ class StudentParentDetailView(APIView):
                    old_data={'student': str(sp.student), 'parent': str(sp.parent)},
                    institution=institution)
         sp.delete()
-        return Response({'ok': True})
-
-
-class StudentTransferInstitutionView(APIView):
-    def post(self, request, pk):
-        if not request.user.is_owner:
-            return Response({'error': 'Доступ запрещён'}, status=403)
-        try:
-            student = Student.objects.select_related(
-                'faculty', 'group', 'institution'
-            ).get(pk=pk, institution__owner=request.user)
-        except Student.DoesNotExist:
-            return Response({'error': 'Студент не найден'}, status=404)
-
-        faculty_id = request.data.get('faculty_id')
-        if not faculty_id:
-            return Response({'error': 'Выберите факультет'}, status=400)
-        try:
-            target_faculty = Faculty.objects.select_related('institution').get(
-                pk=faculty_id, institution__owner=request.user
-            )
-        except Faculty.DoesNotExist:
-            return Response({'error': 'Факультет не найден'}, status=404)
-
-        target_group = None
-        group_id = request.data.get('group_id')
-        if group_id:
-            try:
-                target_group = Group.objects.get(pk=group_id, faculty=target_faculty)
-            except Group.DoesNotExist:
-                pass
-
-        old_inst = student.faculty.institution.name if student.faculty_id else '-'
-        old_fac = student.faculty.full_name if student.faculty_id else '-'
-        old_grp = student.group.name if student.group_id else None
-        institution = request.user.institution
-
-        student.faculty = target_faculty
-        student.group = target_group
-        student.status = 'transferred'
-        student.save()
-
-        log_action(request.user, 'transferred', student,
-                   old_data={'institution': old_inst, 'faculty': old_fac, 'group': old_grp},
-                   new_data={'institution': target_faculty.institution.name, 'faculty': target_faculty.full_name,
-                             'group': target_group.name if target_group else None, 'status': 'transferred'},
-                   institution=institution)
         return Response({'ok': True})
 
 

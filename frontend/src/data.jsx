@@ -45,12 +45,11 @@ const I = {
    ============================================================ */
 
 const STATUSES = {
-  enrolled:           { label: 'Зачислен',          cls: 'badge-ok' },
-  pending_review:     { label: 'На рассмотрении',   cls: 'badge-neutral' },
-  pending_enrollment: { label: 'Ожид. зачисления',  cls: 'badge-info' },
-  pending_expulsion:  { label: 'Ожид. отчисления',  cls: 'badge-warn' },
-  expelled:           { label: 'Отчислен',          cls: 'badge-bad' },
-  transferred:        { label: 'Переведён',         cls: 'badge-violet' },
+  enrolled:           { label: 'Активен',              cls: 'badge-ok' },
+  pending_review:     { label: 'На рассмотрении',      cls: 'badge-neutral' },
+  pending_enrollment: { label: 'Ожидание зачисления',  cls: 'badge-info' },
+  pending_expulsion:  { label: 'На отчислении',        cls: 'badge-warn' },
+  expelled:           { label: 'Отчислен',             cls: 'badge-bad' },
 };
 
 const STUDENTS = [
@@ -60,7 +59,7 @@ const STUDENTS = [
   { id: 4, last: 'Козлова',  first: 'Анна',     mid: 'Дмитриевна',   dob: '24.05.2005', phone: '+7 900 444-55-66', email: 'kozlova@edu.ru',   fac: 'ФИТ', group: '-',      status: 'pending_review',     av: 4 },
   { id: 5, last: 'Новиков',  first: 'Дмитрий',  mid: 'Олегович',     dob: '01.09.2003', phone: '-',                 email: '-',                 fac: 'ФЭ',  group: '-',      status: 'expelled',           av: 5 },
   { id: 6, last: 'Захарова', first: 'Ольга',    mid: 'Николаевна',   dob: '17.02.2004', phone: '+7 900 555-66-77', email: 'zaharova@edu.ru',  fac: 'ФИТ', group: 'ПИ-302', status: 'enrolled',           av: 6 },
-  { id: 7, last: 'Морозов',  first: 'Артём',    mid: 'Игоревич',     dob: '08.12.2004', phone: '+7 900 666-77-88', email: 'morozov@edu.ru',   fac: 'ФИТ', group: 'ПИ-302', status: 'transferred',        av: 7 },
+  { id: 7, last: 'Морозов',  first: 'Артём',    mid: 'Игоревич',     dob: '08.12.2004', phone: '+7 900 666-77-88', email: 'morozov@edu.ru',   fac: 'ФИТ', group: 'ПИ-302', status: 'expelled',           av: 7 },
   { id: 8, last: 'Волкова',  first: 'Екатерина',mid: 'Андреевна',    dob: '13.04.2005', phone: '+7 900 777-88-99', email: 'volkova@edu.ru',   fac: 'ФЭ',  group: 'ЭК-202', status: 'pending_enrollment', av: 8 },
 ];
 

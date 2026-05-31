@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useEffect } from 'react';
+﻿import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { STATUSES, STUDENTS, EMPLOYEES, GROUPS, FACULTIES, AUDIT, ORGS, I } from './data.jsx';
 import { Shell, PageHead, Badge, Avatar } from './shell.jsx';
 import { StatNumber, useToast, useDropdown, Field, EmptyState, SkeletonRows, LoadButton, Combobox, Pager, usePager, useSortable, SortHeader } from './utils.jsx';
@@ -451,14 +451,24 @@ function DashboardSecretary({ currentUser, onNavigate, onLogout, openModal }) {
    ============================================================ */
 function StatusDropdown({ value, onChange }) {
   const { open, setOpen, wrapRef } = useDropdown();
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const cur = STATUSES[value] || { label: value, cls: 'badge-neutral' };
+
+  const handleOpen = useCallback(() => {
+    if (wrapRef.current) {
+      const r = wrapRef.current.getBoundingClientRect();
+      setMenuPos({ top: r.bottom + 4, left: r.left });
+    }
+    setOpen(o => !o);
+  }, [wrapRef, setOpen]);
+
   return (
     <div ref={wrapRef} className="dd-wrap" style={{ display: 'inline-block' }}>
-      <span className={`badge ${cur.cls} is-clickable`} onClick={() => setOpen(o => !o)}>
+      <span className={`badge ${cur.cls} is-clickable`} onClick={handleOpen}>
         <span className="dot"></span>{cur.label}
       </span>
       {open && (
-        <div className="dd-menu" style={{ right: 'auto', left: 0, minWidth: 220 }}>
+        <div className="dd-menu" style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, right: 'auto', minWidth: 220 }}>
           {Object.entries(STATUSES).map(([k, v]) => (
             <div key={k} className="dd-item" onClick={() => { onChange && onChange(k); setOpen(false); }}>
               <span className={`badge ${v.cls}`} style={{ width: 'fit-content' }}><span className="dot"></span>{v.label}</span>
@@ -735,7 +745,6 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
         actions={<>
           {['owner', 'admin', 'secretary'].includes(currentUser?.role) && <>
             <button className="btn btn-secondary btn-sm" onClick={() => openModal('studentForm', { student, onDone: load })}>{I.pencil}Редактировать</button>
-            <button className="btn btn-secondary btn-sm" onClick={() => openModal('transfer', { student, currentUser, onDone: load })}>{I.swap}Перевести</button>
             <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: `${student.last_name} ${student.first_name}`, type: 'студента', url: `/students/${student.id}/`, onDone: () => onNavigate('students') })}>{I.trash}Удалить</button>
           </>}
         </>}
@@ -849,7 +858,6 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
                       <option value="create">Создание</option>
                       <option value="update">Изменение</option>
                       <option value="delete">Удаление</option>
-                      <option value="transfer">Перевод</option>
                     </select>
                   </div>
                   {auditLoading ? (
@@ -2246,7 +2254,6 @@ function AuditLog({ currentUser, openModal, onNavigate }) {
             <option value="create">Создание</option>
             <option value="update">Изменение</option>
             <option value="delete">Удаление</option>
-            <option value="transfer">Перевод</option>
           </select>
         </div>
         <div className="field">

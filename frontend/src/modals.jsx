@@ -1383,132 +1383,8 @@ function UserSetPasswordModal({ data, onClose }) {
 }
 
 /* ============================================================
-   Action modals - transfer, delete (with shake), approve, upload
+   Action modals - delete (with shake), approve, upload
    ============================================================ */
-function TransferModal({ data, onClose }) {
-  const { student, currentUser, onDone } = data || {};
-  const toast = useToast();
-  const isOwner = currentUser?.role === 'owner';
-
-  const [groups, setGroups] = useState([]);
-  const [groupId, setGroupId] = useState('');
-  const [touched, setTouched] = useState(false);
-  const [err, setErr] = useState('');
-
-  const [crossOrg, setCrossOrg] = useState(false);
-  const [orgs, setOrgs] = useState([]);
-  const [targetOrgId, setTargetOrgId] = useState('');
-  const [targetFaculties, setTargetFaculties] = useState([]);
-  const [targetFacultyId, setTargetFacultyId] = useState('');
-  const [targetGroups, setTargetGroups] = useState([]);
-  const [targetGroupId, setTargetGroupId] = useState('');
-
-  useEffect(() => {
-    api.get('/groups/').then(r => setGroups(r.data)).catch(() => {});
-    if (isOwner) {
-      api.get('/organizations/').then(r => setOrgs(r.data)).catch(() => {});
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!targetOrgId || !crossOrg) return;
-    setTargetFaculties([]); setTargetFacultyId(''); setTargetGroups([]); setTargetGroupId('');
-    api.get(`/faculties/?institution_id=${targetOrgId}`).then(r => setTargetFaculties(r.data)).catch(() => {});
-  }, [targetOrgId]);
-
-  useEffect(() => {
-    if (!targetFacultyId || !crossOrg) return;
-    setTargetGroups([]); setTargetGroupId('');
-    api.get(`/groups/?faculty_id=${targetFacultyId}&institution_id=${targetOrgId}`).then(r => setTargetGroups(r.data)).catch(() => {});
-  }, [targetFacultyId]);
-
-  const submit = async () => {
-    setTouched(true);
-    setErr('');
-    if (crossOrg) {
-      if (!targetOrgId) { toast.push('Выберите организацию', { kind: 'err' }); return; }
-      if (!targetFacultyId) { toast.push('Выберите факультет', { kind: 'err' }); return; }
-      try {
-        await api.post(`/students/${student.id}/transfer-institution/`, {
-          faculty_id: parseInt(targetFacultyId),
-          group_id: targetGroupId ? parseInt(targetGroupId) : null,
-        });
-        toast.push(`${student.last_name} переведён в другую организацию`, { kind: 'ok' });
-        onDone && onDone();
-        onClose && onClose();
-      } catch (e) {
-        setErr(e.response?.data?.error || 'Ошибка при переводе');
-      }
-    } else {
-      if (!groupId) { toast.push('Выберите новую группу', { kind: 'err' }); return; }
-      try {
-        await api.post(`/students/${student.id}/transfer/`, { group_id: parseInt(groupId) });
-        toast.push(`${student.last_name} переведён`, { kind: 'ok' });
-        onDone && onDone();
-        onClose && onClose();
-      } catch (e) {
-        setErr(e.response?.data?.error || 'Ошибка при переводе');
-      }
-    }
-  };
-
-  return (
-    <Modal title="Перевод студента"
-      sub={`${student?.last_name || ''} ${student?.first_name || ''} - текущая группа: ${student?.group_name || 'не назначена'}`}
-      onClose={onClose}
-      footer={<>
-        <button className="btn btn-secondary" onClick={onClose}>Отмена</button>
-        <LoadButton className="btn btn-primary" onClick={submit}>{I.swap}Перевести</LoadButton>
-      </>}>
-      <p style={{ fontSize: 13, color: '#6c757d', marginBottom: 12 }}>При переводе студент получает статус «Переведён» и привязывается к новой группе и факультету.</p>
-      {isOwner && (
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, cursor: 'pointer', fontSize: 14 }}>
-          <input type="checkbox" checked={crossOrg} onChange={e => { setCrossOrg(e.target.checked); setErr(''); setTouched(false); setGroupId(''); setTargetOrgId(''); setTargetFacultyId(''); setTargetGroupId(''); }} />
-          Перевод в другую организацию
-        </label>
-      )}
-      {!crossOrg ? (
-        <Field label="Новая группа" required error={touched && !groupId ? 'Выберите группу' : null}>
-          <select className={`select ${touched && !groupId ? 'is-error' : ''}`} value={groupId} onChange={e => setGroupId(e.target.value)}>
-            <option value="">- Выберите группу -</option>
-            {groups.filter(g => !student?.group_id || g.id !== student.group_id).map(g => (
-              <option key={g.id} value={g.id}>{g.name} - {g.faculty_name}</option>
-            ))}
-          </select>
-        </Field>
-      ) : (
-        <>
-          <Field label="Организация" required error={touched && !targetOrgId ? 'Выберите организацию' : null}>
-            <select className={`select ${touched && !targetOrgId ? 'is-error' : ''}`} value={targetOrgId} onChange={e => setTargetOrgId(e.target.value)}>
-              <option value="">- Выберите организацию -</option>
-              {orgs.map(o => (
-                <option key={o.id} value={o.id}>{o.name}</option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Факультет" required error={touched && !targetFacultyId ? 'Выберите факультет' : null}>
-            <select className={`select ${touched && !targetFacultyId ? 'is-error' : ''}`} value={targetFacultyId} onChange={e => setTargetFacultyId(e.target.value)} disabled={!targetOrgId}>
-              <option value="">- Выберите факультет -</option>
-              {targetFaculties.map(f => (
-                <option key={f.id} value={f.id}>{f.full_name}</option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Группа">
-            <select className="select" value={targetGroupId} onChange={e => setTargetGroupId(e.target.value)} disabled={!targetFacultyId}>
-              <option value="">- Без группы -</option>
-              {targetGroups.map(g => (
-                <option key={g.id} value={g.id}>{g.name}</option>
-              ))}
-            </select>
-          </Field>
-        </>
-      )}
-      {err && <div style={{ color: 'var(--bad-fg)', fontSize: 13, marginTop: 8 }}>{err}</div>}
-    </Modal>
-  );
-}
-
 function DeleteConfirmModal({ data, onClose }) {
   const { name, type, studentId, onDone } = data || {};
   const toast = useToast();
@@ -1921,7 +1797,6 @@ function StudentDetailModal({ data, onClose, openModal }) {
       footer={<>
         <button className="btn btn-danger" onClick={() => openModal('deleteConfirm', { name: `${s.last} ${s.first}`, type: 'студента' })}>{I.trash}Удалить</button>
         <div style={{ flex: 1 }}></div>
-        <button className="btn btn-secondary" onClick={() => openModal('transfer', s)}>{I.swap}Перевести</button>
         <button className="btn btn-primary" onClick={() => openModal('studentForm', s)}>{I.pencil}Редактировать</button>
       </>}>
       <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 20 }}>
@@ -2568,7 +2443,7 @@ function NoteModal({ data, onClose }) {
 export {
   StudentFormModal, EmployeeFormModal, GroupFormModal, FacultyFormModal,
   ParentFormModal, ParentAddStudentModal, SubjectFormModal, PositionFormModal, UserFormModal, UserSetPasswordModal,
-  TransferModal, DeleteConfirmModal, ApproveDeleteModal, UploadDocModal,
+  DeleteConfirmModal, ApproveDeleteModal, UploadDocModal,
   AssignSubjectModal, EmployeeAssignSubjectModal, EmployeeAddTaughtSubjectModal, EmployeeSetHeadteacherModal, AuditDiffModal, LogoutModal,
   StudentDetailModal, GroupDetailModal, FacultyDetailModal, EmployeeDetailModal,
   OrgFormModal, OrgDeleteConfirmModal, OwnerDirectDeleteModal,

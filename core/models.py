@@ -168,11 +168,10 @@ class Group(models.Model):
 class Student(models.Model):
     STATUS_CHOICES = [
         ('pending_review', 'На рассмотрении'),
-        ('pending_enrollment', 'На зачисление'),
-        ('enrolled', 'Зачислен'),
-        ('pending_expulsion', 'На отчисление'),
+        ('pending_enrollment', 'Ожидание зачисления'),
+        ('enrolled', 'Активен'),
+        ('pending_expulsion', 'На отчислении'),
         ('expelled', 'Отчислен'),
-        ('transferred', 'Переведён'),
     ]
 
     last_name = models.CharField(max_length=100, verbose_name='Фамилия')
