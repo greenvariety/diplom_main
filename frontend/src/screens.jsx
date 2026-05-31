@@ -602,13 +602,13 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
             </div>
           </div>
 
-          <div className="card">
-            <div className="card-head">
-              <div className="title">Документы</div>
-              {currentUser?.role !== 'teacher' && <button className="btn btn-secondary btn-sm" onClick={() => openModal('uploadDoc', { ownerId: studentId, ownerType: 'student', onDone: load })}>{I.upload}Загрузить</button>}
-            </div>
-            <div className="card-body">
-              {currentUser?.role !== 'teacher' && (
+          {currentUser?.role !== 'teacher' && (
+            <div className="card">
+              <div className="card-head">
+                <div className="title">Документы</div>
+                <button className="btn btn-secondary btn-sm" onClick={() => openModal('uploadDoc', { ownerId: studentId, ownerType: 'student', onDone: load })}>{I.upload}Загрузить</button>
+              </div>
+              <div className="card-body">
                 <div className={`dropzone ${over ? 'is-over' : ''}`} style={{ marginBottom: 12, padding: 16 }}
                   onDragOver={e => { e.preventDefault(); setOver(true); }}
                   onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setOver(false); }}
@@ -618,27 +618,27 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
                     {over ? 'Отпустите для загрузки' : 'Перетащите файлы сюда или нажмите «Загрузить»'}
                   </div>
                 </div>
-              )}
-              {student.documents.length === 0 ? (
-                <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: '8px 0' }}>Документы не загружены</div>
-              ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                  {student.documents.map(d => (
-                    <div key={d.id} className="doc-tile" style={{ position: 'relative' }}>
-                      <a href={d.file_url} target="_blank" rel="noreferrer" style={{ display: 'contents' }}>
-                        <div className="doc-icon">{I.doc}</div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div className="doc-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</div>
-                          <div className="doc-meta">{d.uploaded_at}</div>
-                        </div>
-                      </a>
-                      {currentUser?.role !== 'teacher' && <button className="btn btn-ghost btn-icon btn-sm" style={{ position: 'absolute', top: 4, right: 4 }} onClick={() => handleDeleteDoc(d.id)}>{I.x}</button>}
-                    </div>
-                  ))}
-                </div>
-              )}
+                {student.documents.length === 0 ? (
+                  <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: '8px 0' }}>Документы не загружены</div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                    {student.documents.map(d => (
+                      <div key={d.id} className="doc-tile" style={{ position: 'relative' }}>
+                        <a href={d.file_url} target="_blank" rel="noreferrer" style={{ display: 'contents' }}>
+                          <div className="doc-icon">{I.doc}</div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div className="doc-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</div>
+                            <div className="doc-meta">{d.uploaded_at}</div>
+                          </div>
+                        </a>
+                        <button className="btn btn-ghost btn-icon btn-sm" style={{ position: 'absolute', top: 4, right: 4 }} onClick={() => handleDeleteDoc(d.id)}>{I.x}</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
         </div>
       </div>
@@ -1425,13 +1425,16 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
         <div className="card" style={{ marginBottom: 16 }}>
           <table className="tbl">
             <tbody>
-              <tr className="row-link" onClick={() => onNavigate('employee-detail', { employeeId: group.headteacher_id })}>
+              <tr
+                className={currentUser?.role !== 'teacher' ? 'row-link' : ''}
+                onClick={currentUser?.role !== 'teacher' ? () => onNavigate('employee-detail', { employeeId: group.headteacher_id }) : undefined}
+              >
                 <td className="muted" style={{ width: 32 }}>{I.user}</td>
                 <td className="muted" style={{ width: 180 }}>Классный руководитель</td>
                 <td className="fwm">
                   {group.headteacher_name}
                 </td>
-                <td style={{ width: 32 }}>{I.chevr}</td>
+                <td style={{ width: 32 }}>{currentUser?.role !== 'teacher' ? I.chevr : null}</td>
               </tr>
             </tbody>
           </table>
@@ -1471,7 +1474,7 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
           <div className="card">
             <div className="card-head">
               <div className="title">Предметы<span className="muted" style={{ fontWeight: 700 }}>: {group.subjects.length}</span></div>
-              <button className="btn btn-secondary btn-sm" onClick={() => openModal('assignSubject', { groupId, onDone: load })}>{I.plus}</button>
+              {currentUser?.role !== 'teacher' && <button className="btn btn-secondary btn-sm" onClick={() => openModal('assignSubject', { groupId, onDone: load })}>{I.plus}</button>}
             </div>
             <div className="card-body" style={{ display: 'grid', gap: 8 }}>
               {group.subjects.length === 0 ? (
@@ -1480,11 +1483,15 @@ function GroupDetail({ currentUser, openModal, onNavigate, groupId }) {
                 <div key={a.id} style={{ borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center' }}>
                   <div style={{ flex: 1, padding: '8px 0' }}>
                     <div className="fwm" style={{ fontSize: 13, cursor: 'pointer' }} onClick={() => onNavigate('subject-detail', { subjectId: a.subject_id })}>{a.subject_name}</div>
-                    <div className="muted" style={{ fontSize: 11, cursor: 'pointer' }} onClick={() => onNavigate('employee-detail', { employeeId: a.employee_id })}>
+                    <div
+                      className="muted"
+                      style={{ fontSize: 11, cursor: currentUser?.role !== 'teacher' ? 'pointer' : 'default' }}
+                      onClick={currentUser?.role !== 'teacher' ? () => onNavigate('employee-detail', { employeeId: a.employee_id }) : undefined}
+                    >
                       {a.employee_name}
                     </div>
                   </div>
-                  <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleRemoveSubject(a.id)}>{I.x}</button>
+                  {currentUser?.role !== 'teacher' && <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleRemoveSubject(a.id)}>{I.x}</button>}
                 </div>
               ))}
             </div>
@@ -2395,7 +2402,11 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId, filterEm
                     {sortSubjTeachers.sortFn(uniqueTeachers, {
                       full_name: t => t.full_name || '',
                     }).map(t => (
-                      <tr key={t.id} className="row-link" onClick={() => onNavigate('employee-detail', { employeeId: t.id })}>
+                      <tr
+                        key={t.id}
+                        className={currentUser?.role !== 'teacher' ? 'row-link' : ''}
+                        onClick={currentUser?.role !== 'teacher' ? () => onNavigate('employee-detail', { employeeId: t.id }) : undefined}
+                      >
                         <td className="fwm">{t.full_name}</td>
                         <td onClick={e => e.stopPropagation()}>
                           {['owner', 'admin'].includes(currentUser?.role) && (
