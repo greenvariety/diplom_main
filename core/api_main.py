@@ -1,6 +1,6 @@
 ﻿from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import Student, Employee, Faculty, AuditLog, DeleteRequest, Group, Subject, Parent, Position, User
+from .models import Student, Employee, Faculty, AuditLog, DeleteRequest, Group, Subject, Parent, Position, User, GroupSubjectEmployee
 from .utils import check_person_email_unique, check_person_phone_unique
 
 
@@ -47,6 +47,7 @@ class MeView(APIView):
             'role': user.role,
             'photo': request.build_absolute_uri(user.photo.url) if user.photo else None,
             'password_changed_at': user.password_changed_at.isoformat() if user.password_changed_at else None,
+            'employee_id': user.employee.id if user.employee else None,
             'institution': {
                 'id': institution.pk,
                 'name': institution.name,
@@ -123,3 +124,16 @@ class DashboardView(APIView):
             },
             'recent_audit': recent_audit,
         })
+
+
+class TeacherMySubjectsView(APIView):
+    def get(self, request):
+        employee = getattr(request.user, 'employee', None)
+        if not employee:
+            return Response([])
+        subjects = employee.taught_subjects.all().order_by('name')
+        result = []
+        for s in subjects:
+            groups_count = GroupSubjectEmployee.objects.filter(employee=employee, subject=s).count()
+            result.append({'id': s.id, 'name': s.name, 'groups_count': groups_count})
+        return Response(result)

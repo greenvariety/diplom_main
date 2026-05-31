@@ -185,8 +185,9 @@ const NAV_BY_ROLE = {
   teacher: [
     { section: 'Главное', items: [{ key: 'dashboard', label: 'Дашборд', icon: I.dashboard }] },
     { section: 'Мои данные', items: [
-      { key: 'groups',   label: 'Мои группы',   icon: I.users },
-      { key: 'students', label: 'Мои студенты', icon: I.badge },
+      { key: 'my-subjects', label: 'Мои предметы', icon: I.book },
+      { key: 'groups',      label: 'Мои группы',   icon: I.users },
+      { key: 'students',    label: 'Мои студенты', icon: I.badge },
     ]},
   ],
 };

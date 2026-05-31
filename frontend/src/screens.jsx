@@ -2327,9 +2327,11 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId, filterEm
     : subject.assignments;
 
   return (
-    <Shell currentUser={currentUser} active="subjects" onNavigate={onNavigate} openModal={openModal}>
+    <Shell currentUser={currentUser} active={filterEmployeeId && currentUser?.role === 'teacher' ? 'my-subjects' : 'subjects'} onNavigate={onNavigate} openModal={openModal}>
       <PageHead
-        crumbs={[{ label: 'Предметы', href: true, onClick: () => onNavigate('subjects') }, { label: subject.name }]}
+        crumbs={filterEmployeeId && currentUser?.role === 'teacher'
+          ? [{ label: 'Мои предметы', href: true, onClick: () => onNavigate('my-subjects') }, { label: subject.name }]
+          : [{ label: 'Предметы', href: true, onClick: () => onNavigate('subjects') }, { label: subject.name }]}
         title={subject.name}
         actions={!filterEmployeeId ? <>
           <button className="btn btn-secondary btn-sm" onClick={() => openModal('subjectForm', { subject, onDone: load })}>{I.pencil}Редактировать</button>
@@ -2366,23 +2368,30 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId, filterEm
                   {sortSubjGroups.sortFn(filteredAssignments, {
                     group_name: a => a.group_name || '',
                     employee_name: a => a.employee_name || '',
-                  }).map(a => (
-                    <tr key={a.id} className="row-link" onClick={() => onNavigate('group-detail', { groupId: a.group_id })}>
-                      <td className="fwm">{a.group_name}</td>
-                      {!filterEmployeeId && <td className="muted">{a.employee_name}</td>}
-                      {!filterEmployeeId && ['owner', 'admin'].includes(currentUser?.role) && (
-                        <td onClick={e => e.stopPropagation()}>
-                          <button className="btn btn-ghost btn-icon btn-sm" title="Убрать" onClick={async () => {
-                            try {
-                              await api.delete(`/groups/${a.group_id}/subjects/${a.id}/`);
-                              load();
-                            } catch { toast.push('Ошибка при удалении', { kind: 'err' }); }
-                          }}>{I.x}</button>
-                        </td>
-                      )}
-                      {filterEmployeeId && <td>{I.chevr}</td>}
-                    </tr>
-                  ))}
+                  }).map(a => {
+                    const teacherReadonly = filterEmployeeId && currentUser?.role === 'teacher';
+                    return (
+                      <tr
+                        key={a.id}
+                        className={teacherReadonly ? '' : 'row-link'}
+                        onClick={teacherReadonly ? undefined : () => onNavigate('group-detail', { groupId: a.group_id })}
+                      >
+                        <td className="fwm">{a.group_name}</td>
+                        {!filterEmployeeId && <td className="muted">{a.employee_name}</td>}
+                        {!filterEmployeeId && ['owner', 'admin'].includes(currentUser?.role) && (
+                          <td onClick={e => e.stopPropagation()}>
+                            <button className="btn btn-ghost btn-icon btn-sm" title="Убрать" onClick={async () => {
+                              try {
+                                await api.delete(`/groups/${a.group_id}/subjects/${a.id}/`);
+                                load();
+                              } catch { toast.push('Ошибка при удалении', { kind: 'err' }); }
+                            }}>{I.x}</button>
+                          </td>
+                        )}
+                        {filterEmployeeId && !teacherReadonly && <td>{I.chevr}</td>}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}
@@ -2569,6 +2578,53 @@ function PositionList({ currentUser, openModal, onNavigate }) {
   );
 }
 
+function TeacherMySubjects({ currentUser, openModal, onNavigate }) {
+  const [subjects, setSubjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const sort = useSortable({ key: 'name', dir: 'asc' }, 'teacher-my-subjects');
+
+  useEffect(() => {
+    api.get('/teacher/my-subjects/').then(r => {
+      setSubjects(r.data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
+  return (
+    <Shell currentUser={currentUser} active="my-subjects" onNavigate={onNavigate} openModal={openModal}>
+      <PageHead title="Мои предметы" sub={loading ? 'Загрузка…' : `Всего: ${subjects.length}`} />
+      {loading ? (
+        <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>Загрузка…</div>
+      ) : subjects.length === 0 ? (
+        <div className="card"><div className="card-body">
+          <EmptyState icon={I.book} title="Предметы не назначены" sub="Вам ещё не назначены предметы" />
+        </div></div>
+      ) : (
+        <div className="card">
+          <div className="card-body flush">
+            <table className="tbl">
+              <thead><tr>
+                <SortHeader k="name" sort={sort}>Предмет</SortHeader>
+                <th style={{ width: 120 }}>Групп</th>
+                <th style={{ width: 32 }}></th>
+              </tr></thead>
+              <tbody>
+                {sort.sortFn(subjects, { name: s => s.name || '' }).map(s => (
+                  <tr key={s.id} className="row-link" onClick={() => onNavigate('subject-detail', { subjectId: s.id, filterEmployeeId: currentUser?.employee_id })}>
+                    <td className="fwm">{s.name}</td>
+                    <td className="muted">{s.groups_count}</td>
+                    <td>{I.chevr}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </Shell>
+  );
+}
+
 export {
   DashboardOwner, DashboardSuper, DashboardAdmin, DashboardTeacher, DashboardSecretary,
   OrganizationList,
@@ -2578,4 +2634,5 @@ export {
   FacultyList, FacultyDetail,
   UserList, DeleteRequests, AuditLog,
   ParentList, ParentDetail, SubjectList, SubjectDetail, PositionList,
+  TeacherMySubjects,
 };
