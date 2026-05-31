@@ -15,7 +15,6 @@ def _student_data(s):
         'birth_date': (s.birth_date.isoformat() if hasattr(s.birth_date, 'isoformat') else str(s.birth_date)) if s.birth_date else None,
         'phone': s.phone,
         'email': s.email,
-        'status': s.status,
         'faculty_id': s.faculty_id,
         'faculty_name': s.faculty.full_name if s.faculty_id else '',
         'faculty_short': s.faculty.short_name if s.faculty_id else '',
@@ -24,7 +23,7 @@ def _student_data(s):
         'photo': s.photo.url if s.photo else None,
         'parent_count': getattr(s, 'parent_count', None),
         'is_flagged': s.is_flagged,
-        'warn_incomplete': not all([s.birth_date, s.phone, s.email]) or (s.status != 'expelled' and not s.group_id),
+        'warn_incomplete': not all([s.birth_date, s.phone, s.email]) or not s.group_id,
         'has_pending_delreq': getattr(s, 'has_pending_delreq', False),
         'has_note': getattr(s, 'has_note', False),
     }
@@ -83,10 +82,6 @@ class StudentsView(APIView):
                 Q(middle_name__icontains=search) |
                 Q(group__faculty__short_name__icontains=search)
             )
-
-        status = request.query_params.get('status', '')
-        if status:
-            qs = qs.filter(status=status)
 
         faculty_id = request.query_params.get('faculty_id', '')
         if faculty_id:
@@ -159,10 +154,6 @@ class StudentsView(APIView):
         if phone_err:
             return Response({'error': phone_err, 'field': 'phone'}, status=400)
 
-        status = request.data.get('status', 'pending_review')
-        if group and status in ('pending_review', 'pending_enrollment'):
-            status = 'enrolled'
-
         student = Student.objects.create(
             institution=institution,
             last_name=last_name,
@@ -171,7 +162,6 @@ class StudentsView(APIView):
             birth_date=birth_date,
             phone=phone,
             email=email,
-            status=status,
             faculty=faculty,
             group=group,
         )
@@ -180,7 +170,7 @@ class StudentsView(APIView):
             student.photo = photo
             student.save(update_fields=['photo'])
         log_action(request.user, 'created', student,
-                   new_data={'full_name': str(student), 'status': student.status},
+                   new_data={'full_name': str(student)},
                    institution=institution)
         return Response(_student_data(student), status=201)
 
@@ -249,7 +239,6 @@ class StudentDetailView(APIView):
             'middle_name': student.middle_name, 'phone': student.phone,
             'email': student.email,
             'birth_date': str(student.birth_date) if student.birth_date else None,
-            'status': student.status,
         }
 
         for field in ('last_name', 'first_name', 'middle_name', 'phone', 'email'):
@@ -269,13 +258,6 @@ class StudentDetailView(APIView):
         if 'birth_date' in request.data:
             student.birth_date = request.data['birth_date'] or None
 
-        if 'status' in request.data:
-            new_status = request.data['status']
-            student.status = new_status
-            if new_status == 'expelled':
-                student.faculty = None
-                student.group = None
-
         if 'faculty_id' in request.data:
             fid = request.data['faculty_id']
             if fid:
@@ -291,8 +273,6 @@ class StudentDetailView(APIView):
                 try:
                     group = Group.objects.get(pk=gid, faculty__institution=institution)
                     student.group = group
-                    if student.status in ('pending_review', 'pending_enrollment'):
-                        student.status = 'enrolled'
                 except Group.DoesNotExist:
                     student.group = None
             else:
@@ -310,7 +290,6 @@ class StudentDetailView(APIView):
                        'middle_name': student.middle_name, 'phone': student.phone,
                        'email': student.email,
                        'birth_date': str(student.birth_date) if student.birth_date else None,
-                       'status': student.status,
                    },
                    institution=institution)
         return Response(_student_data(student))
@@ -322,8 +301,6 @@ class StudentDetailView(APIView):
         student = _get_student(request, pk)
         if not student:
             return Response({'error': 'Не найдено'}, status=404)
-        if student.status in ('enrolled', 'pending_expulsion'):
-            return Response({'error': 'Нельзя удалить активного студента. Сначала проведите процедуру отчисления.'}, status=400)
         password = (request.data.get('password') or '').strip()
         if not password:
             return Response({'error': 'Введите пароль'}, status=400)

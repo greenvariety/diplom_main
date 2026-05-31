@@ -44,23 +44,15 @@ const I = {
    Demo data
    ============================================================ */
 
-const STATUSES = {
-  enrolled:           { label: 'Активен',              cls: 'badge-ok' },
-  pending_review:     { label: 'На рассмотрении',      cls: 'badge-neutral' },
-  pending_enrollment: { label: 'Ожидание зачисления',  cls: 'badge-info' },
-  pending_expulsion:  { label: 'На отчислении',        cls: 'badge-warn' },
-  expelled:           { label: 'Отчислен',             cls: 'badge-bad' },
-};
-
 const STUDENTS = [
-  { id: 1, last: 'Иванов',   first: 'Иван',     mid: 'Иванович',     dob: '15.03.2004', phone: '+7 900 123-45-67', email: 'ivanov@edu.ru',    fac: 'ФИТ', group: 'ПИ-301', status: 'enrolled',           av: 1 },
-  { id: 2, last: 'Петрова',  first: 'Мария',    mid: 'Сергеевна',    dob: '02.07.2004', phone: '+7 900 222-33-44', email: 'petrova@edu.ru',   fac: 'ФИТ', group: 'ПИ-301', status: 'enrolled',           av: 2 },
-  { id: 3, last: 'Сидоров',  first: 'Алексей',  mid: 'Петрович',     dob: '11.11.2003', phone: '+7 900 333-44-55', email: 'sidorov@edu.ru',   fac: 'ФЭ',  group: 'ЭК-201', status: 'pending_expulsion',  av: 3 },
-  { id: 4, last: 'Козлова',  first: 'Анна',     mid: 'Дмитриевна',   dob: '24.05.2005', phone: '+7 900 444-55-66', email: 'kozlova@edu.ru',   fac: 'ФИТ', group: '-',      status: 'pending_review',     av: 4 },
-  { id: 5, last: 'Новиков',  first: 'Дмитрий',  mid: 'Олегович',     dob: '01.09.2003', phone: '-',                 email: '-',                 fac: 'ФЭ',  group: '-',      status: 'expelled',           av: 5 },
-  { id: 6, last: 'Захарова', first: 'Ольга',    mid: 'Николаевна',   dob: '17.02.2004', phone: '+7 900 555-66-77', email: 'zaharova@edu.ru',  fac: 'ФИТ', group: 'ПИ-302', status: 'enrolled',           av: 6 },
-  { id: 7, last: 'Морозов',  first: 'Артём',    mid: 'Игоревич',     dob: '08.12.2004', phone: '+7 900 666-77-88', email: 'morozov@edu.ru',   fac: 'ФИТ', group: 'ПИ-302', status: 'expelled',           av: 7 },
-  { id: 8, last: 'Волкова',  first: 'Екатерина',mid: 'Андреевна',    dob: '13.04.2005', phone: '+7 900 777-88-99', email: 'volkova@edu.ru',   fac: 'ФЭ',  group: 'ЭК-202', status: 'pending_enrollment', av: 8 },
+  { id: 1, last: 'Иванов',   first: 'Иван',     mid: 'Иванович',     dob: '15.03.2004', phone: '+7 900 123-45-67', email: 'ivanov@edu.ru',    fac: 'ФИТ', group: 'ПИ-301', av: 1 },
+  { id: 2, last: 'Петрова',  first: 'Мария',    mid: 'Сергеевна',    dob: '02.07.2004', phone: '+7 900 222-33-44', email: 'petrova@edu.ru',   fac: 'ФИТ', group: 'ПИ-301', av: 2 },
+  { id: 3, last: 'Сидоров',  first: 'Алексей',  mid: 'Петрович',     dob: '11.11.2003', phone: '+7 900 333-44-55', email: 'sidorov@edu.ru',   fac: 'ФЭ',  group: 'ЭК-201', av: 3 },
+  { id: 4, last: 'Козлова',  first: 'Анна',     mid: 'Дмитриевна',   dob: '24.05.2005', phone: '+7 900 444-55-66', email: 'kozlova@edu.ru',   fac: 'ФИТ', group: '-',      av: 4 },
+  { id: 5, last: 'Новиков',  first: 'Дмитрий',  mid: 'Олегович',     dob: '01.09.2003', phone: '-',                 email: '-',                 fac: 'ФЭ',  group: '-',      av: 5 },
+  { id: 6, last: 'Захарова', first: 'Ольга',    mid: 'Николаевна',   dob: '17.02.2004', phone: '+7 900 555-66-77', email: 'zaharova@edu.ru',  fac: 'ФИТ', group: 'ПИ-302', av: 6 },
+  { id: 7, last: 'Морозов',  first: 'Артём',    mid: 'Игоревич',     dob: '08.12.2004', phone: '+7 900 666-77-88', email: 'morozov@edu.ru',   fac: 'ФИТ', group: 'ПИ-302', av: 7 },
+  { id: 8, last: 'Волкова',  first: 'Екатерина',mid: 'Андреевна',    dob: '13.04.2005', phone: '+7 900 777-88-99', email: 'volkova@edu.ru',   fac: 'ФЭ',  group: 'ЭК-202', av: 8 },
 ];
 
 const EMPLOYEES = [
@@ -101,4 +93,4 @@ const ORGS = [
   { code: 'КГ-2', name: 'Колледж №2', students: 0,   employees: 0,  active: false },
 ];
 
-export { STATUSES, STUDENTS, EMPLOYEES, GROUPS, FACULTIES, AUDIT, ORGS, I };
+export { STUDENTS, EMPLOYEES, GROUPS, FACULTIES, AUDIT, ORGS, I };

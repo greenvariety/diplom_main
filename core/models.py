@@ -157,7 +157,7 @@ class Group(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.pk and self.faculty_id:
-            count = Group.objects.filter(faculty_id=self.faculty_id).count()
+            count = Group.objects.filter(faculty_id=self.faculty_id, year=self.year).count()
             self.group_number = count + 1
         super().save(*args, **kwargs)
 
@@ -170,14 +170,6 @@ class Group(models.Model):
 # ---------------------------------------------------------------------------
 
 class Student(models.Model):
-    STATUS_CHOICES = [
-        ('pending_review', 'На рассмотрении'),
-        ('pending_enrollment', 'Ожидание зачисления'),
-        ('enrolled', 'Активен'),
-        ('pending_expulsion', 'На отчислении'),
-        ('expelled', 'Отчислен'),
-    ]
-
     last_name = models.CharField(max_length=100, verbose_name='Фамилия')
     first_name = models.CharField(max_length=100, verbose_name='Имя')
     middle_name = models.CharField(max_length=100, blank=True, verbose_name='Отчество')
@@ -185,10 +177,6 @@ class Student(models.Model):
     phone = models.CharField(max_length=20, blank=True, verbose_name='Телефон')
     email = models.EmailField(blank=True, verbose_name='Email')
     photo = models.ImageField(upload_to='students/', null=True, blank=True, verbose_name='Фото')
-    status = models.CharField(
-        max_length=30, choices=STATUS_CHOICES, default='pending_review',
-        verbose_name='Статус'
-    )
     is_flagged = models.BooleanField(default=False, verbose_name='Отмечено')
     institution = models.ForeignKey(
         'Institution', on_delete=models.CASCADE, null=True, blank=True,

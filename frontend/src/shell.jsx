@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect, useRef } from 'react';
-import { I, STATUSES } from './data.jsx';
+import { I } from './data.jsx';
 import { useDropdown, useToast } from './utils.jsx';
 import api from './api.js';
 
@@ -7,11 +7,7 @@ import api from './api.js';
    Reusable bits
    ============================================================ */
 
-function Badge({ status, children, className = '' }) {
-  if (status) {
-    const s = STATUSES[status] || { label: status, cls: 'badge-neutral' };
-    return <span className={`badge ${s.cls} ${className}`}><span className="dot"></span>{s.label}</span>;
-  }
+function Badge({ children, className = '' }) {
   return <span className={`badge badge-neutral ${className}`}>{children}</span>;
 }
 
@@ -239,7 +235,11 @@ function Shell({ currentUser, role: roleProp, active, onNavigate, onLogout, open
               onClick={() => openModal && openModal('orgForm', { org: currentUser?.institution || null })}
               title="Настройки организации"
             >
-              {I.building}
+              {currentUser?.institution?.photo ? (
+                <span style={{ width: 40, height: 40, borderRadius: 8, overflow: 'hidden', flexShrink: 0, display: 'inline-block', border: '1px solid var(--border)' }}>
+                  <img src={currentUser.institution.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                </span>
+              ) : I.building}
               <strong style={{ color: 'var(--text)' }}>{institutionName || 'Не задана'}</strong>
               {I.pencil}
             </button>

@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState, useRef } from 'react';
-import { STATUSES, STUDENTS, GROUPS, FACULTIES, EMPLOYEES, I } from './data.jsx';
+import { STUDENTS, GROUPS, FACULTIES, EMPLOYEES, I } from './data.jsx';
 import { Badge, Avatar } from './shell.jsx';
 import { useToast, FadingError, Field, LoadButton, Combobox, PasswordInput, PasswordRules, PasswordStrength } from './utils.jsx';
 import { CodeInput } from './auth.jsx';
@@ -118,7 +118,6 @@ const RELATION_OPTS = ['Мать', 'Отец', 'Опекун'].map(p => ({ value
 const DOC_TYPE_OPTS = ['Паспорт', 'Аттестат', 'Справка', 'Полис ОМС', 'СНИЛС', 'Прочее'].map(d => ({ value: d, label: d }));
 const TEACHER_OPTS = EMPLOYEES.map(e => ({ value: `${e.last} ${e.first[0]}. ${e.mid[0]}.`, label: `${e.last} ${e.first} ${e.mid}`, sub: e.pos }));
 const SUBJECT_OPTS = ['Базы данных', 'Веб-программирование', 'Алгоритмы и структуры данных', 'Высшая математика', 'Микроэкономика'].map(s => ({ value: s, label: s }));
-const STATUS_OPTS = Object.entries(STATUSES).map(([k, v]) => ({ value: k, label: v.label }));
 const STUDENT_OPTS = STUDENTS.map(s => ({ value: s.id, label: `${s.last} ${s.first} ${s.mid}`, sub: `${s.fac} · ${s.group}` }));
 const GROUP_OPTS_ALL = GROUPS.map(g => ({ value: g.name, label: g.name, sub: g.fac }));
 
@@ -195,7 +194,6 @@ function StudentFormModal({ data, onClose }) {
     email: student?.email || '',
     faculty_id: student?.faculty_id ? String(student.faculty_id) : (preFacultyId ? String(preFacultyId) : ''),
     group_id: student?.group_id ? String(student.group_id) : (preGroupId ? String(preGroupId) : ''),
-    status: student?.status || 'pending_review',
   });
   const [touched, setTouched] = useState({});
   const [photo, setPhoto] = useState(null);
@@ -273,7 +271,6 @@ function StudentFormModal({ data, onClose }) {
       fd.append('birth_date', vals.birth_date || '');
       fd.append('phone', vals.phone.trim());
       fd.append('email', vals.email.trim());
-      fd.append('status', vals.status);
       fd.append('faculty_id', vals.faculty_id);
       fd.append('group_id', vals.group_id || '');
       if (photo) fd.append('photo', photo);
@@ -373,11 +370,6 @@ function StudentFormModal({ data, onClose }) {
             <select className={`select ${touched.group_id && errs.group_id ? 'is-error' : ''}`} value={vals.group_id} onChange={e => { set('group_id', e.target.value); setTouched(t => ({ ...t, group_id: 1 })); }} disabled={!vals.faculty_id}>
               <option value="">- Выберите группу -</option>
               {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-            </select>
-          </Field>
-          <Field label="Статус">
-            <select className="select" value={vals.status} onChange={e => set('status', e.target.value)}>
-              {Object.entries(STATUSES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
             </select>
           </Field>
         </div>
@@ -1804,7 +1796,6 @@ function StudentDetailModal({ data, onClose, openModal }) {
       <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 20 }}>
         <div style={{ textAlign: 'center' }}>
           <Avatar name={`${s.last} ${s.first}`} size="lg" av={s.av} className="avatar-zoomy" />
-          <div style={{ marginTop: 12 }}><Badge status={s.status} /></div>
         </div>
         <div>
           <dl className="kv" style={{ padding: 0 }}>
@@ -1840,10 +1831,10 @@ function GroupDetailModal({ data, onClose, openModal }) {
       </dl>
       <div style={{ fontWeight: 500, fontSize: 13, marginBottom: 8 }}>Студенты группы</div>
       <table className="tbl" style={{ border: '1px solid var(--border)', borderRadius: 6 }}>
-        <thead><tr><th>ФИО</th><th>Статус</th></tr></thead>
+        <thead><tr><th>ФИО</th></tr></thead>
         <tbody>
           {STUDENTS.slice(0, 4).map(s => (
-            <tr key={s.id}><td className="fwm">{s.last} {s.first}</td><td><Badge status={s.status} /></td></tr>
+            <tr key={s.id}><td className="fwm">{s.last} {s.first}</td></tr>
           ))}
         </tbody>
       </table>
