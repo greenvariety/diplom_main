@@ -68,15 +68,6 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
         title="Дашборд"
         sub="Сводка по системе"
       />
-      {stats.pending_delreq > 0 && (
-        <div className="banner banner-bad">
-          {I.alert}
-          <div className="banner-body" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--bad-fg)', animation: 'pulse-dot 2s infinite', display: 'inline-block', flexShrink: 0 }}></span>
-            <span><strong>{stats.pending_delreq} заявки на удаление</strong> ожидают вашего решения. <a href="#" onClick={e => { e.preventDefault(); onNavigate && onNavigate('delreq'); }} style={{ color: 'inherit', textDecoration: 'underline' }}>Просмотреть →</a></span>
-          </div>
-        </div>
-      )}
       <div className="stats" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
         <Stat label="Факультеты"           value={stats.faculties     ?? '…'} icon={I.building}  onClick={() => onNavigate('faculties')} />
         <Stat label="Группы"               value={stats.groups        ?? '…'} icon={I.users}      onClick={() => onNavigate('groups')} />
