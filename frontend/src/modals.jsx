@@ -78,7 +78,7 @@ function genUsername(emp) {
 
 function validatePhone(v) {
   if (!v) return null;
-  return PHONE_RE.test(v) ? null : 'Формат: 8 (900) 123-45-67';
+  return PHONE_RE.test(v) ? null : 'Формат: 8 (123) 456-78-90';
 }
 function validateEmail(v) {
   if (!v) return null;
