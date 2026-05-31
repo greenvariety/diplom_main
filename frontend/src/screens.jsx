@@ -586,14 +586,14 @@ function StudentDetail({ currentUser, openModal, onNavigate, studentId }) {
                   <thead><tr><th style={{ width: 50 }}></th><SortHeader k="parent_name" sort={sortParents}>ФИО</SortHeader><SortHeader k="relation_display" sort={sortParents}>Связь</SortHeader><SortHeader k="phone" sort={sortParents}>Телефон</SortHeader><th style={{ width: 40 }}></th></tr></thead>
                   <tbody>
                     {sortParents.sortFn(student.parents).map(p => (
-                      <tr key={p.id}>
+                      <tr key={p.id} className="row-link" onClick={() => onNavigate('parent-detail', { parentId: p.parent_id })}>
                         <td><Avatar name={p.parent_name} size="sm" src={p.parent_photo} /></td>
                         <td className="fwm">
                           {p.parent_name}
                         </td>
                         <td>{p.relation_display}</td>
                         <td className="muted">{p.phone || '-'}</td>
-                        <td>{currentUser?.role !== 'teacher' && <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleRemoveParent(p.id)}>{I.x}</button>}</td>
+                        <td>{currentUser?.role !== 'teacher' && <button className="btn btn-ghost btn-icon btn-sm" onClick={e => { e.stopPropagation(); handleRemoveParent(p.id); }}>{I.x}</button>}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -2236,13 +2236,16 @@ function ParentDetail({ currentUser, openModal, onNavigate, parentId }) {
             </dl>
           </div>
         </div>
+        <div className="card-stack">
         <div className="card">
           <div className="card-head">
             <div className="title">Привязанные студенты</div>
-            <button className="btn btn-secondary btn-sm"
-              onClick={() => openModal('parentAddStudent', { parentId, onDone: load })}>
-              {I.plus}
-            </button>
+            {currentUser?.role !== 'teacher' && (
+              <button className="btn btn-secondary btn-sm"
+                onClick={() => openModal('parentAddStudent', { parentId, onDone: load })}>
+                {I.plus}
+              </button>
+            )}
           </div>
           <div className="card-body flush">
             {parent.students?.length === 0 ? (
@@ -2261,9 +2264,11 @@ function ParentDetail({ currentUser, openModal, onNavigate, parentId }) {
                       <td>{s.relation_display}</td>
                       <td>{s.group_name || '-'}</td>
                       <td>
-                        <button className="btn btn-ghost btn-icon btn-sm"
-                          onClick={() => removeStudent(s.sp_id)} title="Открепить">{I.x}
-                        </button>
+                        {currentUser?.role !== 'teacher' && (
+                          <button className="btn btn-ghost btn-icon btn-sm"
+                            onClick={() => removeStudent(s.sp_id)} title="Открепить">{I.x}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -2271,6 +2276,35 @@ function ParentDetail({ currentUser, openModal, onNavigate, parentId }) {
               </table>
             )}
           </div>
+        </div>
+        {currentUser?.role !== 'teacher' && (
+          <div className="card" style={{ marginTop: 16 }}>
+            <div className="card-head">
+              <div className="title">Документы</div>
+              <button className="btn btn-secondary btn-sm" onClick={() => openModal('uploadDoc', { ownerId: parentId, ownerType: 'parent', onDone: load })}>{I.upload}Загрузить</button>
+            </div>
+            <div className="card-body">
+              {(parent.documents || []).length === 0 ? (
+                <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: '8px 0' }}>Документы не загружены</div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                  {(parent.documents || []).map(d => (
+                    <div key={d.id} className="doc-tile" style={{ position: 'relative' }}>
+                      <a href={d.file_url} target="_blank" rel="noreferrer" style={{ display: 'contents' }}>
+                        <div className="doc-icon">{I.doc}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div className="doc-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</div>
+                          <div className="doc-meta">{d.uploaded_at}</div>
+                        </div>
+                      </a>
+                      <button className="btn btn-ghost btn-icon btn-sm" style={{ position: 'absolute', top: 4, right: 4 }} onClick={async () => { if (!confirm('Удалить документ?')) return; try { await api.delete(`/documents/${d.id}/`); load(); } catch { toast.push('Ошибка при удалении', { kind: 'err' }); } }}>{I.x}</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         </div>
       </div>
     </Shell>
