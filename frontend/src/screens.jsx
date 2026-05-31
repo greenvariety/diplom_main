@@ -1742,11 +1742,10 @@ function UserList({ currentUser, openModal, onNavigate }) {
                 <SortHeader k="employee_name" sort={sort}>Сотрудник</SortHeader>
                 <SortHeader k="username" sort={sort}>Логин</SortHeader>
                 <SortHeader k="role" sort={sort}>Роль</SortHeader>
-                <SortHeader k="last_login" sort={sort}>Последний вход</SortHeader>
                 <th style={{ width: 40 }}></th>
               </tr></thead>
               <tbody>
-                {loading ? <SkeletonRows cols={6} /> : sort.sortFn(
+                {loading ? <SkeletonRows cols={5} /> : sort.sortFn(
                   users.filter(u => {
                     if (q && !(u.employee_name || '').toLowerCase().includes(q.toLowerCase()) && !u.username.toLowerCase().includes(q.toLowerCase())) return false;
                     if (filterRole && u.role !== filterRole) return false;
@@ -1756,15 +1755,13 @@ function UserList({ currentUser, openModal, onNavigate }) {
                     employee_name: u => u.employee_name || '',
                     username: u => u.username,
                     role: u => u.role_display || '',
-                    last_login: u => u.last_login || '',
                   }
                 ).map((u, idx) => (
                   <tr key={u.id} className={u.employee_id ? 'row-link' : ''} onClick={() => handleRowClick(u)}>
                     <td className="mono muted">{idx + 1}</td>
                     <td className="fwm">{u.employee_name || <span className="muted">-</span>}</td>
                     <td className="mono">{u.username}</td>
-                    <td><span className={`badge ${ROLE_CLS[u.role] || 'badge-neutral'}`}><span className="dot"></span>{u.role_display}</span></td>
-                    <td className="mono muted">{u.last_login || 'никогда'}</td>
+                    <td>{u.role_display}</td>
                     <td>{u.employee_id ? I.chevr : null}</td>
                   </tr>
                 ))}
@@ -1800,6 +1797,16 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
     try {
       await api.post(`/delete-requests/${id}/reject/`);
       toast.push('Заявка отклонена', { kind: 'ok' });
+      load();
+    } catch (e) {
+      toast.push(e.response?.data?.error || 'Ошибка', { kind: 'err' });
+    }
+  };
+
+  const cancel = async (id) => {
+    try {
+      await api.post(`/delete-requests/${id}/cancel/`);
+      toast.push('Заявка отозвана', { kind: 'ok' });
       load();
     } catch (e) {
       toast.push(e.response?.data?.error || 'Ошибка', { kind: 'err' });
@@ -1873,8 +1880,12 @@ function DeleteRequests({ currentUser, openModal, onNavigate, onLogout }) {
                     <td className="muted">{r.reason}</td>
                     <td>
                       <div style={{ display: 'flex', gap: 6 }}>
-                        <button className="btn btn-danger-solid btn-sm" onClick={() => openModal('approveDelete', { ...r, onDone: load })}>{I.check}Одобрить</button>
-                        <button className="btn btn-secondary btn-sm" onClick={() => reject(r.id)}>Отклонить</button>
+                        {currentUser?.role === 'owner' ? <>
+                          <button className="btn btn-danger-solid btn-sm" onClick={() => openModal('approveDelete', { ...r, onDone: load })}>{I.check}Одобрить</button>
+                          <button className="btn btn-secondary btn-sm" onClick={() => reject(r.id)}>Отклонить</button>
+                        </> : (
+                          <button className="btn btn-secondary btn-sm" onClick={() => cancel(r.id)}>Отозвать</button>
+                        )}
                       </div>
                     </td>
                   </tr>

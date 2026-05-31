@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import DeleteRequest, Faculty, Group, Student, Employee, Parent, Position
+from .models import DeleteRequest, Faculty, Group, Student, Employee, Parent, Position, Subject
 from .utils import log_action
 
 
@@ -11,6 +11,7 @@ MODELS = {
     'Student': Student,
     'Employee': Employee,
     'Parent': Parent,
+    'Subject': Subject,
 }
 
 TYPE_LABELS = {
@@ -20,6 +21,7 @@ TYPE_LABELS = {
     'Student': 'Студент',
     'Employee': 'Сотрудник',
     'Parent': 'Опекун',
+    'Subject': 'Предмет',
 }
 
 
@@ -118,6 +120,27 @@ class DeleteRequestRejectView(APIView):
         log_action(request.user, 'updated', req,
                    old_data={'status': 'pending'},
                    new_data={'status': 'rejected'},
+                   institution=institution)
+        return Response({'ok': True})
+
+
+class DeleteRequestCancelView(APIView):
+    def post(self, request, pk):
+        if request.user.role not in ('admin', 'secretary'):
+            return Response({'error': 'Доступ запрещён'}, status=403)
+        institution = request.user.institution
+        try:
+            req = DeleteRequest.objects.get(
+                pk=pk, user=request.user, status='pending',
+                user__institution=institution
+            )
+        except DeleteRequest.DoesNotExist:
+            return Response({'error': 'Заявка не найдена'}, status=404)
+        req.status = 'cancelled'
+        req.save()
+        log_action(request.user, 'updated', req,
+                   old_data={'status': 'pending'},
+                   new_data={'status': 'cancelled'},
                    institution=institution)
         return Response({'ok': True})
 

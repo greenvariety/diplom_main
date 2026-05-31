@@ -27,7 +27,7 @@ from core.api_parents import (
     ParentStudentsView, ParentStudentDetailView, ParentFlagView,
 )
 from core.api_users import UsersView, UserDetailView, UserSetPasswordView
-from core.api_delete_requests import DeleteRequestsView, DeleteRequestApproveView, DeleteRequestRejectView, DeleteRequestsCountView
+from core.api_delete_requests import DeleteRequestsView, DeleteRequestApproveView, DeleteRequestRejectView, DeleteRequestCancelView, DeleteRequestsCountView
 from core.api_audit import AuditLogView, AuditLogUsersView, AuditRollbackView, AuditLogExportView
 from core.api_notes import NotesView, NoteDetailView
 from core.api_dev import HtmlTasksView, HtmlTaskDetailView
@@ -109,6 +109,7 @@ urlpatterns = [
     path('api/delete-requests/count/', DeleteRequestsCountView.as_view()),
     path('api/delete-requests/<int:pk>/approve/', DeleteRequestApproveView.as_view()),
     path('api/delete-requests/<int:pk>/reject/', DeleteRequestRejectView.as_view()),
+    path('api/delete-requests/<int:pk>/cancel/', DeleteRequestCancelView.as_view()),
     path('api/audit-log/', AuditLogView.as_view()),
     path('api/audit-log/export/', AuditLogExportView.as_view()),
     path('api/audit-log/users/', AuditLogUsersView.as_view()),

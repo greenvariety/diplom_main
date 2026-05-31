@@ -482,6 +482,7 @@ class DeleteRequest(models.Model):
         ('pending', 'Ожидает'),
         ('approved', 'Одобрено'),
         ('rejected', 'Отклонено'),
+        ('cancelled', 'Отозвана'),
     ]
     OBJECT_TYPE_CHOICES = [
         ('Faculty', 'Факультет'),
