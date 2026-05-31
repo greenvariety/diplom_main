@@ -62,21 +62,13 @@ class OrganizationsView(APIView):
         code = request.data.get('code', '').strip()
         if not name:
             return Response({'error': 'Введите название организации'}, status=400)
+        if not code:
+            return Response({'error': 'Введите аббревиатуру организации'}, status=400)
         founded_date_raw = (request.data.get('founded_date', '') or '').strip()
         if not founded_date_raw:
             return Response({'error': 'Укажите дату основания'}, status=400)
-        if not code:
-            base = re.sub(r'[^a-zA-Zа-яА-ЯёЁ0-9 ]', '', name)
-            parts = base.split()
-            code = ''.join(p[0].upper() for p in parts)[:10] if parts else ''
-            if not code:
-                count = Institution.objects.filter(owner=request.user).count()
-                code = f'ORG{count + 1}'
         if Institution.objects.filter(owner=request.user, code=code).exists():
-            n = 2
-            while Institution.objects.filter(owner=request.user, code=f'{code}{n}').exists():
-                n += 1
-            code = f'{code}{n}'
+            return Response({'error': 'Организация с такой аббревиатурой уже существует'}, status=400)
         description = (request.data.get('description', '') or '').strip()
         founded_date = _parse_date(founded_date_raw)
         photo = request.FILES.get('photo')
@@ -113,13 +105,8 @@ class OrganizationDetailView(APIView):
         old_data = {'name': org.name, 'code': org.code}
         org.name = name
         update_fields = ['name']
-        new_code = request.data.get('code', '').strip().upper()
-        if new_code and new_code != org.code:
-            if Institution.objects.filter(owner=request.user, code=new_code).exclude(pk=org.pk).exists():
-                n = 2
-                while Institution.objects.filter(owner=request.user, code=f'{new_code}{n}').exists():
-                    n += 1
-                new_code = f'{new_code}{n}'
+        new_code = request.data.get('code', '').strip()
+        if new_code:
             org.code = new_code
             update_fields.append('code')
         description = request.data.get('description', None)

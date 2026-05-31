@@ -906,7 +906,7 @@ function TermsScreen({ onBack }) {
    OrgSetupScreen - шаг 3 регистрации: создание организации
    ============================================================ */
 function OrgSetupScreen({ onDone }) {
-  const [vals, setVals] = useState({ name: '', date: '' });
+  const [vals, setVals] = useState({ name: '', code: '', date: '' });
   const [touched, setTouched] = useState({});
   const [err, setErr] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -914,15 +914,16 @@ function OrgSetupScreen({ onDone }) {
 
   const errs = {};
   if (!vals.name.trim()) errs.name = 'Введите название организации';
+  if (!vals.code.trim()) errs.code = 'Введите аббревиатуру';
   if (!vals.date.trim()) errs.date = 'Укажите дату основания';
 
   const submit = async () => {
-    setTouched({ name: 1, date: 1 });
+    setTouched({ name: 1, code: 1, date: 1 });
     if (Object.keys(errs).length) return;
     setSubmitting(true);
     setErr('');
     try {
-      await api.post('/organizations/', { name: vals.name.trim(), founded_date: vals.date.trim() });
+      await api.post('/organizations/', { name: vals.name.trim(), code: vals.code.trim(), founded_date: vals.date.trim() });
       onDone && onDone();
     } catch (e) {
       setErr(e.response?.data?.error || 'Ошибка при создании организации');
@@ -962,6 +963,16 @@ function OrgSetupScreen({ onDone }) {
                   onBlur={() => setTouched(t => ({ ...t, name: 1 }))}
                   maxLength={1000}
                   autoFocus
+                />
+              </Field>
+
+              <Field label="Аббревиатура" required error={touched.code && errs.code}>
+                <input
+                  className={`input ${touched.code && errs.code ? 'is-error' : ''}`}
+                  value={vals.code}
+                  onChange={e => set('code', e.target.value)}
+                  onBlur={() => setTouched(t => ({ ...t, code: 1 }))}
+                  maxLength={50}
                 />
               </Field>
 
