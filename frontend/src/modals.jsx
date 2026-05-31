@@ -791,7 +791,6 @@ function FacultyFormModal({ data, onClose }) {
   const toast = useToast();
   const [fullName, setFullName] = useState(faculty?.full_name || '');
   const [shortName, setShortName] = useState(faculty?.short_name || '');
-  const [codeManual, setCodeManual] = useState(isEdit);
   const [errName, setErrName] = useState('');
   const [errCode, setErrCode] = useState('');
   const [foundedYear, setFoundedYear] = useState(() => {
@@ -800,11 +799,6 @@ function FacultyFormModal({ data, onClose }) {
     return parts.length === 3 ? parts[2] : '';
   });
   const [errYear, setErrYear] = useState('');
-
-  const isUC = (c) => c && ((c >= 'А' && c <= 'Я') || c === 'Ё');
-  const isLC = (c) => c && ((c >= 'а' && c <= 'я') || c === 'ё');
-  const autoCode = (n) => { const STOP = new Set(['и','в','на','из','от','до','за','для','при','по','над','под','без','об','о','у','к','с','а','но','или','со','во']); const s = n.trim(); if (!s) return ''; const hasLower = [...s].some(c => isLC(c)); if (!hasLower) { const ws = s.split(/\s+/).filter(w => w && isUC(w[0]) && !STOP.has(w.toLowerCase())); return ws.flatMap(w => [...w].filter(c => isUC(c))).join('').slice(0, 50); } const r = []; let i = 0; while (i < s.length) { if (!isUC(s[i])) { i++; continue; } let j = i; while (j < s.length && isUC(s[j])) j++; let wordEnd = j; while (wordEnd < s.length && isLC(s[wordEnd])) wordEnd++; const word = s.slice(i, wordEnd); if (!STOP.has(word.toLowerCase())) { for (let k = i; k < j; k++) r.push(s[k]); } i = wordEnd; } if (r.length === 0) { return s.split(/\s+/).filter(w => w && !STOP.has(w.toLowerCase())).map(w => w[0].toUpperCase()).join('').slice(0, 50); } return r.join('').slice(0, 50); };
-  const autoName = (n) => { let exp = ''; for (let i = 0; i < n.length; i++) { if (isUC(n[i]) && i > 0 && n[i-1] !== ' ' && isLC(n[i-1])) exp += ' '; exp += n[i]; } const s = exp.trim().replace(/\s+/g, ' '); if (!s) return s; const ws = s.split(' '); return ws.map((w, i) => i === 0 ? (w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()) : w.toLowerCase()).join(' '); };
 
   const save = async () => {
     if (!fullName.trim()) { setErrName('Введите полное название'); return; }
@@ -817,7 +811,7 @@ function FacultyFormModal({ data, onClose }) {
     }
     setErrName(''); setErrCode(''); setErrYear('');
     try {
-      const formattedName = autoName(fullName.trim());
+      const formattedName = fullName.trim();
       const createdAtVal = foundedYear ? `${foundedYear}-01-01` : null;
       if (isEdit) {
         await api.patch(`/faculties/${faculty.id}/`, { full_name: formattedName, short_name: shortName.trim(), created_at: createdAtVal });
@@ -844,10 +838,10 @@ function FacultyFormModal({ data, onClose }) {
       </>}>
       <div className="form-grid">
         <Field label="Полное название" required error={errName || null}>
-          <input className={`input ${errName ? 'is-error' : ''}`} value={fullName} onChange={e => { const next = e.target.value; setFullName(next); if (!codeManual) setShortName(autoCode(next)); setErrName(''); }} maxLength={255} onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }} onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); const next = fullName + t; setFullName(next); if (!codeManual) setShortName(autoCode(next)); setErrName(''); }} />
+          <input className={`input ${errName ? 'is-error' : ''}`} value={fullName} onChange={e => { setFullName(e.target.value); setErrName(''); }} maxLength={255} onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }} onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); setFullName(fullName + t); setErrName(''); }} />
         </Field>
-        <Field label="Код (аббревиатура)" required error={errCode || null} hint={!isEdit && !codeManual ? 'Формируется автоматически по названию' : null}>
-          <input className={`input ${errCode ? 'is-error' : ''}`} value={shortName} onChange={e => { setShortName(e.target.value.toUpperCase()); setCodeManual(true); setErrCode(''); }} maxLength={50} />
+        <Field label="Код (аббревиатура)" required error={errCode || null}>
+          <input className={`input ${errCode ? 'is-error' : ''}`} value={shortName} onChange={e => { setShortName(e.target.value); setErrCode(''); }} maxLength={50} />
         </Field>
         <Field label="Год основания" error={errYear || null}>
           <input className={`input ${errYear ? 'is-error' : ''}`} type="number" value={foundedYear} min={1900} max={new Date().getFullYear() + 10} onChange={e => { setFoundedYear(e.target.value); setErrYear(''); }} onBlur={e => { const v = parseInt(e.target.value, 10); if (!isNaN(v)) { const mx = new Date().getFullYear() + 10; if (v < 1900) setFoundedYear('1900'); else if (v > mx) setFoundedYear(String(mx)); } }} maxLength={4} />
@@ -1924,13 +1918,7 @@ function OrgFormModal({ data, onClose }) {
   const fileRef = useRef(null);
   const [name, setName] = useState(org?.name || '');
   const [code, setCode] = useState(org?.code || '');
-  const [codeManual, setCodeManual] = useState(isEdit);
   const [description, setDescription] = useState(org?.description || '');
-
-  const isUC = (c) => c && ((c >= 'А' && c <= 'Я') || c === 'Ё');
-  const isLC = (c) => c && ((c >= 'а' && c <= 'я') || c === 'ё');
-  const autoCode = (n) => { const STOP = new Set(['и','в','на','из','от','до','за','для','при','по','над','под','без','об','о','у','к','с','а','но','или','со','во']); const s = n.trim(); if (!s) return ''; const hasLower = [...s].some(c => isLC(c)); if (!hasLower) { const ws = s.split(/\s+/).filter(w => w && isUC(w[0]) && !STOP.has(w.toLowerCase())); return ws.flatMap(w => [...w].filter(c => isUC(c))).join('').slice(0, 20); } const r = []; let i = 0; while (i < s.length) { if (!isUC(s[i])) { i++; continue; } let j = i; while (j < s.length && isUC(s[j])) j++; let wordEnd = j; while (wordEnd < s.length && isLC(s[wordEnd])) wordEnd++; const word = s.slice(i, wordEnd); if (!STOP.has(word.toLowerCase())) { for (let k = i; k < j; k++) r.push(s[k]); } i = wordEnd; } if (r.length === 0) { return s.split(/\s+/).filter(w => w && !STOP.has(w.toLowerCase())).map(w => w[0].toUpperCase()).join('').slice(0, 20); } return r.join('').slice(0, 20); };
-  const autoName = (n) => { let exp = ''; for (let i = 0; i < n.length; i++) { if (isUC(n[i]) && i > 0 && n[i-1] !== ' ' && isLC(n[i-1])) exp += ' '; exp += n[i]; } const s = exp.trim().replace(/\s+/g, ' '); if (!s) return s; const ws = s.split(' '); return ws.map((w, i) => i === 0 ? (w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()) : w.toLowerCase()).join(' '); };
   const [foundedDate, setFoundedDate] = useState(
     org?.founded_date
       ? (() => {
@@ -1977,7 +1965,7 @@ function OrgFormModal({ data, onClose }) {
     setErrs({ name: '', date: '' });
     try {
       const fd = new FormData();
-      fd.append('name', autoName(name.trim()));
+      fd.append('name', name.trim());
       if (code.trim()) fd.append('code', code.trim());
       fd.append('description', description.trim());
       fd.append('founded_date', foundedDate);
@@ -2056,20 +2044,17 @@ function OrgFormModal({ data, onClose }) {
             className={`input ${errs.name ? 'is-error' : ''}`}
             value={name}
             onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }}
-            onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); const next = name + t; setName(next); if (!codeManual) setCode(autoCode(next)); clearErr('name'); }}
-            onChange={e => { const next = e.target.value; setName(next); if (!codeManual) setCode(autoCode(next)); clearErr('name'); }}
+            onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); setName(name + t); clearErr('name'); }}
+            onChange={e => { setName(e.target.value); clearErr('name'); }}
             onFocus={() => touch('name')}
             maxLength={1000}
           />
         </Field>
-        <Field label="Код организации" hint={touched.code ? 'Если не указать - сгенерируется автоматически' : null}>
+        <Field label="Код организации">
           <input
             className="input"
             value={code}
-            onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }}
-            onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, '').toUpperCase(); setCode(prev => (prev + t).slice(0, 50)); setCodeManual(true); }}
-            onChange={e => { setCode(e.target.value.toUpperCase()); setCodeManual(true); }}
-            onFocus={() => touch('code')}
+            onChange={e => { setCode(e.target.value); }}
             maxLength={50}
           />
         </Field>
