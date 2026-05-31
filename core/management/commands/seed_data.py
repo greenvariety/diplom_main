@@ -118,8 +118,9 @@ class Command(BaseCommand):
         created_students = []
         for ln, fn, mn, bd, ph, em, st, fac, grp in students_data:
             s = Student.objects.create(
+                institution=inst,
                 last_name=ln, first_name=fn, middle_name=mn,
-                birth_date=bd, phone=ph, email=em, status=st,
+                birth_date=bd, phone=ph, email=em,
                 faculty=fac, group=grp)
             created_students.append(s)
         self.stdout.write(f'  Студентов: {len(created_students)}')

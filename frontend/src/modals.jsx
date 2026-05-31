@@ -804,7 +804,8 @@ function FacultyFormModal({ data, onClose }) {
     setErrName(''); setErrCode(''); setErrYear('');
     try {
       const formattedName = fullName.trim();
-      const createdAtVal = foundedYear ? `${foundedYear}-01-01` : null;
+      const yearOnly = foundedYear ? String(parseInt(foundedYear, 10)) : '';
+      const createdAtVal = yearOnly ? `${yearOnly}-01-01` : null;
       if (isEdit) {
         await api.patch(`/faculties/${faculty.id}/`, { full_name: formattedName, short_name: shortName.trim(), created_at: createdAtVal });
         toast.push('Факультет обновлён', { kind: 'ok' });

@@ -1,4 +1,5 @@
 import re
+from django.db import IntegrityError
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -71,12 +72,15 @@ class FacultiesView(APIView):
             field_errors['short_name'] = 'Факультет с таким кодом уже существует'
         if field_errors:
             return Response(field_errors, status=400)
-        faculty = Faculty.objects.create(
-            institution=institution,
-            full_name=full_name,
-            short_name=short_name,
-            created_at=created_at,
-        )
+        try:
+            faculty = Faculty.objects.create(
+                institution=institution,
+                full_name=full_name,
+                short_name=short_name,
+                created_at=created_at,
+            )
+        except (IntegrityError, ValueError) as e:
+            return Response({'error': 'Ошибка при сохранении. Проверьте данные и попробуйте снова.'}, status=400)
         log_action(request.user, 'created', faculty,
                    new_data={'full_name': full_name, 'short_name': short_name},
                    institution=institution)
@@ -140,7 +144,10 @@ class FacultyDetailView(APIView):
         faculty.short_name = short_name
         if 'created_at' in request.data:
             faculty.created_at = request.data['created_at'] or None
-        faculty.save()
+        try:
+            faculty.save()
+        except (IntegrityError, ValueError) as e:
+            return Response({'error': 'Ошибка при сохранении. Проверьте данные и попробуйте снова.'}, status=400)
         log_action(request.user, 'updated', faculty,
                    old_data=old_data,
                    new_data={'full_name': faculty.full_name, 'short_name': faculty.short_name},
