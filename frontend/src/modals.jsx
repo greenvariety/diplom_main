@@ -678,7 +678,7 @@ function GroupFormModal({ data, onClose }) {
           </Field>
         )}
         <Field label="Год начала" required error={err && facultyId && !year ? err : null}>
-          <input className={`input ${err && facultyId && !year ? 'is-error' : ''}`} type="number" value={year} onChange={e => { setYear(e.target.value); setErr(''); }} min={1900} max={groupMaxYear} />
+          <input className={`input ${err && facultyId && !year ? 'is-error' : ''}`} type="number" value={year} onChange={e => { setYear(e.target.value); setErr(''); }} onBlur={e => { const v = parseInt(e.target.value, 10); if (!isNaN(v)) { if (v < 1900) setYear('1900'); else if (v > groupMaxYear) setYear(String(groupMaxYear)); } }} min={1900} max={groupMaxYear} />
         </Field>
         <div className="field field-full">
           <label className="field-label">Классный руководитель</label>
@@ -759,7 +759,7 @@ function FacultyFormModal({ data, onClose }) {
           <input className={`input ${errCode ? 'is-error' : ''}`} value={shortName} onChange={e => { setShortName(e.target.value.toUpperCase()); setCodeManual(true); setErrCode(''); }} maxLength={50} />
         </Field>
         <Field label="Год основания" error={errYear || null}>
-          <input className={`input ${errYear ? 'is-error' : ''}`} type="number" value={foundedYear} min={1900} max={new Date().getFullYear() + 10} onChange={e => { setFoundedYear(e.target.value); setErrYear(''); }} maxLength={4} />
+          <input className={`input ${errYear ? 'is-error' : ''}`} type="number" value={foundedYear} min={1900} max={new Date().getFullYear() + 10} onChange={e => { setFoundedYear(e.target.value); setErrYear(''); }} onBlur={e => { const v = parseInt(e.target.value, 10); if (!isNaN(v)) { const mx = new Date().getFullYear() + 10; if (v < 1900) setFoundedYear('1900'); else if (v > mx) setFoundedYear(String(mx)); } }} maxLength={4} />
         </Field>
       </div>
     </Modal>
