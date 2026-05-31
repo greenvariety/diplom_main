@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import Subject, Employee, Student, GroupSubjectEmployee, DeleteRequest
+from .models import Subject, Employee, GroupSubjectEmployee, DeleteRequest
 from .utils import log_action
 
 
@@ -39,11 +39,7 @@ class SubjectDetailView(APIView):
         except Subject.DoesNotExist:
             return Response({'error': 'Не найдено'}, status=404)
         assignments = subject.group_assignments.select_related('group', 'group__faculty', 'employee').order_by('group__year', 'group__group_number')
-        group_ids = [a.group_id for a in assignments]
-        students = Student.objects.filter(
-            group_id__in=group_ids
-        ).select_related('group').order_by('last_name', 'first_name', 'middle_name')
-        teachers = subject.teachers.filter(institution=institution).select_related('position').order_by('last_name', 'first_name', 'middle_name')
+        teachers = subject.teachers.filter(institution=institution).order_by('last_name', 'first_name', 'middle_name')
         return Response({
             'id': subject.pk,
             'name': subject.name,
@@ -65,18 +61,6 @@ class SubjectDetailView(APIView):
                     'employee_warn_incomplete': _emp_incomplete(a.employee),
                 }
                 for a in assignments
-            ],
-            'students': [
-                {
-                    'id': s.pk,
-                    'last_name': s.last_name,
-                    'first_name': s.first_name,
-                    'middle_name': s.middle_name,
-                    'group_id': s.group_id,
-                    'group_name': s.group.name if s.group_id else '',
-                    'status': s.status,
-                }
-                for s in students
             ],
         })
 
