@@ -175,6 +175,10 @@ class ProfileConfirmEmailView(APIView):
 class ProfileDeleteAccountSendCodeView(APIView):
     def post(self, request):
         user = request.user
+
+        if user.role not in ('owner', 'superadmin'):
+            return Response({'error': 'Удаление аккаунта доступно только владельцу'}, status=403)
+
         password = request.data.get('password', '')
 
         if not password:
@@ -224,6 +228,10 @@ class ProfileDeleteAccountSendCodeView(APIView):
 class ProfileDeleteAccountConfirmView(APIView):
     def post(self, request):
         user = request.user
+
+        if user.role not in ('owner', 'superadmin'):
+            return Response({'error': 'Удаление аккаунта доступно только владельцу'}, status=403)
+
         code = (request.data.get('code') or '').strip().upper().replace('-', '')
 
         if len(code) != 6:

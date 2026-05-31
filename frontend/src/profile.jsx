@@ -13,12 +13,13 @@ function daysSince(isoStr) {
   return `${diff} дней назад`;
 }
 
-function TabBar({ tab, setTab }) {
+function TabBar({ tab, setTab, role }) {
+  const canDelete = role === 'owner' || role === 'superadmin';
   const tabs = [
     { key: 'data',     label: 'Основные данные' },
     { key: 'password', label: 'Пароль' },
     { key: 'email',    label: 'Email' },
-    { key: 'delete',   label: 'Удалить аккаунт', danger: true },
+    ...(canDelete ? [{ key: 'delete', label: 'Удалить аккаунт', danger: true }] : []),
   ];
   return (
     <div style={{ display: 'flex', gap: 4, borderBottom: '2px solid var(--border)', marginBottom: 24, flexWrap: 'wrap' }}>
@@ -525,7 +526,8 @@ function TabDeleteAccount({ currentUser, onLogout }) {
         </div>
         <ul style={{ margin: 0, paddingLeft: 18, color: '#7f1d1d', fontSize: 13, lineHeight: 1.7 }}>
           <li>Ваш аккаунт будет удален без возможности восстановления</li>
-          <li>Все созданные вами организации и данные останутся в системе</li>
+          <li>Все ваши организации и все их данные будут удалены: факультеты, группы, студенты, сотрудники, должности, опекуны, предметы, документы</li>
+          <li>Аккаунты сотрудников, привязанных к вашим организациям, останутся, но потеряют привязку</li>
           <li>Вы немедленно будете выведены из системы</li>
           <li>Войти с этим логином или email будет невозможно</li>
         </ul>
@@ -599,7 +601,7 @@ function ProfileScreen({ currentUser: initUser, onNavigate, onUserUpdated, onLog
               <h2 style={{ margin: 0 }}>Мой профиль</h2>
               <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>{user?.display_name || user?.username}</div>
             </div>
-            <TabBar tab={tab} setTab={setTab} />
+            <TabBar tab={tab} setTab={setTab} role={user?.role} />
             {tab === 'data'     && <TabData     currentUser={user} onUserUpdated={handleUpdated} />}
             {tab === 'password' && <TabPassword currentUser={user} onShowRecover={() => setShowRecover(true)} />}
             {tab === 'email'    && <TabEmail    currentUser={user} onUserUpdated={handleUpdated} />}
