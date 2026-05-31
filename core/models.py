@@ -46,6 +46,7 @@ class Faculty(models.Model):
         verbose_name = 'Факультет'
         verbose_name_plural = 'Факультеты'
         ordering = ['full_name']
+        unique_together = [('institution', 'full_name'), ('institution', 'short_name')]
 
     def __str__(self):
         return f'{self.full_name} ({self.short_name})'

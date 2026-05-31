@@ -52,6 +52,10 @@ class FacultiesView(APIView):
             return Response({'error': 'Введите полное название'}, status=400)
         if not short_name:
             return Response({'error': 'Введите код (аббревиатуру)'}, status=400)
+        if Faculty.objects.filter(institution=institution, full_name__iexact=full_name).exists():
+            return Response({'error': 'Факультет с таким названием уже существует'}, status=400)
+        if Faculty.objects.filter(institution=institution, short_name__iexact=short_name).exists():
+            return Response({'error': 'Факультет с таким кодом уже существует'}, status=400)
         faculty = Faculty.objects.create(
             institution=institution,
             full_name=full_name,
@@ -104,6 +108,10 @@ class FacultyDetailView(APIView):
             return Response({'error': 'Введите полное название'}, status=400)
         if not short_name:
             return Response({'error': 'Введите код'}, status=400)
+        if Faculty.objects.filter(institution=request.user.institution, full_name__iexact=full_name).exclude(pk=pk).exists():
+            return Response({'error': 'Факультет с таким названием уже существует'}, status=400)
+        if Faculty.objects.filter(institution=request.user.institution, short_name__iexact=short_name).exclude(pk=pk).exists():
+            return Response({'error': 'Факультет с таким кодом уже существует'}, status=400)
         faculty.full_name = full_name
         faculty.short_name = short_name
         if 'created_at' in request.data:
