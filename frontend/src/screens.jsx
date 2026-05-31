@@ -854,7 +854,7 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
                 {loading ? <SkeletonRows cols={8} /> : sort.sortFn(data.results, {
                     full_name: e => e.full_name || '',
                     position_name: e => e.position_name || '',
-                    position_role_type: e => ({ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель' }[e.position_role_type] || ''),
+                    position_role_type: e => ({ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель', none: 'Без доступа' }[e.position_role_type] || ''),
                     phone: e => e.phone || '',
                     email: e => e.email || '',
                   }).map((e, idx) => (
@@ -872,7 +872,7 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
                       style={e.position_id ? { cursor: 'pointer' } : {}}
                       onClick={e.position_id ? ev => { ev.stopPropagation(); onNavigate('employees', { filterPositionId: e.position_id, filterPositionName: e.position_name, filterPositionRoleType: e.position_role_type }); } : undefined}
                     >{e.position_name || <span className="muted">-</span>}</td>
-                    <td className="muted">{{ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель' }[e.position_role_type] || <span className="muted">-</span>}</td>
+                    <td className="muted">{{ admin: 'Администратор', secretary: 'Секретарь', teacher: 'Преподаватель', none: 'Без доступа' }[e.position_role_type] || <span className="muted">-</span>}</td>
                     <td className="muted">{e.phone || '-'}</td>
                     <td className="muted">{e.email || '-'}</td>
                     <td>{I.chevr}</td>
