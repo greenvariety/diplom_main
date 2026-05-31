@@ -718,10 +718,10 @@ function FacultyFormModal({ data, onClose }) {
       onDone && onDone();
       onClose && onClose();
     } catch (e) {
-      const msg = e.response?.data?.error || 'Ошибка при сохранении';
-      if (msg.includes('названием')) setErrName(msg);
-      else if (msg.includes('кодом')) setErrCode(msg);
-      else setErrName(msg);
+      const data = e.response?.data || {};
+      if (data.full_name) setErrName(data.full_name);
+      if (data.short_name) setErrCode(data.short_name);
+      if (!data.full_name && !data.short_name) setErrName(data.error || 'Ошибка при сохранении');
     }
   };
 
