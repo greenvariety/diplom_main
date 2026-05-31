@@ -694,7 +694,8 @@ function FacultyFormModal({ data, onClose }) {
   const [fullName, setFullName] = useState(faculty?.full_name || '');
   const [shortName, setShortName] = useState(faculty?.short_name || '');
   const [codeManual, setCodeManual] = useState(isEdit);
-  const [err, setErr] = useState('');
+  const [errName, setErrName] = useState('');
+  const [errCode, setErrCode] = useState('');
 
   const isUC = (c) => c && ((c >= 'А' && c <= 'Я') || c === 'Ё');
   const isLC = (c) => c && ((c >= 'а' && c <= 'я') || c === 'ё');
@@ -702,9 +703,9 @@ function FacultyFormModal({ data, onClose }) {
   const autoName = (n) => { let exp = ''; for (let i = 0; i < n.length; i++) { if (isUC(n[i]) && i > 0 && n[i-1] !== ' ' && isLC(n[i-1])) exp += ' '; exp += n[i]; } const s = exp.trim().replace(/\s+/g, ' '); if (!s) return s; const ws = s.split(' '); return ws.map((w, i) => i === 0 ? (w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()) : w.toLowerCase()).join(' '); };
 
   const save = async () => {
-    if (!fullName.trim()) { setErr('Введите полное название'); return; }
-    if (!shortName.trim()) { setErr('Введите код факультета'); return; }
-    setErr('');
+    if (!fullName.trim()) { setErrName('Введите полное название'); return; }
+    if (!shortName.trim()) { setErrCode('Введите код факультета'); return; }
+    setErrName(''); setErrCode('');
     try {
       const formattedName = autoName(fullName.trim());
       if (isEdit) {
@@ -717,7 +718,10 @@ function FacultyFormModal({ data, onClose }) {
       onDone && onDone();
       onClose && onClose();
     } catch (e) {
-      setErr(e.response?.data?.error || 'Ошибка при сохранении');
+      const msg = e.response?.data?.error || 'Ошибка при сохранении';
+      if (msg.includes('названием')) setErrName(msg);
+      else if (msg.includes('кодом')) setErrCode(msg);
+      else setErrName(msg);
     }
   };
 
@@ -728,13 +732,12 @@ function FacultyFormModal({ data, onClose }) {
         <LoadButton className="btn btn-primary" onClick={save}>{I.check}Сохранить</LoadButton>
       </>}>
       <div className="form-grid">
-        <Field label="Полное название" required error={err && !fullName.trim() ? err : null}>
-          <input className={`input ${err && !fullName.trim() ? 'is-error' : ''}`} value={fullName} onChange={e => { const next = e.target.value; setFullName(next); if (!codeManual) setShortName(autoCode(next)); setErr(''); }} maxLength={255} onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }} onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); const next = fullName + t; setFullName(next); if (!codeManual) setShortName(autoCode(next)); setErr(''); }} />
+        <Field label="Полное название" required error={errName || null}>
+          <input className={`input ${errName ? 'is-error' : ''}`} value={fullName} onChange={e => { const next = e.target.value; setFullName(next); if (!codeManual) setShortName(autoCode(next)); setErrName(''); }} maxLength={255} onBeforeInput={e => { if (e.data && /[A-Za-z]/.test(e.data)) e.preventDefault(); }} onPaste={e => { e.preventDefault(); const t = (e.clipboardData.getData('text') || '').replace(/[A-Za-z]/g, ''); const next = fullName + t; setFullName(next); if (!codeManual) setShortName(autoCode(next)); setErrName(''); }} />
         </Field>
-        <Field label="Код (аббревиатура)" required error={err && fullName.trim() && !shortName.trim() ? err : null} hint={!isEdit && !codeManual ? 'Формируется автоматически по названию' : null}>
-          <input className={`input ${err && fullName.trim() && !shortName.trim() ? 'is-error' : ''}`} value={shortName} onChange={e => { setShortName(e.target.value.toUpperCase()); setCodeManual(true); setErr(''); }} maxLength={50} />
+        <Field label="Код (аббревиатура)" required error={errCode || null} hint={!isEdit && !codeManual ? 'Формируется автоматически по названию' : null}>
+          <input className={`input ${errCode ? 'is-error' : ''}`} value={shortName} onChange={e => { setShortName(e.target.value.toUpperCase()); setCodeManual(true); setErrCode(''); }} maxLength={50} />
         </Field>
-        {err && shortName.trim() && fullName.trim() && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
       </div>
     </Modal>
   );
