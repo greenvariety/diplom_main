@@ -118,7 +118,7 @@ function UserChip({ currentUser, onLogout, openModal, onNavigate }) {
   return (
     <div ref={wrapRef} className="dd-wrap">
       <button className="user-chip" onClick={() => setOpen(o => !o)} aria-haspopup="true" aria-expanded={open}>
-        <Avatar name={name} size="sm" av={1} />
+        <Avatar name={name} size="sm" av={1} src={currentUser?.photo || null} />
         <div>
           <div className="name">{name}</div>
           <div className="role">{ROLE_LABEL[role] || role}</div>

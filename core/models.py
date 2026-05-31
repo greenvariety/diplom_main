@@ -406,6 +406,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         related_name='allowed_users',
         verbose_name='Доступные организации'
     )
+    photo = models.ImageField(upload_to='users/', null=True, blank=True, verbose_name='Фото профиля')
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     password_changed_at = models.DateTimeField(null=True, blank=True, verbose_name='Пароль изменён')

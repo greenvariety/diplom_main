@@ -14,6 +14,31 @@ _CODE_TTL = 10
 _RESEND_COOLDOWN = 60
 
 
+class ProfilePhotoUpdateView(APIView):
+    def patch(self, request):
+        user = request.user
+        photo = request.FILES.get('photo')
+        if not photo:
+            return Response({'error': 'Файл не передан'}, status=400)
+        if photo.size > 5 * 1024 * 1024:
+            return Response({'error': 'Файл слишком большой. Максимум 5 МБ'}, status=400)
+        if not photo.content_type.startswith('image/'):
+            return Response({'error': 'Можно загружать только изображения'}, status=400)
+        if user.photo:
+            user.photo.delete(save=False)
+        user.photo = photo
+        user.save(update_fields=['photo'])
+        return Response({'ok': True, 'photo': request.build_absolute_uri(user.photo.url)})
+
+    def delete(self, request):
+        user = request.user
+        if user.photo:
+            user.photo.delete(save=False)
+            user.photo = None
+            user.save(update_fields=['photo'])
+        return Response({'ok': True})
+
+
 class ProfileUpdateView(APIView):
     def patch(self, request):
         user = request.user

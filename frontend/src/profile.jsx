@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { I } from './data.jsx';
 import { PasswordRules, PasswordStrength, PasswordInput, FadingError, Field, LoadButton } from './utils.jsx';
 import { CodeInput, RecoverPasswordScreen } from './auth.jsx';
+import { Avatar } from './shell.jsx';
 import api from './api.js';
 
 function daysSince(isoStr) {
@@ -49,6 +50,79 @@ function TabBar({ tab, setTab, role }) {
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/* ── Фото профиля ───────────────────────────────────────────── */
+function PhotoSection({ currentUser, onUserUpdated }) {
+  const fileRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+  const [err, setErr] = useState('');
+
+  const handleFile = async (file) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { setErr('Можно загружать только изображения'); return; }
+    if (file.size > 5 * 1024 * 1024) { setErr('Файл слишком большой. Максимум 5 МБ'); return; }
+    setErr('');
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('photo', file);
+      const r = await api.patch('/me/photo/', fd);
+      onUserUpdated && onUserUpdated({ photo: r.data.photo });
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка загрузки');
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  const removePhoto = async () => {
+    setErr('');
+    setUploading(true);
+    try {
+      await api.delete('/me/photo/');
+      onUserUpdated && onUserUpdated({ photo: null });
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка удаления');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const name = currentUser?.display_name || currentUser?.username || '-';
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid var(--border)' }}>
+      <Avatar name={name} size="lg" av={1} src={currentUser?.photo || null} />
+      <div>
+        <div style={{ fontWeight: 500, marginBottom: 8 }}>Фото профиля</div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+          >
+            {uploading ? 'Загрузка...' : (currentUser?.photo ? 'Заменить фото' : 'Загрузить фото')}
+          </button>
+          {currentUser?.photo && (
+            <button className="btn btn-ghost btn-sm" onClick={removePhoto} disabled={uploading}
+              style={{ color: 'var(--bad-fg)' }}>
+              Удалить фото
+            </button>
+          )}
+        </div>
+        {err && <div className="field-error" style={{ marginTop: 6, fontSize: 12 }}>{err}</div>}
+        <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>JPG, PNG, GIF до 5 МБ</div>
+      </div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={e => handleFile(e.target.files[0])}
+      />
     </div>
   );
 }
@@ -101,6 +175,7 @@ function TabData({ currentUser, onUserUpdated }) {
 
   return (
     <div style={{ maxWidth: 480 }}>
+      <PhotoSection currentUser={currentUser} onUserUpdated={onUserUpdated} />
       <Field label="ФИО" error={errs.name}>
         <input
           className={`input ${errs.name ? 'is-error' : ''}`}
