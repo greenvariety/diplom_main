@@ -1342,6 +1342,12 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                       {I.plus}
                     </button>
                   )}
+                  {teacherTab === 'headteacher' && ['owner', 'admin'].includes(currentUser?.role) && (
+                    <button className="btn btn-secondary btn-sm" style={{ margin: '6px 8px' }}
+                      onClick={() => openModal('employeeSetHeadteacher', { employeeId, employeeName: employee.full_name, alreadyGroupIds: (employee.headed_groups || []).map(g => g.id), onDone: load })}>
+                      {I.plus}
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="card-body flush">

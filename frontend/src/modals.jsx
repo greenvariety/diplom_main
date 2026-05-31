@@ -659,6 +659,48 @@ function EmployeeAddTaughtSubjectModal({ data, onClose }) {
   );
 }
 
+function EmployeeSetHeadteacherModal({ data, onClose }) {
+  const { employeeId, employeeName, alreadyGroupIds = [], onDone } = data || {};
+  const [groups, setGroups] = useState([]);
+  const [groupId, setGroupId] = useState('');
+  const [err, setErr] = useState('');
+  const toast = useToast();
+
+  useEffect(() => {
+    api.get('/groups/').then(r => setGroups(r.data)).catch(() => {});
+  }, []);
+
+  const available = groups.filter(g => !alreadyGroupIds.includes(g.id));
+
+  const save = async () => {
+    if (!groupId) { setErr('Выберите группу'); return; }
+    setErr('');
+    try {
+      await api.patch(`/groups/${groupId}/`, { headteacher_id: employeeId });
+      toast.push('Классный руководитель назначен', { kind: 'ok' });
+      onDone && onDone();
+      onClose && onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка при назначении');
+    }
+  };
+
+  return (
+    <Modal title="Назначить классным руководителем" onClose={onClose}
+      footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>Назначить</LoadButton></>}>
+      <div className="form-grid">
+        <Field label="Группа" required>
+          <select className="select" value={groupId} onChange={e => { setGroupId(e.target.value); setErr(''); }}>
+            <option value="">- Выберите группу -</option>
+            {available.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+          </select>
+        </Field>
+        {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
+      </div>
+    </Modal>
+  );
+}
+
 function GroupFormModal({ data, onClose }) {
   const { group, onDone, facultyId: presetFacultyId } = data || {};
   const isEdit = !!group;
@@ -2520,7 +2562,7 @@ export {
   StudentFormModal, EmployeeFormModal, GroupFormModal, FacultyFormModal,
   ParentFormModal, ParentAddStudentModal, SubjectFormModal, PositionFormModal, UserFormModal, UserSetPasswordModal,
   TransferModal, DeleteConfirmModal, ApproveDeleteModal, UploadDocModal,
-  AssignSubjectModal, EmployeeAssignSubjectModal, EmployeeAddTaughtSubjectModal, AuditDiffModal, LogoutModal,
+  AssignSubjectModal, EmployeeAssignSubjectModal, EmployeeAddTaughtSubjectModal, EmployeeSetHeadteacherModal, AuditDiffModal, LogoutModal,
   StudentDetailModal, GroupDetailModal, FacultyDetailModal, EmployeeDetailModal,
   OrgFormModal, OrgDeleteConfirmModal, OwnerDirectDeleteModal,
   NoteModal,
