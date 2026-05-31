@@ -240,25 +240,25 @@ def check_person_email_unique(email, exclude_employee_pk=None, exclude_student_p
     if exclude_employee_pk:
         emp_qs = emp_qs.exclude(pk=exclude_employee_pk)
     if emp_qs.exists():
-        return 'Этот email уже используется другим сотрудником'
+        return 'Email уже занят'
 
     stu_qs = Student.objects.filter(email__iexact=email)
     if exclude_student_pk:
         stu_qs = stu_qs.exclude(pk=exclude_student_pk)
     if stu_qs.exists():
-        return 'Этот email уже используется студентом'
+        return 'Email уже занят'
 
     par_qs = Parent.objects.filter(email__iexact=email)
     if exclude_parent_pk:
         par_qs = par_qs.exclude(pk=exclude_parent_pk)
     if par_qs.exists():
-        return 'Этот email уже используется опекуном'
+        return 'Email уже занят'
 
     user_qs = User.objects.filter(email__iexact=email).exclude(email='')
     if exclude_user_pk:
         user_qs = user_qs.exclude(pk=exclude_user_pk)
     if user_qs.exists():
-        return 'Этот email уже используется в системе'
+        return 'Email уже занят'
 
     return None
 
@@ -276,19 +276,19 @@ def check_person_phone_unique(phone, exclude_employee_pk=None, exclude_student_p
     if exclude_employee_pk:
         emp_qs = emp_qs.exclude(pk=exclude_employee_pk)
     if emp_qs.exists():
-        return 'Этот номер уже используется другим сотрудником'
+        return 'Номер уже занят'
 
     stu_qs = Student.objects.filter(phone=phone)
     if exclude_student_pk:
         stu_qs = stu_qs.exclude(pk=exclude_student_pk)
     if stu_qs.exists():
-        return 'Этот номер уже используется студентом'
+        return 'Номер уже занят'
 
     par_qs = Parent.objects.filter(phone=phone)
     if exclude_parent_pk:
         par_qs = par_qs.exclude(pk=exclude_parent_pk)
     if par_qs.exists():
-        return 'Этот номер уже используется опекуном'
+        return 'Номер уже занят'
 
     return None
 

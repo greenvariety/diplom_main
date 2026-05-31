@@ -1126,6 +1126,7 @@ function UserFormModal({ data, onClose }) {
   const [password2, setPassword2] = useState('');
   const [pwFocus, setPwFocus] = useState(false);
   const [err, setErr] = useState('');
+  const [loginErr, setLoginErr] = useState('');
   const [step, setStep] = useState(1);
 
   useEffect(() => {
@@ -1200,7 +1201,14 @@ function UserFormModal({ data, onClose }) {
       onDone && onDone();
       onClose && onClose();
     } catch (e) {
-      setErr(e.response?.data?.error || 'Ошибка при сохранении');
+      const field = e.response?.data?.field;
+      const msg = e.response?.data?.error || 'Ошибка при сохранении';
+      if (field === 'login') {
+        setLoginErr(msg);
+        setStep(1);
+      } else {
+        setErr(msg);
+      }
     }
   };
 
@@ -1256,7 +1264,7 @@ function UserFormModal({ data, onClose }) {
   const footerCreate = step === 1
     ? <><button className="btn btn-secondary" onClick={onClose}>Отмена</button><div style={{ flex: 1 }} /><button className="btn btn-primary" onClick={goNext}>Далее {I.chevr}</button></>
     : step === 2
-    ? <><button className="btn btn-secondary" onClick={() => { setErr(''); setStep(1); }}>{I.back}Назад</button><div style={{ flex: 1 }} /><button className="btn btn-primary" onClick={goNext}>Далее {I.chevr}</button></>
+    ? <><button className="btn btn-secondary" onClick={() => { setErr(''); setLoginErr(''); setStep(1); }}>{I.back}Назад</button><div style={{ flex: 1 }} /><button className="btn btn-primary" onClick={goNext}>Далее {I.chevr}</button></>
     : <><button className="btn btn-secondary" onClick={() => { setErr(''); setStep(2); }}>{I.back}Назад</button><div style={{ flex: 1 }} /><LoadButton className="btn btn-primary" onClick={save}>{I.check}Создать</LoadButton></>;
 
   return (
@@ -1283,8 +1291,8 @@ function UserFormModal({ data, onClose }) {
       <div key={step} className="screen-fade-in">
         {step === 1 && (
           <div className="form-grid">
-            <Field label="Логин" required error={err && !username.trim() ? err : null} className="field-full">
-              <input className={`input ${err && !username.trim() ? 'is-error' : ''}`} value={username} onChange={e => { setUsername(e.target.value); setErr(''); }} maxLength={150} {...LOGIN_INPUT_PROPS} onPaste={e => { e.preventDefault(); setUsername(p => (p + filterLogin(e.clipboardData.getData('text') || '')).slice(0, 150)); setErr(''); }} />
+            <Field label="Логин" required error={loginErr || (err && !username.trim() ? err : null)} className="field-full">
+              <input className={`input ${loginErr || (err && !username.trim()) ? 'is-error' : ''}`} value={username} onChange={e => { setUsername(e.target.value); setErr(''); setLoginErr(''); }} maxLength={150} {...LOGIN_INPUT_PROPS} onPaste={e => { e.preventDefault(); setUsername(p => (p + filterLogin(e.clipboardData.getData('text') || '')).slice(0, 150)); setErr(''); setLoginErr(''); }} />
             </Field>
             <Field label="ФИО" required error={err && username.trim() && !displayName.trim() ? err : null} className="field-full">
               <input className={`input ${err && username.trim() && !displayName.trim() ? 'is-error' : ''}`} value={displayName} onChange={e => { setDisplayName(e.target.value); setErr(''); }} maxLength={150} {...NAME_INPUT_PROPS} onPaste={e => { e.preventDefault(); setDisplayName(p => (p + filterName(e.clipboardData.getData('text') || '')).slice(0, 150)); setErr(''); }} />
@@ -1930,7 +1938,7 @@ function OrgFormModal({ data, onClose }) {
   const [photo, setPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(org?.photo || null);
   const [dragOver, setDragOver] = useState(false);
-  const [errs, setErrs] = useState({ name: '', date: '' });
+  const [errs, setErrs] = useState({ name: '', code: '', date: '' });
   const setErr = (f, msg) => setErrs(e => ({ ...e, [f]: msg }));
   const clearErr = (f) => setErrs(e => ({ ...e, [f]: '' }));
   const [touched, setTouched] = useState({ name: false, code: false, description: false });
@@ -1959,10 +1967,11 @@ function OrgFormModal({ data, onClose }) {
   const save = async () => {
     const today = new Date().toISOString().split('T')[0];
     const nameErr = !name.trim() ? 'Введите название' : '';
+    const codeErr = !code.trim() ? 'Введите аббревиатуру' : '';
     const dateErr = !foundedDate ? 'Укажите дату основания' : foundedDate > today ? 'Дата не может быть в будущем' : '';
-    if (nameErr || dateErr) { setErrs({ name: nameErr, date: dateErr }); return; }
+    if (nameErr || codeErr || dateErr) { setErrs({ name: nameErr, code: codeErr, date: dateErr }); return; }
     if (description.length > 5000) { toast.push('Описание не должно превышать 5000 символов', { kind: 'err' }); return; }
-    setErrs({ name: '', date: '' });
+    setErrs({ name: '', code: '', date: '' });
     try {
       const fd = new FormData();
       fd.append('name', name.trim());
@@ -2050,11 +2059,11 @@ function OrgFormModal({ data, onClose }) {
             maxLength={1000}
           />
         </Field>
-        <Field label="Код организации">
+        <Field label="Аббревиатура" required error={errs.code}>
           <input
-            className="input"
+            className={`input ${errs.code ? 'is-error' : ''}`}
             value={code}
-            onChange={e => { setCode(e.target.value); }}
+            onChange={e => { setCode(e.target.value); clearErr('code'); }}
             maxLength={50}
           />
         </Field>

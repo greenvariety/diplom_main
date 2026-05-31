@@ -56,7 +56,7 @@ class UsersView(APIView):
         if not username:
             return Response({'error': 'Введите логин'}, status=400)
         if User.objects.filter(username=username).exists():
-            return Response({'error': 'Пользователь с таким логином уже существует'}, status=400)
+            return Response({'error': 'Логин уже занят', 'field': 'login'}, status=400)
 
         role = request.data.get('role', 'teacher')
         if role not in ('admin', 'teacher'):
