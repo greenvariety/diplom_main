@@ -141,7 +141,6 @@ class ParentDetailView(APIView):
                 'relation_type': sp.relation_type,
                 'relation_display': sp.get_relation_type_display(),
                 'group_name': sp.student.group.name if sp.student.group_id else '',
-                'status': sp.student.status,
             }
             for sp in sp_qs
         ]
@@ -274,7 +273,6 @@ class ParentStudentsView(APIView):
             'relation_type': sp.relation_type,
             'relation_display': sp.get_relation_type_display(),
             'group_name': student.group.name if student.group_id else '',
-            'status': student.status,
         }, status=201)
 
 
