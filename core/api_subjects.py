@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import Subject, Employee, Student
+from .models import Subject, Employee, Student, GroupSubjectEmployee
 from .utils import log_action
 
 
@@ -157,6 +157,7 @@ class SubjectEmployeeDetailView(APIView):
             employee = Employee.objects.get(pk=employee_pk, institution=institution)
         except Employee.DoesNotExist:
             return Response({'error': 'Сотрудник не найден'}, status=404)
+        GroupSubjectEmployee.objects.filter(subject=subject, employee=employee).delete()
         employee.taught_subjects.remove(subject)
         log_action(request.user, 'updated', subject,
                    old_data={'teacher_removed': employee.full_name()}, institution=institution)
