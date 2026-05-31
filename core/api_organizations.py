@@ -56,6 +56,8 @@ class OrganizationsView(APIView):
         err = _owner_only(request)
         if err:
             return err
+        if Institution.objects.filter(owner=request.user).exists():
+            return Response({'error': 'У вас уже есть организация'}, status=400)
         name = request.data.get('name', '').strip()
         code = request.data.get('code', '').strip()
         if not name:
@@ -85,8 +87,10 @@ class OrganizationsView(APIView):
         if photo:
             org.photo = photo
             org.save(update_fields=['photo'])
+        request.user.institution = org
+        request.user.save(update_fields=['institution'])
         log_action(request.user, 'created', org, new_data={'name': name, 'code': code}, institution=org)
-        return Response(_org_data(org, request.user.institution_id), status=201)
+        return Response(_org_data(org, org.pk), status=201)
 
 
 class OrganizationDetailView(APIView):

@@ -188,60 +188,49 @@ function OrgPickerScreen({ user, onOrgSelected, onLogout, onBack, onProfile }) {
     );
   }
 
+  const org = orgs[0] || null;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg)', fontFamily: 'var(--font)', padding: 24 }}>
       {brand}
-      <div className="card screen-fade-in" style={{ width: '100%', maxWidth: 520 }}>
+      <div className="card screen-fade-in" style={{ width: '100%', maxWidth: 480 }}>
         <div className="card-body" style={{ padding: 28 }}>
-          <h2 style={{ marginBottom: 6 }}>
-            {orgs.length > 0 ? 'Мои организации' : 'Создайте организацию'}
-          </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: orgs.length > 0 ? 16 : 16 }}>
-            {orgs.length > 0
-              ? 'Выберите организацию для работы, отредактируйте или создайте новую.'
-              : 'У вас ещё нет организаций. Создайте первую.'}
-          </p>
-
-          {orgs.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-              {orgs.map(org => (
-                <div key={org.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: org.active ? 'var(--accent-soft)' : 'var(--surface-alt)', border: `1px solid ${org.active ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 8 }}>
-                  <div style={{ width: 34, height: 34, borderRadius: 6, background: org.active ? 'var(--accent)' : 'var(--surface)', color: org.active ? '#fff' : 'var(--text-muted)', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 10, flexShrink: 0, border: '1px solid var(--border)', overflow: 'hidden' }}>
-                    {org.photo
-                      ? <img src={org.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : org.code}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text)' }}>{org.name}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>
-                      {org.students} студ. · {org.employees} сотр.{org.founded_date ? ` · Основана: ${org.founded_date}` : ''}
-                      {org.active && <span style={{ color: 'var(--accent)', fontWeight: 600, marginLeft: 6 }}>· активна</span>}
-                    </div>
-                  </div>
-                  <button
-                    className="btn btn-primary btn-sm"
-                    style={{ fontSize: 11, padding: '4px 10px', flexShrink: 0 }}
-                    onClick={() => pickOrg(org.id, org.name, org.active)}
-                  >
-                    {org.active ? I.check : I.swap}
-                    {org.active ? 'Войти' : 'Выбрать'}
-                  </button>
-                  <button className="btn btn-ghost btn-icon btn-sm" onClick={() => openEdit(org)} title="Редактировать">{I.pencil}</button>
-                  <button className="btn btn-ghost btn-icon btn-sm" onClick={() => deleteOrg(org)} title="Удалить организацию" style={{ color: 'var(--bad-fg)' }}>{I.trash}</button>
+          {org ? (
+            <>
+              <h2 style={{ marginBottom: 6 }}>Ваша организация</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16 }}>Войдите или отредактируйте данные организации.</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'var(--accent-soft)', border: '1px solid var(--accent)', borderRadius: 8, marginBottom: 16 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 7, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 10, flexShrink: 0, overflow: 'hidden' }}>
+                  {org.photo ? <img src={org.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : org.code}
                 </div>
-              ))}
-            </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{org.name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>
+                    {org.students} студ. · {org.employees} сотр.{org.founded_date ? ` · Основана: ${org.founded_date}` : ''}
+                  </div>
+                </div>
+                <button className="btn btn-ghost btn-icon btn-sm" onClick={() => openEdit(org)} title="Редактировать">{I.pencil}</button>
+                <button className="btn btn-ghost btn-icon btn-sm" onClick={() => deleteOrg(org)} title="Удалить организацию" style={{ color: 'var(--bad-fg)' }}>{I.trash}</button>
+              </div>
+              <button className="btn btn-primary" onClick={() => pickOrg(org.id, org.name, true)} style={{ width: '100%', justifyContent: 'center' }}>
+                {I.check} Войти
+              </button>
+            </>
+          ) : (
+            <>
+              <h2 style={{ marginBottom: 6 }}>Создайте организацию</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16 }}>Для начала работы создайте вашу организацию.</p>
+              <button className="btn btn-primary" onClick={openCreate} style={{ width: '100%', justifyContent: 'center' }}>
+                {I.plus} Создать организацию
+              </button>
+            </>
           )}
-
-          <button className="btn btn-primary" onClick={openCreate} style={{ width: '100%', justifyContent: 'center' }}>
-            {I.plus} Создать организацию
-          </button>
         </div>
         {footer}
       </div>
       {deleteTarget && (
         <OrgDeleteConfirmModal
-          data={{ org: deleteTarget, onDone: (id) => setOrgs(prev => prev.filter(o => o.id !== id)) }}
+          data={{ org: deleteTarget, onDone: () => { setDeleteTarget(null); load(); } }}
           onClose={() => setDeleteTarget(null)}
         />
       )}
@@ -266,8 +255,10 @@ function AppShell({ onLogout }) {
     api.get('/me/').then(r => {
       const user = r.data;
       if (!afterSwitch) {
-        // Всегда показываем пикер организации при открытии приложения
-        setCurrentUser({ ...user, _showPicker: true });
+        // Для owner: показываем пикер только если нет организации
+        // Для остальных ролей: всегда показываем пикер для выбора организации
+        const showPicker = user.role === 'owner' ? !user.institution : true;
+        setCurrentUser({ ...user, _showPicker: showPicker });
       } else {
         setCurrentUser(user);
       }

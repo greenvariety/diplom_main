@@ -237,12 +237,10 @@ function Shell({ currentUser, role: roleProp, active, onNavigate, onLogout, open
               className="btn btn-ghost"
               style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-muted)', padding: '4px 10px', borderRadius: 6 }}
               onClick={() => onNavigate && onNavigate('org-picker')}
-              title="Управление организациями"
+              title="Настройки организации"
             >
               {I.building}
-              <span>Организация:</span>
               <strong style={{ color: 'var(--text)' }}>{institutionName || 'Не выбрана'}</strong>
-              {I.chevr}
             </button>
           ) : (
             <TopbarSearch onNavigate={onNavigate} />
