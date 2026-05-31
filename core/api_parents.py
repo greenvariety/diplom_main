@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.paginator import Paginator
 from django.db.models import Q
-from .models import Parent, Student, StudentParent, DeleteRequest, Group
+from .models import Parent, Student, StudentParent, DeleteRequest, Group, Document
 from .utils import log_action, check_person_email_unique, check_person_phone_unique
 
 
@@ -156,6 +156,17 @@ class ParentDetailView(APIView):
                 'group_name': sp.student.group.name if sp.student.group_id else '',
             }
             for sp in sp_qs
+        ]
+        docs = Document.objects.filter(owner_type='parent', owner_id=parent.pk)
+        data['documents'] = [
+            {
+                'id': d.pk,
+                'name': d.name,
+                'doc_type': d.doc_type,
+                'uploaded_at': d.uploaded_at.strftime('%d.%m.%Y') if d.uploaded_at else '',
+                'file_url': request.build_absolute_uri(d.file.url) if d.file else None,
+            }
+            for d in docs
         ]
         return Response(data)
 
