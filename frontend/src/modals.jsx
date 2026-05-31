@@ -1244,7 +1244,7 @@ function UserFormModal({ data, onClose }) {
             <label className="field-label">Привязать к сотруднику</label>
             <Combobox options={employeeOpts} value={employeeId} onChange={handleEmployeeChange} />
           </div>
-          <OrgList />
+          {orgs.length > 1 && <OrgList />}
         </div>
         {err && <div style={{ color: 'var(--bad-fg)', fontSize: 13, marginTop: 8 }}>{err}</div>}
       </Modal>
