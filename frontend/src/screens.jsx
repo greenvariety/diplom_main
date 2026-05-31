@@ -759,6 +759,7 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
   const [data, setData] = useState({ results: [], count: 0, num_pages: 1 });
   const [loading, setLoading] = useState(true);
   const [filterPos, setFilterPos] = useState(filterPositionId || '');
+  const [filterRole, setFilterRole] = useState('');
   const [positions, setPositions] = useState([]);
   const sort = useSortable({ key: null, dir: 'asc' }, 'employees-list');
 
@@ -769,17 +770,18 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
     const params = new URLSearchParams({ page });
     if (q) params.set('search', q);
     if (filterPos) params.set('position_id', filterPos);
+    if (filterRole) params.set('role_type', filterRole);
     api.get(`/employees/?${params}`).then(r => {
       setData(r.data);
       setLoading(false);
     }).catch(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [page, filterPos]);
+  useEffect(() => { load(); }, [page, filterPos, filterRole]);
 
   const handleSearch = () => { setPage(1); load(); };
-  const hasFilters = q || filterPos;
-  const reset = () => { setQ(''); setFilterPos(''); setPage(1); };
+  const hasFilters = q || filterPos || filterRole;
+  const reset = () => { setQ(''); setFilterPos(''); setFilterRole(''); setPage(1); };
   const canManage = ['owner', 'admin', 'secretary'].includes(currentUser?.role);
 
   const handleDeletePosition = async () => {
@@ -831,6 +833,16 @@ function EmployeeList({ currentUser, openModal, onNavigate, filterPositionId, fi
           <select className="select" value={filterPos} onChange={e => { setFilterPos(e.target.value); setPage(1); }}>
             <option value="">Все</option>
             {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </div>
+        <div className="field">
+          <label className="field-label">Роль</label>
+          <select className="select" value={filterRole} onChange={e => { setFilterRole(e.target.value); setPage(1); }}>
+            <option value="">Все</option>
+            <option value="admin">Администратор</option>
+            <option value="secretary">Секретарь</option>
+            <option value="teacher">Преподаватель</option>
+            <option value="none">Без доступа</option>
           </select>
         </div>
       </div>
