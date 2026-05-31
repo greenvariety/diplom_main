@@ -651,7 +651,7 @@ function ProfileScreen({ currentUser: initUser, onNavigate, onUserUpdated, onLog
     return (
       <RecoverPasswordScreen
         onBack={() => setShowRecover(false)}
-        onDone={() => { setShowRecover(false); }}
+        onDone={() => { onLogout && onLogout(); }}
       />
     );
   }

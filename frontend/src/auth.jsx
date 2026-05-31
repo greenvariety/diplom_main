@@ -664,8 +664,6 @@ function RecoverPasswordScreen({ onBack, onDone }) {
         code: code.trim().toUpperCase(),
         new_password: p1,
       });
-      localStorage.setItem('access_token', res.data.access);
-      localStorage.setItem('refresh_token', res.data.refresh);
       onDone && onDone();
     } catch (err) {
       const msg = err.response?.data?.error || 'Ошибка восстановления';

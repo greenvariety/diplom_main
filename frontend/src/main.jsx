@@ -39,7 +39,7 @@ function AuthFlow({ onAuthenticated }) {
     return (
       <RecoverPasswordScreen
         onBack={() => setScreen('login')}
-        onDone={() => onAuthenticated()}
+        onDone={() => setScreen('login')}
       />
     );
   }
