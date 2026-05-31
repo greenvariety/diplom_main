@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './styles.css';
 import { ToastProvider, useToast, LoadButton } from './utils.jsx';
 import { I } from './data.jsx';
-import { LoginScreen, RegisterScreen, EmailVerifyScreen, RecoverPasswordScreen } from './auth.jsx';
+import { LoginScreen, RegisterScreen, EmailVerifyScreen, RecoverPasswordScreen, OrgSetupScreen } from './auth.jsx';
 import { Shell } from './shell.jsx';
 import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, DashboardSecretary, FacultyList, FacultyDetail, GroupList, GroupDetail, StudentList, StudentDetail, EmployeeList, EmployeeDetail, PositionList, ParentList, ParentDetail, SubjectList, SubjectDetail, UserList, DeleteRequests, AuditLog } from './screens.jsx';
 import { ProfileScreen } from './profile.jsx';
@@ -30,10 +30,13 @@ function AuthFlow({ onAuthenticated }) {
       <EmailVerifyScreen
         maskedEmail={verifyData?.maskedEmail}
         login={verifyData?.login}
-        onDone={() => onAuthenticated()}
+        onDone={() => setScreen('org-setup')}
         onBack={() => setScreen('register')}
       />
     );
+  }
+  if (screen === 'org-setup') {
+    return <OrgSetupScreen onDone={() => onAuthenticated()} />;
   }
   if (screen === 'recover') {
     return (
@@ -255,9 +258,9 @@ function AppShell({ onLogout }) {
     api.get('/me/').then(r => {
       const user = r.data;
       if (!afterSwitch) {
-        // Для owner: показываем пикер только если нет организации
-        // Для остальных ролей: всегда показываем пикер для выбора организации
-        const showPicker = user.role === 'owner' ? !user.institution : true;
+        // Owner никогда не видит пикер — org создаётся при регистрации
+        // Для остальных ролей: показываем пикер для выбора организации
+        const showPicker = user.role === 'owner' ? false : true;
         setCurrentUser({ ...user, _showPicker: showPicker });
       } else {
         setCurrentUser(user);
@@ -427,7 +430,7 @@ function AppShell({ onLogout }) {
       return <DashboardOwner {...sharedProps} />;
     }
 
-    if (currentScreen === 'org-picker') {
+    if (currentScreen === 'org-picker' && currentUser.role !== 'owner') {
       return (
         <OrgPickerScreen
           user={currentUser}

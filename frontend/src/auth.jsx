@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import api from './api.js';
 import { I } from './data.jsx';
 import { PasswordRules, PasswordStrength, PasswordInput, FadingError, Field, LoadButton, pwStrength } from './utils.jsx';
 
@@ -905,4 +906,90 @@ function TermsScreen({ onBack }) {
   );
 }
 
-export { LoginScreen, RegisterScreen, EmailVerifyScreen, RecoverPasswordScreen, TermsScreen, CodeInput };
+/* ============================================================
+   OrgSetupScreen - шаг 3 регистрации: создание организации
+   ============================================================ */
+function OrgSetupScreen({ onDone }) {
+  const [vals, setVals] = useState({ name: '', date: '' });
+  const [touched, setTouched] = useState({});
+  const [err, setErr] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const set = (k, v) => setVals(s => ({ ...s, [k]: v }));
+
+  const errs = {};
+  if (!vals.name.trim()) errs.name = 'Введите название организации';
+  if (!vals.date.trim()) errs.date = 'Укажите дату основания';
+
+  const submit = async () => {
+    setTouched({ name: 1, date: 1 });
+    if (Object.keys(errs).length) return;
+    setSubmitting(true);
+    setErr('');
+    try {
+      await api.post('/organizations/', { name: vals.name.trim(), founded_date: vals.date.trim() });
+      onDone && onDone();
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Ошибка при создании организации');
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="login-wrap" style={{ gridTemplateColumns: '1fr' }}>
+      <div className="login-form-wrap screen-fade-in" style={{ padding: '40px 24px' }}>
+        <div style={{ width: '100%', maxWidth: 520 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, justifyContent: 'center' }}>
+            <img src="/logo.png" style={{ width: 36, height: 36, objectFit: 'contain', borderRadius: '50%' }} alt="" />
+            <div style={{ fontWeight: 600 }}>АИСК</div>
+          </div>
+
+          <div className="steps" style={{ justifyContent: 'center' }}>
+            <div className="step is-done"><div className="step-num">{I.check}</div>Данные аккаунта</div>
+            <div className="step-bar"></div>
+            <div className="step is-done"><div className="step-num">{I.check}</div>Подтверждение Email</div>
+            <div className="step-bar"></div>
+            <div className="step is-active"><div className="step-num">3</div>Организация</div>
+          </div>
+
+          <div className="card">
+            <div className="card-body" style={{ padding: 28 }}>
+              <h2 style={{ marginBottom: 6 }}>Настройка организации</h2>
+              <p className="muted" style={{ marginBottom: 20, fontSize: 13 }}>Заполните основные данные вашего учебного заведения. Это можно изменить позже.</p>
+
+              <Field label="Название организации" required error={touched.name && errs.name}>
+                <input
+                  className={`input ${touched.name && errs.name ? 'is-error' : ''}`}
+                  value={vals.name}
+                  onChange={e => set('name', e.target.value)}
+                  onBlur={() => setTouched(t => ({ ...t, name: 1 }))}
+                  maxLength={200}
+                  autoFocus
+                />
+              </Field>
+
+              <Field label="Дата основания" required error={touched.date && errs.date}>
+                <input
+                  type="date"
+                  className={`input ${touched.date && errs.date ? 'is-error' : ''}`}
+                  value={vals.date}
+                  onChange={e => set('date', e.target.value)}
+                  onBlur={() => setTouched(t => ({ ...t, date: 1 }))}
+                />
+              </Field>
+
+              {err && <div className="field-error" style={{ marginTop: 8 }}>{err}</div>}
+            </div>
+            <div className="modal-foot">
+              <div style={{ flex: 1 }}></div>
+              <LoadButton className="btn btn-primary" onClick={submit} disabled={submitting}>
+                {I.check} Создать и войти
+              </LoadButton>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export { LoginScreen, RegisterScreen, EmailVerifyScreen, RecoverPasswordScreen, TermsScreen, CodeInput, OrgSetupScreen };
