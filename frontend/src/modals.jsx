@@ -1617,15 +1617,8 @@ function AssignSubjectModal({ data, onClose }) {
   useEffect(() => {
     if (!subjectId) { setEmployees([]); setEmployeesFallback(false); return; }
     api.get(`/subjects/${subjectId}/employees/`).then(r => {
-      if (r.data.length > 0) {
-        setEmployees(r.data);
-        setEmployeesFallback(false);
-      } else {
-        api.get('/employees/?role_type=teacher').then(r2 => {
-          setEmployees(r2.data);
-          setEmployeesFallback(true);
-        }).catch(() => {});
-      }
+      setEmployees(r.data);
+      setEmployeesFallback(r.data.length === 0);
     }).catch(() => {});
     setEmployeeId('');
     setErr('');
@@ -1651,7 +1644,7 @@ function AssignSubjectModal({ data, onClose }) {
 
   return (
     <Modal title="Назначить предмет" onClose={onClose}
-      footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save}>Назначить</LoadButton></>}>
+      footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><LoadButton className="btn btn-primary" onClick={save} disabled={employeesFallback}>Назначить</LoadButton></>}>
       <div className="form-grid">
         {!isSubjectFixed && (
           <Field label="Предмет" required>
@@ -1675,7 +1668,7 @@ function AssignSubjectModal({ data, onClose }) {
             {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
           </select>
           {employeesFallback && subjectId && (
-            <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 4 }}>Показаны все сотрудники - для этого предмета ещё нет назначенных преподавателей</div>
+            <div style={{ color: 'var(--bad-fg)', fontSize: 11, marginTop: 4 }}>У этого предмета нет преподавателей - сначала добавьте преподавателя в предмет</div>
           )}
         </Field>
         {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
