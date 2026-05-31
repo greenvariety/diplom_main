@@ -30,7 +30,7 @@ from core.api_delete_requests import DeleteRequestsView, DeleteRequestApproveVie
 from core.api_audit import AuditLogView, AuditLogUsersView, AuditRollbackView, AuditLogExportView
 from core.api_notes import NotesView, NoteDetailView
 from core.api_dev import HtmlTasksView, HtmlTaskDetailView
-from core.api_profile import ProfileUpdateView, ProfileChangePasswordView, ProfileChangeEmailView, ProfileConfirmEmailView
+from core.api_profile import ProfileUpdateView, ProfileChangePasswordView, ProfileChangeEmailView, ProfileConfirmEmailView, ProfileDeleteAccountSendCodeView, ProfileDeleteAccountConfirmView
 
 router = DefaultRouter()
 
@@ -50,6 +50,8 @@ urlpatterns = [
     path('api/me/change-password/', ProfileChangePasswordView.as_view()),
     path('api/me/change-email/', ProfileChangeEmailView.as_view()),
     path('api/me/confirm-email/', ProfileConfirmEmailView.as_view()),
+    path('api/me/delete-account/send-code/', ProfileDeleteAccountSendCodeView.as_view()),
+    path('api/me/delete-account/confirm/', ProfileDeleteAccountConfirmView.as_view()),
     path('api/dashboard/', DashboardView.as_view()),
     path('api/validate-person-field/', ValidatePersonFieldView.as_view()),
     path('api/organizations/', OrganizationsView.as_view()),

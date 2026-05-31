@@ -18,30 +18,36 @@ function TabBar({ tab, setTab }) {
     { key: 'data',     label: 'Основные данные' },
     { key: 'password', label: 'Пароль' },
     { key: 'email',    label: 'Email' },
+    { key: 'delete',   label: 'Удалить аккаунт', danger: true },
   ];
   return (
-    <div style={{ display: 'flex', gap: 4, borderBottom: '2px solid var(--border)', marginBottom: 24 }}>
-      {tabs.map(t => (
-        <button
-          key={t.key}
-          onClick={() => setTab(t.key)}
-          style={{
-            background: 'none',
-            border: 'none',
-            padding: '10px 18px',
-            cursor: 'pointer',
-            fontSize: 14,
-            fontWeight: tab === t.key ? 600 : 400,
-            color: tab === t.key ? 'var(--accent)' : 'var(--text-muted)',
-            borderBottom: tab === t.key ? '2px solid var(--accent)' : '2px solid transparent',
-            marginBottom: -2,
-            transition: 'color .15s',
-            fontFamily: 'var(--font)',
-          }}
-        >
-          {t.label}
-        </button>
-      ))}
+    <div style={{ display: 'flex', gap: 4, borderBottom: '2px solid var(--border)', marginBottom: 24, flexWrap: 'wrap' }}>
+      {tabs.map(t => {
+        const active = tab === t.key;
+        const danger = t.danger;
+        return (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: '10px 18px',
+              cursor: 'pointer',
+              fontSize: 14,
+              fontWeight: active ? 600 : 400,
+              color: active ? (danger ? 'var(--bad-fg)' : 'var(--accent)') : (danger ? 'var(--bad-fg)' : 'var(--text-muted)'),
+              borderBottom: active ? `2px solid ${danger ? 'var(--bad-fg)' : 'var(--accent)'}` : '2px solid transparent',
+              marginBottom: -2,
+              transition: 'color .15s',
+              fontFamily: 'var(--font)',
+              opacity: danger && !active ? 0.7 : 1,
+            }}
+          >
+            {t.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -398,8 +404,164 @@ function TabEmail({ currentUser, onUserUpdated }) {
   );
 }
 
+/* ── Вкладка: Удалить аккаунт ───────────────────────────────── */
+function TabDeleteAccount({ currentUser, onLogout }) {
+  const [step, setStep] = useState('form'); // 'form' | 'code'
+  const [p1, setP1] = useState('');
+  const [p2, setP2] = useState('');
+  const [p1Err, setP1Err] = useState('');
+  const [p2Err, setP2Err] = useState('');
+  const [serverErr, setServerErr] = useState('');
+  const [code, setCode] = useState('');
+  const [codeKey, setCodeKey] = useState(0);
+  const [codeErr, setCodeErr] = useState('');
+  const [maskedEmail, setMaskedEmail] = useState('');
+  const [cooldown, setCooldown] = useState(0);
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown(s => Math.max(0, s - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
+  const sendCode = async () => {
+    setP1Err('');
+    setP2Err('');
+    setServerErr('');
+    if (!p1) { setP1Err('Введите пароль'); return; }
+    if (!p2) { setP2Err('Повторите пароль'); return; }
+    if (p1 !== p2) { setP2Err('Пароли не совпадают'); return; }
+    setSending(true);
+    try {
+      const r = await api.post('/me/delete-account/send-code/', { password: p1 });
+      setMaskedEmail(r.data.masked_email);
+      setCooldown(60);
+      setStep('code');
+    } catch (e) {
+      const data = e.response?.data;
+      if (data?.retry_after) setCooldown(data.retry_after);
+      if (data?.field === 'password') setP1Err(data.error);
+      else setServerErr(data?.error || 'Ошибка отправки кода');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const resend = async () => {
+    if (cooldown > 0) return;
+    setSending(true);
+    try {
+      const r = await api.post('/me/delete-account/send-code/', { password: p1 });
+      setMaskedEmail(r.data.masked_email);
+      setCooldown(60);
+      setCode('');
+      setCodeKey(k => k + 1);
+      setCodeErr('');
+    } catch (e) {
+      const data = e.response?.data;
+      if (data?.retry_after) setCooldown(data.retry_after);
+      setCodeErr(data?.error || 'Ошибка отправки кода');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (code.length !== 6) { setCodeErr('Введите все 6 символов'); return; }
+    try {
+      await api.post('/me/delete-account/confirm/', { code: code.toUpperCase() });
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      onLogout && onLogout();
+    } catch (e) {
+      const data = e.response?.data;
+      setCodeErr(data?.error || 'Неверный код');
+      if (data?.need_resend) setCooldown(0);
+    }
+  };
+
+  if (step === 'code') {
+    return (
+      <div style={{ maxWidth: 480 }}>
+        <div style={{ marginBottom: 20, padding: '14px 16px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, fontSize: 13, color: '#991b1b' }}>
+          <strong>Аккаунт будет удален безвозвратно.</strong> После подтверждения восстановление невозможно.
+        </div>
+        <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16 }}>
+          Код отправлен на <strong>{maskedEmail}</strong>. Введите его ниже. Код действителен 10 минут.
+        </p>
+        <Field label="Код из письма" error={codeErr}>
+          <CodeInput key={codeKey} onChange={v => { setCode(v); setCodeErr(''); }} hasError={!!codeErr} autoFocus />
+        </Field>
+        {codeErr && <div className="field-error" style={{ marginTop: 4 }}>{codeErr}</div>}
+        <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <LoadButton className="btn btn-danger-solid" onClick={confirmDelete}>
+            {I.trash} Удалить аккаунт навсегда
+          </LoadButton>
+          <button
+            className="btn btn-secondary btn-sm"
+            disabled={cooldown > 0 || sending}
+            onClick={resend}
+            style={{ fontSize: 12 }}
+          >
+            {cooldown > 0 ? `Отправить снова (${cooldown} сек.)` : 'Отправить снова'}
+          </button>
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <button className="btn btn-ghost btn-sm" onClick={() => { setStep('form'); setCodeErr(''); setCode(''); }}
+            style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+            {I.back} Назад
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ maxWidth: 480 }}>
+      <div style={{ marginBottom: 20, padding: '16px 18px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8 }}>
+        <div style={{ fontWeight: 600, color: '#991b1b', marginBottom: 8, fontSize: 14 }}>
+          {I.alert} Внимание - это действие необратимо
+        </div>
+        <ul style={{ margin: 0, paddingLeft: 18, color: '#7f1d1d', fontSize: 13, lineHeight: 1.7 }}>
+          <li>Ваш аккаунт будет удален без возможности восстановления</li>
+          <li>Все созданные вами организации и данные останутся в системе</li>
+          <li>Вы немедленно будете выведены из системы</li>
+          <li>Войти с этим логином или email будет невозможно</li>
+        </ul>
+      </div>
+
+      <Field label="Пароль" error={p1Err}>
+        <PasswordInput
+          value={p1}
+          onChange={v => { setP1(v); setP1Err(''); setServerErr(''); }}
+          hasError={!!p1Err}
+          autoComplete="current-password"
+        />
+      </Field>
+
+      <Field label="Подтвердите пароль" error={p2Err} style={{ marginTop: 16 }}>
+        <PasswordInput
+          value={p2}
+          onChange={v => { setP2(v); setP2Err(''); setServerErr(''); }}
+          hasError={!!p2Err}
+          autoComplete="current-password"
+        />
+      </Field>
+
+      {serverErr && <div className="field-error" style={{ marginTop: 12, padding: '10px 12px', borderRadius: 8 }}>{I.alert}{serverErr}</div>}
+
+      <div style={{ marginTop: 20 }}>
+        <LoadButton className="btn btn-danger-solid" onClick={sendCode} disabled={sending}>
+          Получить код подтверждения
+        </LoadButton>
+      </div>
+    </div>
+  );
+}
+
 /* ── Основной компонент ─────────────────────────────────────── */
-function ProfileScreen({ currentUser: initUser, onNavigate, onUserUpdated }) {
+function ProfileScreen({ currentUser: initUser, onNavigate, onUserUpdated, onLogout }) {
   const [tab, setTab] = useState('data');
   const [user, setUser] = useState(initUser);
   const [showRecover, setShowRecover] = useState(false);
@@ -441,6 +603,7 @@ function ProfileScreen({ currentUser: initUser, onNavigate, onUserUpdated }) {
             {tab === 'data'     && <TabData     currentUser={user} onUserUpdated={handleUpdated} />}
             {tab === 'password' && <TabPassword currentUser={user} onShowRecover={() => setShowRecover(true)} />}
             {tab === 'email'    && <TabEmail    currentUser={user} onUserUpdated={handleUpdated} />}
+            {tab === 'delete'   && <TabDeleteAccount currentUser={user} onLogout={onLogout} />}
           </div>
         </div>
       </div>

@@ -170,3 +170,85 @@ class ProfileConfirmEmailView(APIView):
         ec.save(update_fields=['used'])
 
         return Response({'ok': True, 'email': new_email})
+
+
+class ProfileDeleteAccountSendCodeView(APIView):
+    def post(self, request):
+        user = request.user
+        password = request.data.get('password', '')
+
+        if not password:
+            return Response({'error': 'Введите пароль', 'field': 'password'}, status=400)
+
+        if not user.check_password(password):
+            return Response({'error': 'Неверный пароль', 'field': 'password'}, status=400)
+
+        if not user.email:
+            return Response({'error': 'Для удаления аккаунта необходимо привязать email в разделе "Email"'}, status=400)
+
+        window_ago = timezone.now() - timedelta(minutes=15)
+        count = EmailCode.objects.filter(
+            login=user.username, purpose='delete_account', created_at__gte=window_ago
+        ).count()
+        if count >= 3:
+            return Response({'error': 'Слишком много запросов. Попробуйте через 15 минут'}, status=429)
+
+        latest = EmailCode.objects.filter(
+            login=user.username, purpose='delete_account'
+        ).order_by('-created_at').first()
+        if latest:
+            elapsed = (timezone.now() - latest.created_at).total_seconds()
+            if elapsed < _RESEND_COOLDOWN:
+                remaining = int(_RESEND_COOLDOWN - elapsed) + 1
+                return Response({'error': f'Подождите {remaining} сек.', 'retry_after': remaining}, status=429)
+
+        EmailCode.objects.filter(login=user.username, purpose='delete_account', used=False).update(used=True)
+
+        code = generate_email_code()
+        EmailCode.objects.create(
+            email=user.email,
+            login=user.username,
+            code=code,
+            purpose='delete_account',
+            expires_at=timezone.now() + timedelta(minutes=_CODE_TTL),
+        )
+
+        sent = send_verification_email(user.email, code, purpose='delete_account')
+        if not sent:
+            EmailCode.objects.filter(login=user.username, purpose='delete_account', used=False).delete()
+            return Response({'error': 'Не удалось отправить письмо. Проверьте email или попробуйте позже'}, status=500)
+
+        return Response({'masked_email': mask_email(user.email)})
+
+
+class ProfileDeleteAccountConfirmView(APIView):
+    def post(self, request):
+        user = request.user
+        code = (request.data.get('code') or '').strip().upper().replace('-', '')
+
+        if len(code) != 6:
+            return Response({'error': 'Введите все 6 символов кода'}, status=400)
+
+        ec = EmailCode.objects.filter(
+            login=user.username, purpose='delete_account', used=False
+        ).order_by('-created_at').first()
+
+        if not ec:
+            return Response({'error': 'Сессия подтверждения не найдена. Запросите код снова'}, status=400)
+
+        if ec.attempts >= 5:
+            return Response({'error': 'Превышено число попыток. Запросите новый код', 'need_resend': True}, status=400)
+
+        if timezone.now() > ec.expires_at:
+            return Response({'error': 'Код истёк. Запросите новый'}, status=400)
+
+        if ec.code != code:
+            ec.attempts += 1
+            ec.save(update_fields=['attempts'])
+            return Response({'error': 'Неверный код'}, status=400)
+
+        ec.used = True
+        ec.save(update_fields=['used'])
+
+        user.delete()
+        return Response({'ok': True})

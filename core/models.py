@@ -452,6 +452,8 @@ class EmailCode(models.Model):
         ('register', 'Регистрация'),
         ('recover', 'Восстановление пароля'),
         ('delete_org', 'Удаление организации'),
+        ('change_email', 'Смена email'),
+        ('delete_account', 'Удаление аккаунта'),
     ]
 
     email = models.EmailField(verbose_name='Email')
