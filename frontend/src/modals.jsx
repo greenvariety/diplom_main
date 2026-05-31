@@ -353,7 +353,7 @@ function StudentFormModal({ data, onClose }) {
             <PhoneInput className={`input ${(serverErrs.phone || (touched.phone && errs.phone)) ? 'is-error' : ''}`} value={vals.phone} onChange={v => { set('phone', v); setServerErrs(s => ({ ...s, phone: null })); }} onBlur={() => { setTouched(t => ({ ...t, phone: 1 })); checkField('phone', vals.phone); }} />
           </Field>
           <Field label="Email" required error={serverErrs.email || (touched.email && errs.email)}>
-            <input className={`input ${(serverErrs.email || (touched.email && errs.email)) ? 'is-error' : ''}`} value={vals.email} onChange={e => { set('email', e.target.value); setServerErrs(s => ({ ...s, email: null })); }} onBlur={() => { setTouched(t => ({ ...t, email: 1 })); checkField('email', vals.email); }} maxLength={254} />
+            <input className={`input ${(serverErrs.email || (touched.email && errs.email)) ? 'is-error' : ''}`} value={vals.email} onChange={e => { set('email', e.target.value.replace(/[^\x00-\x7F]/g, '')); setServerErrs(s => ({ ...s, email: null })); }} onBeforeInput={e => { if (e.data && /[^\x00-\x7F]/.test(e.data)) e.preventDefault(); }} onBlur={() => { setTouched(t => ({ ...t, email: 1 })); checkField('email', vals.email); }} maxLength={254} />
           </Field>
         </div>
       </div>
@@ -544,7 +544,7 @@ function EmployeeFormModal({ data, onClose }) {
             <PhoneInput className={`input ${(serverErrs.phone || (touched.phone && fieldErrs.phone)) ? 'is-error' : ''}`} value={phone} onChange={v => { setPhone(v); setServerErrs(s => ({ ...s, phone: null })); }} onBlur={() => { touch('phone'); checkField('phone', phone); }} />
           </Field>
           <Field label="Email" required error={serverErrs.email || (touched.email && fieldErrs.email)}>
-            <input className={`input ${(serverErrs.email || (touched.email && fieldErrs.email)) ? 'is-error' : ''}`} value={email} onChange={e => { setEmail(e.target.value); setServerErrs(s => ({ ...s, email: null })); }} onBlur={() => { touch('email'); checkField('email', email); }} maxLength={254} />
+            <input className={`input ${(serverErrs.email || (touched.email && fieldErrs.email)) ? 'is-error' : ''}`} value={email} onChange={e => { setEmail(e.target.value.replace(/[^\x00-\x7F]/g, '')); setServerErrs(s => ({ ...s, email: null })); }} onBeforeInput={e => { if (e.data && /[^\x00-\x7F]/.test(e.data)) e.preventDefault(); }} onBlur={() => { touch('email'); checkField('email', email); }} maxLength={254} />
           </Field>
         </div>
       </div>
@@ -1003,7 +1003,7 @@ function ParentFormModal({ data, onClose }) {
           <PhoneInput className={`input ${(serverErrs.phone || (touched.phone && pErrs.phone)) ? 'is-error' : ''}`} value={phone} onChange={v => { setPhone(v); setServerErrs(s => ({ ...s, phone: null })); }} onBlur={() => { touchP('phone'); checkField('phone', phone); }} />
         </Field>
         <Field label="Email" required error={serverErrs.email || (touched.email && pErrs.email)}>
-          <input className={`input ${(serverErrs.email || (touched.email && pErrs.email)) ? 'is-error' : ''}`} value={email} onChange={e => { setEmail(e.target.value); setServerErrs(s => ({ ...s, email: null })); }} onBlur={() => { touchP('email'); checkField('email', email); }} maxLength={254} />
+          <input className={`input ${(serverErrs.email || (touched.email && pErrs.email)) ? 'is-error' : ''}`} value={email} onChange={e => { setEmail(e.target.value.replace(/[^\x00-\x7F]/g, '')); setServerErrs(s => ({ ...s, email: null })); }} onBeforeInput={e => { if (e.data && /[^\x00-\x7F]/.test(e.data)) e.preventDefault(); }} onBlur={() => { touchP('email'); checkField('email', email); }} maxLength={254} />
         </Field>
         {err && <div className="field field-full"><span style={{ color: 'var(--bad-fg)', fontSize: 12 }}>{err}</span></div>}
       </div>

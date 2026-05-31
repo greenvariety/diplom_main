@@ -1267,7 +1267,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                       <Field label="Логин" required>
-                        <input className={`input${accErr && !accUsername.trim() ? ' is-error' : ''}`} value={accUsername} onChange={e => { setAccUsername(e.target.value); setAccErr(''); }} maxLength={150} />
+                        <input className={`input${accErr && !accUsername.trim() ? ' is-error' : ''}`} value={accUsername} onChange={e => { setAccUsername(e.target.value.replace(/[^a-zA-Z0-9._\-]/g, '')); setAccErr(''); }} onBeforeInput={e => { if (e.data && /[^a-zA-Z0-9._\-]/.test(e.data)) e.preventDefault(); }} maxLength={150} />
                       </Field>
                       <Field label="Пароль" required>
                         <input type="password" className={`input${accErr && !accPassword ? ' is-error' : ''}`} value={accPassword} onChange={e => { setAccPassword(e.target.value.replace(/[^\x00-\x7F]/g, '')); setAccErr(''); }} maxLength={128} />
@@ -1289,7 +1289,7 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <Field label="Логин" required>
-                      <input className={`input${accErr && !accUsername.trim() ? ' is-error' : ''}`} value={accUsername} onChange={e => { setAccUsername(e.target.value); setAccErr(''); }} maxLength={150} />
+                      <input className={`input${accErr && !accUsername.trim() ? ' is-error' : ''}`} value={accUsername} onChange={e => { setAccUsername(e.target.value.replace(/[^a-zA-Z0-9._\-]/g, '')); setAccErr(''); }} onBeforeInput={e => { if (e.data && /[^a-zA-Z0-9._\-]/.test(e.data)) e.preventDefault(); }} maxLength={150} />
                     </Field>
                     <Field label="Новый пароль">
                       <input type="password" className="input" value={accPassword} onChange={e => { setAccPassword(e.target.value.replace(/[^\x00-\x7F]/g, '')); setAccErr(''); }} maxLength={128} />
