@@ -191,7 +191,7 @@ def _apply_filters(qs, request):
 
 class AuditLogView(APIView):
     def get(self, request):
-        if request.user.role not in ('owner', 'admin'):
+        if request.user.role != 'owner':
             return Response({'error': 'Доступ запрещён'}, status=403)
         institution = request.user.institution
         if not institution:
@@ -200,9 +200,6 @@ class AuditLogView(APIView):
         qs = AuditLog.objects.filter(institution=institution).select_related(
             'user', 'user__employee', 'user__employee__position'
         )
-        # Admin does not see owner's actions
-        if request.user.role == 'admin':
-            qs = qs.exclude(user__role='owner')
         qs = _apply_filters(qs, request)
 
         count = qs.count()
@@ -224,7 +221,7 @@ class AuditLogView(APIView):
 
 class AuditLogExportView(APIView):
     def get(self, request):
-        if request.user.role not in ('owner', 'admin'):
+        if request.user.role != 'owner':
             return Response({'error': 'Доступ запрещён'}, status=403)
         institution = request.user.institution
         if not institution:
@@ -233,8 +230,6 @@ class AuditLogExportView(APIView):
         qs = AuditLog.objects.filter(institution=institution).select_related(
             'user', 'user__employee', 'user__employee__position'
         )
-        if request.user.role == 'admin':
-            qs = qs.exclude(user__role='owner')
         qs = _apply_filters(qs, request)
 
         sort_map = {
@@ -322,7 +317,7 @@ class AuditRollbackView(APIView):
         return None
 
     def post(self, request, pk):
-        if request.user.role not in ('owner', 'admin'):
+        if request.user.role != 'owner':
             return Response({'error': 'Доступ запрещён'}, status=403)
         institution = request.user.institution
         try:
@@ -388,7 +383,7 @@ class AuditRollbackView(APIView):
 
 class AuditLogUsersView(APIView):
     def get(self, request):
-        if request.user.role not in ('owner', 'admin'):
+        if request.user.role != 'owner':
             return Response([])
         institution = request.user.institution
         if not institution:

@@ -6,7 +6,7 @@ from .utils import log_action
 
 
 def _can_manage(request):
-    return request.user.role in ('owner', 'admin')
+    return request.user.role == 'owner'
 
 
 class PositionsView(APIView):
