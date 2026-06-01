@@ -70,8 +70,8 @@ class StudentsView(APIView):
             if not employee:
                 return Response({'results': [], 'count': 0, 'num_pages': 0, 'page': 1})
             teacher_group_ids = Group.objects.filter(
-                Q(headteacher=employee) | Q(subject_assignments__employee=employee)
-            ).values_list('pk', flat=True).distinct()
+                headteacher=employee
+            ).values_list('pk', flat=True)
             qs = qs.filter(group_id__in=teacher_group_ids)
 
         search = request.query_params.get('search', '').strip()

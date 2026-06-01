@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.db.models import Exists, OuterRef, Q
+from django.db.models import Exists, OuterRef
 from .models import Group, Faculty, Employee, Subject, GroupSubjectEmployee, DeleteRequest, RecordNote
 from .utils import log_action
 
@@ -57,9 +57,7 @@ class GroupsView(APIView):
             employee = request.user.employee
             if not employee:
                 return Response([])
-            qs = qs.filter(
-                Q(headteacher=employee) | Q(subject_assignments__employee=employee)
-            ).distinct()
+            qs = qs.filter(headteacher=employee)
 
         faculty_id = request.query_params.get('faculty_id')
         if faculty_id:
