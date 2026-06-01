@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState, useRef } from 'react';
-import { STUDENTS, GROUPS, FACULTIES, EMPLOYEES, I } from './data.jsx';
+import { I } from './data.jsx';
 import { Badge, Avatar } from './shell.jsx';
 import { useToast, FadingError, Field, LoadButton, Combobox, PasswordInput, PasswordRules, PasswordStrength } from './utils.jsx';
 import { CodeInput } from './auth.jsx';
@@ -107,19 +107,6 @@ const FAC_OPTS = [
   { value: 'ФЭ',  label: 'ФЭ - Факультет экономики' },
   { value: 'ФМН', label: 'ФМН - Факультет мат. наук' },
 ];
-const FAC_SHORT_OPTS = [
-  { value: 'ФИТ', label: 'ФИТ' },
-  { value: 'ФЭ',  label: 'ФЭ' },
-  { value: 'ФМН', label: 'ФМН' },
-];
-const POSITION_OPTS = ['Преподаватель', 'Ст. преподаватель', 'Декан', 'Зав. кафедрой', 'Методист', 'Лаборант'].map(p => ({ value: p, label: p }));
-const ROLE_OPTS = ['Преподаватель', 'Администратор', 'Суперадминистратор'].map(p => ({ value: p, label: p }));
-const RELATION_OPTS = ['Мать', 'Отец', 'Опекун'].map(p => ({ value: p, label: p }));
-const DOC_TYPE_OPTS = ['Паспорт', 'Аттестат', 'Справка', 'Полис ОМС', 'СНИЛС', 'Прочее'].map(d => ({ value: d, label: d }));
-const TEACHER_OPTS = EMPLOYEES.map(e => ({ value: `${e.last} ${e.first[0]}. ${e.mid[0]}.`, label: `${e.last} ${e.first} ${e.mid}`, sub: e.pos }));
-const SUBJECT_OPTS = ['Базы данных', 'Веб-программирование', 'Алгоритмы и структуры данных', 'Высшая математика', 'Микроэкономика'].map(s => ({ value: s, label: s }));
-const STUDENT_OPTS = STUDENTS.map(s => ({ value: s.id, label: `${s.last} ${s.first} ${s.mid}`, sub: `${s.fac} · ${s.group}` }));
-const GROUP_OPTS_ALL = GROUPS.map(g => ({ value: g.name, label: g.name, sub: g.fac }));
 
 /* ============================================================
    Animated Modal shell - close uses a fade-out, esc, overlay click,
@@ -1729,63 +1716,6 @@ function LogoutModal({ onClose, onLogout }) {
 /* ============================================================
    Detail-as-modal versions
    ============================================================ */
-function StudentDetailModal({ data, onClose, openModal }) {
-  const s = data || STUDENTS[0];
-  return (
-    <Modal size="xl" title={`${s.last} ${s.first} ${s.mid}`} sub={`${s.fac} · ${s.group}`} onClose={onClose}
-      footer={<>
-        <button className="btn btn-danger" onClick={() => openModal('deleteConfirm', { name: `${s.last} ${s.first}`, type: 'студента' })}>{I.trash}Удалить</button>
-        <div style={{ flex: 1 }}></div>
-        <button className="btn btn-primary" onClick={() => openModal('studentForm', s)}>{I.pencil}Редактировать</button>
-      </>}>
-      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 20 }}>
-        <div style={{ textAlign: 'center' }}>
-          <Avatar name={`${s.last} ${s.first}`} size="lg" av={s.av} className="avatar-zoomy" />
-        </div>
-        <div>
-          <dl className="kv" style={{ padding: 0 }}>
-            <dt>Дата рождения</dt><dd>{s.dob}</dd>
-            <dt>Телефон</dt><dd>{s.phone}</dd>
-            <dt>Email</dt><dd>{s.email}</dd>
-            <dt>Факультет</dt><dd>{s.fac}</dd>
-            <dt>Группа</dt><dd>{s.group}</dd>
-            <dt>Опекунов</dt><dd>2</dd>
-            <dt>Документов</dt><dd>3</dd>
-          </dl>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-function GroupDetailModal({ data, onClose, openModal }) {
-  const g = data || GROUPS[0];
-  return (
-    <Modal size="lg" title={g.name} sub={`${g.fac} · ${g.year} · ${g.count} студентов`} onClose={onClose}
-      footer={<>
-        <button className="btn btn-danger" onClick={() => openModal('deleteConfirm', { name: g.name, type: 'группу' })}>{I.trash}Удалить</button>
-        <div style={{ flex: 1 }}></div>
-        <button className="btn btn-secondary" onClick={onClose}>Закрыть</button>
-        <button className="btn btn-primary" onClick={() => openModal('groupForm', g)}>{I.pencil}Редактировать</button>
-      </>}>
-      <dl className="kv" style={{ padding: 0, marginBottom: 16 }}>
-        <dt>Факультет</dt><dd>{g.fac}</dd>
-        <dt>Год набора</dt><dd className="mono">{g.year}</dd>
-        <dt>Классный руководитель</dt><dd>{g.curator}</dd>
-        <dt>Студентов</dt><dd className="mono">{g.count}</dd>
-      </dl>
-      <div style={{ fontWeight: 500, fontSize: 13, marginBottom: 8 }}>Студенты группы</div>
-      <table className="tbl" style={{ border: '1px solid var(--border)', borderRadius: 6 }}>
-        <thead><tr><th>ФИО</th></tr></thead>
-        <tbody>
-          {STUDENTS.slice(0, 4).map(s => (
-            <tr key={s.id}><td className="fwm">{s.last} {s.first}</td></tr>
-          ))}
-        </tbody>
-      </table>
-    </Modal>
-  );
-}
 
 function FacultyDetailModal({ data, onClose, openModal }) {
   const f = data?.faculty || data;
@@ -1825,31 +1755,6 @@ function FacultyDetailModal({ data, onClose, openModal }) {
   );
 }
 
-function EmployeeDetailModal({ data, onClose, openModal }) {
-  const e = data || { last: 'Кузнецова', first: 'Наталья', mid: 'Андреевна', pos: 'Преподаватель', teacher: true, phone: '+7 900 000-33-44', av: 4 };
-  return (
-    <Modal size="lg" title={`${e.last} ${e.first} ${e.mid}`} sub={e.pos} onClose={onClose}
-      footer={<>
-        <button className="btn btn-danger" onClick={() => openModal('deleteConfirm', { name: `${e.last} ${e.first}`, type: 'сотрудника' })}>{I.trash}Удалить</button>
-        <div style={{ flex: 1 }}></div>
-        <button className="btn btn-primary" onClick={() => openModal('employeeForm', e)}>{I.pencil}Редактировать</button>
-      </>}>
-      <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: 20 }}>
-        <div style={{ textAlign: 'center' }}>
-          <Avatar name={`${e.last} ${e.first}`} size="lg" av={e.av} className="avatar-zoomy" />
-        </div>
-        <dl className="kv" style={{ padding: 0 }}>
-          <dt>Должность</dt><dd>{e.pos}</dd>
-          <dt>Преподаёт</dt><dd>{e.teacher ? 'Да' : 'Нет'}</dd>
-          <dt>Телефон</dt><dd>{e.phone}</dd>
-          <dt>Email</dt><dd>-</dd>
-          <dt>Классное руководство</dt><dd>{e.teacher ? 'ПИ-301' : '-'}</dd>
-          <dt>Предметов</dt><dd>{e.teacher ? '2' : '0'}</dd>
-        </dl>
-      </div>
-    </Modal>
-  );
-}
 
 /* ============================================================
    OrgFormModal - create / edit organization
@@ -2452,7 +2357,7 @@ export {
   ParentFormModal, ParentAddStudentModal, SubjectFormModal, PositionFormModal, UserFormModal, UserSetPasswordModal,
   DeleteConfirmModal, ApproveDeleteModal, UploadDocModal,
   AssignSubjectModal, SubjectAddTeacherModal, EmployeeAssignSubjectModal, EmployeeAddTaughtSubjectModal, EmployeeSetHeadteacherModal, AuditDiffModal, LogoutModal,
-  StudentDetailModal, GroupDetailModal, FacultyDetailModal, EmployeeDetailModal,
+  FacultyDetailModal,
   OrgFormModal, OrgDeleteConfirmModal, OwnerDirectDeleteModal,
   NoteModal,
 };

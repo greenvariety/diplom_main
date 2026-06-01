@@ -144,10 +144,6 @@ def _build_email_html(code, purpose):
 
 
 def send_verification_email(email, code, purpose='register'):
-    # Always print code to stdout in DEBUG so it appears in the dev launcher logs
-    if settings.DEBUG:
-        print(f'\n[EMAIL-DEV] to={email} purpose={purpose} code={_fmt_code(code)}\n', flush=True)
-
     if not settings.EMAIL_HOST_USER:
         logger.warning('send_verification_email: EMAIL_HOST_USER not set')
         return settings.DEBUG
