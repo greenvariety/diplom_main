@@ -2038,8 +2038,12 @@ function ParentAddStudentModal({ data, onClose }) {
   const toast = useToast();
   const [students, setStudents] = useState([]);
   const [studentId, setStudentId] = useState('');
+  const [studentName, setStudentName] = useState('');
+  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
   const [relationType, setRelationType] = useState('guardian');
   const [err, setErr] = useState('');
+  const dropRef = useRef(null);
 
   useEffect(() => {
     api.get('/students/').then(r => {
@@ -2047,6 +2051,27 @@ function ParentAddStudentModal({ data, onClose }) {
       setStudents(items);
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (dropRef.current && !dropRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const filtered = students.filter(s => {
+    const name = s.full_name || `${s.last_name} ${s.first_name} ${s.middle_name || ''}`.trim();
+    return name.toLowerCase().includes(search.toLowerCase());
+  });
+
+  const selectStudent = (s) => {
+    setStudentId(String(s.id));
+    setStudentName(s.full_name || `${s.last_name} ${s.first_name}${s.middle_name ? ' ' + s.middle_name : ''}`);
+    setSearch('');
+    setOpen(false);
+    setErr('');
+  };
 
   const save = async () => {
     if (!studentId) { setErr('Выберите студента'); return; }
@@ -2068,12 +2093,49 @@ function ParentAddStudentModal({ data, onClose }) {
         <LoadButton className="btn btn-primary" onClick={save}>{I.check}Привязать</LoadButton>
       </>}>
       <div className="form-grid">
-        <div className="field field-full">
+        <div className="field field-full" ref={dropRef} style={{ position: 'relative' }}>
           <label className="field-label">Студент<span className="req">*</span></label>
-          <select className="select" value={studentId} onChange={e => { setStudentId(e.target.value); setErr(''); }}>
-            <option value="">- Выберите студента -</option>
-            {students.map(s => <option key={s.id} value={s.id}>{s.full_name || `${s.last_name} ${s.first_name}`}</option>)}
-          </select>
+          {studentId && !open ? (
+            <div
+              onClick={() => { setOpen(true); setSearch(''); }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface)', cursor: 'pointer', fontSize: 14, minHeight: 36 }}
+            >
+              <span>{studentName}</span>
+              <button
+                onClick={e => { e.stopPropagation(); setStudentId(''); setStudentName(''); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16, lineHeight: 1, padding: '0 2px' }}
+              >x</button>
+            </div>
+          ) : (
+            <input
+              className={`input ${err && !studentId ? 'is-error' : ''}`}
+              value={search}
+              onChange={e => { setSearch(e.target.value); setOpen(true); }}
+              onFocus={() => setOpen(true)}
+              autoFocus={open}
+            />
+          )}
+          {open && (
+            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, boxShadow: '0 4px 16px rgba(0,0,0,.12)', maxHeight: 220, overflowY: 'auto', marginTop: 2 }}>
+              {filtered.length === 0 ? (
+                <div style={{ padding: '10px 12px', fontSize: 13, color: 'var(--text-muted)' }}>Ничего не найдено</div>
+              ) : filtered.map(s => {
+                const name = s.full_name || `${s.last_name} ${s.first_name}${s.middle_name ? ' ' + s.middle_name : ''}`;
+                return (
+                  <div
+                    key={s.id}
+                    onMouseDown={e => { e.preventDefault(); selectStudent(s); }}
+                    style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 14, borderBottom: '1px solid var(--border-light, var(--border))', transition: 'background .1s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-alt)'}
+                    onMouseLeave={e => e.currentTarget.style.background = ''}
+                  >
+                    <div>{name}</div>
+                    {s.group_number && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.group_number}</div>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
         <Field label="Связь" required>
           <select className="select" value={relationType} onChange={e => setRelationType(e.target.value)}>
