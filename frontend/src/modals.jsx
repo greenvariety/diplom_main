@@ -2041,15 +2041,22 @@ function ParentAddStudentModal({ data, onClose }) {
   const [studentName, setStudentName] = useState('');
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [relationType, setRelationType] = useState('guardian');
   const [err, setErr] = useState('');
   const dropRef = useRef(null);
+  const searchTimer = useRef(null);
 
-  useEffect(() => {
-    api.get('/students/').then(r => {
+  const fetchStudents = (q) => {
+    setLoading(true);
+    api.get('/students/', { params: { search: q, page: 1 } }).then(r => {
       const items = Array.isArray(r.data) ? r.data : (r.data.results || []);
       setStudents(items);
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchStudents('');
   }, []);
 
   useEffect(() => {
@@ -2060,10 +2067,14 @@ function ParentAddStudentModal({ data, onClose }) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const filtered = students.filter(s => {
-    const name = s.full_name || `${s.last_name} ${s.first_name} ${s.middle_name || ''}`.trim();
-    return name.toLowerCase().includes(search.toLowerCase());
-  });
+  const handleSearch = (val) => {
+    setSearch(val);
+    setOpen(true);
+    clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => fetchStudents(val), 300);
+  };
+
+  const filtered = students;
 
   const selectStudent = (s) => {
     setStudentId(String(s.id));
@@ -2110,14 +2121,16 @@ function ParentAddStudentModal({ data, onClose }) {
             <input
               className={`input ${err && !studentId ? 'is-error' : ''}`}
               value={search}
-              onChange={e => { setSearch(e.target.value); setOpen(true); }}
+              onChange={e => handleSearch(e.target.value)}
               onFocus={() => setOpen(true)}
               autoFocus={open}
             />
           )}
           {open && (
             <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, boxShadow: '0 4px 16px rgba(0,0,0,.12)', maxHeight: 220, overflowY: 'auto', marginTop: 2 }}>
-              {filtered.length === 0 ? (
+              {loading ? (
+                <div style={{ padding: '10px 12px', fontSize: 13, color: 'var(--text-muted)' }}>Загрузка...</div>
+              ) : filtered.length === 0 ? (
                 <div style={{ padding: '10px 12px', fontSize: 13, color: 'var(--text-muted)' }}>Ничего не найдено</div>
               ) : filtered.map(s => {
                 const name = s.full_name || `${s.last_name} ${s.first_name}${s.middle_name ? ' ' + s.middle_name : ''}`;
