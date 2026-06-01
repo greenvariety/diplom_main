@@ -65,6 +65,8 @@ class PositionDetailView(APIView):
         role_type = request.data.get('role_type', position.role_type)
         if role_type not in ('admin', 'teacher', 'none'):
             return Response({'error': 'Недопустимый тип роли'}, status=400)
+        if role_type != position.role_type and position.employee_set.exists():
+            return Response({'error': 'Сначала открепите всех сотрудников от должности, чтобы изменить тип роли'}, status=400)
         if Position.objects.filter(institution=institution, name=name).exclude(pk=pk).exists():
             return Response({'error': 'Должность с таким названием уже существует'}, status=400)
         old = {'name': position.name, 'role_type': position.role_type}

@@ -245,13 +245,22 @@ class EmployeeDetailView(APIView):
 
         if 'position_id' in request.data:
             pid = request.data['position_id']
+            old_position = employee.position
             if pid:
                 try:
-                    employee.position = Position.objects.get(pk=pid, institution=institution)
+                    new_position = Position.objects.get(pk=pid, institution=institution)
                 except Position.DoesNotExist:
                     return Response({'error': 'Должность не найдена'}, status=404)
+                employee.position = new_position
             else:
+                new_position = None
                 employee.position = None
+            old_was_teacher = old_position and old_position.role_type == 'teacher'
+            new_is_teacher = new_position and new_position.role_type == 'teacher'
+            if old_was_teacher and not new_is_teacher:
+                GroupSubjectEmployee.objects.filter(employee=employee).delete()
+                employee.taught_subjects.clear()
+                Group.objects.filter(headteacher=employee).update(headteacher=None)
 
         photo = request.FILES.get('photo')
         if photo:
