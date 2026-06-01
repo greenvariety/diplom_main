@@ -191,6 +191,9 @@ const NAV_BY_ROLE = {
   ],
   admin: [
     { section: 'Главное', items: [{ key: 'dashboard', label: 'Дашборд', icon: I.dashboard }] },
+    { section: 'Личный кабинет', items: [
+      { key: 'my-profile', label: 'Мои данные', icon: I.user },
+    ]},
     { section: 'Учебная структура', items: [
       { key: 'faculties', label: 'Факультеты', icon: I.building },
       { key: 'groups',    label: 'Группы',     icon: I.users },
@@ -207,7 +210,10 @@ const NAV_BY_ROLE = {
   ],
   teacher: [
     { section: 'Главное', items: [{ key: 'dashboard', label: 'Дашборд', icon: I.dashboard }] },
-    { section: 'Мои данные', items: [
+    { section: 'Личный кабинет', items: [
+      { key: 'my-profile', label: 'Мои данные', icon: I.user },
+    ]},
+    { section: 'Рабочее', items: [
       { key: 'my-subjects', label: 'Мои предметы', icon: I.book },
       { key: 'groups',      label: 'Мои группы',   icon: I.users },
       { key: 'students',    label: 'Мои студенты', icon: I.badge },

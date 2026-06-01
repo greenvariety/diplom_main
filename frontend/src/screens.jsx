@@ -2640,6 +2640,198 @@ function TeacherMySubjects({ currentUser, openModal, onNavigate }) {
   );
 }
 
+/* ============================================================
+   My Profile (read-only view for teacher / admin)
+   ============================================================ */
+function MyProfileScreen({ currentUser, onNavigate, openModal }) {
+  const toast = useToast();
+  const [employee, setEmployee] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [teacherTab, setTeacherTab] = useState('subjects');
+  const sortEmpGroups = useSortable({ key: null, dir: 'asc' }, 'my-groups');
+  const sortEmpSubjects = useSortable({ key: null, dir: 'asc' }, 'my-subjects-list');
+  const sortEmpAssignments = useSortable({ key: null, dir: 'asc' }, 'my-assignments');
+
+  const employeeId = currentUser?.employee_id;
+
+  useEffect(() => {
+    if (!employeeId) { setLoading(false); return; }
+    api.get(`/employees/${employeeId}/`).then(r => {
+      setEmployee(r.data);
+      setLoading(false);
+    }).catch(() => {
+      setLoading(false);
+      toast.push('Не удалось загрузить данные', { kind: 'err' });
+    });
+  }, [employeeId]);
+
+  if (loading) {
+    return (
+      <Shell currentUser={currentUser} active="my-profile" onNavigate={onNavigate} openModal={openModal}>
+        <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>Загрузка…</div>
+      </Shell>
+    );
+  }
+
+  if (!employeeId || !employee) {
+    return (
+      <Shell currentUser={currentUser} active="my-profile" onNavigate={onNavigate} openModal={openModal}>
+        <PageHead title="Мои данные" />
+        <div className="card">
+          <div className="card-body" style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>
+            Ваш аккаунт не привязан к карточке сотрудника. Обратитесь к владельцу системы.
+          </div>
+        </div>
+      </Shell>
+    );
+  }
+
+  const isTeacher = employee.position_role_type === 'teacher' || (employee.taught_subjects || []).length > 0 || (employee.subjects || []).length > 0 || (employee.headed_groups || []).length > 0;
+
+  return (
+    <Shell currentUser={currentUser} active="my-profile" onNavigate={onNavigate} openModal={openModal}>
+      <PageHead title="Мои данные" sub={employee.position_name || 'Сотрудник'} />
+      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
+        <div>
+          <div className="card">
+            <div className="card-body" style={{ textAlign: 'center', padding: 24 }}>
+              {employee.photo
+                ? <img src={employee.photo} alt="" style={{ width: 96, height: 96, borderRadius: 16, objectFit: 'cover' }} className="avatar-zoomy" />
+                : <Avatar name={employee.full_name} size="lg" className="avatar-zoomy" />
+              }
+              <h3 style={{ marginTop: 14, marginBottom: 12 }}>
+                {[employee.last_name, employee.first_name, employee.middle_name].filter(Boolean).join(' ')}
+              </h3>
+            </div>
+            <div style={{ borderTop: '1px solid var(--border)' }}>
+              <dl className="kv">
+                {employee.birth_date && <><dt>Дата рождения</dt><dd>{employee.birth_date}</dd></>}
+                <dt>Телефон</dt><dd>{employee.phone || '-'}</dd>
+                <dt>Email</dt><dd>{employee.email || '-'}</dd>
+                {employee.position_name && <><dt>Должность</dt><dd>{employee.position_name}</dd></>}
+              </dl>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {isTeacher && (
+            <div className="card">
+              <div className="card-head" style={{ flexWrap: 'wrap', gap: 0 }}>
+                <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid var(--border)', width: '100%' }}>
+                  {[
+                    { key: 'subjects', label: 'Предметы' },
+                    { key: 'assignments', label: 'Назначения' },
+                    { key: 'headteacher', label: 'Классный руководитель' },
+                  ].map(t => (
+                    <button key={t.key} onClick={() => setTeacherTab(t.key)}
+                      style={{
+                        background: 'none', border: 'none', cursor: 'pointer', padding: '10px 18px',
+                        fontSize: 13, fontWeight: teacherTab === t.key ? 600 : 400,
+                        color: teacherTab === t.key ? 'var(--primary)' : 'var(--text-muted)',
+                        borderBottom: teacherTab === t.key ? '2px solid var(--primary)' : '2px solid transparent',
+                        marginBottom: -2,
+                      }}
+                    >{t.label}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="card-body flush">
+                {teacherTab === 'subjects' && (
+                  (employee.taught_subjects || []).length === 0
+                    ? <EmptyState icon={I.book} title="Предметы не добавлены" sub="Обратитесь к администратору" />
+                    : (
+                      <table className="tbl">
+                        <thead><tr><SortHeader k="name" sort={sortEmpSubjects}>Предмет</SortHeader><th style={{ width: 32 }}></th></tr></thead>
+                        <tbody>
+                          {sortEmpSubjects.sortFn(employee.taught_subjects || [], { name: s => s.name || '' }).map(s => (
+                            <tr key={s.id} className="row-link" onClick={() => onNavigate('subject-detail', { subjectId: s.id })}>
+                              <td className="fwm">{s.name}</td>
+                              <td>{I.chevr}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )
+                )}
+                {teacherTab === 'assignments' && (
+                  (employee.subjects || []).length === 0
+                    ? <EmptyState icon={I.book} title="Назначений нет" sub="Нет назначений в группы" />
+                    : (
+                      <table className="tbl">
+                        <thead><tr><SortHeader k="subject_name" sort={sortEmpAssignments}>Предмет</SortHeader><SortHeader k="group_name" sort={sortEmpAssignments}>Группа</SortHeader><th style={{ width: 32 }}></th></tr></thead>
+                        <tbody>
+                          {sortEmpAssignments.sortFn(employee.subjects || [], {
+                            subject_name: s => s.subject_name || '',
+                            group_name: s => s.group_name || '',
+                          }).map(s => (
+                            <tr key={s.assignment_id} className="row-link" onClick={() => onNavigate('subject-detail', { subjectId: s.subject_id })}>
+                              <td className="fwm">{s.subject_name}</td>
+                              <td>{s.group_name}</td>
+                              <td>{I.chevr}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )
+                )}
+                {teacherTab === 'headteacher' && (
+                  (employee.headed_groups || []).length === 0
+                    ? <EmptyState icon={I.users} title="Нет групп" sub="Вы не являетесь классным руководителем" />
+                    : (
+                      <table className="tbl">
+                        <thead><tr><SortHeader k="name" sort={sortEmpGroups}>Группа</SortHeader><SortHeader k="faculty_short" sort={sortEmpGroups}>Факультет</SortHeader><SortHeader k="student_count" sort={sortEmpGroups}>Студентов</SortHeader><th style={{ width: 32 }}></th></tr></thead>
+                        <tbody>
+                          {sortEmpGroups.sortFn(employee.headed_groups, {
+                            name: g => g.name,
+                            faculty_short: g => g.faculty_short || '',
+                            student_count: g => g.student_count,
+                          }).map(g => (
+                            <tr key={g.id} className="row-link" onClick={() => onNavigate('group-detail', { groupId: g.id })}>
+                              <td className="fwm">{g.name}</td>
+                              <td>{g.faculty_short}</td>
+                              <td className="mono">{g.student_count}</td>
+                              <td>{I.chevr}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="card">
+            <div className="card-head">
+              <div className="title">Документы</div>
+            </div>
+            <div className="card-body">
+              {!employee.documents?.length ? (
+                <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: '8px 0' }}>Документы не загружены</div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                  {employee.documents.map(d => (
+                    <div key={d.id} className="doc-tile">
+                      <a href={d.file_url} target="_blank" rel="noreferrer" download style={{ display: 'contents' }}>
+                        <div className="doc-icon">{I.doc}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div className="doc-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</div>
+                          <div className="doc-meta">{d.uploaded_at}</div>
+                        </div>
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </Shell>
+  );
+}
+
 export {
   DashboardOwner, DashboardSuper, DashboardAdmin, DashboardTeacher,
   OrganizationList,
@@ -2649,5 +2841,5 @@ export {
   FacultyList, FacultyDetail,
   UserList, DeleteRequests, AuditLog,
   ParentList, ParentDetail, SubjectList, SubjectDetail, PositionList,
-  TeacherMySubjects,
+  TeacherMySubjects, MyProfileScreen,
 };
