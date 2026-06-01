@@ -75,7 +75,7 @@ EMAIL_HOST_PASSWORD=xxxx xxxx xxxx xxxx
 ```
 
 - `EMAIL_HOST_USER` и `EMAIL_HOST_PASSWORD` нужны для отправки кодов подтверждения при регистрации и восстановлении пароля.
-- Если email не настроен — коды печатаются в консоль Django (`[EMAIL] to=... code=...`).
+- Если email не настроен — регистрация через email невозможна; для тестирования нужно настроить реальный Gmail App Password.
 
 ## Зависимости
 
@@ -118,7 +118,7 @@ axios                # HTTP-клиент
 | JWT ACCESS_TOKEN_LIFETIME | 60 минут | |
 | JWT REFRESH_TOKEN_LIFETIME | 30 дней | |
 | EMAIL_HOST | smtp.gmail.com | |
-| EMAIL_PORT | 587 (TLS) | |
+| EMAIL_PORT | 465 (SSL) | `EMAIL_USE_SSL = True` |
 | DELETE_CONFIRMATION_PASSWORD | `DELETE_CONFIRM_2024` | Запасной пароль для подтверждения удаления |
 
 ## Production (не реализован)

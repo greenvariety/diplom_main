@@ -41,9 +41,9 @@ type: project
 | id | PK | |
 | institution | FK → Institution | `CASCADE`, необязательно |
 | name | CharField(255) | Название |
-| role_type | CharField(20) | admin / secretary / teacher / none (default='teacher') |
+| role_type | CharField(20) | admin / teacher / none (default='teacher') |
 
-`role_type` определяет уровень доступа сотрудника при создании аккаунта: `admin`, `secretary`, `teacher` или `none` (без доступа к системе). `unique_together = [('institution', 'name')]`.
+`role_type` определяет уровень доступа сотрудника при создании аккаунта: `admin`, `teacher` или `none` (без доступа к системе). `unique_together = [('institution', 'name')]`.
 
 ### Employee (Сотрудник)
 | Поле | Тип | Описание |
@@ -140,10 +140,11 @@ type: project
 | username | CharField(150) | Уникальный логин |
 | display_name | CharField(150) | Отображаемое имя |
 | email | EmailField | Email пользователя |
-| role | CharField(20) | owner / admin / secretary / teacher |
+| role | CharField(20) | owner / admin / teacher |
 | institution | FK → Institution | Текущая организация пользователя, `SET_NULL` |
 | allowed_institutions | M2M → Institution | Организации с доступом (для non-owner) |
-| employee | OneToOneField → Employee | Привязка к сотруднику, `SET_NULL` |
+| employee | OneToOneField → Employee | Привязка к сотруднику, `CASCADE` + `SET_NULL` |
+| photo | ImageField | `upload_to='users/'`, необязательно |
 | is_active | BooleanField | |
 | is_staff | BooleanField | Для Django Admin |
 | password_changed_at | DateTimeField | Время последней смены пароля, необязательно |
@@ -152,9 +153,8 @@ type: project
 
 Свойства:
 - `is_owner` — `role == 'owner'`
-- `is_superadmin` — алиас `is_owner` (для совместимости)
+- `is_superadmin` — алиас `is_owner`
 - `is_admin` — `role in ('owner', 'admin')`
-- `is_secretary` — `role == 'secretary'`
 - `is_teacher_role` — `role == 'teacher'`
 
 ### EmailCode (Email-код подтверждения)
@@ -211,7 +211,7 @@ type: project
 | new_data | TextField | JSON после изменения |
 | created_at | DateTimeField | |
 
-### FeedbackComment (Комментарий к UI)
+### FeedbackComment (Комментарий к UI — legacy)
 | Поле | Тип | Описание |
 |---|---|---|
 | id | PK | |
@@ -221,6 +221,8 @@ type: project
 | comment | TextField | Комментарий |
 | created_at | DateTimeField | |
 
+> Модель есть в БД (через миграции), но API-эндпоинтов и UI для неё нет. Фактически не используется.
+
 ## Медиафайлы
 
 Хранятся локально в `media/`:
@@ -228,4 +230,5 @@ type: project
 - `media/employees/` — фото сотрудников
 - `media/students/` — фото студентов
 - `media/parents/` — фото опекунов
+- `media/users/` — фото профилей пользователей
 - `media/documents/` — загруженные документы

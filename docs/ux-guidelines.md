@@ -10,17 +10,15 @@ type: project
 
 | Файл | Что содержит |
 |---|---|
-| `main.jsx` | Точка входа, AuthFlow, OrgPickerScreen, роутинг экранов |
-| `auth.jsx` | LoginScreen, RegisterScreen, EmailVerifyScreen, RecoverPasswordScreen |
+| `main.jsx` | Точка входа, AuthFlow, AppShell, роутинг экранов |
+| `auth.jsx` | LoginScreen, RegisterScreen, EmailVerifyScreen, RecoverPasswordScreen, OrgSetupScreen |
 | `shell.jsx` | Shell — навигационная оболочка (sidebar + topbar) |
 | `screens.jsx` | Все основные экраны (списки, детали) |
 | `modals.jsx` | Все модальные формы |
 | `profile.jsx` | Экран профиля (смена пароля, логина, email) |
 | `utils.jsx` | Field, FadingError, LoadButton, useToast, PasswordInput и др. |
-| `data.jsx` | Иконки (I), справочные данные |
+| `data.jsx` | Только иконки (объект `I`) |
 | `api.js` | Axios-клиент с JWT + автообновление токена |
-| `tweaks-panel.jsx` | Dev-панель: пикер элементов интерфейса для HTML.md |
-| `dev-tasks.jsx` | Dev: просмотр задач из HTML.md |
 | `styles.css` | Дизайн-система (CSS-переменные, классы) |
 
 ## Сообщения пользователю (Toast)
@@ -89,12 +87,12 @@ import { LoadButton } from './utils.jsx';
 
 Поток после входа:
 1. `LoginScreen` (или `RegisterScreen` → `EmailVerifyScreen`)
-2. `OrgPickerScreen` — выбор/создание организации (для owner)
+2. `OrgSetupScreen` — выбор/создание организации (для owner)
 3. `Shell` с боковым меню + текущий экран из `screens.jsx`
 
 ## Права в интерфейсе
 
-Видимость кнопок управляется через `user.role`. Роли: `owner` / `admin` / `secretary` / `teacher`.
+Видимость кнопок управляется через `user.role`. Роли: `owner` / `admin` / `teacher`.
 
 ```jsx
 {user.role !== 'teacher' && (
@@ -107,8 +105,6 @@ import { LoadButton } from './utils.jsx';
   <button>Управление пользователями</button>
 )}
 ```
-
-Роль `secretary` — между admin и teacher: может редактировать данные и подавать заявки на удаление, но не управляет пользователями и не одобряет заявки.
 
 ## Дашборд
 
