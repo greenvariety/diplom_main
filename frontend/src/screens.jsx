@@ -2242,14 +2242,14 @@ function ParentDetail({ currentUser, openModal, onNavigate, parentId }) {
                     relation_display: s => s.relation_display || '',
                     group_name: s => s.group_name || '',
                   }).map(s => (
-                    <tr key={s.sp_id}>
+                    <tr key={s.sp_id} className="row-link" onClick={() => onNavigate('student-detail', { studentId: s.student_id })}>
                       <td className="fwm">{s.student_name}</td>
                       <td>{s.relation_display}</td>
                       <td>{s.group_name || '-'}</td>
                       <td>
                         {currentUser?.role !== 'teacher' && (
                           <button className="btn btn-ghost btn-icon btn-sm"
-                            onClick={() => removeStudent(s.sp_id)} title="Открепить">{I.x}
+                            onClick={e => { e.stopPropagation(); removeStudent(s.sp_id); }} title="Открепить">{I.x}
                           </button>
                         )}
                       </td>
