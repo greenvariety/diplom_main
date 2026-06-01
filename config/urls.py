@@ -30,7 +30,6 @@ from core.api_users import UsersView, UserDetailView, UserSetPasswordView
 from core.api_delete_requests import DeleteRequestsView, DeleteRequestApproveView, DeleteRequestRejectView, DeleteRequestCancelView, DeleteRequestsCountView
 from core.api_audit import AuditLogView, AuditLogUsersView, AuditRollbackView, AuditLogExportView
 from core.api_notes import NotesView, NoteDetailView
-from core.api_dev import HtmlTasksView, HtmlTaskDetailView
 from core.api_profile import ProfileUpdateView, ProfileChangePasswordView, ProfileChangeEmailView, ProfileConfirmEmailView, ProfileDeleteAccountSendCodeView, ProfileDeleteAccountConfirmView, ProfilePhotoUpdateView
 
 router = DefaultRouter()
@@ -118,8 +117,6 @@ urlpatterns = [
     path('api/notes/', NotesView.as_view()),
     path('api/notes/<int:pk>/resolve/', NoteDetailView.as_view()),
     path('api/notes/<int:pk>/', NoteDetailView.as_view()),
-    path('api/dev/html-tasks/', HtmlTasksView.as_view()),
-    path('api/dev/html-tasks/<int:pk>/', HtmlTaskDetailView.as_view()),
     path('api/', include(router.urls)),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + [
     re_path(r'^(?P<path>.*)$', serve_frontend),

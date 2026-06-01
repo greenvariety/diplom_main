@@ -9,7 +9,6 @@ import { DashboardOwner, DashboardAdmin, DashboardSuper, DashboardTeacher, Facul
 import { ProfileScreen } from './profile.jsx';
 import { OrgFormModal, FacultyFormModal, FacultyDetailModal, GroupFormModal, AssignSubjectModal, SubjectAddTeacherModal, StudentFormModal, UploadDocModal, ParentFormModal, ParentAddStudentModal, DeleteConfirmModal, EmployeeFormModal, EmployeeAssignSubjectModal, EmployeeAddTaughtSubjectModal, EmployeeSetHeadteacherModal, PositionFormModal, SubjectFormModal, UserFormModal, UserSetPasswordModal, ApproveDeleteModal, AuditDiffModal, LogoutModal, OrgDeleteConfirmModal, OwnerDirectDeleteModal, NoteModal } from './modals.jsx';
 import api from './api.js';
-import { HtmlTasksPanel } from './dev-tasks.jsx';
 
 function AuthFlow({ onAuthenticated }) {
   const [screen, setScreen] = useState('login');
@@ -341,7 +340,6 @@ function App() {
   return (
     <ToastProvider>
       <AppShell onLogout={() => setAuthenticated(false)} />
-      <HtmlTasksPanel />
     </ToastProvider>
   );
 }
