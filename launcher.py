@@ -50,7 +50,8 @@ class App:
         self._build_ui()
         self._poll()
         root.protocol('WM_DELETE_WINDOW', self._close)
-        self._sys('Лаунчер готов. Нажмите «Запустить» для старта сервера.')
+        self._sys('Запуск сервера...')
+        root.after(200, self._start)
 
     # ── UI ───────────────────────────────────────────────────────────────────
 
