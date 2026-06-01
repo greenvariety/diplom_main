@@ -113,91 +113,56 @@ function AppShell({ onLogout }) {
   const openModal = (name, data) => setModal({ name, data });
   const closeModal = () => setModal(null);
 
+  const MODAL_COMPONENTS = {
+    orgForm:                  OrgFormModal,
+    facultyForm:              FacultyFormModal,
+    facultyDetail:            FacultyDetailModal,
+    groupForm:                GroupFormModal,
+    assignSubject:            AssignSubjectModal,
+    subjectAddTeacher:        SubjectAddTeacherModal,
+    studentForm:              StudentFormModal,
+    uploadDoc:                UploadDocModal,
+    parentForm:               ParentFormModal,
+    parentAddStudent:         ParentAddStudentModal,
+    deleteConfirm:            DeleteConfirmModal,
+    employeeForm:             EmployeeFormModal,
+    employeeAssignSubject:    EmployeeAssignSubjectModal,
+    employeeAddTaughtSubject: EmployeeAddTaughtSubjectModal,
+    employeeSetHeadteacher:   EmployeeSetHeadteacherModal,
+    positionForm:             PositionFormModal,
+    subjectForm:              SubjectFormModal,
+    userForm:                 UserFormModal,
+    userSetPassword:          UserSetPasswordModal,
+    approveDelete:            ApproveDeleteModal,
+    auditDiff:                AuditDiffModal,
+    ownerDirectDelete:        OwnerDirectDeleteModal,
+    recordNote:               NoteModal,
+  };
+
   const renderModal = () => {
     if (!modal) return null;
-    if (modal.name === 'orgForm') {
-      const origOnDone = modal.data?.onDone;
-      const orgData = { ...modal.data, onDone: (d) => { origOnDone?.(d); loadUser(); } };
-      return <OrgFormModal data={orgData} onClose={closeModal} />;
-    }
-    if (modal.name === 'facultyForm') {
-      return <FacultyFormModal data={modal.data} onClose={closeModal} />;
-    }
-    if (modal.name === 'facultyDetail') {
-      return <FacultyDetailModal data={modal.data} onClose={closeModal} openModal={openModal} />;
-    }
-    if (modal.name === 'groupForm') {
-      return <GroupFormModal data={modal.data} onClose={closeModal} />;
-    }
-    if (modal.name === 'assignSubject') {
-      return <AssignSubjectModal data={modal.data} onClose={closeModal} />;
-    }
-    if (modal.name === 'subjectAddTeacher') {
-      return <SubjectAddTeacherModal data={modal.data} onClose={closeModal} />;
-    }
-    if (modal.name === 'studentForm') {
-      return <StudentFormModal data={modal.data} onClose={closeModal} />;
-    }
-    if (modal.name === 'uploadDoc') {
-      return <UploadDocModal data={modal.data} onClose={closeModal} />;
-    }
-    if (modal.name === 'parentForm') {
-      return <ParentFormModal data={modal.data} onClose={closeModal} />;
-    }
-    if (modal.name === 'parentAddStudent') {
-      return <ParentAddStudentModal data={modal.data} onClose={closeModal} />;
-    }
-    if (modal.name === 'deleteConfirm') {
-      return <DeleteConfirmModal data={modal.data} onClose={closeModal} />;
-    }
-    if (modal.name === 'employeeForm') {
-      return <EmployeeFormModal data={modal.data} onClose={closeModal} />;
-    }
-    if (modal.name === 'employeeAssignSubject') {
-      return <EmployeeAssignSubjectModal data={modal.data} onClose={closeModal} />;
-    }
-    if (modal.name === 'employeeAddTaughtSubject') {
-      return <EmployeeAddTaughtSubjectModal data={modal.data} onClose={closeModal} />;
-    }
-    if (modal.name === 'employeeSetHeadteacher') {
-      return <EmployeeSetHeadteacherModal data={modal.data} onClose={closeModal} />;
-    }
-    if (modal.name === 'positionForm') {
-      return <PositionFormModal data={modal.data} onClose={closeModal} />;
-    }
-    if (modal.name === 'subjectForm') {
-      return <SubjectFormModal data={modal.data} onClose={closeModal} />;
-    }
-    if (modal.name === 'userForm') {
-      return <UserFormModal data={modal.data} onClose={closeModal} openModal={openModal} />;
-    }
-    if (modal.name === 'userSetPassword') {
-      return <UserSetPasswordModal data={modal.data} onClose={closeModal} />;
-    }
-    if (modal.name === 'approveDelete') {
-      return <ApproveDeleteModal data={modal.data} onClose={closeModal} />;
-    }
-    if (modal.name === 'auditDiff') {
-      return <AuditDiffModal data={modal.data} onClose={closeModal} onNavigate={handleNavigate} />;
-    }
     if (modal.name === 'logout') {
       return <LogoutModal onClose={closeModal} onLogout={handleLogout} />;
     }
-    if (modal.name === 'ownerDirectDelete') {
-      return <OwnerDirectDeleteModal data={modal.data} onClose={closeModal} />;
+    const Comp = MODAL_COMPONENTS[modal.name];
+    if (!Comp) return null;
+
+    let data = modal.data;
+    const extra = {};
+    if (modal.name === 'orgForm') {
+      data = { ...data, onDone: (d) => { modal.data?.onDone?.(d); loadUser(); } };
+    } else if (modal.name === 'recordNote') {
+      data = { ...data, currentUserRole: currentUser?.role };
+    } else if (modal.name === 'facultyDetail' || modal.name === 'userForm') {
+      extra.openModal = openModal;
+    } else if (modal.name === 'auditDiff') {
+      extra.onNavigate = handleNavigate;
     }
-    if (modal.name === 'recordNote') {
-      return <NoteModal data={{ ...modal.data, currentUserRole: currentUser?.role }} onClose={closeModal} />;
-    }
-    return null;
+    return <Comp data={data} onClose={closeModal} {...extra} />;
   };
 
   if (loading) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: 'var(--text-muted)', fontFamily: 'var(--font)' }}>
-        Загрузка…
-      </div>
-    );
+    return <div className="loading-fullscreen">Загрузка…</div>;
   }
 
   const sharedProps = {
@@ -303,7 +268,7 @@ function AppShell({ onLogout }) {
 
     return (
       <Shell currentUser={currentUser} active={currentScreen} onNavigate={handleNavigate} onLogout={handleLogout} openModal={openModal}>
-        <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>
+        <div className="screen-placeholder">
           Раздел будет доступен в следующих обновлениях
         </div>
       </Shell>

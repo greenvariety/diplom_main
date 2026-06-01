@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.paginator import Paginator
-from django.db.models import Q, Exists, OuterRef
+from django.db.models import Q, Exists, OuterRef, Count
 from .models import Employee, Position, GroupSubjectEmployee, Subject, Group, Document, DeleteRequest, RecordNote, User
 from .utils import log_action, check_person_email_unique, check_person_phone_unique
 
@@ -28,12 +28,6 @@ def _employee_data(e):
 
 
 def _admin_only(request):
-    if request.user.role not in ('owner', 'admin'):
-        return Response({'error': 'Доступ запрещён'}, status=403)
-    return None
-
-
-def _admin_or_owner(request):
     if request.user.role not in ('owner', 'admin'):
         return Response({'error': 'Доступ запрещён'}, status=403)
     return None
@@ -179,13 +173,15 @@ class EmployeeDetailView(APIView):
             for a in assignments
         ]
 
-        headed_groups = employee.headed_groups.select_related('faculty').all()
+        headed_groups = employee.headed_groups.select_related('faculty').annotate(
+            student_count=Count('students')
+        )
         data['headed_groups'] = [
             {
                 'id': g.pk,
                 'name': g.name,
                 'faculty_short': g.faculty.short_name if g.faculty_id else '',
-                'student_count': g.students.count(),
+                'student_count': g.student_count,
             }
             for g in headed_groups
         ]
@@ -402,7 +398,7 @@ class EmployeeTaughtSubjectsView(APIView):
         ])
 
     def post(self, request, pk):
-        err = _admin_or_owner(request)
+        err = _admin_only(request)
         if err:
             return err
         employee = _get_employee(request, pk)
@@ -429,7 +425,7 @@ class EmployeeTaughtSubjectsView(APIView):
 
 class EmployeeTaughtSubjectDetailView(APIView):
     def delete(self, request, pk, subject_pk):
-        err = _admin_or_owner(request)
+        err = _admin_only(request)
         if err:
             return err
         employee = _get_employee(request, pk)

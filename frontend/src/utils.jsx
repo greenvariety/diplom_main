@@ -65,8 +65,6 @@ function useCountUp(target, { duration = 600, run = true } = {}) {
 }
 
 function StatNumber({ value }) {
-  // Animate only on first mount per session per value key.
-  const keyRef = useRef(`stat-${value}-${Math.random()}`);
   const seenRef = useRef(false);
   const n = useCountUp(Number.isFinite(+value) ? +value : 0, { run: !seenRef.current });
   useEffect(() => { seenRef.current = true; }, []);
@@ -105,7 +103,7 @@ const PW_RULES = [
 function PasswordRules({ value, show }) {
   const results = PW_RULES.map(r => ({ ...r, ok: r.test(value || '') }));
   return (
-    <div className="pw-rules" style={{ height: show ? 'auto' : 0, overflow: 'hidden', opacity: show ? 1 : 0, transition: 'opacity .15s' }}>
+    <div className={`pw-rules ${show ? 'pw-rules-visible' : 'pw-rules-hidden'}`}>
       {results.map(r => (
         <div key={r.id} className={`pw-rule ${r.ok ? 'ok' : (value ? 'bad' : '')}`}>
           <span className="pw-mark">
@@ -207,12 +205,12 @@ function Field({ label, required, error, success, children, hint, className }) {
   return (
     <div className={`field${className ? ' ' + className : ''}`}>
       {label && <label className="field-label">{label}{required && <span className="req">*</span>}</label>}
-      <div style={{ position: 'relative' }}>
+      <div className="field-input-wrap">
         {children}
         {success && !error && <span className="field-success">{I.check}</span>}
       </div>
       <FadingError error={error} />
-      {hint && !error && <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>{hint}</div>}
+      {hint && !error && <div className="field-hint">{hint}</div>}
     </div>
   );
 }
@@ -230,13 +228,15 @@ function EmptyState({ icon, title, sub, action }) {
 }
 
 /* ---------- Skeleton row helpers ---------- */
+const SKEL_COL_CLASS = ['skeleton-col-check', 'skeleton-col-short', 'skeleton-col-wide'];
+
 function SkeletonRows({ rows = 5, cols = 5 }) {
   return (
     <tbody>
       {Array.from({ length: rows }).map((_, r) => (
         <tr key={r}>
           {Array.from({ length: cols }).map((__, c) => (
-            <td key={c}><div className="skeleton" style={{ height: 14, width: c === 0 ? 28 : c === 1 ? 60 : '70%' }} /></td>
+            <td key={c}><div className={`skeleton ${SKEL_COL_CLASS[Math.min(c, 2)]}`} /></td>
           ))}
         </tr>
       ))}

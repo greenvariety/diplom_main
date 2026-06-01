@@ -1,5 +1,6 @@
 ﻿from rest_framework.views import APIView
 from rest_framework.response import Response
+from django.db.models import Count, Q
 from .models import Student, Employee, Faculty, AuditLog, DeleteRequest, Group, Subject, Parent, Position, User, GroupSubjectEmployee
 from .utils import check_person_email_unique, check_person_phone_unique
 
@@ -75,63 +76,43 @@ class DashboardView(APIView):
                 groups_count = students_count = subjects_count = 0
             return Response({'stats': {'groups': groups_count, 'students': students_count, 'subjects': subjects_count}})
 
-        if institution:
-            students_qs = Student.objects.filter(faculty__institution=institution)
-            employees_qs = Employee.objects.filter(institution=institution)
-            faculties_qs = Faculty.objects.filter(institution=institution)
-            groups_qs = Group.objects.filter(faculty__institution=institution)
-            subjects_qs = Subject.objects.filter(institution=institution)
-            parents_qs = Parent.objects.filter(institution=institution)
-            positions_qs = Position.objects.filter(institution=institution)
-            users_qs = User.objects.filter(allowed_institutions=institution)
-            audit_total = AuditLog.objects.filter(institution=institution).count()
-            pending_delreq = DeleteRequest.objects.filter(
-                user__institution=institution, status='pending'
-            ).count()
-            audit_qs = AuditLog.objects.filter(institution=institution).order_by('-created_at')[:14]
-        else:
-            students_qs = Student.objects.none()
-            employees_qs = Employee.objects.none()
-            faculties_qs = Faculty.objects.none()
-            groups_qs = Group.objects.none()
-            subjects_qs = Subject.objects.none()
-            parents_qs = Parent.objects.none()
-            positions_qs = Position.objects.none()
-            users_qs = User.objects.none()
-            audit_total = 0
-            pending_delreq = 0
-            audit_qs = AuditLog.objects.none()
+        if not institution:
+            return Response({
+                'stats': {k: 0 for k in ('faculties', 'groups', 'students', 'employees', 'subjects', 'parents', 'positions', 'users', 'audit', 'pending_delreq')},
+                'recent_audit': [],
+            })
 
         ACTION_CLS = {'created': 'badge-ok', 'updated': 'badge-warn', 'deleted': 'badge-bad'}
         ACTION_LABEL = {'created': 'Создал', 'updated': 'Изменил', 'deleted': 'Удалил'}
 
-        recent_audit = []
-        for a in audit_qs:
-            u = a.user
-            recent_audit.append({
+        audit_qs = AuditLog.objects.filter(institution=institution).select_related('user').order_by('-created_at')[:14]
+        recent_audit = [
+            {
                 'id': a.pk,
                 'ts': a.created_at.strftime('%d.%m.%Y %H:%M:%S'),
-                'user': u.username if u else '-',
-                'userName': (u.display_name or u.username) if u else '-',
-                'role': u.get_role_display() if u else '-',
+                'user': a.user.username if a.user else '-',
+                'userName': (a.user.display_name or a.user.username) if a.user else '-',
+                'role': a.user.get_role_display() if a.user else '-',
                 'action': a.action,
                 'label': ACTION_LABEL.get(a.action, a.action),
                 'obj': f'{a.object_type} #{a.object_id}',
                 'cls': ACTION_CLS.get(a.action, 'badge-neutral'),
-            })
+            }
+            for a in audit_qs
+        ]
 
         return Response({
             'stats': {
-                'faculties': faculties_qs.count(),
-                'groups': groups_qs.count(),
-                'students': students_qs.count(),
-                'employees': employees_qs.count(),
-                'subjects': subjects_qs.count(),
-                'parents': parents_qs.count(),
-                'positions': positions_qs.count(),
-                'users': users_qs.count(),
-                'audit': audit_total,
-                'pending_delreq': pending_delreq,
+                'faculties': Faculty.objects.filter(institution=institution).count(),
+                'groups': Group.objects.filter(faculty__institution=institution).count(),
+                'students': Student.objects.filter(faculty__institution=institution).count(),
+                'employees': Employee.objects.filter(institution=institution).count(),
+                'subjects': Subject.objects.filter(institution=institution).count(),
+                'parents': Parent.objects.filter(institution=institution).count(),
+                'positions': Position.objects.filter(institution=institution).count(),
+                'users': User.objects.filter(allowed_institutions=institution).count(),
+                'audit': AuditLog.objects.filter(institution=institution).count(),
+                'pending_delreq': DeleteRequest.objects.filter(user__institution=institution, status='pending').count(),
             },
             'recent_audit': recent_audit,
         })
@@ -142,9 +123,13 @@ class TeacherMySubjectsView(APIView):
         employee = getattr(request.user, 'employee', None)
         if not employee:
             return Response([])
-        subjects = employee.taught_subjects.all().order_by('name')
-        result = []
-        for s in subjects:
-            groups_count = GroupSubjectEmployee.objects.filter(employee=employee, subject=s).count()
-            result.append({'id': s.id, 'name': s.name, 'groups_count': groups_count})
-        return Response(result)
+        subjects = employee.taught_subjects.annotate(
+            groups_count=Count(
+                'group_assignments',
+                filter=Q(group_assignments__employee=employee)
+            )
+        ).order_by('name')
+        return Response([
+            {'id': s.id, 'name': s.name, 'groups_count': s.groups_count}
+            for s in subjects
+        ])

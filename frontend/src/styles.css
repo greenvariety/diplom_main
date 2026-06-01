@@ -1334,3 +1334,50 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
   background: var(--ok-bg);
   color: var(--ok-fg);
 }
+
+/* ============================================================
+   Utility classes added by refactoring
+   ============================================================ */
+
+/* Clickable stat tile */
+.stat.is-clickable { cursor: pointer; }
+.stat.is-clickable:hover { border-color: var(--border-strong); }
+
+/* 5-column stat grid override (dashboard) */
+.stats.stats-5col { grid-template-columns: repeat(5, 1fr); }
+
+/* Full-screen loading state */
+.loading-fullscreen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  color: var(--text-muted);
+  font-family: var(--font);
+}
+
+/* "Coming soon" screen placeholder */
+.screen-placeholder {
+  padding: 48px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+/* Field input wrapper — needed for absolute .field-success icon */
+.field-input-wrap { position: relative; }
+
+/* Field hint text */
+.field-hint {
+  font-size: 11px;
+  margin-top: 4px;
+  color: var(--text-muted);
+}
+
+/* Password rules visibility toggle */
+.pw-rules-hidden { height: 0; overflow: hidden; opacity: 0; transition: opacity .15s; }
+.pw-rules-visible { opacity: 1; transition: opacity .15s; }
+
+/* Skeleton column width presets */
+.skeleton-col-check { height: 14px; width: 28px; }
+.skeleton-col-short { height: 14px; width: 60px; }
+.skeleton-col-wide  { height: 14px; width: 70%; }

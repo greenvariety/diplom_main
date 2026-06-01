@@ -13,7 +13,7 @@ const DOC_TYPE_LABEL = { passport: 'Паспорт', snils: 'СНИЛС', policy
 
 function Stat({ label, value, icon, trend, onClick }) {
   return (
-    <div className="stat" onClick={onClick} style={onClick ? { cursor: 'pointer' } : undefined}>
+    <div className={`stat${onClick ? ' is-clickable' : ''}`} onClick={onClick}>
       <div className="stat-label">{icon}{label}</div>
       <div className="stat-value"><StatNumber value={value} /></div>
       {trend && <div className={`stat-trend ${trend.up ? 'up' : ''}`}>{trend.up && I.arrowU}{trend.text}</div>}
@@ -68,7 +68,7 @@ function DashboardOwner({ currentUser, onNavigate, onLogout, openModal }) {
         title="Дашборд"
         sub="Сводка по системе"
       />
-      <div className="stats" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+      <div className="stats stats-5col">
         <Stat label="Факультеты"           value={stats.faculties     ?? '…'} icon={I.building}  onClick={() => onNavigate('faculties')} />
         <Stat label="Группы"               value={stats.groups        ?? '…'} icon={I.users}      onClick={() => onNavigate('groups')} />
         <Stat label="Студенты"             value={stats.students      ?? '…'} icon={I.badge}      onClick={() => onNavigate('students')} />

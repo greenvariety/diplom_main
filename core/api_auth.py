@@ -20,18 +20,12 @@ _LOCKOUT_MINUTES = 15    # минут блокировки после исчер
 _MAX_ATTEMPTS = 5        # неверных попыток на один код
 
 
-def _register_rate_check(email):
-    """Возвращает Response с ошибкой или None если всё ок."""
+def _rate_check(email, purpose):
+    """Возвращает Response с ошибкой или None если лимиты не превышены."""
     window_ago = timezone.now() - timedelta(minutes=_LOCKOUT_MINUTES)
-    count = EmailCode.objects.filter(
-        email=email, purpose='register', created_at__gte=window_ago
-    ).count()
-    if count >= _MAX_CODES_WINDOW:
+    if EmailCode.objects.filter(email=email, purpose=purpose, created_at__gte=window_ago).count() >= _MAX_CODES_WINDOW:
         return Response({'error': 'Запросы истекли. Повторите через 15 минут'}, status=429)
-
-    latest = EmailCode.objects.filter(
-        email=email, purpose='register'
-    ).order_by('-created_at').first()
+    latest = EmailCode.objects.filter(email=email, purpose=purpose).order_by('-created_at').first()
     if latest:
         elapsed = (timezone.now() - latest.created_at).total_seconds()
         if elapsed < _RESEND_COOLDOWN:
@@ -94,7 +88,7 @@ class RegisterView(APIView):
         if person_err:
             return Response({'error': person_err, 'field': 'email'}, status=400)
 
-        err = _register_rate_check(email)
+        err = _rate_check(email, 'register')
         if err:
             return err
 
@@ -143,7 +137,7 @@ class ResendRegisterCodeView(APIView):
         data = json.loads(pending.payload)
         email = data['email']
 
-        err = _register_rate_check(email)
+        err = _rate_check(email, 'register')
         if err:
             return err
 
@@ -273,29 +267,6 @@ class LogoutView(APIView):
         return Response({'ok': True})
 
 
-def _recover_rate_check(email):
-    """Возвращает Response с ошибкой или None если всё ок."""
-    window_ago = timezone.now() - timedelta(minutes=_LOCKOUT_MINUTES)
-    count = EmailCode.objects.filter(
-        email=email, purpose='recover', created_at__gte=window_ago
-    ).count()
-    if count >= _MAX_CODES_WINDOW:
-        return Response({'error': 'Запросы истекли. Повторите через 15 минут'}, status=429)
-
-    latest = EmailCode.objects.filter(
-        email=email, purpose='recover'
-    ).order_by('-created_at').first()
-    if latest:
-        elapsed = (timezone.now() - latest.created_at).total_seconds()
-        if elapsed < _RESEND_COOLDOWN:
-            remaining = int(_RESEND_COOLDOWN - elapsed) + 1
-            return Response(
-                {'error': f'Подождите {remaining} сек. перед повторной отправкой', 'retry_after': remaining},
-                status=429,
-            )
-    return None
-
-
 class SendRecoverCodeView(APIView):
     permission_classes = [AllowAny]
 
@@ -322,7 +293,7 @@ class SendRecoverCodeView(APIView):
                     'recently_changed': True,
                 }, status=429)
 
-        err = _recover_rate_check(user.email)
+        err = _rate_check(user.email, 'recover')
         if err:
             return err
 
