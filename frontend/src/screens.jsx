@@ -277,7 +277,6 @@ function DashboardAdmin({ currentUser, onNavigate, onLogout, openModal }) {
     <Shell currentUser={currentUser} active="dashboard" onNavigate={onNavigate} onLogout={onLogout} openModal={openModal}>
       <PageHead title="Дашборд" sub="Сводка по системе" />
       <div className="stats" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
-        <Stat label="Факультеты"          value={stats.faculties  ?? '…'} icon={I.building}  onClick={() => onNavigate('faculties')} />
         <Stat label="Группы"              value={stats.groups     ?? '…'} icon={I.users}      onClick={() => onNavigate('groups')} />
         <Stat label="Студенты"            value={stats.students   ?? '…'} icon={I.badge}      onClick={() => onNavigate('students')} />
         <Stat label="Сотрудники"          value={stats.employees  ?? '…'} icon={I.briefcase}  onClick={() => onNavigate('employees')} />
@@ -1609,7 +1608,7 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
       <PageHead
         title="Факультеты"
         sub={loading ? '…' : `Всего записей: ${displayFaculties.length}`}
-        actions={['owner', 'admin'].includes(currentUser?.role) ? <button className="btn btn-primary btn-sm" onClick={() => openModal('facultyForm', { onDone: load })}>{I.plus}Добавить факультет</button> : null}
+        actions={currentUser?.role === 'owner' ? <button className="btn btn-primary btn-sm" onClick={() => openModal('facultyForm', { onDone: load })}>{I.plus}Добавить факультет</button> : null}
       />
       <div className="filters">
         <div className="field grow-2">

@@ -195,7 +195,6 @@ const NAV_BY_ROLE = {
       { key: 'my-profile', label: 'Мои данные', icon: I.user },
     ]},
     { section: 'Учебная структура', items: [
-      { key: 'faculties', label: 'Факультеты', icon: I.building },
       { key: 'groups',    label: 'Группы',     icon: I.users },
       { key: 'subjects',  label: 'Предметы',   icon: I.book },
     ]},
