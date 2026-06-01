@@ -230,7 +230,7 @@ function Shell({ currentUser, role: roleProp, active, onNavigate, onLogout, open
   const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
-    if (role !== 'owner' && role !== 'superadmin') return;
+    if (role !== 'owner' && role !== 'admin' && role !== 'superadmin') return;
     api.get('/delete-requests/count/').then(r => setPendingCount(r.data.count)).catch(() => {});
   }, [role, active]);
 

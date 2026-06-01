@@ -1526,10 +1526,14 @@ function FacultyDetail({ currentUser, openModal, onNavigate, facultyId }) {
         title={faculty.full_name}
         sub={`Код: ${faculty.short_name}`}
         actions={<>
-          <button className="btn btn-secondary btn-sm" onClick={() => openModal('facultyForm', { faculty, onDone: load })}>{I.pencil}Редактировать</button>
+          {['owner', 'admin'].includes(currentUser?.role) && (
+            <button className="btn btn-secondary btn-sm" onClick={() => openModal('facultyForm', { faculty, onDone: load })}>{I.pencil}Редактировать</button>
+          )}
           {currentUser?.role === 'owner'
             ? <button className="btn btn-danger btn-sm" onClick={() => openModal('ownerDirectDelete', { name: faculty.full_name, type: 'факультет', url: `/faculties/${facultyId}/`, onDone: () => onNavigate('faculties') })}>{I.trash}Удалить</button>
-            : <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Подать заявку</button>
+            : ['admin'].includes(currentUser?.role)
+              ? <button className="btn btn-danger btn-sm" onClick={handleDeleteRequest}>{I.trash}Подать заявку</button>
+              : null
           }
         </>}
       />
@@ -1605,7 +1609,7 @@ function FacultyList({ currentUser, openModal, onNavigate }) {
       <PageHead
         title="Факультеты"
         sub={loading ? '…' : `Всего записей: ${displayFaculties.length}`}
-        actions={<button className="btn btn-primary btn-sm" onClick={() => openModal('facultyForm', { onDone: load })}>{I.plus}Добавить факультет</button>}
+        actions={['owner', 'admin'].includes(currentUser?.role) ? <button className="btn btn-primary btn-sm" onClick={() => openModal('facultyForm', { onDone: load })}>{I.plus}Добавить факультет</button> : null}
       />
       <div className="filters">
         <div className="field grow-2">
