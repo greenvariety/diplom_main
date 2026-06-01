@@ -276,7 +276,7 @@ function DashboardAdmin({ currentUser, onNavigate, onLogout, openModal }) {
   return (
     <Shell currentUser={currentUser} active="dashboard" onNavigate={onNavigate} onLogout={onLogout} openModal={openModal}>
       <PageHead title="Дашборд" sub="Сводка по системе" />
-      <div className="stats" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+      <div className="stats" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
         <Stat label="Факультеты"          value={stats.faculties  ?? '…'} icon={I.building}  onClick={() => onNavigate('faculties')} />
         <Stat label="Группы"              value={stats.groups     ?? '…'} icon={I.users}      onClick={() => onNavigate('groups')} />
         <Stat label="Студенты"            value={stats.students   ?? '…'} icon={I.badge}      onClick={() => onNavigate('students')} />
@@ -285,7 +285,6 @@ function DashboardAdmin({ currentUser, onNavigate, onLogout, openModal }) {
         <Stat label="Опекуны"             value={stats.parents    ?? '…'} icon={I.heart}      onClick={() => onNavigate('parents')} />
         <Stat label="Должности"           value={stats.positions  ?? '…'} icon={I.settings}   onClick={() => onNavigate('positions')} />
         <Stat label="Заявки на удаление"  value={stats.pending_delreq ?? '…'} icon={I.trash}  onClick={() => onNavigate('delreq')} />
-        <Stat label="Журнал изменений"    value={stats.audit      ?? '…'} icon={I.history}    onClick={() => onNavigate('audit')} />
       </div>
     </Shell>
   );

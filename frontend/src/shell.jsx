@@ -206,7 +206,6 @@ const NAV_BY_ROLE = {
     ]},
     { section: 'Прочее', items: [
       { key: 'delreq',    label: 'Заявки на удаление',  icon: I.trash, badge: 'bad' },
-      { key: 'audit',     label: 'Журнал изменений',    icon: I.history },
     ]},
   ],
   teacher: [
