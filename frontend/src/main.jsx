@@ -279,7 +279,7 @@ function AppShell({ onLogout }) {
     }
 
     if (currentScreen === 'subject-detail') {
-      return <SubjectDetail {...sharedProps} subjectId={navExtra?.subjectId} filterEmployeeId={navExtra?.filterEmployeeId} />;
+      return <SubjectDetail {...sharedProps} subjectId={navExtra?.subjectId} filterEmployeeId={navExtra?.filterEmployeeId} backTo={navExtra?.backTo} />;
     }
 
     if (currentScreen === 'parents') {

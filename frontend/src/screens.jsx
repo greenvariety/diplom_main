@@ -2290,7 +2290,7 @@ function ParentDetail({ currentUser, openModal, onNavigate, parentId }) {
   );
 }
 
-function SubjectDetail({ currentUser, openModal, onNavigate, subjectId, filterEmployeeId }) {
+function SubjectDetail({ currentUser, openModal, onNavigate, subjectId, filterEmployeeId, backTo }) {
   const toast = useToast();
   const [subject, setSubject] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -2342,10 +2342,12 @@ function SubjectDetail({ currentUser, openModal, onNavigate, subjectId, filterEm
     : subject.assignments;
 
   return (
-    <Shell currentUser={currentUser} active={filterEmployeeId && currentUser?.role === 'teacher' ? 'my-subjects' : 'subjects'} onNavigate={onNavigate} openModal={openModal}>
+    <Shell currentUser={currentUser} active={filterEmployeeId && currentUser?.role === 'teacher' ? (backTo === 'my-profile' ? 'my-profile' : 'my-subjects') : 'subjects'} onNavigate={onNavigate} openModal={openModal}>
       <PageHead
         crumbs={filterEmployeeId && currentUser?.role === 'teacher'
-          ? [{ label: 'Мои предметы', href: true, onClick: () => onNavigate('my-subjects') }, { label: subject.name }]
+          ? backTo === 'my-profile'
+            ? [{ label: 'Мои данные', href: true, onClick: () => onNavigate('my-profile') }, { label: subject.name }]
+            : [{ label: 'Мои предметы', href: true, onClick: () => onNavigate('my-subjects') }, { label: subject.name }]
           : [{ label: 'Предметы', href: true, onClick: () => onNavigate('subjects') }, { label: subject.name }]}
         title={subject.name}
         actions={!filterEmployeeId ? <>
@@ -2745,7 +2747,7 @@ function MyProfileScreen({ currentUser, onNavigate, openModal }) {
                         <thead><tr><SortHeader k="name" sort={sortEmpSubjects}>Предмет</SortHeader><th style={{ width: 32 }}></th></tr></thead>
                         <tbody>
                           {sortEmpSubjects.sortFn(employee.taught_subjects || [], { name: s => s.name || '' }).map(s => (
-                            <tr key={s.id} className="row-link" onClick={() => onNavigate('subject-detail', { subjectId: s.id })}>
+                            <tr key={s.id} className="row-link" onClick={() => onNavigate('subject-detail', { subjectId: s.id, filterEmployeeId: employeeId, backTo: 'my-profile' })}>
                               <td className="fwm">{s.name}</td>
                               <td>{I.chevr}</td>
                             </tr>
@@ -2765,7 +2767,7 @@ function MyProfileScreen({ currentUser, onNavigate, openModal }) {
                             subject_name: s => s.subject_name || '',
                             group_name: s => s.group_name || '',
                           }).map(s => (
-                            <tr key={s.assignment_id} className="row-link" onClick={() => onNavigate('subject-detail', { subjectId: s.subject_id })}>
+                            <tr key={s.assignment_id} className="row-link" onClick={() => onNavigate('subject-detail', { subjectId: s.subject_id, filterEmployeeId: employeeId, backTo: 'my-profile' })}>
                               <td className="fwm">{s.subject_name}</td>
                               <td>{s.group_name}</td>
                               <td>{I.chevr}</td>
