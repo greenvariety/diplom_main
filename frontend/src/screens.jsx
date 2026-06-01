@@ -803,7 +803,6 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
   const sortEmpGroups = useSortable({ key: null, dir: 'asc' }, 'emp-groups');
   const sortEmpSubjects = useSortable({ key: null, dir: 'asc' }, 'emp-subjects');
   const sortEmpAssignments = useSortable({ key: null, dir: 'asc' }, 'emp-assignments');
-  const sortEmpDocs = useSortable({ key: null, dir: 'asc' }, 'emp-docs');
 
   const loadAccount = () => {
     if (currentUser?.role !== 'owner') return;
@@ -1184,27 +1183,24 @@ function EmployeeDetail({ currentUser, openModal, onNavigate, employeeId }) {
               <div className="title">Документы</div>
               <button className="btn btn-secondary btn-sm" onClick={() => openModal('uploadDoc', { ownerType: 'employee', ownerId: employeeId, onDone: load })}>{I.upload}Загрузить</button>
             </div>
-            <div className="card-body flush">
+            <div className="card-body">
               {!employee.documents?.length ? (
-                <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Документы не загружены</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: '8px 0' }}>Документы не загружены</div>
               ) : (
-                <table className="tbl">
-                  <thead><tr><SortHeader k="name" sort={sortEmpDocs}>Название</SortHeader><SortHeader k="doc_type" sort={sortEmpDocs}>Тип</SortHeader><SortHeader k="uploaded_at" sort={sortEmpDocs}>Дата</SortHeader><th style={{ width: 40 }}></th></tr></thead>
-                  <tbody>
-                    {sortEmpDocs.sortFn(employee.documents, {
-                      name: d => d.name || '',
-                      doc_type: d => d.doc_type || '',
-                      uploaded_at: d => d.uploaded_at || '',
-                    }).map(d => (
-                      <tr key={d.id}>
-                        <td className="fwm"><a href={d.file_url} target="_blank" rel="noreferrer">{d.name}</a></td>
-                        <td>{DOC_TYPE_LABEL[d.doc_type] || d.doc_type || '-'}</td>
-                        <td className="muted">{d.uploaded_at || '-'}</td>
-                        <td><button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDeleteDoc(d.id)}>{I.x}</button></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                  {employee.documents.map(d => (
+                    <div key={d.id} className="doc-tile" style={{ position: 'relative' }}>
+                      <a href={d.file_url} target="_blank" rel="noreferrer" style={{ display: 'contents' }}>
+                        <div className="doc-icon">{I.doc}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div className="doc-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</div>
+                          <div className="doc-meta">{d.uploaded_at}</div>
+                        </div>
+                      </a>
+                      <button className="btn btn-ghost btn-icon btn-sm" style={{ position: 'absolute', top: 4, right: 4 }} onClick={() => handleDeleteDoc(d.id)}>{I.x}</button>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>
