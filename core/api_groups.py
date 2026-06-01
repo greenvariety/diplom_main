@@ -183,6 +183,9 @@ class GroupDetailView(APIView):
                 group.headteacher = ht
             else:
                 group.headteacher = None
+        if 'faculty_id' in request.data or 'year' in request.data:
+            count = Group.objects.filter(faculty_id=group.faculty_id, year=group.year).exclude(pk=group.pk).count()
+            group.group_number = count + 1
         group.save()
         log_action(request.user, 'updated', group,
                    old_data={'name': old_name, 'year': old_year},
