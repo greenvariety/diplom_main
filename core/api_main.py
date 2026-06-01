@@ -67,8 +67,7 @@ class DashboardView(APIView):
         if user.role == 'teacher':
             employee = getattr(user, 'employee', None)
             if employee:
-                from .models import GroupSubjectEmployee
-                group_ids = list(GroupSubjectEmployee.objects.filter(employee=employee).values_list('group_id', flat=True).distinct())
+                group_ids = list(Group.objects.filter(headteacher=employee).values_list('pk', flat=True))
                 groups_count = len(group_ids)
                 students_count = Student.objects.filter(group_id__in=group_ids).count()
                 subjects_count = employee.taught_subjects.count()
