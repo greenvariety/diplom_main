@@ -25,6 +25,7 @@ def _has_latin(value):
     return bool(re.search(r'[A-Za-z]', value))
 
 
+# сериализация факультета со счётчиками групп и студентов
 def _faculty_data(f):
     return {
         'id': f.pk,

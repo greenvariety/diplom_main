@@ -5,6 +5,7 @@ from .models import Document
 from .utils import log_action
 
 
+# Загрузка документа - привязываем к студенту/сотруднику/опекуну
 class DocumentUploadView(APIView):
     parser_classes_hint = 'multipart'
 
@@ -15,7 +16,7 @@ class DocumentUploadView(APIView):
 
         owner_type = request.data.get('owner_type', '').strip()
         owner_id = request.data.get('owner_id')
-        name = (request.data.get('name') or file.name).strip()
+        name = (request.data.get('name') or file.name).strip()  # если имя не указано - берём из файла
         doc_type = (request.data.get('doc_type') or '').strip()
 
         if owner_type not in ('student', 'employee', 'parent'):
@@ -45,6 +46,7 @@ class DocumentUploadView(APIView):
 
 class DocumentDetailView(APIView):
     def get(self, request, pk):
+        # скачивание файла документа
         try:
             doc = Document.objects.get(pk=pk)
         except Document.DoesNotExist:

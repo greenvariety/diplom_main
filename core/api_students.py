@@ -6,6 +6,7 @@ from .models import Student, Group, Faculty, Document, StudentParent, Parent, De
 from .utils import log_action, check_person_email_unique, check_person_phone_unique
 
 
+# сериализация студента в словарь для ответа API
 def _student_data(s):
     return {
         'id': s.pk,
@@ -21,14 +22,15 @@ def _student_data(s):
         'group_id': s.group_id,
         'group_name': s.group.name if s.group_id else '',
         'photo': s.photo.url if s.photo else None,
-        'parent_count': getattr(s, 'parent_count', None),
+        'parent_count': getattr(s, 'parent_count', None),  # аннотируется через annotate()
         'is_flagged': s.is_flagged,
-        'warn_incomplete': not all([s.birth_date, s.phone, s.email]) or not s.group_id,
+        'warn_incomplete': not all([s.birth_date, s.phone, s.email]) or not s.group_id,  # предупреждение о незаполненных полях
         'has_pending_delreq': getattr(s, 'has_pending_delreq', False),
         'has_note': getattr(s, 'has_note', False),
     }
 
 
+# проверка прав: только admin и owner могут изменять данные
 def _admin_only(request):
     if request.user.role not in ('owner', 'admin'):
         return Response({'error': 'Доступ запрещён'}, status=403)
@@ -42,6 +44,7 @@ def _at_least_teacher(request):
 
 
 def _get_student(request, pk):
+    # возвращаем студента только если он принадлежит организации текущего пользователя
     institution = request.user.institution
     if not institution:
         return None
@@ -53,18 +56,21 @@ def _get_student(request, pk):
         return None
 
 
+# Список и создание студентов
 class StudentsView(APIView):
     def get(self, request):
         institution = request.user.institution
         if not institution:
             return Response({'results': [], 'count': 0, 'num_pages': 0, 'page': 1})
 
+        # получаем всех студентов организации с подсчётом связанных данных
         qs = Student.objects.filter(institution=institution).select_related('faculty', 'group').annotate(
             parent_count=Count('student_parents'),
             has_pending_delreq=Exists(DeleteRequest.objects.filter(object_type='Student', object_id=OuterRef('pk'), status='pending')),
             has_note=Exists(RecordNote.objects.filter(object_type='Student', object_id=OuterRef('pk'), is_resolved=False)),
         )
 
+        # преподаватель видит только студентов своих групп
         if request.user.role == 'teacher':
             employee = request.user.employee
             if not employee:
@@ -165,6 +171,7 @@ class StudentsView(APIView):
             faculty=faculty,
             group=group,
         )
+        # фото загружаем отдельным save, чтобы сигнал замены файла отработал корректно
         photo = request.FILES.get('photo')
         if photo:
             student.photo = photo
@@ -295,6 +302,7 @@ class StudentDetailView(APIView):
         return Response(_student_data(student))
 
     def delete(self, request, pk):
+        # удаление требует подтверждения паролем - защита от случайного нажатия
         if request.user.role not in ('owner', 'admin'):
             return Response({'error': 'Доступ запрещён'}, status=403)
         student = _get_student(request, pk)
@@ -435,6 +443,7 @@ class StudentFlagView(APIView):
         student = _get_student(request, pk)
         if not student:
             return Response({'error': 'Не найдено'}, status=404)
+        # переключаем флаг (toggle)
         student.is_flagged = not student.is_flagged
         student.save(update_fields=['is_flagged'])
         return Response({'is_flagged': student.is_flagged})

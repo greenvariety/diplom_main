@@ -4,6 +4,7 @@ from .models import DeleteRequest, Faculty, Group, Student, Employee, Parent, Po
 from .utils import log_action
 
 
+# маппинг типов объектов для динамического получения записи из БД
 MODELS = {
     'Faculty': Faculty,
     'Group': Group,

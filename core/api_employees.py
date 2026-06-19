@@ -6,6 +6,7 @@ from .models import Employee, Position, GroupSubjectEmployee, Subject, Group, Do
 from .utils import log_action, check_person_email_unique, check_person_phone_unique
 
 
+# сериализация данных сотрудника для API-ответа
 def _employee_data(e):
     return {
         'id': e.pk,
@@ -21,7 +22,7 @@ def _employee_data(e):
         'position_role_type': e.position.role_type if e.position_id else None,
         'photo': e.photo.url if e.photo else None,
         'is_flagged': e.is_flagged,
-        'warn_incomplete': not all([e.position_id, e.birth_date, e.phone, e.email]),
+        'warn_incomplete': not all([e.position_id, e.birth_date, e.phone, e.email]),  # иконка предупреждения в списке
         'has_pending_delreq': getattr(e, 'has_pending_delreq', False),
         'has_note': getattr(e, 'has_note', False),
     }
@@ -253,6 +254,7 @@ class EmployeeDetailView(APIView):
                 employee.position = None
             old_was_teacher = old_position and old_position.role_type == 'teacher'
             new_is_teacher = new_position and new_position.role_type == 'teacher'
+            # если сотрудник перестаёт быть преподавателем - снимаем все назначения предметов и групп
             if old_was_teacher and not new_is_teacher:
                 GroupSubjectEmployee.objects.filter(employee=employee).delete()
                 employee.taught_subjects.clear()
@@ -456,6 +458,7 @@ class EmployeeFlagView(APIView):
         return Response({'is_flagged': employee.is_flagged})
 
 
+# Управление аккаунтом сотрудника в системе - только владелец может создавать аккаунты
 class EmployeeAccountView(APIView):
     def get(self, request, pk):
         if request.user.role != 'owner':
@@ -478,6 +481,7 @@ class EmployeeAccountView(APIView):
         employee = _get_employee(request, pk)
         if not employee:
             return Response({'error': 'Не найдено'}, status=404)
+        # сотрудникам с должностью без доступа аккаунт не создаём
         if employee.position and employee.position.role_type == 'none':
             return Response({'error': 'Эта должность не предусматривает доступ к системе'}, status=400)
         if User.objects.filter(employee=employee).exists():

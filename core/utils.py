@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 def generate_email_code():
+    # генерируем 6-символьный код из букв и цифр (без похожих символов не нужно - всё капсом)
     chars = string.ascii_uppercase + string.digits
     part1 = ''.join(random.choices(chars, k=3))
     part2 = ''.join(random.choices(chars, k=3))
@@ -31,6 +32,7 @@ def _fmt_code(code):
 
 
 def mask_email(email):
+    # скрываем часть email для отображения пользователю: ag***@gmail.com
     at = email.find('@')
     if at <= 0:
         return email
@@ -55,6 +57,7 @@ _EMAIL_ACTIONS = {
 
 
 def _get_logo_base64():
+    # встраиваем логотип прямо в HTML письма через base64, чтобы он отображался без внешних ссылок
     try:
         from PIL import Image
         logo_path = os.path.join(settings.BASE_DIR, 'logo.png')
@@ -144,6 +147,7 @@ def _build_email_html(code, purpose):
 
 
 def send_verification_email(email, code, purpose='register'):
+    # в режиме разработки просто выводим код в консоль, письмо не отправляем
     if settings.DEBUG:
         print(f'\n[EMAIL-DEV] to={email} purpose={purpose} code={_fmt_code(code)}\n', flush=True)
 
@@ -153,6 +157,7 @@ def send_verification_email(email, code, purpose='register'):
 
     try:
         from django.core.mail import send_mail
+        # отправляем и текстовую и HTML-версию письма
         send_mail(
             subject=_EMAIL_SUBJECTS.get(purpose, 'Код подтверждения - АИСК'),
             message=f'Ваш код: {_fmt_code(code)}',
@@ -176,12 +181,14 @@ def get_current_institution(request):
 
 
 def get_institution_from_session(request):
+    # владелец может переключаться между организациями - проверяем сессию
     from core.models import Institution
     if request.user.is_owner:
         institution_id = request.session.get('institution_id')
         if not institution_id:
             return request.user.institution
         return get_object_or_404(Institution, pk=institution_id, owner=request.user)
+    # для остальных ролей организация фиксирована
     return request.user.institution
 
 
@@ -190,6 +197,7 @@ def get_institution_from_session(request):
 # ---------------------------------------------------------------------------
 
 def log_action(user, action, obj, old_data=None, new_data=None, institution=None):
+    # записываем каждое изменение в журнал - вызывается из всех API-методов
     from core.models import AuditLog
     if institution is None and user and user.is_authenticated:
         institution = get_institution_from_session_safe(user)
@@ -197,7 +205,7 @@ def log_action(user, action, obj, old_data=None, new_data=None, institution=None
         user=user,
         institution=institution,
         action=action,
-        object_type=obj.__class__.__name__,
+        object_type=obj.__class__.__name__,  # название модели как строка
         object_id=obj.pk,
         old_data=json.dumps(old_data, ensure_ascii=False, default=str) if old_data else '',
         new_data=json.dumps(new_data, ensure_ascii=False, default=str) if new_data else '',
@@ -231,6 +239,7 @@ def check_person_email_unique(email, exclude_employee_pk=None, exclude_student_p
     or user account anywhere in the system (globally).
     Returns None if the email is free or empty.
     """
+    # email должен быть уникальным среди всех людей в системе
     if not email:
         return None
     from .models import Employee, Student, Parent, User
@@ -296,6 +305,7 @@ def check_person_phone_unique(phone, exclude_employee_pk=None, exclude_student_p
 # Role decorators
 # ---------------------------------------------------------------------------
 
+# декоратор для Django-вьюх (не API), ограничивающий доступ только владельцам
 def owner_required(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
@@ -308,9 +318,11 @@ def owner_required(view_func):
 
 
 def superadmin_required(view_func):
+    # алиас - оставил для совместимости
     return owner_required(view_func)
 
 
+# декоратор для администраторов - владелец тоже проходит проверку
 def admin_required(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):

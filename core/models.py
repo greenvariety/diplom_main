@@ -10,6 +10,7 @@ from django.dispatch import receiver
 # Institution (Учебное заведение)
 # ---------------------------------------------------------------------------
 
+# Главная сущность системы - учебное заведение, к которому привязаны все данные
 class Institution(models.Model):
     owner = models.ForeignKey(
         'User', on_delete=models.CASCADE, null=True, blank=True,
@@ -26,7 +27,7 @@ class Institution(models.Model):
         verbose_name = 'Учебное заведение'
         verbose_name_plural = 'Учебные заведения'
         ordering = ['name']
-        unique_together = [('owner', 'code')]
+        unique_together = [('owner', 'code')]  # один владелец не может иметь два заведения с одним кодом
 
     def __str__(self):
         return f'{self.code} - {self.name}'
@@ -36,6 +37,7 @@ class Institution(models.Model):
 # Faculty
 # ---------------------------------------------------------------------------
 
+# Факультет - структурное подразделение учебного заведения
 class Faculty(models.Model):
     institution = models.ForeignKey(
         Institution, on_delete=models.CASCADE, null=True, blank=True,
@@ -44,7 +46,7 @@ class Faculty(models.Model):
     full_name = models.CharField(max_length=255, verbose_name='Полное название')
     short_name = models.CharField(max_length=50, verbose_name='Сокращение (аббревиатура)')
     created_at = models.DateField(null=True, blank=True, verbose_name='Дата создания')
-    is_flagged = models.BooleanField(default=False, verbose_name='Отмечено')
+    is_flagged = models.BooleanField(default=False, verbose_name='Отмечено')  # флаг для маркировки
 
     class Meta:
         verbose_name = 'Факультет'
@@ -60,7 +62,9 @@ class Faculty(models.Model):
 # Position
 # ---------------------------------------------------------------------------
 
+# Должность сотрудника - определяет его роль и уровень доступа в системе
 class Position(models.Model):
+    # тип роли влияет на то, какой доступ получит сотрудник при создании аккаунта
     ROLE_TYPE_CHOICES = [
         ('admin', 'Администратор'),
         ('teacher', 'Преподаватель'),
@@ -91,6 +95,7 @@ class Position(models.Model):
 # Employee
 # ---------------------------------------------------------------------------
 
+# Сотрудник учебного заведения - преподаватель или администратор
 class Employee(models.Model):
     institution = models.ForeignKey(
         Institution, on_delete=models.CASCADE, null=True, blank=True,
@@ -130,9 +135,10 @@ class Employee(models.Model):
 # Group
 # ---------------------------------------------------------------------------
 
+# Учебная группа - основная единица организации студентов
 class Group(models.Model):
     group_number = models.PositiveIntegerField(verbose_name='Номер группы', default=1)
-    year = models.IntegerField(verbose_name='Год начала')
+    year = models.IntegerField(verbose_name='Год начала')  # год поступления для формирования названия
     faculty = models.ForeignKey(
         Faculty, on_delete=models.CASCADE, related_name='groups',
         verbose_name='Факультет'
@@ -150,11 +156,13 @@ class Group(models.Model):
 
     @property
     def name(self):
+        # формат названия группы: ФАКУЛЬТЕТ-НОМЕР-ГОД (например ИСиП-3-22)
         year_short = str(self.year)[-2:]
         short = self.faculty.short_name if self.faculty_id else '?'
         return f'{short}-{self.group_number}-{year_short}'
 
     def save(self, *args, **kwargs):
+        # при создании группы автоматически назначаем порядковый номер
         if not self.pk and self.faculty_id:
             count = Group.objects.filter(faculty_id=self.faculty_id, year=self.year).count()
             self.group_number = count + 1
@@ -168,6 +176,7 @@ class Group(models.Model):
 # Student
 # ---------------------------------------------------------------------------
 
+# Студент - основная сущность системы учёта
 class Student(models.Model):
     last_name = models.CharField(max_length=100, verbose_name='Фамилия')
     first_name = models.CharField(max_length=100, verbose_name='Имя')
@@ -315,6 +324,8 @@ class GroupSubjectEmployee(models.Model):
 # Document
 # ---------------------------------------------------------------------------
 
+# Документ привязывается к студенту, сотруднику или опекуну через owner_type + owner_id
+# GenericForeignKey не используем - проще и надёжнее без него
 class Document(models.Model):
     OWNER_TYPE_CHOICES = [
         ('student', 'Студент'),
@@ -352,6 +363,7 @@ class Document(models.Model):
 
     @property
     def is_image(self):
+        # определяем по расширению - нужно для рендера превью в интерфейсе
         return self.file.name.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))
 
 
@@ -359,6 +371,7 @@ class Document(models.Model):
 # User
 # ---------------------------------------------------------------------------
 
+# Кастомный менеджер пользователей - нужен для поддержки AbstractBaseUser
 class UserManager(BaseUserManager):
     def create_user(self, username, password=None, **extra_fields):
         if not username:
@@ -375,7 +388,9 @@ class UserManager(BaseUserManager):
         return self.create_user(username, password, **extra_fields)
 
 
+# Кастомная модель пользователя с полем role вместо стандартных групп Django
 class User(AbstractBaseUser, PermissionsMixin):
+    # три уровня доступа: владелец > администратор > преподаватель
     ROLE_CHOICES = [
         ('owner', 'Владелец'),
         ('admin', 'Администратор'),
@@ -424,10 +439,12 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     @property
     def is_superadmin(self):
+        # алиас для обратной совместимости
         return self.role == 'owner'
 
     @property
     def is_admin(self):
+        # владелец тоже считается администратором
         return self.role in ('owner', 'admin')
 
     @property
@@ -439,6 +456,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 # EmailCode
 # ---------------------------------------------------------------------------
 
+# Временный код подтверждения, отправляемый на email пользователя
 class EmailCode(models.Model):
     PURPOSE_CHOICES = [
         ('register', 'Регистрация'),
@@ -450,9 +468,9 @@ class EmailCode(models.Model):
 
     email = models.EmailField(verbose_name='Email')
     login = models.CharField(max_length=150, blank=True, default='', verbose_name='Логин')
-    code = models.CharField(max_length=6, verbose_name='Код')
+    code = models.CharField(max_length=6, verbose_name='Код')  # 6 символов без дефиса
     purpose = models.CharField(max_length=20, choices=PURPOSE_CHOICES, verbose_name='Цель')
-    payload = models.TextField(blank=True, default='', verbose_name='Данные (JSON)')
+    payload = models.TextField(blank=True, default='', verbose_name='Данные (JSON)')  # данные для создания пользователя после подтверждения
     expires_at = models.DateTimeField(verbose_name='Истекает')
     used = models.BooleanField(default=False, verbose_name='Использован')
     attempts = models.IntegerField(default=0, verbose_name='Неверных попыток')
@@ -471,6 +489,7 @@ class EmailCode(models.Model):
 # DeleteRequest
 # ---------------------------------------------------------------------------
 
+# Заявка на удаление - двухуровневый процесс: admin создаёт, owner подтверждает
 class DeleteRequest(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Ожидает'),
@@ -569,6 +588,7 @@ class RecordNote(models.Model):
 # AuditLog
 # ---------------------------------------------------------------------------
 
+# Журнал всех изменений в системе - записи создаются через utils.log_action()
 class AuditLog(models.Model):
     ACTION_CHOICES = [
         ('created', 'Создал'),
@@ -611,7 +631,7 @@ def _delete_file(field):
     if field and field.name:
         try:
             if os.path.isfile(field.path):
-                os.remove(field.path)
+                os.remove(field.path)  # физически удаляем файл, не только запись в БД
         except Exception:
             pass
 
@@ -646,7 +666,7 @@ def _document_delete_files(sender, instance, **kwargs):
     _delete_file(instance.file)
 
 
-# При замене фото — удалять старое
+# При замене фото — удалять старое, чтобы не копились неиспользуемые файлы
 def _replace_old_file(sender, instance, field_name):
     if not instance.pk:
         return
@@ -656,6 +676,7 @@ def _replace_old_file(sender, instance, field_name):
         return
     old_file = getattr(old, field_name)
     new_file = getattr(instance, field_name)
+    # удаляем только если файл действительно изменился
     if old_file and old_file.name != getattr(new_file, 'name', None):
         _delete_file(old_file)
 

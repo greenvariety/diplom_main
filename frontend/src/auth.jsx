@@ -14,6 +14,7 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
   const [touched, setTouched] = useState({});
   const [loginError, setLoginError] = useState('');
 
+  // валидация полей формы входа
   const validate = (vals) => {
     const e = {};
     if (!vals.user.trim()) e.user = 'Введите логин';
@@ -29,6 +30,7 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
     if (Object.keys(touched).length) setErrs(validate({ user, pass }));
   }, [user, pass]);
 
+  // отправка формы входа
   const submit = async (e) => {
     e && e.preventDefault();
     const v = validate({ user, pass });
@@ -38,6 +40,7 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
     }
     try {
       const res = await axios.post('/api/auth/login/', { username: user, password: pass });
+      // сохраняем токены в localStorage
       localStorage.setItem('access_token', res.data.access);
       localStorage.setItem('refresh_token', res.data.refresh);
       onLogin && onLogin(res.data.user);
@@ -54,7 +57,7 @@ function LoginScreen({ onLogin, onRegister, onRecover }) {
         <div className="login-pitch">
           <div style={{ display: 'inline-block', padding: '4px 10px', background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontSize: 11, fontWeight: 500, borderRadius: 999, marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.06em' }}>АИС колледжа · v2.0</div>
           <h1>Единая система учета студентов и&nbsp;преподавателей.</h1>
-          <p>Замена бумажных журналов и Excel-таблиц. Личные данные, статусы, перевод и отчисление, документы, журнал изменений - всё в одном месте.</p>
+          <p>Учёт студентов, сотрудников, групп и документов. Личные дела, распределение по факультетам, назначение предметов и полный журнал всех изменений в системе.</p>
         </div>
         <div className="login-foot">© ГБПОУ МКАГ · Дипломная работа · Пушков Н. М. · Группа ИСиП-3-22 · 2026</div>
         <div className="login-art"></div>
@@ -124,6 +127,7 @@ function RegisterScreen({ onDone, onBack, initialVals }) {
   const [submitError, setSubmitError] = useState('');
   const set = (k, v) => setVals(s => ({ ...s, [k]: v }));
 
+  // проверяем доступность логина/email на сервере при потере фокуса
   const checkField = async (field, value) => {
     if (!value) return;
     try {
@@ -156,6 +160,7 @@ function RegisterScreen({ onDone, onBack, initialVals }) {
   else if (vals.pass && vals.pass !== vals.pass2) errs.pass2 = 'Пароли не совпадают';
   const pass2OK = vals.pass2 && vals.pass && vals.pass === vals.pass2;
 
+  // отправка формы регистрации - первый шаг, отправляет код на email
   const submit = async () => {
     setTouched({ login: 1, name: 1, email: 1, pass: 1, pass2: 1 });
     setPw2Touched(true);
@@ -173,6 +178,7 @@ function RegisterScreen({ onDone, onBack, initialVals }) {
         email: vals.email,
         pass: vals.pass,
       });
+      // переходим на экран ввода кода, передаём маскированный email для отображения
       onDone && onDone({ maskedEmail: res.data.masked_email, login: vals.login, formVals: vals });
     } catch (err) {
       const data = err.response?.data;
@@ -341,7 +347,7 @@ function CodeInput({ onChange, hasError, autoFocus }) {
   const refs = useRef([]);
   const [cells, setCells] = useState(['', '', '', '', '', '']);
   const cellsRef = useRef(['', '', '', '', '', '']);
-  const moving = useRef(false);
+  const moving = useRef(false);  // флаг чтобы отличить программный фокус от ручного
 
   const updateCells = (arr) => {
     cellsRef.current = arr;
@@ -349,6 +355,7 @@ function CodeInput({ onChange, hasError, autoFocus }) {
     onChange(arr.join(''));
   };
 
+  // переводим фокус на нужную ячейку
   const focusAt = (i) => {
     const el = refs.current[i];
     if (el) {
@@ -361,6 +368,7 @@ function CodeInput({ onChange, hasError, autoFocus }) {
   const handleFocus = (idx) => {
     // If focus was moved programmatically (via focusAt), skip the redirect logic
     if (moving.current) { moving.current = false; return; }
+    // если кликнули на ячейку правее первой пустой - переводим на первую пустую
     const firstEmpty = cellsRef.current.findIndex(c => !c);
     if (firstEmpty !== -1 && firstEmpty < idx) {
       setTimeout(() => focusAt(firstEmpty), 0);
@@ -375,6 +383,7 @@ function CodeInput({ onChange, hasError, autoFocus }) {
         arr[idx] = '';
         updateCells(arr);
       } else if (idx > 0) {
+        // если текущая ячейка пустая - стираем предыдущую
         arr[idx - 1] = '';
         updateCells(arr);
         focusAt(idx - 1);
@@ -389,6 +398,7 @@ function CodeInput({ onChange, hasError, autoFocus }) {
   };
 
   const handleChange = (idx, e) => {
+    // принимаем только буквы и цифры, переводим в верхний регистр
     const clean = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (!clean) return;
     const arr = [...cellsRef.current];
@@ -398,6 +408,7 @@ function CodeInput({ onChange, hasError, autoFocus }) {
   };
 
   const handlePaste = (idx, e) => {
+    // вставка: распределяем символы по ячейкам начиная с текущей
     e.preventDefault();
     const pasted = (e.clipboardData.getData('text') || '')
       .toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6 - idx);
@@ -448,19 +459,21 @@ function CodeInput({ onChange, hasError, autoFocus }) {
    ============================================================ */
 function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
   const [code, setCode] = useState('');
-  const [codeKey, setCodeKey] = useState(0);
+  const [codeKey, setCodeKey] = useState(0);  // ключ для сброса CodeInput при повторной отправке
   const [submitted, setSubmitted] = useState(false);
   const [cooldown, setCooldown] = useState(60);
   const [resending, setResending] = useState(false);
   const [codeError, setCodeError] = useState('');
   const [isBlocked, setIsBlocked] = useState(false);
 
+  // обратный отсчёт кулдауна между повторными отправками
   useEffect(() => {
     if (cooldown <= 0) return;
     const t = setTimeout(() => setCooldown(s => Math.max(0, s - 1)), 1000);
     return () => clearTimeout(t);
   }, [cooldown]);
 
+  // проверка кода подтверждения
   const submit = async () => {
     setSubmitted(true);
     if (code.trim().length !== 6) {
@@ -483,6 +496,7 @@ function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
     }
   };
 
+  // повторная отправка кода на email
   const resend = async () => {
     if (cooldown > 0 || resending) return;
     setResending(true);
@@ -490,7 +504,7 @@ function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
       await axios.post('/api/auth/resend-register-code/', { login });
       setCooldown(60);
       setCode('');
-      setCodeKey(k => k + 1);
+      setCodeKey(k => k + 1);  // сбрасываем поле ввода кода
       setSubmitted(false);
       setCodeError('');
     } catch (err) {
@@ -565,7 +579,7 @@ function EmailVerifyScreen({ maskedEmail, login, onDone, onBack }) {
    RecoverPasswordScreen - 2 шага: запрос кода + ввод кода
    ============================================================ */
 function RecoverPasswordScreen({ onBack, onDone }) {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(1);  // шаг 1: ввод логина, шаг 2: ввод кода и нового пароля
   const [login, setLogin] = useState('');
   const [maskedEmail, setMaskedEmail] = useState('');
   const [code, setCode] = useState('');
@@ -584,6 +598,7 @@ function RecoverPasswordScreen({ onBack, onDone }) {
   const [recentlyChanged, setRecentlyChanged] = useState(false);
   const [recentlyChangedMsg, setRecentlyChangedMsg] = useState('');
 
+  // валидация нового пароля - те же требования что при регистрации
   const p1Err = !p1 ? 'Введите пароль'
     : p1.length < 8 ? 'Минимум 8 символов'
     : !/\d/.test(p1) ? 'Нужна хотя бы одна цифра'
@@ -598,6 +613,7 @@ function RecoverPasswordScreen({ onBack, onDone }) {
     return () => clearTimeout(t);
   }, [cooldown]);
 
+  // запрашиваем код восстановления - переходим к шагу 2 при успехе
   const sendCode = async () => {
     setTouched({ all: 1 });
     if (!login.trim()) {
@@ -612,6 +628,7 @@ function RecoverPasswordScreen({ onBack, onDone }) {
     } catch (err) {
       const data = err.response?.data;
       if (err.response?.status === 429 && data?.recently_changed) {
+        // особый случай: пароль недавно менялся - показываем сообщение
         setRecentlyChanged(true);
         setRecentlyChangedMsg(data.error);
         setMaskedEmail('');
@@ -917,6 +934,7 @@ function OrgSetupScreen({ onDone }) {
   if (!vals.code.trim()) errs.code = 'Введите аббревиатуру';
   if (!vals.date.trim()) errs.date = 'Укажите дату основания';
 
+  // создаём первую организацию нового владельца
   const submit = async () => {
     setTouched({ name: 1, code: 1, date: 1 });
     if (Object.keys(errs).length) return;
@@ -924,7 +942,7 @@ function OrgSetupScreen({ onDone }) {
     setErr('');
     try {
       await api.post('/organizations/', { name: vals.name.trim(), code: vals.code.trim(), founded_date: vals.date.trim() });
-      onDone && onDone();
+      onDone && onDone();  // переходим в основной интерфейс
     } catch (e) {
       setErr(e.response?.data?.error || 'Ошибка при создании организации');
       setSubmitting(false);

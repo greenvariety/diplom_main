@@ -10,6 +10,7 @@ from .models import EmailCode, Institution, Student, Employee
 from .utils import generate_email_code, log_action, mask_email, send_verification_email
 
 
+# сериализация данных организации со счётчиками
 def _org_data(org, active_id):
     return {
         'id': org.pk,
@@ -19,13 +20,14 @@ def _org_data(org, active_id):
         'photo': org.photo.url if org.photo else None,
         'founded_date': org.founded_date.strftime('%d.%m.%Y') if org.founded_date else None,
         'created_at': org.created_at.strftime('%d.%m.%Y'),
-        'active': org.pk == active_id,
+        'active': org.pk == active_id,  # текущая выбранная организация
         'students': Student.objects.filter(faculty__institution=org).count(),
         'employees': Employee.objects.filter(institution=org).count(),
     }
 
 
 def _parse_date(raw):
+    # поддерживаем оба формата даты: ДД.ММ.ГГГГ и ГГГГ-ММ-ДД
     if not raw:
         return None
     from datetime import datetime
@@ -38,6 +40,7 @@ def _parse_date(raw):
 
 
 def _has_latin(value):
+    # проверяем наличие латинских букв - названия должны быть на кириллице
     return bool(re.search(r'[A-Za-z]', value))
 
 

@@ -5,10 +5,12 @@ from .models import Group, Faculty, Employee, Subject, GroupSubjectEmployee, Del
 from .utils import log_action
 
 
+# проверяем заполненность профиля классного руководителя
 def _emp_incomplete(e):
     return not all([e.position_id, e.birth_date, e.phone, e.email, e.photo])
 
 
+# сериализация данных группы
 def _group_data(g):
     return {
         'id': g.pk,
@@ -23,7 +25,7 @@ def _group_data(g):
         'headteacher_warn_incomplete': _emp_incomplete(g.headteacher) if g.headteacher_id else False,
         'student_count': g.students.count(),
         'is_flagged': g.is_flagged,
-        'warn_incomplete': g.headteacher_id is None,
+        'warn_incomplete': g.headteacher_id is None,  # группа без классного руководителя - неполная
         'has_pending_delreq': getattr(g, 'has_pending_delreq', False),
         'has_note': getattr(g, 'has_note', False),
     }
@@ -53,6 +55,7 @@ class GroupsView(APIView):
             has_note=Exists(RecordNote.objects.filter(object_type='Group', object_id=OuterRef('pk'), is_resolved=False)),
         )
 
+        # преподаватель видит только свои группы (где он классный руководитель)
         if request.user.is_teacher_role:
             employee = request.user.employee
             if not employee:

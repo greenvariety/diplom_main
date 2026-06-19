@@ -12,6 +12,7 @@ function Badge({ children, className = '' }) {
 }
 
 function Avatar({ name, size = 'md', av = 1, className = '', src = null }) {
+  // берём первые буквы первых двух слов для аватара без фото
   const initials = name.split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
   const cls = size === 'lg' ? 'avatar avatar-lg' : size === 'sm' ? 'avatar avatar-sm' : size === 'xl' ? 'avatar avatar-lg' : 'avatar';
   if (src) {
@@ -51,6 +52,7 @@ function PageHead({ crumbs, title, sub, subNote, actions }) {
    ============================================================ */
 const ROLE_LABEL = { owner: 'Владелец', superadmin: 'Суперадминистратор', admin: 'Администратор', teacher: 'Преподаватель' };
 
+// Поиск в шапке - ищет студентов (и опекунов для преподавателей)
 function TopbarSearch({ onNavigate, role }) {
   const [q, setQ] = useState('');
   const [results, setResults] = useState([]);
@@ -59,6 +61,7 @@ function TopbarSearch({ onNavigate, role }) {
 
   useEffect(() => {
     if (!q.trim()) { setResults([]); setOpen(false); return; }
+    // дебаунс 300мс чтобы не слать запрос на каждый символ
     const t = setTimeout(() => {
       const enc = encodeURIComponent(q);
       const searches = [
@@ -69,6 +72,7 @@ function TopbarSearch({ onNavigate, role }) {
           api.get(`/parents/?search=${enc}`).then(r => (Array.isArray(r.data) ? r.data : r.data.results || []).slice(0, 5).map(p => ({ ...p, _type: 'parent' }))).catch(() => [])
         );
       }
+      // объединяем результаты из разных запросов
       Promise.all(searches).then(parts => {
         const combined = parts.flat();
         setResults(combined);

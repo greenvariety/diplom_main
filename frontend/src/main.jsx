@@ -10,10 +10,11 @@ import { ProfileScreen } from './profile.jsx';
 import { OrgFormModal, FacultyFormModal, FacultyDetailModal, GroupFormModal, AssignSubjectModal, SubjectAddTeacherModal, StudentFormModal, UploadDocModal, ParentFormModal, ParentAddStudentModal, DeleteConfirmModal, EmployeeFormModal, EmployeeAssignSubjectModal, EmployeeAddTaughtSubjectModal, EmployeeSetHeadteacherModal, PositionFormModal, SubjectFormModal, UserFormModal, UserSetPasswordModal, ApproveDeleteModal, AuditDiffModal, LogoutModal, OrgDeleteConfirmModal, OwnerDirectDeleteModal, NoteModal } from './modals.jsx';
 import api from './api.js';
 
+// Управляет флоу регистрации: login → register → verify-email → org-setup
 function AuthFlow({ onAuthenticated }) {
   const [screen, setScreen] = useState('login');
   const [verifyData, setVerifyData] = useState(null);
-  const [savedRegisterVals, setSavedRegisterVals] = useState(null);
+  const [savedRegisterVals, setSavedRegisterVals] = useState(null);  // сохраняем форму при возврате назад
 
   if (screen === 'register') {
     return (
@@ -54,6 +55,7 @@ function AuthFlow({ onAuthenticated }) {
   );
 }
 
+// Основная оболочка приложения после входа - управляет экранами и модальными окнами
 function AppShell({ onLogout }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [currentScreen, setCurrentScreen] = useState('dashboard');
@@ -61,6 +63,7 @@ function AppShell({ onLogout }) {
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null); // { name, data }
 
+  // загружаем данные текущего пользователя при старте
   const loadUser = () => {
     api.get('/me/').then(r => {
       setCurrentUser(r.data);
@@ -80,6 +83,7 @@ function AppShell({ onLogout }) {
     onLogout();
   };
 
+  // навигация между экранами с поддержкой истории браузера
   const handleNavigate = (screen, extra = null) => {
     window.history.pushState({ screen, extra }, '');
     setCurrentScreen(screen);
@@ -89,6 +93,7 @@ function AppShell({ onLogout }) {
   useEffect(() => {
     window.history.replaceState({ screen: 'dashboard', extra: null }, '');
 
+    // обработчик кнопки "назад/вперёд" браузера
     const handlePopState = (e) => {
       const screen = e.state?.screen || 'dashboard';
       const extra = e.state?.extra || null;
@@ -96,6 +101,7 @@ function AppShell({ onLogout }) {
       setNavExtra(extra);
     };
 
+    // Alt+Left / Alt+Right для навигации назад/вперёд
     const handleKeyDown = (e) => {
       if (!e.altKey) return;
       if (e.key === 'ArrowLeft') { e.preventDefault(); window.history.back(); }
@@ -113,6 +119,7 @@ function AppShell({ onLogout }) {
   const openModal = (name, data) => setModal({ name, data });
   const closeModal = () => setModal(null);
 
+  // реестр всех модальных окон приложения
   const MODAL_COMPONENTS = {
     orgForm:                  OrgFormModal,
     facultyForm:              FacultyFormModal,
@@ -284,11 +291,13 @@ function AppShell({ onLogout }) {
 }
 
 function App() {
+  // проверяем наличие токена при загрузке страницы
   const [authenticated, setAuthenticated] = useState(
     () => !!localStorage.getItem('access_token')
   );
 
   useEffect(() => {
+    // слушаем событие принудительного выхода - генерируется в api.js при ошибке refresh
     const onForceLogout = () => setAuthenticated(false);
     window.addEventListener('auth:logout', onForceLogout);
     return () => window.removeEventListener('auth:logout', onForceLogout);

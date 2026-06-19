@@ -62,6 +62,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# база данных - SQLite для простоты развёртывания на локальном сервере
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -89,12 +90,13 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# кастомная модель пользователя из приложения core
 AUTH_USER_MODEL = 'core.User'
 
 # Special confirmation password for delete operations
 DELETE_CONFIRMATION_PASSWORD = 'DELETE_CONFIRM_2024'
 
-CORS_ALLOWED_ORIGINS = ["http://localhost:5173"]
+CORS_ALLOWED_ORIGINS = ["http://localhost:5173"]  # разрешаем Vite dev-сервер
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': ['rest_framework_simplejwt.authentication.JWTAuthentication'],
@@ -103,17 +105,17 @@ REST_FRAMEWORK = {
 
 from datetime import timedelta
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),   # access-токен живёт 1 час
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),     # refresh-токен живёт 30 дней
 }
 
-# Email — Gmail SMTP
+# Email — Gmail SMTP (App Password из .env)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 465
 EMAIL_USE_SSL = True
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')  # App Password, не обычный пароль Gmail
 DEFAULT_FROM_EMAIL = f'АИСК <{os.environ.get("EMAIL_HOST_USER", "")}>'
 
 LOGGING = {

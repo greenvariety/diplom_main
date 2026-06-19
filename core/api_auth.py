@@ -22,9 +22,11 @@ _MAX_ATTEMPTS = 5        # неверных попыток на один код
 
 def _rate_check(email, purpose):
     """Возвращает Response с ошибкой или None если лимиты не превышены."""
+    # проверяем не превышен ли лимит запросов за окно времени
     window_ago = timezone.now() - timedelta(minutes=_LOCKOUT_MINUTES)
     if EmailCode.objects.filter(email=email, purpose=purpose, created_at__gte=window_ago).count() >= _MAX_CODES_WINDOW:
         return Response({'error': 'Запросы истекли. Повторите через 15 минут'}, status=429)
+    # проверяем кулдаун между повторными отправками
     latest = EmailCode.objects.filter(email=email, purpose=purpose).order_by('-created_at').first()
     if latest:
         elapsed = (timezone.now() - latest.created_at).total_seconds()
@@ -37,6 +39,7 @@ def _rate_check(email, purpose):
     return None
 
 
+# Вход в систему - возвращает JWT-токены для дальнейших запросов
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -45,9 +48,11 @@ class LoginView(APIView):
         password = request.data.get('password', '')
         if not username or not password:
             return Response({'error': 'Введите логин и пароль'}, status=400)
+        # стандартная Django-аутентификация
         user = authenticate(request, username=username, password=password)
         if not user:
             return Response({'error': 'Неверный логин или пароль'}, status=400)
+        # генерируем пару токенов access + refresh
         refresh = RefreshToken.for_user(user)
         institution = user.institution
         return Response({
@@ -63,6 +68,7 @@ class LoginView(APIView):
         })
 
 
+# Первый шаг регистрации - проверяем данные и отправляем код подтверждения на email
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
@@ -84,6 +90,7 @@ class RegisterView(APIView):
             return Response({'error': 'Логин уже занят. Выберите другой', 'field': 'login'}, status=400)
         if User.objects.filter(email__iexact=email).exists():
             return Response({'error': 'Этот email уже зарегистрирован', 'field': 'email'}, status=400)
+        # проверяем что email не занят среди сотрудников/студентов/опекунов
         person_err = check_person_email_unique(email)
         if person_err:
             return Response({'error': person_err, 'field': 'email'}, status=400)
@@ -97,11 +104,12 @@ class RegisterView(APIView):
         EmailCode.objects.filter(email=email, purpose='register', used=False).update(used=True)
 
         code = generate_email_code()
+        # сохраняем данные для создания пользователя после подтверждения
         payload = json.dumps({
             'login': username,
             'name': display_name,
             'email': email,
-            'password_hash': make_password(password),
+            'password_hash': make_password(password),  # хэш пароля, не сам пароль
         })
         EmailCode.objects.create(
             email=email,
@@ -112,6 +120,7 @@ class RegisterView(APIView):
             expires_at=timezone.now() + timedelta(minutes=_CODE_TTL),
         )
 
+        # отправляем письмо и если не получилось - удаляем код
         sent = send_verification_email(email, code, purpose='register')
         if not sent:
             EmailCode.objects.filter(login=username, purpose='register', used=False).delete()
@@ -163,11 +172,13 @@ class ResendRegisterCodeView(APIView):
         return Response({'masked_email': mask_email(email), 'retry_after': _RESEND_COOLDOWN})
 
 
+# Второй шаг регистрации - проверяем код из письма и создаём аккаунт
 class VerifyEmailView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
         login = request.data.get('login', '').strip()
+        # убираем дефис и переводим в верхний регистр - формат ABC-DEF → ABCDEF
         code = request.data.get('code', '').strip().upper().replace('-', '')
 
         if not login or not code:
@@ -196,14 +207,17 @@ class VerifyEmailView(APIView):
             return Response({'error': 'Код истёк. Запросите новый'}, status=400)
 
         if ec.code != code:
+            # считаем неверные попытки
             ec.attempts += 1
             ec.save(update_fields=['attempts'])
             if is_last_code and ec.attempts >= _MAX_ATTEMPTS:
                 return Response({'error': 'Запросы истекли. Повторите через 15 минут'}, status=429)
             return Response({'error': 'Неверный код'}, status=400)
 
+        # код верный - читаем сохранённые данные из payload
         data = json.loads(ec.payload)
 
+        # повторная проверка уникальности - вдруг за время ввода кода кто-то занял логин/email
         if User.objects.filter(username=data['login']).exists():
             ec.used = True
             ec.save(update_fields=['used'])
@@ -219,18 +233,20 @@ class VerifyEmailView(APIView):
             ec.save(update_fields=['used'])
             return Response({'error': person_err, 'field': 'email'}, status=400)
 
+        # создаём пользователя с ролью owner - новый аккаунт всегда владелец
         user = User(
             username=data['login'],
             display_name=data['name'],
             email=data['email'],
             role='owner',
         )
-        user.password = data['password_hash']
+        user.password = data['password_hash']  # берём уже готовый хэш
         user.save()
 
         ec.used = True
         ec.save(update_fields=['used'])
 
+        # сразу выдаём токены - пользователь входит автоматически после регистрации
         refresh = RefreshToken.for_user(user)
         return Response({
             'access': str(refresh.access_token),
@@ -240,7 +256,7 @@ class VerifyEmailView(APIView):
                 'username': user.username,
                 'role': user.role,
                 'full_name': user.display_name,
-                'institution': None,
+                'institution': None,  # организацию создадут на следующем шаге
             }
         })
 
@@ -267,6 +283,7 @@ class LogoutView(APIView):
         return Response({'ok': True})
 
 
+# Запрос кода для восстановления пароля - только для владельцев (owner)
 class SendRecoverCodeView(APIView):
     permission_classes = [AllowAny]
 
@@ -283,7 +300,7 @@ class SendRecoverCodeView(APIView):
         if not user.email:
             return Response({'error': 'К аккаунту не привязан email. Обратитесь к администратору'}, status=400)
 
-        # Блокировка на 10 минут после успешной смены пароля
+        # Блокировка на 10 минут после успешной смены пароля - защита от злоупотреблений
         if user.password_changed_at:
             elapsed = (timezone.now() - user.password_changed_at).total_seconds()
             if elapsed < _CODE_TTL * 60:
@@ -316,6 +333,7 @@ class SendRecoverCodeView(APIView):
         return Response({'masked_email': mask_email(user.email)})
 
 
+# Подтверждение кода и установка нового пароля
 class RecoverView(APIView):
     permission_classes = [AllowAny]
 
@@ -330,6 +348,7 @@ class RecoverView(APIView):
             return Response({'error': 'Введите код'}, status=400)
         if not new_password:
             return Response({'error': 'Введите новый пароль'}, status=400)
+        # валидация требований к паролю - те же правила что и при регистрации
         if len(new_password) < 8:
             return Response({'error': 'Пароль должен содержать минимум 8 символов'}, status=400)
         if not re.search(r'\d', new_password):
@@ -376,12 +395,13 @@ class RecoverView(APIView):
             return Response({'error': 'Новый пароль совпадает со старым'}, status=400)
 
         user.set_password(new_password)
-        user.password_changed_at = timezone.now()
+        user.password_changed_at = timezone.now()  # фиксируем время смены для блокировки повторных запросов
         user.save()
 
         ec.used = True
         ec.save(update_fields=['used'])
 
+        # автоматически входим после смены пароля
         refresh = RefreshToken.for_user(user)
         return Response({
             'access': str(refresh.access_token),
