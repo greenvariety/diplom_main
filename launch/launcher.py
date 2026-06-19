@@ -9,9 +9,9 @@ import subprocess
 from datetime import datetime
 import tkinter as tk
 
-BASE   = os.path.dirname(os.path.abspath(__file__))
+BASE   = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # корень проекта
 PY     = os.path.join(BASE, 'venv', 'Scripts', 'python.exe')
-MGR    = os.path.join(BASE, 'manage.py')
+MGR    = os.path.join(BASE, 'launch', 'manage.py')
 URL    = 'http://127.0.0.1:8000'
 NO_WIN = subprocess.CREATE_NO_WINDOW
 
