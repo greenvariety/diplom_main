@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Q
 from .models import Parent, Student, StudentParent, DeleteRequest, Group, Document
 from .utils import log_action, check_person_email_unique, check_person_phone_unique
@@ -108,24 +109,27 @@ class ParentsView(APIView):
             return Response({'error': 'Введите имя'}, status=400)
 
         email = (request.data.get('email') or '').strip()
-        email_err = check_person_email_unique(email)
-        if email_err:
-            return Response({'error': email_err, 'field': 'email'}, status=400)
-
         phone = (request.data.get('phone') or '').strip()
-        phone_err = check_person_phone_unique(phone)
-        if phone_err:
-            return Response({'error': phone_err, 'field': 'phone'}, status=400)
 
-        parent = Parent.objects.create(
-            institution=institution,
-            last_name=last_name,
-            first_name=first_name,
-            middle_name=(request.data.get('middle_name') or '').strip(),
-            birth_date=request.data.get('birth_date') or None,
-            phone=phone,
-            email=email,
-        )
+        with transaction.atomic():
+            email_err = check_person_email_unique(email)
+            if email_err:
+                return Response({'error': email_err, 'field': 'email'}, status=400)
+
+            phone_err = check_person_phone_unique(phone)
+            if phone_err:
+                return Response({'error': phone_err, 'field': 'phone'}, status=400)
+
+            parent = Parent.objects.create(
+                institution=institution,
+                last_name=last_name,
+                first_name=first_name,
+                middle_name=(request.data.get('middle_name') or '').strip(),
+                birth_date=request.data.get('birth_date') or None,
+                phone=phone,
+                email=email,
+            )
+
         photo = request.FILES.get('photo')
         if photo:
             parent.photo = photo
@@ -188,16 +192,6 @@ class ParentDetailView(APIView):
             if field in request.data:
                 setattr(parent, field, (request.data[field] or '').strip())
 
-        if 'email' in request.data and parent.email:
-            email_err = check_person_email_unique(parent.email, exclude_parent_pk=parent.pk)
-            if email_err:
-                return Response({'error': email_err, 'field': 'email'}, status=400)
-
-        if 'phone' in request.data and parent.phone:
-            phone_err = check_person_phone_unique(parent.phone, exclude_parent_pk=parent.pk)
-            if phone_err:
-                return Response({'error': phone_err, 'field': 'phone'}, status=400)
-
         if 'birth_date' in request.data:
             parent.birth_date = request.data['birth_date'] or None
 
@@ -205,7 +199,19 @@ class ParentDetailView(APIView):
         if photo:
             parent.photo = photo
 
-        parent.save()
+        with transaction.atomic():
+            if 'email' in request.data and parent.email:
+                email_err = check_person_email_unique(parent.email, exclude_parent_pk=parent.pk)
+                if email_err:
+                    return Response({'error': email_err, 'field': 'email'}, status=400)
+
+            if 'phone' in request.data and parent.phone:
+                phone_err = check_person_phone_unique(parent.phone, exclude_parent_pk=parent.pk)
+                if phone_err:
+                    return Response({'error': phone_err, 'field': 'phone'}, status=400)
+
+            parent.save()
+
         log_action(request.user, 'updated', parent,
                    old_data=old_data,
                    new_data={
@@ -328,6 +334,8 @@ class ParentFlagView(APIView):
         parent = _get_parent(request, pk)
         if not parent:
             return Response({'error': 'Не найдено'}, status=404)
-        parent.is_flagged = not parent.is_flagged
-        parent.save(update_fields=['is_flagged'])
+        with transaction.atomic():
+            parent = Parent.objects.select_for_update().get(pk=parent.pk)
+            parent.is_flagged = not parent.is_flagged
+            parent.save(update_fields=['is_flagged'])
         return Response({'is_flagged': parent.is_flagged})

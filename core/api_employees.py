@@ -1,12 +1,12 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Q, Exists, OuterRef, Count
 from .models import Employee, Position, GroupSubjectEmployee, Subject, Group, Document, DeleteRequest, RecordNote, User
 from .utils import log_action, check_person_email_unique, check_person_phone_unique
 
 
-# сериализация данных сотрудника для API-ответа
 def _employee_data(e):
     return {
         'id': e.pk,
@@ -22,7 +22,7 @@ def _employee_data(e):
         'position_role_type': e.position.role_type if e.position_id else None,
         'photo': e.photo.url if e.photo else None,
         'is_flagged': e.is_flagged,
-        'warn_incomplete': not all([e.position_id, e.birth_date, e.phone, e.email]),  # иконка предупреждения в списке
+        'warn_incomplete': not all([e.position_id, e.birth_date, e.phone, e.email]),
         'has_pending_delreq': getattr(e, 'has_pending_delreq', False),
         'has_note': getattr(e, 'has_note', False),
     }
@@ -122,25 +122,28 @@ class EmployeesView(APIView):
                 return Response({'error': 'Должность не найдена'}, status=404)
 
         email = (request.data.get('email') or '').strip()
-        email_err = check_person_email_unique(email)
-        if email_err:
-            return Response({'error': email_err, 'field': 'email'}, status=400)
-
         phone = (request.data.get('phone') or '').strip()
-        phone_err = check_person_phone_unique(phone)
-        if phone_err:
-            return Response({'error': phone_err, 'field': 'phone'}, status=400)
 
-        employee = Employee.objects.create(
-            institution=institution,
-            last_name=last_name,
-            first_name=first_name,
-            middle_name=(request.data.get('middle_name') or '').strip(),
-            birth_date=request.data.get('birth_date') or None,
-            phone=phone,
-            email=email,
-            position=position,
-        )
+        with transaction.atomic():
+            email_err = check_person_email_unique(email)
+            if email_err:
+                return Response({'error': email_err, 'field': 'email'}, status=400)
+
+            phone_err = check_person_phone_unique(phone)
+            if phone_err:
+                return Response({'error': phone_err, 'field': 'phone'}, status=400)
+
+            employee = Employee.objects.create(
+                institution=institution,
+                last_name=last_name,
+                first_name=first_name,
+                middle_name=(request.data.get('middle_name') or '').strip(),
+                birth_date=request.data.get('birth_date') or None,
+                phone=phone,
+                email=email,
+                position=position,
+            )
+
         photo = request.FILES.get('photo')
         if photo:
             employee.photo = photo
@@ -227,16 +230,6 @@ class EmployeeDetailView(APIView):
             if field in request.data:
                 setattr(employee, field, (request.data[field] or '').strip())
 
-        if 'email' in request.data and employee.email:
-            email_err = check_person_email_unique(employee.email, exclude_employee_pk=employee.pk)
-            if email_err:
-                return Response({'error': email_err, 'field': 'email'}, status=400)
-
-        if 'phone' in request.data and employee.phone:
-            phone_err = check_person_phone_unique(employee.phone, exclude_employee_pk=employee.pk)
-            if phone_err:
-                return Response({'error': phone_err, 'field': 'phone'}, status=400)
-
         if 'birth_date' in request.data:
             employee.birth_date = request.data['birth_date'] or None
 
@@ -254,7 +247,6 @@ class EmployeeDetailView(APIView):
                 employee.position = None
             old_was_teacher = old_position and old_position.role_type == 'teacher'
             new_is_teacher = new_position and new_position.role_type == 'teacher'
-            # если сотрудник перестаёт быть преподавателем - снимаем все назначения предметов и групп
             if old_was_teacher and not new_is_teacher:
                 GroupSubjectEmployee.objects.filter(employee=employee).delete()
                 employee.taught_subjects.clear()
@@ -264,7 +256,19 @@ class EmployeeDetailView(APIView):
         if photo:
             employee.photo = photo
 
-        employee.save()
+        with transaction.atomic():
+            if 'email' in request.data and employee.email:
+                email_err = check_person_email_unique(employee.email, exclude_employee_pk=employee.pk)
+                if email_err:
+                    return Response({'error': email_err, 'field': 'email'}, status=400)
+
+            if 'phone' in request.data and employee.phone:
+                phone_err = check_person_phone_unique(employee.phone, exclude_employee_pk=employee.pk)
+                if phone_err:
+                    return Response({'error': phone_err, 'field': 'phone'}, status=400)
+
+            employee.save()
+
         log_action(request.user, 'updated', employee,
                    old_data=old_data,
                    new_data={
@@ -453,12 +457,13 @@ class EmployeeFlagView(APIView):
         employee = _get_employee(request, pk)
         if not employee:
             return Response({'error': 'Не найдено'}, status=404)
-        employee.is_flagged = not employee.is_flagged
-        employee.save(update_fields=['is_flagged'])
+        with transaction.atomic():
+            employee = Employee.objects.select_for_update().get(pk=employee.pk)
+            employee.is_flagged = not employee.is_flagged
+            employee.save(update_fields=['is_flagged'])
         return Response({'is_flagged': employee.is_flagged})
 
 
-# Управление аккаунтом сотрудника в системе - только владелец может создавать аккаунты
 class EmployeeAccountView(APIView):
     def get(self, request, pk):
         if request.user.role != 'owner':
@@ -481,7 +486,6 @@ class EmployeeAccountView(APIView):
         employee = _get_employee(request, pk)
         if not employee:
             return Response({'error': 'Не найдено'}, status=404)
-        # сотрудникам с должностью без доступа аккаунт не создаём
         if employee.position and employee.position.role_type == 'none':
             return Response({'error': 'Эта должность не предусматривает доступ к системе'}, status=400)
         if User.objects.filter(employee=employee).exists():

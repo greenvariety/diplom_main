@@ -1,7 +1,5 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 Django-проект (дипломная работа) — АИС для управления студентами, сотрудниками, группами и документами учебного заведения.
 
 ---
@@ -10,59 +8,43 @@ Django-проект (дипломная работа) — АИС для упра
 
 > **ВАЖНО:** Все задачи пользователь пишет напрямую в чат. Никаких TASK.md, PLAN.md и других файлов задач не существует. Выполнять только то, что написано в текущем сообщении чата.
 
-> **ГЛАВНЫЙ ДОКУМЕНТ ПРОЕКТА:** `ПУШКОВ-3-22.docx` в корне репозитория — это дипломная работа, на требования которой нужно равняться при любых решениях по функциональности, структуре и логике системы.
+> **ГЛАВНЫЙ ДОКУМЕНТ ПРОЕКТА:** `env/ПУШКОВ-3-22.docx` — это дипломная работа, на требования которой нужно равняться при любых решениях по функциональности, структуре и логике системы.
 
 ---
 
 ## Команды разработки
 
 ```bash
-# Запуск dev-сервера
-python manage.py runserver
-
-# Применить миграции
-python manage.py migrate
-
-# Создать миграцию после изменения models.py
-python manage.py makemigrations
-
-# Создать суперадминистратора
-python manage.py create_superadmin
-
-# Заполнить тестовыми данными
-python manage.py seed_data
+python manage.py runserver        # запуск dev-сервера
+python manage.py migrate          # применить миграции
+python manage.py makemigrations   # создать миграцию после изменения models.py
+python manage.py create_superadmin  # создать admin / admin_-1
+python manage.py seed_data        # заполнить тестовыми данными
 ```
 
 Виртуальное окружение: `venv\Scripts\activate` (Windows).  
-Быстрый старт: `Запустить проект.bat` в корне.
+Быстрый старт: `Запустить проект.bat` в корне.  
+Адрес: `http://127.0.0.1:8000/`. Тестов нет — проверка вручную через браузер.
 
-Тестов нет - проверка вручную через браузер на `http://127.0.0.1:8000/`.
+Фронтенд (hot reload):
+```bash
+# Терминал 1: python manage.py runserver
+# Терминал 2: cd frontend && npm run dev   → http://localhost:5173
+```
+
+После изменений в `frontend/src/`: `cd frontend && npm run build`.
 
 ---
 
 ## Секреты и переменные окружения
 
-**Все секреты хранятся только в `.env`** — никогда не в коде.
-
-Список переменных, которые должны быть в `.env`:
+Все секреты только в `env/.env` (в `.gitignore`, никогда не коммитить):
 - `SECRET_KEY` — секретный ключ Django
 - `EMAIL_HOST_USER` — email отправителя (Gmail)
 - `EMAIL_HOST_PASSWORD` — App Password Gmail (16 символов, без пробелов)
 
-Правила:
-- `.env` уже добавлен в `.gitignore` — никогда не коммитить его.
-- При добавлении нового секрета: записать переменную в `.env`, прочитать в `settings.py` через `os.environ.get(...)`.
-- Образец с именами переменных (без значений) хранить в `.env.example` — его можно коммитить.
-
----
-
-## Правила интерфейса
-
-- **Только дефис `-`** в текстах интерфейса. Длинное тире `—` и среднее тире `–` запрещены везде в JSX/JS-строках.
-- **Никаких `placeholder` в полях ввода.** Атрибут `placeholder` на `<input>` и `<textarea>` не добавлять — ни в JSX, ни в HTML. Label над полем достаточно.
-- **Ограничение длины полей:**
-  - Короткие поля (имена, логины, коды, названия, телефон и т.п.) — ставить атрибут `maxLength={N}` прямо на `<input>`. Пользователь просто не может написать больше, никакого сообщения об ошибке.
-  - Длинные поля (описания, причины, комментарии — `<textarea>`) — НЕ ставить `maxLength`. Вместо этого показывать счётчик `X / MAX символов` под полем и сообщение об ошибке если лимит превышен.
+При добавлении нового секрета: записать в `env/.env`, читать через `os.environ.get(...)` в `settings.py`.  
+Образец без значений — `env/.env.example` (можно коммитить).
 
 ---
 
@@ -78,97 +60,325 @@ core/api_auth.py    — логин, регистрация с email-кодом, 
 core/urls.py        — все /api/... маршруты + catch-all → serve_frontend
 core/utils.py       — log_action(), email-хелперы, декораторы ролей
 config/settings.py  — SQLite, DRF, JWT, CORS, Email (Gmail SMTP)
-frontend/src/       — React 18 + Vite (screens.jsx, modals.jsx, shell.jsx, api.js)
+frontend/src/       — React 18 + Vite
+  main.jsx          — точка входа, роутинг
+  auth.jsx          — экраны авторизации
+  shell.jsx         — навигационная оболочка (sidebar + topbar)
+  screens.jsx       — все основные экраны (списки, детали)
+  modals.jsx        — все модальные формы
+  profile.jsx       — экран профиля
+  utils.jsx         — Field, FadingError, LoadButton, useToast, PasswordInput
+  api.js            — Axios-клиент с JWT + автообновление токена
+  styles.css        — дизайн-система
 frontend/dist/      — собранный билд, отдаётся Django
 ```
 
-Кастомная модель пользователя `core.User` с полем `role` (`owner` / `admin` / `teacher`) — вместо стандартных Django groups. Доступ к API через DRF permissions; для Django-вьюх (только serve_frontend) — декораторы `@admin_required` / `@owner_required` из `core/utils.py`.
-
-Мультитенантность: владелец (`owner`) создаёт учебные заведения (`Institution`). Все сущности (факультеты, сотрудники, студенты и т.д.) привязаны к `Institution`.
-
-Document привязан к владельцу через `owner_type` (строка) + `owner_id` (int) — без GenericForeignKey.
+Кастомная модель `core.User` с полем `role` (`owner` / `admin` / `teacher`).  
+Мультитенантность: owner создаёт `Institution`, все сущности привязаны к ней.  
+`Document` привязан через `owner_type` (строка) + `owner_id` (int) — без GenericForeignKey.
 
 ---
 
-## Карта: что меняешь → что читать
+## Правила интерфейса
 
-Перед изменением файла открой соответствующий документ из `docs/` — там полный контекст.
+- **Только дефис `-`** в текстах. Длинное тире `—` и среднее `–` запрещены в JSX/JS-строках.
+- **Никаких `placeholder`** на `<input>` и `<textarea>`. Label над полем достаточно.
+- **Ограничение длины:**
+  - Короткие поля (имена, коды, телефон) — `maxLength={N}` прямо на `<input>`.
+  - Длинные поля (`<textarea>`) — без `maxLength`, показывать счётчик `X / MAX символов` + ошибку при превышении.
 
-### `core/models.py`
-→ Читай **[docs/database.md](docs/database.md)** — схема всех таблиц, поля, связи, ограничения.  
-→ После изменения моделей — `python manage.py makemigrations && python manage.py migrate`.
+### Компонент Field (обязательный шаблон для полей ввода)
 
-### `core/api_*.py` (любой API-файл)
-→ Читай **[docs/patterns.md](docs/patterns.md)** — обязательный вызов `log_action()`, фильтрация по institution, паттерн удаления.  
-→ Читай **[docs/business-rules.md](docs/business-rules.md)** — таблица прав по ролям, какая роль что видит/может.
+```jsx
+import { Field } from './utils.jsx';
 
-### `core/urls.py`
-→ Читай **[docs/patterns.md](docs/patterns.md)** — соглашение об именовании API-маршрутов.
+<Field label="Название" required error={touched.name && errs.name}>
+  <input
+    className={`input ${touched.name && errs.name ? 'is-error' : ''}`}
+    value={name}
+    onChange={e => setName(e.target.value)}
+    onBlur={() => setTouched(t => ({ ...t, name: 1 }))}
+    maxLength={255}
+  />
+</Field>
+```
 
-### `core/utils.py`
-→ Читай **[docs/patterns.md](docs/patterns.md)** — как работают `log_action`, email-хелперы и декораторы.  
-→ Читай **[docs/business-rules.md](docs/business-rules.md)** — логика ролей.
+CSS-классы: `input` для `<input>`, `select` для `<select>`, `textarea` для `<textarea>`.  
+`Field` рендерит ошибку через `FadingError` — отдельно добавлять не нужно.  
+Класс `is-error` добавляет красную рамку. Оба исчезают через 15-20 сек автоматически.
 
-### `frontend/src/` (любой JSX/JS файл)
-→ Читай **[docs/ux-guidelines.md](docs/ux-guidelines.md)** — React-паттерны, компоненты, тексты кнопок.  
-→ Читай **[docs/patterns.md](docs/patterns.md)** — паттерн ошибок полей, API-вызовы.
+**С err (при сабмите):**
+```jsx
+<Field label="Название" required error={err && !name.trim() ? err : null}>
+  <input className={`input ${err && !name.trim() ? 'is-error' : ''}`}
+    onChange={e => { setName(e.target.value); setErr(''); }} ... />
+</Field>
+```
 
-### `config/settings.py`
-→ Читай **[docs/deployment.md](docs/deployment.md)** — что за какую настройку отвечает.
+### Кнопка с лоадером
 
-### Добавление новой сущности (модель + API + экраны)
-→ Читай **[docs/database.md](docs/database.md)** — куда вписать новую модель (обязательно добавить `institution` FK).  
-→ Читай **[docs/patterns.md](docs/patterns.md)** — паттерн DRF APIView, log_action, фильтрация по institution.  
-→ Читай **[docs/business-rules.md](docs/business-rules.md)** — какие роли получат доступ.  
-→ Читай **[docs/features.md](docs/features.md)** — обнови статус фичи после реализации.
+```jsx
+import { LoadButton } from './utils.jsx';
+<LoadButton loading={loading} onClick={handleSubmit}>Сохранить</LoadButton>
+```
 
-### Изменение логики удаления / заявок
-→ Читай **[docs/business-rules.md](docs/business-rules.md)** — двухуровневый процесс удаления.
+### Toast-уведомления
 
-### Изменение статусов студента
-→ Читай **[docs/business-rules.md](docs/business-rules.md)** — граф переходов статусов.
+```jsx
+const toast = useToast();
+toast.push('Сотрудник добавлен.', { kind: 'ok' });
+toast.push('Неверный пароль.', { kind: 'err' });
+```
 
-### Изменение прав доступа / ролей
-→ Читай **[docs/business-rules.md](docs/business-rules.md)** — таблица прав.  
-→ Читай **[docs/patterns.md](docs/patterns.md)** — как применяются декораторы.
+### Права в интерфейсе
 
-### `requirements.txt` / зависимости
-→ Читай **[docs/deployment.md](docs/deployment.md)** — текущий стек и зависимости.
-
-### Написание автотестов
-→ Читай **[docs/testing.md](docs/testing.md)** — правила написания, структура скрипта, именование файлов.  
-→ Подход: временный скрипт `tests/autotest_<тема>.py` → запуск → чтение вывода PASS/FAIL → **удаление скрипта**.  
-→ Использовать `requests` к REST API, не Playwright — дешевле и быстрее.
-
----
-
-## Логирование сессий (самоконтроль)
-
-**Папка:** `.claude/session_logs/`  
-**Справочник:** `.claude/session_logs/SESSION_GUIDE.md` — полный список отслеживаемых функций и шаблон лога.
-
-**Протокол каждой сессии:**
-1. **Начало** — прочитать последний `session_YYYY-MM-DD.md`, найти открытые баги `❌` и задачи `[ ]`.
-2. **В ходе работы** — фиксировать что тестировалось и что сломано.
-3. **Конец** — дописать лог: обновить таблицу статусов функций, записать баги, отметить исправленное.
-
-Если найден баг — исправить до конца сессии и отметить `🟢 Исправлен` в логе.
+```jsx
+{user.role !== 'teacher' && <button>Добавить студента</button>}
+{user.role === 'owner' && <button>Журнал</button>}
+```
 
 ---
 
-## Полная база знаний (`docs/`)
+## Паттерны кода
 
-| Файл | Содержание |
+### Аудит изменений (обязателен при любом create/update/delete)
+
+```python
+from .utils import log_action, model_to_dict_safe
+
+# Создание
+obj = MyModel.objects.create(...)
+log_action(request.user, 'created', obj, new_data=model_to_dict_safe(obj), institution=institution)
+
+# Обновление — сохранить old_data ДО save()
+old_data = model_to_dict_safe(instance)
+instance.save()
+log_action(request.user, 'updated', instance, old_data=old_data, new_data=model_to_dict_safe(instance), institution=institution)
+
+# Удаление
+old_data = model_to_dict_safe(obj)
+log_action(request.user, 'deleted', obj, old_data=old_data, institution=institution)
+obj.delete()
+```
+
+### Фильтрация по организации (обязательна во всех DRF-вьюхах)
+
+```python
+institution = request.user.institution  # для admin/teacher
+# для owner — из сессии, если нужно поддержать переключение организаций
+queryset = Faculty.objects.filter(institution=institution)
+```
+
+### Проверка ролей в DRF APIView
+
+```python
+# В DRF — напрямую:
+if request.user.role not in ('owner', 'admin'):
+    return Response({'error': 'Доступ запрещён'}, status=403)
+
+# Свойства User: is_owner, is_admin, is_teacher_role
+```
+
+Декораторы `@owner_required` / `@admin_required` из `core/utils.py` — только для Django-вьюх (не для DRF).
+
+### Уникальность email и телефона для персон
+
+```python
+from .utils import check_person_email_unique, check_person_phone_unique
+
+err = check_person_email_unique(email, exclude_employee_pk=instance.pk)
+if err:
+    return Response({'error': err, 'field': 'email'}, status=400)
+
+err = check_person_phone_unique(phone, exclude_employee_pk=instance.pk)
+if err:
+    return Response({'error': err, 'field': 'phone'}, status=400)
+```
+
+Хелперы проверяют глобально по всем Employee, Student, Parent, User. Параметры `exclude_*_pk` нужны при редактировании.
+
+### Флаг (race-safe)
+
+```python
+with transaction.atomic():
+    obj = Model.objects.select_for_update().get(pk=pk)
+    obj.is_flagged = not obj.is_flagged
+    obj.save(update_fields=['is_flagged'])
+```
+
+### Фильтрация для преподавателя
+
+```python
+if request.user.is_teacher_role and request.user.employee:
+    allowed_groups = Group.objects.filter(
+        Q(headteacher=request.user.employee) | Q(subject_assignments__employee=request.user.employee)
+    ).distinct()
+    queryset = queryset.filter(group__in=allowed_groups)
+```
+
+### API-маршруты (именование)
+
+```
+GET  /api/faculties/         — список
+POST /api/faculties/         — создать
+GET  /api/faculties/1/       — детали
+PATCH /api/faculties/1/      — обновить
+DELETE /api/faculties/1/     — удалить (owner + пароль)
+POST /api/faculties/1/delete-request/  — заявка на удаление (admin)
+POST /api/faculties/1/flag/  — переключить флаг
+```
+
+---
+
+## Бизнес-правила
+
+### Роли и права
+
+```
+owner > admin > teacher
+```
+
+| Действие | teacher | admin | owner |
+|---|:---:|:---:|:---:|
+| Просмотр своих групп/студентов | ✓ | ✓ | ✓ |
+| Просмотр всех групп/студентов | - | ✓ | ✓ |
+| Создание/редактирование сущностей | - | ✓ | ✓ |
+| Управление пользователями и должностями | - | - | ✓ |
+| Удаление напрямую | - | - | ✓ |
+| Создание заявки на удаление | - | ✓ | - |
+| Одобрение/отклонение заявок | - | - | ✓ |
+| Просмотр журнала изменений (AuditLog) | - | - | ✓ |
+| Добавление вопроса к записи (RecordNote) | - | ✓ | ✓ |
+| Закрытие вопроса к записи | - | - | ✓ |
+
+Преподаватель видит только группы, где он является классным руководителем (`headteacher`), и только студентов этих групп.
+
+### Должности (`Position.role_type`)
+
+- `admin` — системный доступ уровня администратора
+- `teacher` — системный доступ уровня преподавателя
+- `none` — без системного доступа (должность есть, аккаунта нет)
+
+Смена `role_type` заблокирована, если на должности уже есть сотрудники.
+
+### Процесс удаления объектов
+
+**Admin** — создаёт `DeleteRequest` (`POST /api/<сущность>/<id>/delete-request/`) с причиной → статус `pending`.  
+**Owner** — рассматривает заявки `/api/delete-requests/`:
+- Одобрить: вводит пароль → объект удаляется физически → AuditLog пишет `deleted`.
+- Отклонить: статус `rejected`, объект остаётся.
+
+Owner может также удалять напрямую через `DELETE /api/<сущность>/<id>/` (с паролем в теле запроса).
+
+### Статусы студента
+
+```
+pending_review → pending_enrollment → enrolled → pending_expulsion → expelled
+                                                                   → transferred
+```
+
+Статус меняется вручную администратором через форму редактирования.
+
+### Группы
+
+- Номер группы (`group_number`) автогенерируется: количество групп на факультете + 1.
+- Имя группы — вычисляемое свойство: `{faculty.short_name}-{group_number}-{year[-2:]}` (например `ИТ-1-23`).
+- Один предмет в группе — только один преподаватель (`unique_together = [('group', 'subject')]`).
+- Студент может быть без группы (`group = NULL`), но факультет обязателен.
+
+### Документы
+
+- `owner_type` + `owner_id` вместо GenericForeignKey.
+- При удалении документа — физически удаляется файл с диска (`doc.file.delete(save=False)`).
+- Изображения (`jpg/jpeg/png/gif/webp`) показываются inline.
+
+### Вопросы к записям (RecordNote)
+
+- На одну запись (`object_type` + `object_id`) — только один активный (незакрытый) вопрос.
+- `POST /api/notes/` — добавить (admin+), `POST /api/notes/<pk>/resolve/` — закрыть (owner).
+
+### Регистрация и auth
+
+- Owner регистрируется публично через email-код (6 символов, 10 мин).
+- Admin и teacher создаются owner'ом через `/api/users/`.
+- JWT: access 60 мин, refresh 30 дней, автообновление в `api.js`.
+- Смена пароля: мин. 8 символов, хотя бы цифра + латиница + спецсимвол.
+
+---
+
+## Схема базы данных
+
+**СУБД**: SQLite (`db.sqlite3`). Все модели: `core/models.py`.  
+После изменения моделей: `python manage.py makemigrations && python manage.py migrate`.
+
+### Основные модели
+
+| Модель | Ключевые поля |
 |---|---|
-| [project.md](docs/project.md) | Что это за система, аудитория, контекст диплома |
-| [architecture.md](docs/architecture.md) | Стек, структура папок, ключевые архитектурные решения |
-| [patterns.md](docs/patterns.md) | Паттерны кода — декораторы, аудит, формы, URL, фильтрация по роли |
-| [features.md](docs/features.md) | Чеклист реализованных и нереализованных функций |
-| [database.md](docs/database.md) | Все модели — поля, типы, связи, медиафайлы |
-| [deployment.md](docs/deployment.md) | Запуск, зависимости, настройки settings.py |
-| [business-rules.md](docs/business-rules.md) | Роли, права, удаление, статусы студентов, правила групп |
-| [ux-guidelines.md](docs/ux-guidelines.md) | Шаблоны, Bootstrap-паттерны, тексты интерфейса |
-| [git-workflow.md](docs/git-workflow.md) | Формат коммитов, ветки, .gitignore |
-| [testing.md](docs/testing.md) | Автотесты — структура скрипта, requests vs Playwright, цикл запуска |
-| [monitoring.md](docs/monitoring.md) | Аудит-лог, feedback-инструмент, дебаг |
-| [roadmap.md](docs/roadmap.md) | Что готово, что в приоритете, что на потом |
+| `Institution` | owner(FK→User), code(50), name(1000), founded_date, photo |
+| `Faculty` | institution(FK), full_name(255), short_name(50), created_at, is_flagged |
+| `Position` | institution(FK), name(255), role_type(admin/teacher/none) |
+| `Employee` | institution(FK), ФИО(100), birth_date, phone, email, photo, position(FK→Position PROTECT), is_flagged |
+| `Group` | faculty(FK CASCADE), group_number(auto), year, headteacher(FK→Employee SET_NULL), is_flagged |
+| `Student` | institution(FK), ФИО, birth_date, phone, email, photo, status, faculty(FK SET_NULL), group(FK SET_NULL), is_flagged |
+| `Parent` | institution(FK), ФИО, birth_date, phone, email, photo, is_flagged |
+| `StudentParent` | student(FK), parent(FK), relation_type(mother/father/guardian) — unique_together(student,parent) |
+| `Subject` | institution(FK), name(255) |
+| `GroupSubjectEmployee` | group(FK), subject(FK), employee(FK) — unique_together(group,subject) |
+| `Document` | owner_type(student/employee/parent), owner_id, name, doc_type, file, uploaded_at |
+| `DeleteRequest` | user(FK), object_type, object_id, reason, status(pending/approved/rejected) |
+| `RecordNote` | institution(FK), object_type, object_id, question(2000), is_resolved, created_by, resolved_by |
+| `AuditLog` | user(FK), institution(FK), action(created/updated/deleted), object_type, object_id, old_data(JSON), new_data(JSON) |
+| `EmailCode` | email, code(6), purpose(register/recover/delete_org/change_email), expires_at, used, attempts |
+
+**User** (`AUTH_USER_MODEL = 'core.User'`): username, display_name, email, role(owner/admin/teacher), institution(FK SET_NULL), allowed_institutions(M2M), employee(OneToOne SET_NULL).  
+Свойства: `is_owner`, `is_admin`, `is_teacher_role`, `is_superadmin` (алиас is_owner).
+
+Медиафайлы в `media/`: `institutions/`, `employees/`, `students/`, `parents/`, `users/`, `documents/`.
+
+---
+
+## Автотесты
+
+Временные Python-скрипты через `requests` к REST API. Цикл:
+1. Написать `tests/autotest_<тема>.py`
+2. Запустить через PowerShell / Bash
+3. Прочитать PASS/FAIL
+4. **Удалить скрипт и папку `tests/`**
+
+**Тестовый пользователь:** `admin` / `admin_-1` (owner, создаётся через `create_superadmin`).
+
+Шаблон скрипта:
+
+```python
+import requests
+
+BASE = "http://127.0.0.1:8000/api"
+PASS = []; FAIL = []
+
+def ok(name, detail=""): PASS.append(name); print(f"  [OK]   {name}" + (f" -- {detail}" if detail else ""))
+def fail(name, detail=""): FAIL.append(name); print(f"  [FAIL] {name}" + (f" -- {detail}" if detail else ""))
+def check(name, cond, detail=""): ok(name, detail) if cond else fail(name, detail)
+
+def login(u, p):
+    r = requests.post(f"{BASE}/auth/login/", json={"username": u, "password": p})
+    return r.json().get("access") if r.status_code == 200 else None
+
+def h(token): return {"Authorization": f"Bearer {token}"}
+
+if __name__ == "__main__":
+    token = login("admin", "admin_-1")
+    if not token: raise SystemExit("[ERROR] Сервер не запущен или неверный пароль")
+
+    # ... тесты ...
+
+    print(f"\nPASS: {len(PASS)}  FAIL: {len(FAIL)}")
+```
+
+---
+
+## Git
+
+Формат коммитов: `<тип>: <что сделано>`  
+Типы: `feat` / `fix` / `refactor` / `docs` / `chore`  
+Основная ветка: `main`.

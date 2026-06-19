@@ -4,7 +4,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Загрузка .env (без внешних пакетов)
-_env_file = BASE_DIR / '.env'
+_env_file = BASE_DIR / 'env' / '.env'
 if _env_file.exists():
     with open(_env_file, encoding='utf-8') as _f:
         for _line in _f:

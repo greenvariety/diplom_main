@@ -1,12 +1,12 @@
 ﻿from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Q, Count, Exists, OuterRef
 from .models import Student, Group, Faculty, Document, StudentParent, Parent, DeleteRequest, AuditLog, RecordNote
 from .utils import log_action, check_person_email_unique, check_person_phone_unique
 
 
-# сериализация студента в словарь для ответа API
 def _student_data(s):
     return {
         'id': s.pk,
@@ -22,29 +22,21 @@ def _student_data(s):
         'group_id': s.group_id,
         'group_name': s.group.name if s.group_id else '',
         'photo': s.photo.url if s.photo else None,
-        'parent_count': getattr(s, 'parent_count', None),  # аннотируется через annotate()
+        'parent_count': getattr(s, 'parent_count', None),
         'is_flagged': s.is_flagged,
-        'warn_incomplete': not all([s.birth_date, s.phone, s.email]) or not s.group_id,  # предупреждение о незаполненных полях
+        'warn_incomplete': not all([s.birth_date, s.phone, s.email]) or not s.group_id,
         'has_pending_delreq': getattr(s, 'has_pending_delreq', False),
         'has_note': getattr(s, 'has_note', False),
     }
 
 
-# проверка прав: только admin и owner могут изменять данные
 def _admin_only(request):
     if request.user.role not in ('owner', 'admin'):
         return Response({'error': 'Доступ запрещён'}, status=403)
     return None
 
 
-def _at_least_teacher(request):
-    if request.user.role not in ('owner', 'admin', 'teacher'):
-        return Response({'error': 'Доступ запрещён'}, status=403)
-    return None
-
-
 def _get_student(request, pk):
-    # возвращаем студента только если он принадлежит организации текущего пользователя
     institution = request.user.institution
     if not institution:
         return None
@@ -56,21 +48,18 @@ def _get_student(request, pk):
         return None
 
 
-# Список и создание студентов
 class StudentsView(APIView):
     def get(self, request):
         institution = request.user.institution
         if not institution:
             return Response({'results': [], 'count': 0, 'num_pages': 0, 'page': 1})
 
-        # получаем всех студентов организации с подсчётом связанных данных
         qs = Student.objects.filter(institution=institution).select_related('faculty', 'group').annotate(
             parent_count=Count('student_parents'),
             has_pending_delreq=Exists(DeleteRequest.objects.filter(object_type='Student', object_id=OuterRef('pk'), status='pending')),
             has_note=Exists(RecordNote.objects.filter(object_type='Student', object_id=OuterRef('pk'), is_resolved=False)),
         )
 
-        # преподаватель видит только студентов своих групп
         if request.user.role == 'teacher':
             employee = request.user.employee
             if not employee:
@@ -151,26 +140,29 @@ class StudentsView(APIView):
         birth_date = request.data.get('birth_date') or None
 
         email = (request.data.get('email') or '').strip()
-        email_err = check_person_email_unique(email)
-        if email_err:
-            return Response({'error': email_err, 'field': 'email'}, status=400)
-
         phone = (request.data.get('phone') or '').strip()
-        phone_err = check_person_phone_unique(phone)
-        if phone_err:
-            return Response({'error': phone_err, 'field': 'phone'}, status=400)
 
-        student = Student.objects.create(
-            institution=institution,
-            last_name=last_name,
-            first_name=first_name,
-            middle_name=(request.data.get('middle_name') or '').strip(),
-            birth_date=birth_date,
-            phone=phone,
-            email=email,
-            faculty=faculty,
-            group=group,
-        )
+        with transaction.atomic():
+            email_err = check_person_email_unique(email)
+            if email_err:
+                return Response({'error': email_err, 'field': 'email'}, status=400)
+
+            phone_err = check_person_phone_unique(phone)
+            if phone_err:
+                return Response({'error': phone_err, 'field': 'phone'}, status=400)
+
+            student = Student.objects.create(
+                institution=institution,
+                last_name=last_name,
+                first_name=first_name,
+                middle_name=(request.data.get('middle_name') or '').strip(),
+                birth_date=birth_date,
+                phone=phone,
+                email=email,
+                faculty=faculty,
+                group=group,
+            )
+
         # фото загружаем отдельным save, чтобы сигнал замены файла отработал корректно
         photo = request.FILES.get('photo')
         if photo:
@@ -252,16 +244,6 @@ class StudentDetailView(APIView):
             if field in request.data:
                 setattr(student, field, (request.data[field] or '').strip())
 
-        if 'email' in request.data and student.email:
-            email_err = check_person_email_unique(student.email, exclude_student_pk=student.pk)
-            if email_err:
-                return Response({'error': email_err, 'field': 'email'}, status=400)
-
-        if 'phone' in request.data and student.phone:
-            phone_err = check_person_phone_unique(student.phone, exclude_student_pk=student.pk)
-            if phone_err:
-                return Response({'error': phone_err, 'field': 'phone'}, status=400)
-
         if 'birth_date' in request.data:
             student.birth_date = request.data['birth_date'] or None
 
@@ -289,7 +271,19 @@ class StudentDetailView(APIView):
         if photo:
             student.photo = photo
 
-        student.save()
+        with transaction.atomic():
+            if 'email' in request.data and student.email:
+                email_err = check_person_email_unique(student.email, exclude_student_pk=student.pk)
+                if email_err:
+                    return Response({'error': email_err, 'field': 'email'}, status=400)
+
+            if 'phone' in request.data and student.phone:
+                phone_err = check_person_phone_unique(student.phone, exclude_student_pk=student.pk)
+                if phone_err:
+                    return Response({'error': phone_err, 'field': 'phone'}, status=400)
+
+            student.save()
+
         log_action(request.user, 'updated', student,
                    old_data=old_data,
                    new_data={
@@ -302,7 +296,6 @@ class StudentDetailView(APIView):
         return Response(_student_data(student))
 
     def delete(self, request, pk):
-        # удаление требует подтверждения паролем - защита от случайного нажатия
         if request.user.role not in ('owner', 'admin'):
             return Response({'error': 'Доступ запрещён'}, status=403)
         student = _get_student(request, pk)
@@ -373,21 +366,22 @@ class StudentParentsView(APIView):
             if not last_name or not first_name:
                 return Response({'error': 'Введите фамилию и имя опекуна'}, status=400)
             parent_email = (request.data.get('email') or '').strip()
-            parent_email_err = check_person_email_unique(parent_email)
-            if parent_email_err:
-                return Response({'error': parent_email_err, 'field': 'email'}, status=400)
             parent_phone = (request.data.get('phone') or '').strip()
-            parent_phone_err = check_person_phone_unique(parent_phone)
-            if parent_phone_err:
-                return Response({'error': parent_phone_err, 'field': 'phone'}, status=400)
-            parent = Parent.objects.create(
-                institution=institution,
-                last_name=last_name,
-                first_name=first_name,
-                middle_name=(request.data.get('middle_name') or '').strip(),
-                phone=parent_phone,
-                email=parent_email,
-            )
+            with transaction.atomic():
+                parent_email_err = check_person_email_unique(parent_email)
+                if parent_email_err:
+                    return Response({'error': parent_email_err, 'field': 'email'}, status=400)
+                parent_phone_err = check_person_phone_unique(parent_phone)
+                if parent_phone_err:
+                    return Response({'error': parent_phone_err, 'field': 'phone'}, status=400)
+                parent = Parent.objects.create(
+                    institution=institution,
+                    last_name=last_name,
+                    first_name=first_name,
+                    middle_name=(request.data.get('middle_name') or '').strip(),
+                    phone=parent_phone,
+                    email=parent_email,
+                )
             photo = request.FILES.get('photo')
             if photo:
                 parent.photo = photo
@@ -443,7 +437,8 @@ class StudentFlagView(APIView):
         student = _get_student(request, pk)
         if not student:
             return Response({'error': 'Не найдено'}, status=404)
-        # переключаем флаг (toggle)
-        student.is_flagged = not student.is_flagged
-        student.save(update_fields=['is_flagged'])
+        with transaction.atomic():
+            student = Student.objects.select_for_update().get(pk=student.pk)
+            student.is_flagged = not student.is_flagged
+            student.save(update_fields=['is_flagged'])
         return Response({'is_flagged': student.is_flagged})

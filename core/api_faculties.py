@@ -1,6 +1,6 @@
 import re
-from datetime import date as date_type
-from django.db import IntegrityError
+from datetime import date as date_type, datetime
+from django.db import IntegrityError, transaction
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -9,13 +9,11 @@ from .utils import log_action
 
 
 def _parse_date(value):
-    """Converts 'YYYY-MM-DD' string to date object, returns None on failure."""
     if not value:
         return None
     if hasattr(value, 'strftime'):
         return value
     try:
-        from datetime import datetime
         return datetime.strptime(str(value)[:10], '%Y-%m-%d').date()
     except (ValueError, TypeError):
         return None
@@ -25,7 +23,6 @@ def _has_latin(value):
     return bool(re.search(r'[A-Za-z]', value))
 
 
-# сериализация факультета со счётчиками групп и студентов
 def _faculty_data(f):
     return {
         'id': f.pk,
@@ -217,6 +214,8 @@ class FacultyFlagView(APIView):
             faculty = Faculty.objects.get(pk=pk, institution=request.user.institution)
         except Faculty.DoesNotExist:
             return Response({'error': 'Не найдено'}, status=404)
-        faculty.is_flagged = not faculty.is_flagged
-        faculty.save(update_fields=['is_flagged'])
+        with transaction.atomic():
+            faculty = Faculty.objects.select_for_update().get(pk=faculty.pk)
+            faculty.is_flagged = not faculty.is_flagged
+            faculty.save(update_fields=['is_flagged'])
         return Response({'is_flagged': faculty.is_flagged})
