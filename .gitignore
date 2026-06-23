@@ -2,7 +2,5 @@ venv/
 __pycache__/
 *.pyc
 .env
-# db.sqlite3
-# data/db.sqlite3
-# media/
-Reference materials/
+data/db.sqlite3
+media/
